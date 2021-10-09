@@ -1,0 +1,58 @@
+{
+  "name": "apollo-backend",
+  "version": "0.0.1",
+  "private": true,
+  "description": "",
+  "homepage": "https://github.com/ApolloFiles/Apollo#readme",
+  "license": "UNLICENSED",
+  "keywords": [],
+  "author": {
+    "name": "Christian Koop",
+    "url": "https://github.com/SpraxDev",
+    "email": "contact@sprax2013.de"
+  },
+  "contributors": [
+    {
+      "name": "NudelErde",
+      "url": "https://github.com/NudelErde"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ApolloFiles/Apollo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ApolloFiles/Apollo/issues"
+  },
+  "main": "dist/Apollo.js",
+  "scripts": {
+    "build": "tsc",
+
+    "test": "jest --coverage",
+    "dev": "nodemon --ext ts --watch ./src --exec \"ts-node src/index.ts\"",
+
+    "snyk": "npm run build && snyk test",
+    "snyk:docker": "npm run docker:build && snyk container test apollo:dev --file=Dockerfile",
+
+    "docker:build": "npm run build && docker build --rm --tag apollo:dev .",
+    "docker:dev": "npm run docker:build && (docker stop apollo;docker rm apollo;echo '') && docker run --name apollo --cpus 2 --memory 1G --volume apollo-dev:/app/storage/ apollo:dev"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=7.0.0"
+  },
+  "dependencies": {
+    "@spraxdev/node-commons": "github:SpraxDev/Node-Commons"
+  },
+  "devDependencies": {
+    "@tsconfig/node16": "^1.0.2",
+    "@types/jest": "^27.4.1",
+    "@types/node": "^16.11.26",
+    "jest": "^27.5.1",
+    "nodemon": "^2.0.15",
+    "snyk": "^1.858.0",
+    "ts-jest": "^27.1.3",
+    "ts-node": "^10.5.0",
+    "typescript": "^4.5.5"
+  }
+}
