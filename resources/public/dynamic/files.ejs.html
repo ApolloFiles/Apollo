@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- @formatter:off -->
+  <%
+    const validLocals = Array.isArray(locals.lastFavoriteFiles) && locals.lastFavoriteFiles.length <= 6 &&
+                        Array.isArray(locals.recentFiles) && locals.recentFiles.length <= 6 &&
+                        Array.isArray(locals.banners) &&
+                        Array.isArray(locals.files);
+
+    if (!validLocals) {
+      throw new Error('Invalid locals passed to files.ejs.html');
+    }
+  %>
+  <!-- @formatter:on -->
+
+  <%- include('/dynamic/html-modules/head.ejs.html') -%>
+
+  <title>Dateien</title>
+
+  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="stylesheet" href="/styles/files.css">
+</head>
+
+<body>
+  <div id="main" class="wrapper">
+    <%- include('/dynamic/html-modules/files/sidebar.ejs.html'); %>
+
+    <!-- Page Content  -->
+    <div id="content" class="container-fluid" style="margin: 20px">
+      <!-- @formatter:off -->
+      <%- include('/dynamic/html-modules/files/content-header.ejs.html',
+          {banners: locals.banners, profileImgUrl: 'https://i.pravatar.cc/500?u=Apollo'}); %>
+      <!-- @formatter:on -->
+      <br><br>
+
+      <!-- @formatter:off -->
+      <%- include('/dynamic/html-modules/files/content-favorites.ejs.html', {lastFavoriteFiles: locals.lastFavoriteFiles}); %>
+      <%- include('/dynamic/html-modules/files/content-recent-files.ejs.html', {recentFiles: locals.recentFiles}); %>
+      <%- include('/dynamic/html-modules/files/content-file-list.ejs.html', {files: locals.files}); %>
+      <!-- @formatter:on -->
+    </div>
+  </div>
+
+  <script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

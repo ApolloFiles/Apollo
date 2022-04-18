@@ -1,0 +1,32 @@
+<!-- @formatter:off -->
+<%
+const validLocals = Array.isArray(locals.files);
+
+if (!validLocals) {
+  throw new Error('Invalid locals passed to content-file-list.ejs.html');
+}
+-%>
+<!-- @formatter:on -->
+
+<h1>Dateien</h1>
+
+<table class="table table-responsive table-hover">
+  <% if (locals.files.length <= 0) { %>
+  <caption>Keine Dateien vorhanden</caption>
+  <% } %>
+
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col" class="fit-column">Besitzer</th>
+      <th scope="col" class="fit-column">Zuletzt geändert</th>
+      <th scope="col" class="fit-column">Dateigröße</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% locals.files.forEach(file => { %>
+    <%- include('./content-file-list-item.ejs.html', {file}) %>
+    <% }); %>
+  </tbody>
+</table>

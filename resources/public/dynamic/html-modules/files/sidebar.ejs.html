@@ -1,0 +1,60 @@
+<nav id="sidebar" class="sidebar-slim">
+  <div class="sidebar-header text-center">
+    <img src="/logo.svg" alt="Apollo-Logo">
+    <h3 class="d-none-when-slim">Apollo</h3>
+  </div>
+
+  <ul class="list-unstyled">
+    <li class="<%- (locals.global.templateId == 'apollo:files:browse') ? 'active' : '' %>">
+      <a href="/browse" class="a-stealth">
+        <span class="material-icons icon-inline">folder</span>&nbsp;<span>Dateien</span>
+      </a>
+    </li>
+
+    <li>
+      <a href="#" class="a-stealth">
+        <span class="material-icons icon-inline">share</span>&nbsp;<span>Geteiltes</span>
+      </a>
+    </li>
+
+    <li>
+      <a href="#" class="a-stealth">
+        <span class="material-icons icon-inline">history</span>&nbsp;<span>Neuste</span>
+      </a>
+    </li>
+
+    <li class="<%- (locals.global.templateId == 'apollo:files:trash') ? 'active' : '' %>">
+      <a href="/trash" class="a-stealth">
+        <span class="material-icons icon-inline">delete</span>&nbsp;<span>Papierkorb</span>
+      </a>
+    </li>
+
+    <li>
+      <a href="#" class="a-stealth">
+        <span class="material-icons icon-inline">settings</span>&nbsp;<span>Einstellungen</span>
+      </a>
+    </li>
+
+    <li class="d-none">
+      <a href="#" id="sidebarExpand" class="a-stealth">
+        <span class="material-icons icon-inline">vertical_align_top</span>&nbsp;<span>Einklappen</span>
+      </a>
+    </li>
+
+<!--    <li>-->
+<!--      <a href="#" class="text-center">-->
+<!--        <img class="img-fluid rounded-circle" src="https://i.pravatar.cc/500?u=Apollo" alt="Dein Profilbild">-->
+<!--      </a>-->
+<!--    </li>-->
+  </ul>
+</nav>
+
+<script>
+  // TODO: Into own file
+  const sidebarExpandElem = document.getElementById('sidebarExpand');
+
+  if (sidebarExpandElem != null) {
+    sidebarExpandElem.parentElement.classList.remove('d-none');
+    sidebarExpandElem.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('sidebar-slim'));
+  }
+</script>

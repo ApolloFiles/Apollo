@@ -1,0 +1,15 @@
+@import "/node_modules/bootstrap/dist/css/bootstrap.min.css";
+@import "/node_modules/material-design-icons/iconfont/material-icons.css";
+@import "colors.css";
+
+.material-icons.icon-inline {
+    vertical-align: bottom;
+}
+
+a.a-stealth,
+a.a-stealth:hover,
+a.a-stealth:focus {
+    color:           inherit;
+    text-decoration: none;
+    transition:      all .3s;
+}

@@ -1,0 +1,42 @@
+<!-- @formatter:off -->
+<%
+const possibleTypes = {
+  info: {
+    icon: 'info',
+    bootstrapClass: 'alert-primary'
+  },
+  success: {
+    icon: 'check',
+    bootstrapClass: 'alert-success'
+  },
+  warning: {
+    icon: 'warning',
+    bootstrapClass: 'alert-warning'
+  },
+  error: {
+    icon: 'report',
+    bootstrapClass: 'alert-danger'
+  }
+};
+
+const validLocals = possibleTypes[locals.type] != null &&
+                    typeof locals.msg === 'string' &&
+                    typeof locals['dismissible'] === 'boolean';
+if (!validLocals) {
+  throw new Error('Invalid locals passed to msg-banner.ejs.html');
+}
+
+const type = possibleTypes[locals.type];
+-%>
+<!-- @formatter:on -->
+
+<div role="alert" class="alert <%- type.bootstrapClass %> d-flex
+                         align-items-center<%- locals.dismissible ? ' alert-dismissible fade show' : '' %>">
+  <div>
+    <span class="material-icons icon-inline"><%- type.icon %></span>&nbsp;<%= locals.msg %>
+  </div>
+
+  <% if (locals.dismissible) { %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  <% } %>
+</div>

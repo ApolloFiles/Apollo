@@ -1,0 +1,22 @@
+import Path from 'path';
+import { getAppResourcesDir } from '../Constants';
+import { AbstractTemplate } from './AbstractTemplate';
+
+export type FileIcon = 'folder' | 'picture_as_pdf' | 'image' | 'music_note' | 'insert_drive_file';
+
+export interface FilesTemplateData {
+  lastFavoriteFiles: { favorite: true, icon: FileIcon, title: string, subtitle: string | null, previewImg: { src: string, alt: string } }[];
+  recentFiles: { favorite: boolean, icon: FileIcon, title: string, subtitle: string | null, previewImg: { src: string, alt: string } }[];
+  banners: { type: 'info' | 'success' | 'warning' | 'error', msg: string, dismissible: boolean }[];
+  files: { icon: FileIcon, name: string, owner: string, lastChanged: Date, size: string | null, frontendUrl: string }[];
+}
+
+export class FilesTemplate extends AbstractTemplate {
+  constructor(type: 'browse' | 'trash') {
+    super(`apollo:files:${type}`, Path.join(getAppResourcesDir(), 'public', 'dynamic', 'files.ejs.html'));
+  }
+
+  render(data: FilesTemplateData): string {
+    return super.renderEjs({...data, global: {templateId: this.templateId}});
+  }
+}

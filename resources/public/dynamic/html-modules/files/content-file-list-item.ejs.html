@@ -1,0 +1,23 @@
+<!-- @formatter:off -->
+<%
+const supportedIcons = ['folder', 'image', 'insert_drive_file', 'music_note', 'picture_as_pdf'];
+
+const validLocals = typeof locals.file == 'object' &&
+                    supportedIcons.includes(locals.file.icon) &&
+                    typeof locals.file.frontendUrl == 'string' &&
+                    typeof locals.file.owner == 'string' &&
+                    typeof locals.file.name == 'string' &&
+                    locals.file.lastChanged instanceof Date;
+
+if (!validLocals) {
+  throw new Error('Invalid locals passed to content-file-list.ejs.html');
+}
+-%>
+<!-- @formatter:on -->
+
+<tr>
+  <td><a class="a-stealth d-block h-100 w-100" href="<%- locals.file.frontendUrl %>"><span class="material-icons icon-inline <%- locals.file.icon %>"><%- locals.file.icon %></span> <%= locals.file.name %></a></td>
+  <td class="fit-column"><%= locals.file.owner %></td>
+  <td class="fit-column"><time datetime="<%- locals.file.lastChanged.toUTCString() %>"><%= locals.file.lastChanged %></time></td>
+  <td class="fit-column"><%= locals.file.size ?? '-' %></td>
+</tr>

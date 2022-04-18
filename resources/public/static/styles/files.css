@@ -1,0 +1,38 @@
+@import "sidebar.css";
+
+table td.fit-column,
+table th.fit-column {
+    width:       1px;
+    white-space: nowrap;
+}
+
+/* Search Input icon */
+/* enable absolute positioning */
+.inner-addon {
+    position: relative;
+}
+
+/* style glyph */
+.inner-addon .material-icons {
+    position:       absolute;
+    padding:        10px;
+    pointer-events: none;
+}
+
+/* align glyph */
+.left-addon .material-icons {
+    left: 0;
+}
+
+.right-addon .material-icons {
+    right: 0;
+}
+
+/* add padding  */
+.left-addon input {
+    padding-left: 40px;
+}
+
+.right-addon input {
+    padding-right: 30px;
+}

@@ -1,0 +1,35 @@
+<!-- @formatter:off -->
+<%
+const validLocals = Array.isArray(locals.banners) &&
+                    typeof locals.profileImgUrl === 'string';
+
+if (!validLocals) {
+  throw new Error('Invalid locals passed to content-header.ejs.html');
+}
+-%>
+<!-- @formatter:on -->
+
+<div id="content-header">
+  <div class="row">
+    <div class="col" style="padding-top: 10px; max-width: 55%">
+      <form method="post">
+        <div class="inner-addon left-addon">
+          <span class="material-icons">search</span>
+          <input type="text" name="value" style="background-color: #f1f3f4" class="rounded-pill form-control"
+                 placeholder="Dateien durchsuchen" aria-label="Dateien durchsuchen" required>
+          <input name="action" type="hidden" value="apollo-search">
+        </div>
+      </form>
+    </div>
+    <div class="col-1 ms-auto">
+      <img class="img-fluid rounded-circle" style="max-height: 3.5rem"
+           src="<%- locals.profileImgUrl %>" alt="Dein Profilbild">
+    </div>
+  </div>
+
+  <% locals.banners.forEach(banner => { %>
+  <div class="w-75">
+    <%- include('/dynamic/html-modules/msg-banner.ejs.html', banner); %>
+  </div>
+  <% }); %>
+</div>

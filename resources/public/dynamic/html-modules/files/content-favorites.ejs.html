@@ -1,0 +1,25 @@
+<!-- @formatter:off -->
+<%
+const validLocals = Array.isArray(locals.lastFavoriteFiles);
+
+if (!validLocals) {
+  throw new Error('Invalid locals passed to content-favorites.ejs.html');
+}
+-%>
+<!-- @formatter:on -->
+
+<% if (locals.lastFavoriteFiles.length > 0) { %>
+<h1>Favoriten</h1>
+<strong class="float-end"><a href="#" class="a-stealth">Show All &gt;</a></strong><br>
+
+<div class="row">
+  <!-- @formatter:off -->
+  <% locals.lastFavoriteFiles.forEach(fav => { %>
+  <div class="col">
+    <%- include('./preview-card.ejs.html', fav) %>
+  </div>
+  <% }); %>
+  <!-- @formatter:on -->
+</div>
+<br><br>
+<% } %>

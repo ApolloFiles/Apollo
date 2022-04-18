@@ -1,0 +1,42 @@
+<!-- @formatter:off -->
+<%
+const supportedIcons = ['folder', 'image', 'insert_drive_file', 'music_note', 'picture_as_pdf'];
+const validLocals = typeof locals.favorite == 'boolean' &&
+                    (typeof locals.icon == 'string' || locals.icon === null) &&
+                    typeof locals.title == 'string' &&
+                    (typeof locals.subtitle == 'string' || locals.subtitle === null) &&
+                    typeof locals.previewImg === 'object' &&
+                    typeof locals.previewImg.src == 'string' &&
+                    typeof locals.previewImg.alt == 'string';
+
+if (!validLocals) {
+  throw new Error('Invalid locals passed to preview-card.ejs.html');
+}
+if (locals.icon !== null && !supportedIcons.includes(locals.icon)) {
+  throw new Error(`Unsupported icon '${locals.icon}' passed to preview-card.ejs.html`);
+}
+if (locals.previewImg.alt.indexOf('"') != -1 || locals.icon.indexOf('"') != -1 || locals.previewImg.src.indexOf('"') != -1) {
+  throw new Error(`Passed previewImg.src, previewImg.alt or icon to preview-card.ejs.html containing '"'`);
+}
+-%>
+<!-- @formatter:on -->
+
+<div class="card h-100" style="width: 16rem">
+  <div class="<%- locals.favorite ? 'inner-addon right-addon ' : ''; %>h-75">
+    <% if(locals.favorite) { %>
+    <span class="material-icons star">star</span>
+    <% } %>
+    <img
+        src="<%- locals.previewImg.src %>"
+        class="card-img-top h-100" style="object-fit: cover" alt="<%- locals.previewImg.alt ?? '' %>">
+  </div>
+
+  <div class="card-body">
+    <h5 class="card-title"><span
+        class="material-icons icon-inline <%- locals.icon %>"><%- locals.icon %></span>&nbsp;<%= locals.title %></h5>
+
+    <% if(locals.subtitle) { %>
+    <p class="card-text text-muted"><%= locals.subtitle %></p>
+    <% } %>
+  </div>
+</div>
