@@ -94,9 +94,19 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
         if (innerFileMimeType.startsWith('image/')) {
           fileIcon = 'image';
         } else if (innerFileMimeType == 'application/pdf') {
-          fileIcon = 'picture_as_pdf';
+          fileIcon = 'picture_as_pdf'; // FIXME: The icon is not for a file but too generic
+        } else if (innerFileMimeType == 'application/json') {
+          fileIcon = 'data_object'; // FIXME: The icon is not for a file but too generic
+        } else if (['text/xml', 'text/html'].includes(innerFileMimeType)) {
+          fileIcon = 'code';  // FIXME: The icon is not for a file but too generic
+        } else if (innerFileMimeType == 'application/zip') {
+          fileIcon = 'folder_zip';
         } else if (innerFileMimeType.startsWith('audio/')) {
-          fileIcon = 'music_note';
+          fileIcon = 'audio_file';
+        } else if (innerFileMimeType.startsWith('text/')) {
+          fileIcon = 'description';
+        } else if (innerFileMimeType.startsWith('video/')) {
+          fileIcon = 'video_file';
         }
       }
     }

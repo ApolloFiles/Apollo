@@ -11,7 +11,8 @@
     color: #ffdc00;
 }
 
-.material-icons.music_note {
+.material-icons.music_note,
+.material-icons.audio_file {
     color: #0090ff;
 }
 

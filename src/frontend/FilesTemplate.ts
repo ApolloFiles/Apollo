@@ -2,7 +2,17 @@ import Path from 'path';
 import { getAppResourcesDir } from '../Constants';
 import { AbstractTemplate } from './AbstractTemplate';
 
-export type FileIcon = 'folder' | 'picture_as_pdf' | 'image' | 'music_note' | 'insert_drive_file';
+export type FileIcon =
+    'audio_file'
+    | 'code'
+    | 'data_object'
+    | 'description'
+    | 'folder'
+    | 'folder_zip'
+    | 'image'
+    | 'insert_drive_file'
+    | 'picture_as_pdf'
+    | 'video_file';
 
 export interface FilesTemplateData {
   lastFavoriteFiles: { favorite: true, icon: FileIcon, title: string, subtitle: string | null, previewImg: { src: string, alt: string } }[];

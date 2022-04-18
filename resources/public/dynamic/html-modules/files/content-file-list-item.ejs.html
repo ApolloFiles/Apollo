@@ -1,9 +1,7 @@
 <!-- @formatter:off -->
 <%
-const supportedIcons = ['folder', 'image', 'insert_drive_file', 'music_note', 'picture_as_pdf'];
-
 const validLocals = typeof locals.file == 'object' &&
-                    supportedIcons.includes(locals.file.icon) &&
+                    typeof locals.file.icon == 'string' &&
                     typeof locals.file.frontendUrl == 'string' &&
                     typeof locals.file.owner == 'string' &&
                     typeof locals.file.name == 'string' &&
