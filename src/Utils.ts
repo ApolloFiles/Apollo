@@ -71,4 +71,8 @@ export default class Utils {
 
     return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
   }
+
+  static tryReplacingBadCharactersForFileName(fileName: string): string {
+    return fileName.replace(/[\\/:*?"<>|]/g, '_');
+  }
 }

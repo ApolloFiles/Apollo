@@ -1,3 +1,4 @@
+import * as Archiver from 'archiver';
 import express from 'express';
 import * as fastDirectorySize from 'fast-directory-size';
 import Path from 'path';
@@ -9,10 +10,21 @@ import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
 import WebServer from '../WebServer';
 
-export function filesHandleGet(req: express.Request, res: express.Response, type: 'browse' | 'trash'): () => Promise<void> {
+type FileRequestType = 'thumbnail' | 'download';
+const allowedFileRequestTypes = ['thumbnail', 'download'];  // Needs to be identical to FileRequestType
+
+export function filesHandleGet(req: express.Request, res: express.Response, frontendType: 'browse' | 'trash'): () => Promise<void> {
   return async () => {
+    if (req.query.type != null && (typeof req.query.type != 'string' || !allowedFileRequestTypes.includes(req.query.type))) {
+      res.status(400)
+          .send('Invalid type requested');
+      return;
+    }
+
+    const fileRequestType = req.query.type as FileRequestType | undefined;
+
     const user = WebServer.getUser(req);
-    const fileSystem = type == 'browse' ? user.getDefaultFileSystem() : user.getTrashBinFileSystem();
+    const fileSystem = frontendType == 'browse' ? user.getDefaultFileSystem() : user.getTrashBinFileSystem();
 
     const requestedFilePath = decodeURI(req.path);
     const file = await fileSystem.getFile(requestedFilePath);
@@ -37,12 +49,12 @@ export function filesHandleGet(req: express.Request, res: express.Response, type
         return;
       }
 
-      await handleDirectoryRequest(req, res, user, file, type);
+      await handleDirectoryRequest(req, res, user, file, frontendType, fileRequestType);
       return;
     }
 
     if (await file.isFile()) {
-      await handleFileRequest(req, res, user, file, wantsThumbnail);
+      await handleFileRequest(req, res, user, file, fileRequestType);
       return;
     }
 
@@ -53,9 +65,43 @@ export function filesHandleGet(req: express.Request, res: express.Response, type
   };
 }
 
-async function handleDirectoryRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile, type: 'browse' | 'trash'): Promise<void> {
+async function handleDirectoryRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile, type: 'browse' | 'trash', fileRequestType?: FileRequestType): Promise<void> {
+  if (fileRequestType === 'thumbnail') {
+    res.status(400)
+        .send('Cannot generate thumbnail for directory');
+  }
+
   if (!req.path.endsWith('/')) {
-    res.redirect(req.originalUrl + '/');
+    res.redirect(req.originalUrl + '/');  // FIXME: Does not work with query params
+    return;
+  }
+
+  if (fileRequestType === 'download') {
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(file.getName())}.zip"`);
+
+    const zip = Archiver.create('zip', {store: true, forceZip64: true});
+    zip.pipe(res);
+
+
+    res.on('close', () => {
+      zip.abort();
+      zip.end();
+    });
+    zip.on('close', () => {
+      res.end();
+    });
+
+    const absolutePathOnHost = file.getAbsolutePathOnHost();
+    if (absolutePathOnHost == null) {
+      res.status(500)
+          .send('Cannot download the given directory as it does not exist on the host');
+      return;
+    }
+
+    zip.directory(absolutePathOnHost, file.getName());
+    await zip.finalize();
+
     return;
   }
 
@@ -117,6 +163,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
       owner: 'Ich',
       lastChanged: innerFileStat.mtime,
       size: Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string)),
+      mimeType: innerFileMimeType,
 
       frontendUrl: Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()), innerFileStat.isDirectory() ? '/' : '')
     });
@@ -270,8 +317,8 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
   //     '<ul>';
 }
 
-async function handleFileRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile, wantsThumbnail: boolean): Promise<void> {
-  if (wantsThumbnail) {
+async function handleFileRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile, fileRequestType?: FileRequestType): Promise<void> {
+  if (fileRequestType == 'thumbnail') {
     const start = process.hrtime();
     const thumbnail = await new ThumbnailGenerator().generateThumbnail(file);
     const tookMs = (process.hrtime(start)[1] / 1000000).toFixed(2);
@@ -318,6 +365,10 @@ async function handleFileRequest(req: express.Request, res: express.Response, us
   res.on('close', () => {
     fileReadStream.destroy();
   });
+
+  if (fileRequestType == 'download') {
+    res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(file.getName())}"`);
+  }
 
   res.setHeader('Content-Length', fileSize);
   if (bytesStart != undefined && bytesEnd != undefined) {

@@ -18,12 +18,12 @@ export interface FilesTemplateData {
   lastFavoriteFiles: { favorite: true, icon: FileIcon, title: string, subtitle: string | null, previewImg: { src: string, alt: string } }[];
   recentFiles: { favorite: boolean, icon: FileIcon, title: string, subtitle: string | null, previewImg: { src: string, alt: string } }[];
   banners: { type: 'info' | 'success' | 'warning' | 'error', msg: string, dismissible: boolean }[];
-  files: { icon: FileIcon, name: string, owner: string, lastChanged: Date, size: string | null, frontendUrl: string }[];
+  files: { icon: FileIcon, name: string, owner: string, lastChanged: Date, size: string | null, mimeType: string | null, frontendUrl: string }[];
 }
 
 export class FilesTemplate extends AbstractTemplate {
-  constructor(type: 'browse' | 'trash') {
-    super(`apollo:files:${type}`, Path.join(getAppResourcesDir(), 'public', 'dynamic', 'files.ejs.html'));
+  constructor(frontendType: 'browse' | 'trash') {
+    super(`apollo:files:${frontendType}`, Path.join(getAppResourcesDir(), 'public', 'dynamic', 'files.ejs.html'));
   }
 
   render(data: FilesTemplateData): string {
