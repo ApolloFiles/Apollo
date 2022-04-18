@@ -4,10 +4,10 @@ import * as fastDirectorySize from 'fast-directory-size';
 import * as Path from 'path';
 import AbstractUser from '../../AbstractUser';
 import IUserFile from '../IUserFile';
-import IUserFileSystem from './IUserFileSystem';
 import IUserFileWriteable from '../IUserFileWriteable';
 import UserFile from '../UserFile';
 import UserFileWriteable from '../UserFileWriteable';
+import IUserFileSystem from './IUserFileSystem';
 
 export default class UserFileSystem implements IUserFileSystem {
   private readonly owner: AbstractUser;
@@ -37,7 +37,6 @@ export default class UserFileSystem implements IUserFileSystem {
   getOwner(): AbstractUser {
     return this.owner;
   }
-
 
   async getSize(): Promise<number> {
     return await fastDirectorySize.getDirectorySize(this.getAbsolutePathOnHost());

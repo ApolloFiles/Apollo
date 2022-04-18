@@ -143,6 +143,7 @@ export default class ThumbnailGenerator {
           // });
         }
 
+        // FIXME: Delete cwd when done
         const cwd = Fs.mkdtempSync(Path.join(file.getOwner().getTmpFileSystem().getAbsolutePathOnHost(), 'thumbnail-'));
         const args = ['-i', filePath];
 
@@ -171,21 +172,16 @@ export default class ThumbnailGenerator {
 
           let highestDelta = -1;
           let result: Sharp | null = null;
-          console.debug(cwd);
           for (let i = 0; i < sampleSize; ++i) {
             const pic = sharp(path.join(cwd, `frame${i + 1}.png`));
             const picTrimmedStats = await pic.clone().trim().stats();
 
-            console.debug('picStats.dominant:', picTrimmedStats.dominant);
             const delta = Color.deltaESquared({r: 0, g: 0, b: 0}, picTrimmedStats.dominant) *
                 Color.deltaESquared({r: 255, g: 255, b: 255}, picTrimmedStats.dominant) * (await pic.stats()).entropy;
 
             if (highestDelta == -1 || delta > highestDelta) {
-              console.log('New highest delta:', delta, 'for frame', i + 1);
               highestDelta = delta;
               result = pic;
-            } else {
-              console.log('Discarding frame', i + 1, 'with delta', delta);
             }
           }
 
