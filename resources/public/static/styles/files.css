@@ -36,3 +36,30 @@ table th.fit-column {
 .right-addon input {
     padding-right: 30px;
 }
+
+/* context menu */
+.context-menu {
+    background-color: #fff;
+    border:           1px solid #ccc;
+    box-shadow:       0 2px 4px rgba(0, 0, 0, 0.2);
+    position:         absolute;
+    z-index:          1000;
+    max-width:        30vw;
+    border-radius:    6px;
+}
+
+.context-menu ul {
+    list-style-type: none;
+    margin:          0;
+    padding:         0;
+}
+
+.context-menu li {
+    cursor:        pointer;
+    padding:       3px 20px;
+    border-bottom: 1px solid #ccc;
+}
+
+.context-menu li:hover {
+    background-color: #eee;
+}

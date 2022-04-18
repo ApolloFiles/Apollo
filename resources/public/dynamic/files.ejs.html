@@ -43,5 +43,177 @@
   </div>
 
   <script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    'use strict';
+
+    /** @type {HTMLElement|null} */
+    let currentContextMenuElement = null;
+    /** @type {HTMLElement|null} */
+    let currentContextMenuTargetElement = null;
+
+    document.querySelector('body').addEventListener('click', (e) => {
+      if (currentContextMenuElement == null ||
+          currentContextMenuElement.isEqualNode(e.target) ||
+          currentContextMenuElement.contains(e.target)) {
+        return;
+      }
+
+      e.preventDefault();
+      closeContextMenu();
+    });
+
+    document.getElementById('file-list').addEventListener('contextmenu', (e) => {
+      if (!(e.currentTarget instanceof HTMLElement)) {
+        console.error('e.currentTarget is not an HTMLElement', e.currentTarget);
+        return;
+      }
+
+      /** @type {HTMLElement} */
+      let target = e.target;
+      while (e.currentTarget.contains(target) && !target.classList.contains('file-list-item')) {
+        target = target.parentElement;
+      }
+
+      if (!target.classList.contains('file-list-item')) {
+        console.error('Could not find file-list-item for context menu');
+        return;
+      }
+
+      if (currentContextMenuTargetElement?.isEqualNode(target)) {
+        closeContextMenu();
+        return;
+      }
+
+      e.preventDefault();
+
+      const fileItem = JSON.parse(decodeURI(target.getAttribute('data-file-item')));
+      console.debug(fileItem);
+
+      openContextMenu(target, e.pageX, e.pageY, [
+        {icon: 'open_in_new', text: 'Im neuen Tab öffnen', handler: () => window.open(fileItem.frontendUrl, '_blank')},
+        {
+          icon: 'file_download',
+          text: 'Herunterladen',
+          handler: () => window.open(`${fileItem.frontendUrl}?type=download`, '_blank')
+        },
+        {
+          icon: 'edit', text: 'Umbenennen', handler: () => {
+            const newName = prompt('Neuer Dateiname', fileItem.name);
+
+            if (newName === fileItem.name) {
+              alert('Es wurde ein identischer Name gewählt');
+              return;
+            }
+
+            fetch(window.location.href, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: `action=apollo-rename&value=${encodeURIComponent(fileItem.name)}&newValue=${encodeURIComponent(newName)}`
+            })
+                .then(res => {
+                  if (res.status !== 200) {
+                    throw new Error(`Could not rename file (HTTP-Code ${res.status})`);
+                  }
+
+                  window.location.reload();
+                })
+                .catch(error => {
+                  console.error(error);
+                  alert('Es ist ein Fehler aufgetreten:\n' + error.message);
+                  window.location.reload();
+                });
+          }
+        },
+        {
+          icon: 'delete_outline', text: 'Löschen', handler: () => {
+            fetch(window.location.href, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: `action=apollo-move-to-trash&value=${encodeURIComponent(fileItem.name)}`
+            })
+                .then(res => {
+                  if (res.status !== 200) {
+                    throw new Error(`Could not move file to trash (HTTP-Code ${res.status})`);
+                  }
+
+                  window.location.reload();
+                })
+                .catch(error => {
+                  console.error(error);
+                  alert('Es ist ein Fehler aufgetreten:\n' + error.message);
+                  window.location.reload();
+                });
+          }
+        },
+        // {icon: 'share', text: 'Share with…', handler: console.log},
+        // {icon: 'info', text: 'Eigenschaften', handler: console.log}
+      ]);
+    });
+
+    /**
+     * @param { HTMLElement } target
+     * @param { number } x
+     * @param { number } y
+     * @param { { text: string, icon?: string, handler: (e: MouseEvent) => void }[] } entries
+     */
+    function openContextMenu(target, x, y, entries) {
+      closeContextMenu();
+      currentContextMenuTargetElement = target;
+
+      currentContextMenuElement = document.createElement('div');
+      currentContextMenuElement.classList.add('context-menu');
+      currentContextMenuElement.style.left = `${x}px`;
+      currentContextMenuElement.style.top = `${y}px`;
+
+      const ulElement = document.createElement('ul');
+
+      for (const entry of entries) {
+        const liElement = document.createElement('li');
+
+        liElement.textContent = entry.text;
+
+        if (entry.icon != null) {
+          const iconElement = document.createElement('span');
+
+          iconElement.classList.add('material-icons');
+          iconElement.classList.add('icon-inline');
+          iconElement.textContent = entry.icon;
+
+          liElement.prepend(iconElement);
+        }
+
+        liElement.addEventListener('click', (e) => {
+          try {
+            entry.handler(e);
+          } catch (err) {
+            console.error(err);
+          }
+
+          if (!e.defaultPrevented) {
+            closeContextMenu();
+          }
+        });
+
+        ulElement.appendChild(liElement);
+      }
+
+      currentContextMenuElement.appendChild(ulElement);
+      document.querySelector('body').appendChild(currentContextMenuElement);
+    }
+
+    function closeContextMenu() {
+      currentContextMenuTargetElement = null;
+
+      if (currentContextMenuElement != null) {
+        currentContextMenuElement.remove();
+        currentContextMenuElement = null;
+      }
+    }
+  </script>
 </body>
 </html>
