@@ -118,7 +118,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
       lastChanged: innerFileStat.mtime,
       size: Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string)),
 
-      frontendUrl: Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()))
+      frontendUrl: Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()), innerFileStat.isDirectory() ? '/' : '')
     });
     // responseStr += `<li><a class="${innerFileStat.isFile() ? 'hoverable' : ''}" href="${}">${innerFile.getName()}</a> (${innerFileStat.isFile() ? innerFileMimeType : 'Directory'}; ${Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string))})<div class="hover-box"><img width="256px" height="256px" ${innerFileStat.isFile() ? '' : 'disabled-'}src="${Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()))}?type=thumbnail"></div></li>`;
   }
