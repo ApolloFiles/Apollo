@@ -9,13 +9,15 @@ import FileSearchPostActionHandler from './PostActionHandler/FileSearchPostActio
 import FileUploadPostActionHandler from './PostActionHandler/FileUploadPostActionHandler';
 import IPostActionHandler from './PostActionHandler/IPostActionHandler';
 import MoveToTrashPostActionHandler from './PostActionHandler/MoveToTrashPostActionHandler';
+import RenamePostActionHandler from './PostActionHandler/RenamePostActionHandler';
 
 const postActionHandlers: IPostActionHandler[] = [
   new CreateFilePostActionHandler(false),
   new CreateFilePostActionHandler(true),
   new MoveToTrashPostActionHandler(),
   new FileUploadPostActionHandler(),
-  new FileSearchPostActionHandler()
+  new FileSearchPostActionHandler(),
+  new RenamePostActionHandler()
 ];
 
 export function filesHandlePost(req: express.Request, res: express.Response, type: 'browse' | 'trash'): () => Promise<void> {
@@ -32,7 +34,7 @@ export function filesHandlePost(req: express.Request, res: express.Response, typ
       return;
     }
 
-    await WebServer.runMiddleware(req, res, express.urlencoded({parameterLimit: 2, extended: false}));
+    await WebServer.runMiddleware(req, res, express.urlencoded({parameterLimit: 3, extended: false}));
     if (req.header('Content-Type')?.indexOf('multipart/form-data') != -1) {
       await WebServer.runMiddleware(req, res, expressFileUpload({
         abortOnLimit: true,
@@ -44,13 +46,14 @@ export function filesHandlePost(req: express.Request, res: express.Response, typ
 
     const postAction = req.body.action;
     const postValue = req.body.value;
+    const postNewValue = req.body.newValue;
 
     const filePath = postValue ? Path.join(decodeURI(req.path), postValue) : null;
     const file = filePath ? fileSystem.getFile(filePath) : null;
 
     for (const postActionHandler of postActionHandlers) {
       if (postActionHandler.getActionKey() == postAction) {
-        await postActionHandler.handle(req, res, user, file, postValue);
+        await postActionHandler.handle(req, res, user, file, postValue, postNewValue);
         return;
       }
     }

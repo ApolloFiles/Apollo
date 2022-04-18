@@ -7,8 +7,8 @@ import IUserFile from './IUserFile';
 import IUserFileWriteable from './IUserFileWriteable';
 
 export default class UserFileWriteable implements IUserFileWriteable {
-  private readonly req: express.Request;
-  private readonly userFile: IUserFile;
+  protected readonly req: express.Request;
+  protected readonly userFile: IUserFile;
 
   constructor(req: express.Request, userFile: IUserFile) {
     this.req = req;
@@ -37,6 +37,17 @@ export default class UserFileWriteable implements IUserFileWriteable {
     }
 
     await Fs.promises.mkdir(filePath, options);
+  }
+
+  async move(destination: IUserFileWriteable): Promise<void> {
+    const srcPath = this.userFile.getAbsolutePathOnHost();
+    const destPath = destination.getUserFile().getAbsolutePathOnHost();
+
+    if (srcPath == null || destPath == null) {
+      throw new Error(`Path cannot be null (src="${srcPath}",dest="${destPath}")`);
+    }
+
+    return Fs.promises.rename(srcPath, destPath);
   }
 
   async moveToTrashBin(): Promise<void> {
@@ -110,5 +121,9 @@ export default class UserFileWriteable implements IUserFileWriteable {
     }
 
     await Fs.promises.rm(filePath, options);
+  }
+
+  getUserFile(): IUserFile {
+    return this.userFile;
   }
 }
