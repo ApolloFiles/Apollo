@@ -312,7 +312,6 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
   //     `` +
   //     `<form method="post"><input name="action" type="hidden" value="${new CreateFilePostActionHandler(false).getActionKey()}"><input name="value" placeholder="Dateiname" type="text" required><button type="submit">Create file</button></form>` +
   //     `<form method="post"><input name="action" type="hidden" value="${new CreateFilePostActionHandler(true).getActionKey()}"><input name="value" placeholder="Ordnername" type="text" required><button type="submit">Create directory</button></form>` +
-  //     `<form method="post"><input name="action" type="hidden" value="${new MoveToTrashPostActionHandler().getActionKey()}"><input name="value" placeholder="Dateiname" type="text" required><button type="submit">Move to trash</button></form>` +
   //     `<form method="post" enctype="multipart/form-data"><input name="action" type="hidden" value="${new FileUploadPostActionHandler().getActionKey()}"><input name="value" type="file" required multiple><button type="submit">Upload file</button></form>` +
   //     '<ul>';
 }

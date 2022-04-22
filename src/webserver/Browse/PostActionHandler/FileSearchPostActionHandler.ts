@@ -11,7 +11,7 @@ export default class FileSearchPostActionHandler implements IPostActionHandler {
     return 'apollo-search';
   }
 
-  async handle(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, postValue: string): Promise<void> {
+  async handle(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, frontendType: 'browse' | 'trash', postValue: string): Promise<void> {
     if (file == null) {
       res.status(400)
           .type('text/plain')

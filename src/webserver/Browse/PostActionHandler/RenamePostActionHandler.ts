@@ -9,7 +9,7 @@ export default class RenamePostActionHandler implements IPostActionHandler {
     return 'apollo-rename';
   }
 
-  async handle(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, postValue: string, newPostValue: string): Promise<void> {
+  async handle(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, frontendType: 'browse' | 'trash', postValue: string, newPostValue: string): Promise<void> {
     if (file == null) {
       res.status(400)
           .type('text/plain')

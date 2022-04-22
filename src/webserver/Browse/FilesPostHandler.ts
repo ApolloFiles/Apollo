@@ -1,29 +1,27 @@
 import express from 'express';
 import expressFileUpload from 'express-fileupload';
 import Path from 'path';
-import AbstractUser from '../../AbstractUser';
-import IUserFile from '../../files/IUserFile';
 import WebServer from '../WebServer';
 import CreateFilePostActionHandler from './PostActionHandler/CreateFilePostActionHandler';
 import FileSearchPostActionHandler from './PostActionHandler/FileSearchPostActionHandler';
 import FileUploadPostActionHandler from './PostActionHandler/FileUploadPostActionHandler';
 import IPostActionHandler from './PostActionHandler/IPostActionHandler';
-import MoveToTrashPostActionHandler from './PostActionHandler/MoveToTrashPostActionHandler';
+import DeleteFilePostActionHandler from './PostActionHandler/DeleteFilePostActionHandler';
 import RenamePostActionHandler from './PostActionHandler/RenamePostActionHandler';
 
 const postActionHandlers: IPostActionHandler[] = [
   new CreateFilePostActionHandler(false),
   new CreateFilePostActionHandler(true),
-  new MoveToTrashPostActionHandler(),
+  new DeleteFilePostActionHandler(),
   new FileUploadPostActionHandler(),
   new FileSearchPostActionHandler(),
   new RenamePostActionHandler()
 ];
 
-export function filesHandlePost(req: express.Request, res: express.Response, type: 'browse' | 'trash'): () => Promise<void> {
+export function filesHandlePost(req: express.Request, res: express.Response, frontendType: 'browse' | 'trash'): () => Promise<void> {
   return async () => {
     const user = WebServer.getUser(req);
-    const fileSystem = user.getDefaultFileSystem();
+    const fileSystem = frontendType == 'browse' ? user.getDefaultFileSystem() : user.getTrashBinFileSystem();
 
     if (req.header('Content-Type') != 'multipart/form-data' &&
         !req.header('Content-Type')?.startsWith('multipart/form-data;') &&
@@ -53,7 +51,7 @@ export function filesHandlePost(req: express.Request, res: express.Response, typ
 
     for (const postActionHandler of postActionHandlers) {
       if (postActionHandler.getActionKey() == postAction) {
-        await postActionHandler.handle(req, res, user, file, postValue, postNewValue);
+        await postActionHandler.handle(req, res, user, file, frontendType, postValue, postNewValue);
         return;
       }
     }
@@ -62,7 +60,4 @@ export function filesHandlePost(req: express.Request, res: express.Response, typ
         .type('text/plain')
         .send(`Action '${postAction}' is not supported`);
   };
-}
-
-async function handleActionFileUpload(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, postValue: string): Promise<void> {
 }
