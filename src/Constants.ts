@@ -1,5 +1,6 @@
 import { ConfigFile } from '@spraxdev/node-commons';
 import Fs from 'fs';
+import Os from 'os';
 import Path from 'path';
 import FileTypeUtils from './FileTypeUtils';
 import { ApolloConfig } from './global';
@@ -9,12 +10,8 @@ const IS_PRODUCTION = process.env.NODE_ENV?.toLowerCase() === 'production';
 let fileTypeUtils: FileTypeUtils;
 let fileNameCollator: Intl.Collator;
 
-const APP_ROOT = Path.resolve(__dirname, '../');
-const WORKING_DIR_ROOT = Path.resolve('/home/christian/Downloads/.Apollo-Backend/');
-
-if (!Fs.existsSync(WORKING_DIR_ROOT)) {
-  Fs.mkdirSync(WORKING_DIR_ROOT);
-}
+const APP_ROOT = Path.resolve(Path.dirname(__dirname));
+const WORKING_DIR_ROOT = determineDefaultWorkingRoot();
 
 let cfg: ConfigFile<ApolloConfig>;
 
@@ -84,4 +81,19 @@ export function getFileNameCollator(): Intl.Collator {
   }
 
   return fileNameCollator;
+}
+
+function determineDefaultWorkingRoot(): string {
+  let workingRoot = process.env.APOLLO_WORKING_ROOT;
+
+  if (workingRoot == null || workingRoot.length === 0) {
+    workingRoot = Path.join(Os.homedir(), 'ApolloFiles', Path.sep);
+    console.warn(`Environment variable 'APOLLO_WORKING_ROOT' not set. Using default: ${workingRoot}`);
+  }
+
+  workingRoot = Path.resolve(workingRoot) + Path.sep;
+
+  Fs.mkdirSync(workingRoot, {recursive: true});
+
+  return workingRoot;
 }
