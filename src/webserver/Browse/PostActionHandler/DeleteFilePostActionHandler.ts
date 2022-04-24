@@ -24,7 +24,7 @@ export default class DeleteFilePostActionHandler implements IPostActionHandler {
 
     await file.getFileSystem().acquireLock(req, file, async (writeableFile) => {
       if (await file.exists()) {
-        await writeableFile.deleteIgnoringTrashBin();
+        await writeableFile.deleteIgnoringTrashBin({recursive: true});  // TODO: Client should send recursive true/false to make sure a directory is deleted only when a directory is expected
 
         res.status(200)
             .type('text/plain')
