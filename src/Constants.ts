@@ -48,23 +48,23 @@ export function getWorkingRoot(): string {
 }
 
 export function getAppConfigDir(): string {
-  return Path.join(getWorkingRoot(), 'config');
+  return Path.join(getWorkingRoot(), 'config', Path.sep);
 }
 
 export function getAppResourcesDir(): string {
-  return Path.join(APP_ROOT, 'resources');
+  return Path.join(APP_ROOT, 'resources', Path.sep);
 }
 
 export function getUserStorageRoot(): string {
-  return Path.join(getWorkingRoot(), 'user-storage');
+  return Path.join(getWorkingRoot(), 'user-storage', Path.sep);
 }
 
 export function getAppTmpDir(): string {
-  return Path.join(getWorkingRoot(), 'tmp', 'app');
+  return Path.join(getWorkingRoot(), 'tmp', 'app', Path.sep);
 }
 
 export function getUserStorageTmpRoot(): string {
-  return Path.join(getWorkingRoot(), 'tmp', 'user-storage');
+  return Path.join(getWorkingRoot(), 'tmp', 'user-storage', Path.sep);
 }
 
 export function getFileTypeUtils(): FileTypeUtils {
