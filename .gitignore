@@ -5,6 +5,7 @@
 # npm and other dependencies
 /node_modules/
 /coverage/
+/reports/
 
 
 # JetBrains IDEs
