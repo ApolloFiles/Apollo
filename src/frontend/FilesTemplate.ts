@@ -14,11 +14,14 @@ export type FileIcon =
     | 'picture_as_pdf'
     | 'video_file';
 
+export type BreadcrumbItem = { name: string, frontendUrl: string };
+
 export interface FilesTemplateData {
   lastFavoriteFiles: { favorite: true, icon: FileIcon, title: string, subtitle: string | null, previewImg: { src: string, alt: string } }[];
   recentFiles: { favorite: boolean, icon: FileIcon, title: string, subtitle: string | null, previewImg: { src: string, alt: string } }[];
   banners: { type: 'info' | 'success' | 'warning' | 'error', msg: string, dismissible: boolean }[];
   files: { icon: FileIcon, name: string, owner: string, lastChanged: Date, size: string | null, mimeType: string | null, frontendUrl: string }[];
+  breadcrumbs: BreadcrumbItem[];
 }
 
 export class FilesTemplate extends AbstractTemplate {

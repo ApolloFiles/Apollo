@@ -3,8 +3,8 @@ import * as NodeStream from 'node:stream';
 import * as Path from 'path';
 import AbstractUser from '../AbstractUser';
 import { getFileTypeUtils } from '../Constants';
-import IUserFile from './IUserFile';
 import IUserFileSystem from './filesystems/IUserFileSystem';
+import IUserFile from './IUserFile';
 
 export default class UserFile implements IUserFile {
   private readonly userFileSystem: IUserFileSystem;

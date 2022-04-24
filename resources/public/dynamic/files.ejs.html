@@ -6,7 +6,8 @@
     const validLocals = Array.isArray(locals.lastFavoriteFiles) && locals.lastFavoriteFiles.length <= 6 &&
                         Array.isArray(locals.recentFiles) && locals.recentFiles.length <= 6 &&
                         Array.isArray(locals.banners) &&
-                        Array.isArray(locals.files);
+                        Array.isArray(locals.files) &&
+                        Array.isArray(locals.breadcrumbs);
 
     if (!validLocals) {
       throw new Error('Invalid locals passed to files.ejs.html');
@@ -37,7 +38,7 @@
       <!-- @formatter:off -->
       <%- include('/dynamic/html-modules/files/content-favorites.ejs.html', {lastFavoriteFiles: locals.lastFavoriteFiles}); %>
       <%- include('/dynamic/html-modules/files/content-recent-files.ejs.html', {recentFiles: locals.recentFiles}); %>
-      <%- include('/dynamic/html-modules/files/content-file-list.ejs.html', {files: locals.files}); %>
+      <%- include('/dynamic/html-modules/files/content-file-list.ejs.html', {files: locals.files, breadcrumbs: locals.breadcrumbs }); %>
       <!-- @formatter:on -->
     </div>
   </div>

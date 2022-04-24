@@ -1,11 +1,11 @@
 import * as Archiver from 'archiver';
 import express from 'express';
 import * as fastDirectorySize from 'fast-directory-size';
-import Path from 'path';
 import AbstractUser from '../../AbstractUser';
 import { getFileNameCollator } from '../../Constants';
 import IUserFile from '../../files/IUserFile';
-import { FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
+import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
+import UrlBuilder from '../../frontend/UrlBuilder';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
 import WebServer from '../WebServer';
@@ -165,7 +165,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
       size: Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string)),
       mimeType: innerFileMimeType,
 
-      frontendUrl: Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()), innerFileStat.isDirectory() ? '/' : '')
+      frontendUrl: await UrlBuilder.buildUrl(innerFile, innerFileStat)
     });
     // responseStr += `<li><a class="${innerFileStat.isFile() ? 'hoverable' : ''}" href="${}">${innerFile.getName()}</a> (${innerFileStat.isFile() ? innerFileMimeType : 'Directory'}; ${Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string))})<div class="hover-box"><img width="256px" height="256px" ${innerFileStat.isFile() ? '' : 'disabled-'}src="${Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()))}?type=thumbnail"></div></li>`;
   }
@@ -304,7 +304,8 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
             banners: [
               {type: 'info', msg: `Aktueller Gesamtverbrauch: ${totalStorageUsage}`, dismissible: false}
             ],
-            files: filesToRender
+            files: filesToRender,
+            breadcrumbs: await generateBreadcrumbs(file)
           }
       ));
 
@@ -377,4 +378,34 @@ async function handleFileRequest(req: express.Request, res: express.Response, us
   }
 
   fileReadStream.pipe(res);
+}
+
+async function generateBreadcrumbs(file: IUserFile): Promise<BreadcrumbItem[]> {
+  const path = file.getPath();
+  const pathArgs = file.getPath().split('/');
+
+  if (path.charAt(0) == '/') {
+    pathArgs.shift();
+  }
+
+  if (path.charAt(path.length - 1) == '/') {
+    pathArgs.pop();
+  }
+
+  const result: BreadcrumbItem[] = [{
+    name: 'root',
+    frontendUrl: await UrlBuilder.buildUrl(file.getFileSystem().getFile('/'))
+  }];
+
+  let currPath = '/';
+  for (const arg of pathArgs) {
+    currPath += arg + '/';
+
+    result.push({
+      name: arg,
+      frontendUrl: await UrlBuilder.buildUrl(file.getFileSystem().getFile(currPath))
+    });
+  }
+
+  return result;
 }

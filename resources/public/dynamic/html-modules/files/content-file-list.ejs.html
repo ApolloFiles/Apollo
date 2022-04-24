@@ -1,6 +1,7 @@
 <!-- @formatter:off -->
 <%
-const validLocals = Array.isArray(locals.files);
+const validLocals = Array.isArray(locals.files) &&
+                    Array.isArray(locals.breadcrumbs);
 
 if (!validLocals) {
   throw new Error('Invalid locals passed to content-file-list.ejs.html');
@@ -9,6 +10,36 @@ if (!validLocals) {
 <!-- @formatter:on -->
 
 <h1>Dateien</h1>
+<nav class="breadcrumb-nav" aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <!-- @formatter:off -->
+    <%
+    for (let i = 0; i < locals.breadcrumbs.length; ++i) {
+      const item = locals.breadcrumbs[i];
+
+      if (i == 0) {
+    %>
+        <li class="breadcrumb-item">
+          <a href="<%= item.frontendUrl %>"><img src="/logo.svg" style="width: 1.5rem;"></a>  <!-- TODO: make logo monochrome -->
+        </li>
+    <%
+        continue;
+      }
+
+      if(i == locals.breadcrumbs.length - 1) {
+      %>
+        <li class="breadcrumb-item active" aria-current="page"><%= item.name %></li>
+      <%
+        continue;
+      }
+    %>
+      <li class="breadcrumb-item"><a href="<%= item.frontendUrl %>"><%= item.name %></a></li>
+    <%
+    }
+    %>
+    <!-- @formatter:on -->
+  </ol>
+</nav>
 
 <table id="file-list" class="table table-responsive table-hover">
   <% if (locals.files.length <= 0) { %>
