@@ -59,3 +59,15 @@ describe('#prettifyFileSize', () => {
     expect(() => Utils.prettifyFileSize('10' as any, true)).toThrowError(expectedErrorMessage);
   });
 });
+
+describe('#tryReplacingBadCharactersForFileName', () => {
+  test('With valid characters', () => {
+    const validCharacters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!§$%&()[]=`´+#-_.,;~+^°';
+
+    expect(Utils.tryReplacingBadCharactersForFileName(validCharacters)).toBe(validCharacters);
+  });
+
+  test.each(['\\', '/', '?', '*', '|', ':', '<', '>', '"'])('With invalid character: %s', (invalidCharacter) => {
+    expect(Utils.tryReplacingBadCharactersForFileName('abc123_' + invalidCharacter)).toBe('abc123__');
+  });
+});
