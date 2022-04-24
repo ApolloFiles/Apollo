@@ -1,7 +1,7 @@
 import Ejs from 'ejs';
 import Fs from 'fs';
 import Path from 'path';
-import { getAppResourcesDir, IS_PRODUCTION } from '../Constants';
+import { getAppResourcesDir, isProduction } from '../Constants';
 
 export abstract class AbstractTemplate {
   protected static instance: AbstractTemplate;
@@ -27,7 +27,7 @@ export abstract class AbstractTemplate {
       strict: true,
       filename: this.ejsFilePath,
       root: Path.join(getAppResourcesDir(), 'public'),
-      cache: IS_PRODUCTION,
+      cache: isProduction(),
       beautify: false,
       rmWhitespace: false
 
@@ -38,7 +38,7 @@ export abstract class AbstractTemplate {
   }
 
   protected getTemplateContents(): string {
-    if (this.ejsFileContent == null || IS_PRODUCTION) {
+    if (this.ejsFileContent == null || isProduction()) {
       this.ejsFileContent = Fs.readFileSync(this.ejsFilePath, 'utf8');
     }
 

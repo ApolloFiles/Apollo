@@ -4,7 +4,7 @@ import Path from 'path';
 import FileTypeUtils from './FileTypeUtils';
 import { ApolloConfig } from './global';
 
-export const IS_PRODUCTION = process.env.NODE_ENV?.toLowerCase() === 'production';
+const IS_PRODUCTION = process.env.NODE_ENV?.toLowerCase() === 'production';
 
 let fileTypeUtils: FileTypeUtils;
 let fileNameCollator: Intl.Collator;
@@ -17,6 +17,10 @@ if (!Fs.existsSync(WORKING_DIR_ROOT)) {
 }
 
 let cfg: ConfigFile<ApolloConfig>;
+
+export function isProduction(): boolean {
+  return IS_PRODUCTION;
+}
 
 export function getConfig(): ConfigFile<ApolloConfig> {
   if (cfg == null) {
