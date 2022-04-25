@@ -4,13 +4,20 @@ import * as MimeType from 'mime-types';
 export default class FileTypeUtils {
   protected useFileApp: boolean;
 
-  constructor() {
-    this.useFileApp = FileTypeUtils.isFileAppAvailable();
+  /**
+   * @param useFileApp undefined checks if `file` is available on the system and uses it if it is.
+   */
+  constructor(useFileApp?: boolean) {
+    this.useFileApp = useFileApp ?? FileTypeUtils.isFileAppAvailable();
   }
 
   // TODO: add support für path array
   async getMimeType(path: string): Promise<string | null> {
-    let fileMimeType = await this.getMimeTypeFromFileApp(path);
+    let fileMimeType: string | null = null;
+
+    if (this.useFileApp) {
+      fileMimeType = await this.getMimeTypeFromFileApp(path);
+    }
 
     if (fileMimeType == null || fileMimeType == 'inode/x-empty') {
       const lookUpByExtension = MimeType.lookup(path);
@@ -58,7 +65,7 @@ export default class FileTypeUtils {
     });
   }
 
-  protected static isFileAppAvailable(): boolean {
+  static isFileAppAvailable(): boolean {
     const fileProcess = ChildProcess.spawnSync('file', ['--version']);
 
     if (fileProcess.error) {

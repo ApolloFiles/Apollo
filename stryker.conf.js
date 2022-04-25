@@ -9,5 +9,5 @@ module.exports = {
 
   reporters: ['html', 'clear-text', 'progress'],
   coverageAnalysis: 'perTest',
-  mutate: ['src/Utils.ts', 'src/Constants.ts', 'src/FileSearch.ts']  // FIXME: This is a temporary workaround
+  mutate: ['src/Utils.ts', 'src/Constants.ts', 'src/FileSearch.ts', 'src/FileTypeUtils.ts']  // FIXME: This is a temporary workaround
 };
