@@ -11,7 +11,7 @@ export default interface IUserFileSystem {
 
   getSize(): Promise<number>;
 
-  acquireLock(req: express.Request, file: IUserFile, action: (file: IUserFileWriteable) => void): Promise<void>;
+  acquireLock(req: express.Request, file: IUserFile, action: (file: IUserFileWriteable) => void | Promise<void>): Promise<void>;
 
   getAbsolutePathOnHost(): string;
 }
