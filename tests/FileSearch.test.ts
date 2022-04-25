@@ -1,5 +1,4 @@
 import AbstractUser from '../src/AbstractUser';
-import IUserFileSystem from '../src/files/filesystems/IUserFileSystem';
 import FileSearch from '../src/FileSearch';
 import UserStorage from '../src/UserStorage';
 import TestHelper from './TestHelper';
@@ -9,12 +8,12 @@ describe('Test file search', () => {
   beforeAll(async () => {
     user = await new UserStorage().createUser('Jester');
 
-    await TestHelper.createEmptyFile('/img1.png', user.getDefaultFileSystem());
-    await TestHelper.createEmptyFile('/img2.png', user.getDefaultFileSystem());
-    await TestHelper.createEmptyFile('/img3.png', user.getDefaultFileSystem());
-    await TestHelper.createEmptyFile('/dir1/dir2/img4.png', user.getDefaultFileSystem());
+    await TestHelper.createFile(user.getDefaultFileSystem(), '/img1.png');
+    await TestHelper.createFile(user.getDefaultFileSystem(), '/img2.png');
+    await TestHelper.createFile(user.getDefaultFileSystem(), '/img3.png');
+    await TestHelper.createFile(user.getDefaultFileSystem(), '/dir1/dir2/img4.png');
 
-    await TestHelper.createEmptyFile('/dir1/dir2/img5.png', user.getTrashBinFileSystem());
+    await TestHelper.createFile(user.getTrashBinFileSystem(), '/dir1/dir2/img5.png');
   });
 
   test.each(['.png', 'png', 'img'])('Test file search in default file system for %O', async (query) => {

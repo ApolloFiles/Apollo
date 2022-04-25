@@ -45,7 +45,7 @@ describe('', () => {
 
   test('existing file', async () => {
     const fileSystem = user.getDefaultFileSystem();
-    await TestHelper.createEmptyFile('/test.txt', fileSystem);
+    await TestHelper.createFile(fileSystem, '/test.txt');
     const fileSystemRoot = fileSystem.getFile('/test.txt');
 
     await expect(fileSystemRoot.isDirectory()).resolves.toBe(false);
