@@ -3,10 +3,9 @@ import expressFileUpload from 'express-fileupload';
 import Path from 'path';
 import WebServer from '../WebServer';
 import CreateFilePostActionHandler from './PostActionHandler/CreateFilePostActionHandler';
-import FileSearchPostActionHandler from './PostActionHandler/FileSearchPostActionHandler';
+import DeleteFilePostActionHandler from './PostActionHandler/DeleteFilePostActionHandler';
 import FileUploadPostActionHandler from './PostActionHandler/FileUploadPostActionHandler';
 import IPostActionHandler from './PostActionHandler/IPostActionHandler';
-import DeleteFilePostActionHandler from './PostActionHandler/DeleteFilePostActionHandler';
 import RenamePostActionHandler from './PostActionHandler/RenamePostActionHandler';
 
 const postActionHandlers: IPostActionHandler[] = [
@@ -14,7 +13,6 @@ const postActionHandlers: IPostActionHandler[] = [
   new CreateFilePostActionHandler(true),
   new DeleteFilePostActionHandler(),
   new FileUploadPostActionHandler(),
-  new FileSearchPostActionHandler(),
   new RenamePostActionHandler()
 ];
 

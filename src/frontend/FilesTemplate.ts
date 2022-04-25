@@ -1,3 +1,4 @@
+import express from 'express';
 import Path from 'path';
 import { getAppResourcesDir } from '../Constants';
 import { AbstractTemplate } from './AbstractTemplate';
@@ -29,7 +30,10 @@ export class FilesTemplate extends AbstractTemplate {
     super(`apollo:files:${frontendType}`, Path.join(getAppResourcesDir(), 'public', 'dynamic', 'files.ejs.html'));
   }
 
-  render(data: FilesTemplateData): string {
-    return super.renderEjs({...data, global: {templateId: this.templateId}});
+  render(req: express.Request, data: FilesTemplateData): string {
+    return super.renderEjs({
+      ...data,
+      global: {templateId: this.templateId, req: {body: req.method === 'GET' ? req.query : req.body ?? {}}}
+    });
   }
 }

@@ -12,12 +12,12 @@ if (!validLocals) {
 <div id="content-header">
   <div class="row">
     <div class="col" style="padding-top: 10px; max-width: 55%">
-      <form method="post">
+      <form method="get">
         <div class="inner-addon left-addon">
           <span class="material-icons">search</span>
-          <input type="text" name="value" style="background-color: #f1f3f4" class="rounded-pill form-control"
+          <input name="type" type="hidden" value="search">
+          <input type="text" name="search" value="<%= locals.global.req.body.search %>" style="background-color: #f1f3f4" class="rounded-pill form-control"
                  placeholder="Dateien durchsuchen" aria-label="Dateien durchsuchen" required>
-          <input name="action" type="hidden" value="apollo-search">
         </div>
       </form>
     </div>

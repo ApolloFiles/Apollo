@@ -4,14 +4,15 @@ import * as fastDirectorySize from 'fast-directory-size';
 import AbstractUser from '../../AbstractUser';
 import { getFileNameCollator } from '../../Constants';
 import IUserFile from '../../files/IUserFile';
+import FileSearch from '../../FileSearch';
 import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
 import UrlBuilder from '../../frontend/UrlBuilder';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
 import WebServer from '../WebServer';
 
-type FileRequestType = 'thumbnail' | 'download';
-const allowedFileRequestTypes = ['thumbnail', 'download'];  // Needs to be identical to FileRequestType
+type FileRequestType = 'thumbnail' | 'download' | 'search';
+const allowedFileRequestTypes = ['thumbnail', 'download', 'search'];  // Needs to be identical to FileRequestType
 
 export function filesHandleGet(req: express.Request, res: express.Response, frontendType: 'browse' | 'trash'): () => Promise<void> {
   return async () => {
@@ -40,7 +41,7 @@ export function filesHandleGet(req: express.Request, res: express.Response, fron
       await fileSystem.acquireLock(req, file, (writeableFile) => writeableFile.mkdir({recursive: true}));
     }
 
-    const wantsThumbnail = req.query.type === 'thumbnail';
+    const wantsThumbnail = fileRequestType === 'thumbnail';
 
     if (await file.isDirectory()) {
       if (wantsThumbnail) {
@@ -76,6 +77,18 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
     return;
   }
 
+  if (fileRequestType === 'search') {
+    if (typeof req.query.search != 'string' || req.query.search.length == 0) {
+      res.status(400)
+          .send('Invalid search query');
+      return;
+    }
+
+    const searchResult = await FileSearch.searchFile(file, req.query.search);
+    await sendDirectoryView(req, res, type, null, searchResult);
+    return;
+  }
+
   if (fileRequestType === 'download') {
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(file.getName())}.zip"`);
@@ -108,6 +121,10 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
   console.debug(`User '${user.getDisplayName()}' requested directory '${file.getPath()}'`);
 
   const files = await file.getFiles();
+  await sendDirectoryView(req, res, type, file, files);
+}
+
+async function sendDirectoryView(req: express.Request, res: express.Response, type: 'browse' | 'trash', requestedFile: IUserFile | null, files: IUserFile[]): Promise<void> {
   const directoryFiles: IUserFile[] = [];
   for (const innerFile of files) {
     if (await innerFile.isDirectory()) {
@@ -170,10 +187,10 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
     // responseStr += `<li><a class="${innerFileStat.isFile() ? 'hoverable' : ''}" href="${}">${innerFile.getName()}</a> (${innerFileStat.isFile() ? innerFileMimeType : 'Directory'}; ${Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string))})<div class="hover-box"><img width="256px" height="256px" ${innerFileStat.isFile() ? '' : 'disabled-'}src="${Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()))}?type=thumbnail"></div></li>`;
   }
 
-  const totalStorageUsage = Utils.prettifyFileSize(await file.getFileSystem().getSize());
+  const totalStorageUsage = requestedFile ? Utils.prettifyFileSize(await requestedFile.getFileSystem().getSize()) : -1;
 
   res.type('text/html')
-      .send(new FilesTemplate(type).render(
+      .send(new FilesTemplate(type).render(req,
           {
             // lastFavoriteFiles: [
             //   {
@@ -301,11 +318,11 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
 
             lastFavoriteFiles: [],
             recentFiles: [],
-            banners: [
+            banners: totalStorageUsage >= 0 ? [
               {type: 'info', msg: `Aktueller Gesamtverbrauch: ${totalStorageUsage}`, dismissible: false}
-            ],
+            ] : [],
             files: filesToRender,
-            breadcrumbs: await generateBreadcrumbs(file)
+            breadcrumbs: requestedFile ? await generateBreadcrumbs(requestedFile) : []
           }
       ));
 
@@ -318,6 +335,12 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
 }
 
 async function handleFileRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile, fileRequestType?: FileRequestType): Promise<void> {
+  if (fileRequestType == 'search') {
+    res.status(400)
+        .type('text/plain')
+        .send('Search not available when requesting a file');
+  }
+
   if (fileRequestType == 'thumbnail') {
     const start = process.hrtime();
     const thumbnail = await new ThumbnailGenerator().generateThumbnail(file);

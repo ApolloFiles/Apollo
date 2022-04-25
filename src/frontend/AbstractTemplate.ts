@@ -1,4 +1,5 @@
 import Ejs from 'ejs';
+import express from 'express';
 import Fs from 'fs';
 import Path from 'path';
 import { getAppResourcesDir, isProduction } from '../Constants';
@@ -18,9 +19,9 @@ export abstract class AbstractTemplate {
     this.ejsFilePath = ejsFilePath;
   }
 
-  public abstract render(data?: any): string;
+  public abstract render(req: express.Request, data?: any): string;
 
-  protected renderEjs(data: object & { global: { templateId: string } }): string {
+  protected renderEjs(data: object & { global: { templateId: string, req: { body: { [key: string]: unknown } } } }): string {
     Object.freeze(data.global);
 
     return Ejs.render(this.getTemplateContents(), data, {
