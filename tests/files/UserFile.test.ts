@@ -43,8 +43,6 @@ describe('', () => {
     await expect(fileSystemRoot.stat()).resolves.toEqual(Fs.statSync(absolutePathOnHost as string));
   });
 
-  // TODO: #stat
-
   test('existing file', async () => {
     const fileSystem = user.getDefaultFileSystem();
     await TestHelper.createEmptyFile('/test.txt', fileSystem);

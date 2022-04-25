@@ -1,6 +1,7 @@
 import { Mutex } from 'async-mutex';
 import express from 'express';
 import * as fastDirectorySize from 'fast-directory-size';
+import Fs from 'fs';
 import * as Path from 'path';
 import AbstractUser from '../../AbstractUser';
 import IUserFile from '../IUserFile';
@@ -17,12 +18,21 @@ export default class UserFileSystem implements IUserFileSystem {
   private readonly fileLockMutex: Mutex = new Mutex();
 
   constructor(owner: AbstractUser, rootOnHost: string) {
-    this.owner = owner;
-
     if (!Path.isAbsolute(rootOnHost)) {
       throw new Error('rootOnHost must be an absolute path');
     }
 
+    const rootOnHostExists = Fs.existsSync(rootOnHost);
+    const rootOnHostIsDirectory = !rootOnHostExists || Fs.lstatSync(rootOnHost).isDirectory();
+
+    if (rootOnHostExists && !rootOnHostIsDirectory) {
+      throw new Error(`The given 'rootOnHost' already exists and is not a directory`);
+    }
+    if (!rootOnHostExists) {
+      Fs.mkdirSync(rootOnHost, {recursive: true});
+    }
+
+    this.owner = owner;
     this.rootOnHost = rootOnHost;
   }
 
