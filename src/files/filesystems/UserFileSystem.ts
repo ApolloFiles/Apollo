@@ -22,6 +22,8 @@ export default class UserFileSystem implements IUserFileSystem {
       throw new Error('rootOnHost must be an absolute path');
     }
 
+    rootOnHost = Path.normalize(rootOnHost);
+
     const rootOnHostExists = Fs.existsSync(rootOnHost);
     const rootOnHostIsDirectory = !rootOnHostExists || Fs.lstatSync(rootOnHost).isDirectory();
 
@@ -33,7 +35,7 @@ export default class UserFileSystem implements IUserFileSystem {
     }
 
     this.owner = owner;
-    this.rootOnHost = rootOnHost;
+    this.rootOnHost = rootOnHost + Path.sep;
   }
 
   getFile(path: string): IUserFile {

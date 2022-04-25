@@ -11,8 +11,19 @@ export default class UserFile implements IUserFile {
   private readonly path: string;
 
   constructor(userFileSystem: IUserFileSystem, path: string) {
+    if (!Path.isAbsolute(path)) {
+      throw new Error('Path must be absolute');
+    }
+
+    path = Path.normalize(path);
+
     this.userFileSystem = userFileSystem;
     this.path = path;
+
+    // This should be impossible as we join two absolute paths but just in case something goes extremely wrong in the future
+    if (!this.getAbsolutePathOnHost().startsWith(userFileSystem.getAbsolutePathOnHost())) {
+      throw new Error('Path must be inside the user file system');
+    }
   }
 
   getName(): string {
