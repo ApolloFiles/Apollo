@@ -14,9 +14,11 @@ describe('Constructor input validation', () => {
     expect(() => new UserFileSystem(user, 'test')).toThrowError('rootOnHost must be an absolute path');
   });
 
-  test('Instantiate with absolute path', () => {
+  test('Instantiate with absolute path', async () => {
     expect(() => new UserFileSystem(user, user.getDefaultFileSystem().getAbsolutePathOnHost())).not.toThrowError();
-    expect(() => new UserFileSystem(user, Path.join(user.getDefaultFileSystem().getAbsolutePathOnHost(), 'non-existing'))).not.toThrowError();
+
+    const fileSystem = new UserFileSystem(user, Path.join(user.getDefaultFileSystem().getAbsolutePathOnHost(), 'non-existing'));
+    await expect(fileSystem.getFile('/').exists()).resolves.toBe(true);
   });
 
   test('Instantiate with absolute path to existing text file', async () => {
