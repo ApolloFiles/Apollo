@@ -2,18 +2,19 @@ import AbstractUser from '../src/AbstractUser';
 import IUserFileSystem from '../src/files/filesystems/IUserFileSystem';
 import FileSearch from '../src/FileSearch';
 import UserStorage from '../src/UserStorage';
+import TestHelper from './TestHelper';
 
 describe('Test file search', () => {
   let user: AbstractUser;
   beforeAll(async () => {
     user = await new UserStorage().createUser('Jester');
 
-    await createEmptyFile('/img1.png', user.getDefaultFileSystem());
-    await createEmptyFile('/img2.png', user.getDefaultFileSystem());
-    await createEmptyFile('/img3.png', user.getDefaultFileSystem());
-    await createEmptyFile('/dir1/dir2/img4.png', user.getDefaultFileSystem());
+    await TestHelper.createEmptyFile('/img1.png', user.getDefaultFileSystem());
+    await TestHelper.createEmptyFile('/img2.png', user.getDefaultFileSystem());
+    await TestHelper.createEmptyFile('/img3.png', user.getDefaultFileSystem());
+    await TestHelper.createEmptyFile('/dir1/dir2/img4.png', user.getDefaultFileSystem());
 
-    await createEmptyFile('/dir1/dir2/img5.png', user.getTrashBinFileSystem());
+    await TestHelper.createEmptyFile('/dir1/dir2/img5.png', user.getTrashBinFileSystem());
   });
 
   test.each(['.png', 'png', 'img'])('Test file search in default file system for %O', async (query) => {
@@ -55,9 +56,3 @@ describe('Test file search', () => {
     expect(searchResult.length).toBe(expectedLength);
   });
 });
-
-async function createEmptyFile(path: string, fileSystem: IUserFileSystem): Promise<void> {
-  await fileSystem.acquireLock(null as any, fileSystem.getFile(path), async (writeableFile) => {
-    await writeableFile.write('');
-  });
-}
