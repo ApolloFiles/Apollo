@@ -41,15 +41,7 @@ export function filesHandleGet(req: express.Request, res: express.Response, fron
       await fileSystem.acquireLock(req, file, (writeableFile) => writeableFile.mkdir({recursive: true}));
     }
 
-    const wantsThumbnail = fileRequestType === 'thumbnail';
-
     if (await file.isDirectory()) {
-      if (wantsThumbnail) {
-        res.status(400)
-            .send('Cannot generate thumbnail for directory');
-        return;
-      }
-
       await handleDirectoryRequest(req, res, user, file, frontendType, fileRequestType);
       return;
     }
@@ -70,6 +62,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
   if (fileRequestType === 'thumbnail') {
     res.status(400)
         .send('Cannot generate thumbnail for directory');
+    return;
   }
 
   if (!req.path.endsWith('/')) {
@@ -339,6 +332,7 @@ async function handleFileRequest(req: express.Request, res: express.Response, us
     res.status(400)
         .type('text/plain')
         .send('Search not available when requesting a file');
+    return;
   }
 
   if (fileRequestType == 'thumbnail') {
