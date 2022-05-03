@@ -18,7 +18,12 @@ function index() {
   webServer = new WebServer();
 
   webServer.listen(8080)
-      .then(() => console.log(`Server started on http://localhost:8080`));
+      .then(() => console.log(`Server started on http://localhost:8080`))
+      .catch((err) => {
+        console.error(err);
+
+        shutdownHook();
+      });
 }
 
 function shutdownHook() {
