@@ -9,6 +9,7 @@ import SessionFileStore from 'session-file-store';
 import AbstractUser from '../AbstractUser';
 import { getAppConfigDir, getAppResourcesDir } from '../Constants';
 import { adminRouter } from './AdminRouter';
+import { createAliasRouter } from './AliasRouter';
 import { createFilesRouter } from './Browse/FilesRouter';
 import { loginRouter } from './LoginRouter';
 
@@ -32,6 +33,7 @@ export default class WebServer {
 
     this.app.use('/browse', WebServer.requireValidLogin, createFilesRouter('browse'));
     this.app.use('/trash', WebServer.requireValidLogin, createFilesRouter('trash'));
+    this.app.use('/alias', /*WebServer.requireValidLogin, FIXME */ createAliasRouter());
     this.app.use('/login', loginRouter);
     this.app.use('/logout', (req, res) => {
       req.logout();
