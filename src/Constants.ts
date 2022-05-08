@@ -23,10 +23,6 @@ export function getConfig(): ConfigFile<ApolloConfig> {
   if (cfg == null) {
     cfg = new ConfigFile<ApolloConfig>(Path.join(getAppConfigDir(), 'config.json'), {
       oauth: {
-        google: {
-          clientId: '',
-          clientSecret: ''
-        },
         github: {
           clientId: '',
           clientSecret: ''

@@ -59,7 +59,6 @@
     "mime-types": "^2.1.35",
     "passport": "^0.5.2",
     "passport-github2": "^0.1.12",
-    "passport-google-oauth20": "^2.0.0",
     "passport-oauth2": "^1.6.1",
     "session-file-store": "^1.5.0",
     "sharp": "^0.30.3"
@@ -79,7 +78,6 @@
     "@types/node": "^16.11.27",
     "@types/passport": "^1.0.7",
     "@types/passport-github2": "^1.2.5",
-    "@types/passport-google-oauth20": "^2.0.11",
     "@types/passport-oauth2": "^1.4.11",
     "@types/session-file-store": "^1.2.2",
     "@types/sharp": "^0.30.2",
