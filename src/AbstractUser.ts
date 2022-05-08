@@ -1,6 +1,7 @@
 import Path from 'path';
 import { getUserStorageRoot } from './Constants';
 import IUserFileSystem from './files/filesystems/IUserFileSystem';
+import IUserTmpFileSystem from './files/filesystems/IUserTmpFileSystem';
 import UserFileSystem from './files/filesystems/UserFileSystem';
 import UserTmpFileSystem from './files/filesystems/UserTmpFileSystem';
 import UserTrashBinFileSystem from './files/filesystems/UserTrashBinFileSystem';
@@ -10,7 +11,7 @@ export default class AbstractUser {
   protected displayName: string;
 
   protected defaultFileSystem: IUserFileSystem;
-  protected tmpFileSystem: IUserFileSystem;
+  protected tmpFileSystem: IUserTmpFileSystem;
   protected trashBinFileSystem: IUserFileSystem;
 
   constructor(id: bigint, displayName: string) {
@@ -34,7 +35,7 @@ export default class AbstractUser {
     return this.defaultFileSystem;
   }
 
-  getTmpFileSystem(): IUserFileSystem {
+  getTmpFileSystem(): IUserTmpFileSystem {
     return this.tmpFileSystem;
   }
 
