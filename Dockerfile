@@ -12,10 +12,11 @@ WORKDIR /app/
 COPY package.json package-lock.json ./
 
 ENV NODE_ENV=production
-RUN npm i && \
+RUN npm ci && \
     npm cache clean --force
 
 COPY dist/ ./dist/
+COPY resources/ ./resources/
 
 # CMD ["node", "--enable-source-maps", "dist/index.js"]
 CMD ["node", "dist/index.js"]

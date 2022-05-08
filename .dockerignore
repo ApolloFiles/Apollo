@@ -1,5 +1,6 @@
 *
 !dist/
+!resources/
 !package.json
 !package-lock.json
 !LICENSE
