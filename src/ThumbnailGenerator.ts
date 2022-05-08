@@ -1,7 +1,5 @@
 import ChildProcess, { SpawnOptionsWithoutStdio } from 'child_process';
-import Fs from 'fs';
 import { EOL } from 'os';
-import Path from 'path';
 import path from 'path';
 import sharp, { Sharp } from 'sharp';
 import IUserFile from './files/IUserFile';
@@ -110,7 +108,7 @@ export default class ThumbnailGenerator {
         ffProbeOutStr += chunk.toString();
       });
       ffProbeProcess.on('error', console.error);
-      ffProbeProcess.on('close', (code) => {
+      ffProbeProcess.on('close', async (code) => {
         if (code == 0) {
           const ffProbeOut = JSON.parse(ffProbeOutStr);
 
@@ -144,14 +142,20 @@ export default class ThumbnailGenerator {
         }
 
         // FIXME: Delete cwd when done
-        const cwd = Fs.mkdtempSync(Path.join(file.getOwner().getTmpFileSystem().getAbsolutePathOnHost(), 'thumbnail-'));
+        // FIXME: write lock on cwd
+        const cwdFile = await file.getOwner().getTmpFileSystem().createTmpDir('thumbnail-');
+        const cwd = cwdFile.getAbsolutePathOnHost();
+        if (cwd == null) {
+          throw new Error('cwd is null');
+        }
+
         const args = ['-i', filePath];
 
         args.unshift('-ss', Math.floor(0.1 * videoDuration).toString(), '-noaccurate_seek');
         args.push('-map', 'v:0', '-vf', `select='eq(pict_type,PICT_TYPE_I)',scale=${width}:-2`, '-vsync', 'vfr');
         args.push('-vframes', sampleSize.toString(), 'frame%01d.png');
 
-        const processInfo = this.spawn('ffmpeg', args, {cwd: cwd});
+        const processInfo = this.spawn('ffmpeg', args, {cwd});
         const process = processInfo.process;
         process.on('error', (err) => reject(err));
 
