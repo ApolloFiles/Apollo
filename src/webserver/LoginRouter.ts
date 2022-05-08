@@ -23,7 +23,7 @@ passport.deserializeUser(async (userId: string, done) => {
 passport.use(new GitHubPassportStrategy({
       clientID: getConfig().data.oauth.github.clientId,
       clientSecret: getConfig().data.oauth.github.clientSecret,
-      callbackURL: 'http://localhost:8080/login/github/callback'
+      callbackURL: new URL('/login/github/callback', getConfig().data.baseUrl).href
     },
     async (accessToken: string, refreshToken: string, profile: any, done: any) => {
       const apolloUser = await new UserStorage().getUserByOauth('github', profile.id);
@@ -40,7 +40,7 @@ passport.use('microsoft', new Oauth2PassportStrategy({
       tokenURL: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token',
       clientID: getConfig().data.oauth.microsoft.clientId,
       clientSecret: getConfig().data.oauth.microsoft.clientSecret,
-      callbackURL: 'http://localhost:8080/login/microsoft/callback',
+      callbackURL: new URL('/login/microsoft/callback', getConfig().data.baseUrl).href,
       scope: ['user.read']
     },
     async (accessToken: string, refreshToken: string, profile: any, done: any) => {

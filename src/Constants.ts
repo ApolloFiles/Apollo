@@ -22,6 +22,13 @@ export function isProduction(): boolean {
 export function getConfig(): ConfigFile<ApolloConfig> {
   if (cfg == null) {
     cfg = new ConfigFile<ApolloConfig>(Path.join(getAppConfigDir(), 'config.json'), {
+      baseUrl: 'http://localhost:8080/',
+
+      webserver: {
+        host: '0.0.0.0',
+        port: 8080
+      },
+
       oauth: {
         github: {
           clientId: '',

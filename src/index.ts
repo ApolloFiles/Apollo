@@ -1,3 +1,4 @@
+import { getConfig } from './Constants';
 import WebServer from './webserver/WebServer';
 
 let webServer: WebServer | undefined;
@@ -17,8 +18,8 @@ function index() {
 
   webServer = new WebServer();
 
-  webServer.listen(8080)
-      .then(() => console.log(`Server started on http://localhost:8080`))
+  webServer.listen(getConfig().data.webserver.port, getConfig().data.webserver.host)
+      .then(() => console.log(`Server started on ${getConfig().data.webserver.host}:${getConfig().data.webserver.port} (${getConfig().data.baseUrl})`))
       .catch((err) => {
         console.error(err);
 
