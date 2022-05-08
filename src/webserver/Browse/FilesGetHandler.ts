@@ -1,18 +1,24 @@
 import * as Archiver from 'archiver';
+import ChildProcess from 'child_process';
+import Crypto from 'crypto';
 import express from 'express';
 import * as fastDirectorySize from 'fast-directory-size';
+import Fs from 'fs';
+import Path from 'path';
+import sharp from 'sharp';
 import AbstractUser from '../../AbstractUser';
-import { getFileNameCollator } from '../../Constants';
+import { getConfig, getFileNameCollator } from '../../Constants';
 import IUserFile from '../../files/IUserFile';
 import FileSearch from '../../FileSearch';
 import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
 import UrlBuilder from '../../frontend/UrlBuilder';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
+import { registerAliasHandler } from '../AliasRouter';
 import WebServer from '../WebServer';
 
-type FileRequestType = 'thumbnail' | 'download' | 'search';
-const allowedFileRequestTypes = ['thumbnail', 'download', 'search'];  // Needs to be identical to FileRequestType
+type FileRequestType = 'thumbnail' | 'download' | 'search' | 'live_transcode' | 'webttv_thumbnails';
+const allowedFileRequestTypes = ['thumbnail', 'download', 'search', 'live_transcode', 'webttv_thumbnails'];  // Needs to be identical to FileRequestType
 
 export function filesHandleGet(req: express.Request, res: express.Response, frontendType: 'browse' | 'trash'): () => Promise<void> {
   return async () => {
@@ -62,6 +68,12 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
   if (fileRequestType === 'thumbnail') {
     res.status(400)
         .send('Cannot generate thumbnail for directory');
+    return;
+  }
+
+  if (fileRequestType === 'live_transcode') {
+    res.status(400)
+        .send('Cannot start live transcoding for directory');
     return;
   }
 
@@ -353,6 +365,14 @@ async function handleFileRequest(req: express.Request, res: express.Response, us
     return;
   }
 
+  if (fileRequestType == 'live_transcode') {
+    return handleFileLiveTranscodeRequest(req, res, user, file);
+  }
+
+  if (fileRequestType == 'webttv_thumbnails') {
+    return handleWebVttThumbnailRequest(req, res, user, file);
+  }
+
   console.log(`User '${user.getDisplayName()}' requested file '${file.getPath()}'`);
 
   res.type(await file.getMimeType() ?? 'text/plain');
@@ -395,6 +415,807 @@ async function handleFileRequest(req: express.Request, res: express.Response, us
   }
 
   fileReadStream.pipe(res);
+}
+
+const liveTranscodeCache: { [key: string]: string } = {};
+
+async function handleFileLiveTranscodeRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile): Promise<void> {
+  const inputFileAbsolutePath = file.getAbsolutePathOnHost();
+  if (inputFileAbsolutePath == null) {
+    throw new Error('File does not exist on host file system');
+  }
+
+  if (liveTranscodeCache[inputFileAbsolutePath] != null) {
+    res.send(liveTranscodeCache[inputFileAbsolutePath]);
+    return;
+  }
+
+  liveTranscodeCache[inputFileAbsolutePath] = 'Initializing...';
+
+  const tmpDir = await user.getTmpFileSystem().createTmpDir('live_transcode-');
+  const cwd = tmpDir.getAbsolutePathOnHost();
+  if (cwd == null) {
+    throw new Error('cwd is null');
+  }
+
+  await Fs.promises.mkdir(Path.join(cwd, 'DASH'), {recursive: true});
+
+  const inputFileRelativePath = `input${Path.extname(file.getName())}`;
+
+  /*
+    Quality targets for the future:
+    * Similar To Source (not exactly the same but fps, resolution, bitrate, etc. should be the same)
+    * 1080p (12M)
+    * 1080p (10M)
+    * 1080p (8M)
+    * 720p (4M)
+    * 720p (3M)
+    * 720p (2M)
+    * 480p (1.5M)
+   */
+
+  // TODO: Automatically adapt output depending on input (no 30 fps if input is 24, no 720p if input is 480p, etc.)
+  // TODO: Generate a muted audio stream in output if input has no audio
+  // TODO: Audio Track Switch (e.g. for en and de audio)
+  // TODO: Do not burn in subtitles if input has no subtitles
+  // TODO: Allow subtitles to be chosen/disabled
+
+  await Fs.promises.link(inputFileAbsolutePath, Path.join(cwd, inputFileRelativePath));
+  const GOP_SIZE = 100;
+  const FPS = 30;
+  // ffmpeg -i input.mkv -c:v h264_nvenc -preset p6 -profile:v high -tune hq -rc-lookahead 8 -bf 2 -rc vbr -cq 26 -b:v 0 -maxrate 120M -bufsize 240M output.mkv
+  const ffmpegProcess = ChildProcess.spawn('ffmpeg',
+      [
+        '-hwaccel', 'cuda',
+        '-bitexact',
+        '-n',
+        '-i', inputFileRelativePath,
+        '-preset', 'llhq',
+        '-rc:v', 'cbr',
+        '-keyint_min', GOP_SIZE.toString(),
+        '-g', GOP_SIZE.toString(),
+        '-sc_threshold', '0',
+        // '-tune', 'll',
+        '-r', FPS.toString(),
+        '-c:v', 'h264_nvenc',
+        // '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+
+        // '-map', 'v:0', '-s:0', '1280x720', '-b:v:0', '4M',
+        '-map', 'v:0', '-s:1', '1920x1080', '-vf',`subtitles=${inputFileRelativePath}`, '-b:v:1', '10M', /*'-b:v:6', '4.5M', '-maxrate:6', '4.8M', '-bufsize:6', '8M',*/
+
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-ac', '2',
+        '-ar', '48000',
+
+        '-map', '0:a',
+
+        '-init_seg_name', 'init_$RepresentationID$',
+        '-media_seg_name', 'chunk_$RepresentationID$_$Number$',
+        '-use_template', '1',
+        '-use_timeline', '1',
+        '-seg_duration', '2',
+        '-streaming', '1',
+        '-update_period', '1',
+        '-dash_segment_type', 'mp4',
+        '-utc_timing_url', 'https://time.akamai.com/?iso',
+        '-adaptation_sets', 'id=0,streams=v id=1,streams=a',
+
+        '-f', 'dash',
+        'DASH/manifest.mpd'
+      ],
+      {cwd});
+
+  ffmpegProcess.stdout.on('data', (data) => {
+    console.log(`[OUT] ${data}`);
+  });
+  const videoFrontendUrl = await UrlBuilder.buildUrl(file);
+  ffmpegProcess.stderr.on('data', async (data) => {
+    console.log(`[ERR] ${data}`);
+
+    if (res.headersSent) {
+      return;
+    }
+
+    const manifestAbsolutePath = Path.join(cwd, 'DASH', 'manifest.mpd');
+    if (Fs.existsSync(manifestAbsolutePath)) {
+      const manifestContents = await Fs.promises.readFile(manifestAbsolutePath, 'utf-8');
+
+      if (res.headersSent || !manifestContents.trim().endsWith('</MPD>')) {
+        return;
+      }
+
+      const aliasToken = Crypto.createHash('sha256').update('live_transcode').update(inputFileAbsolutePath).digest().toString('hex');
+      registerAliasHandler(aliasToken, (req, res, next) => {
+        res.set('Access-Control-Allow-Origin', '*');
+
+        express.static(Path.join(cwd, 'DASH'))(req, res, next);
+      });
+
+      // language=html
+      const html = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <title>Dash.js Test</title>
+
+          <link href="/node_modules/video.js/dist/video-js.min.css" rel="stylesheet">
+          <link href="https://unpkg.com/pthumbnails@1.2.0/dist/videojs-vtt-thumbnails.css" rel="stylesheet">
+        </head>
+
+        <body>
+          <div>
+            <video class="video-js vjs-big-play-centered vjs-fluid"
+                   poster="${videoFrontendUrl}?type=thumbnail"
+                   controls>
+              <p class="vjs-no-js">
+                To view this video please enable JavaScript,
+                and consider upgrading to a web browser that
+                <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+              </p>
+            </video>
+          </div>
+
+          <script>window.HELP_IMPROVE_VIDEOJS = false;</script>
+          <script src="/node_modules/video.js/dist/video.min.js"></script>
+          <script>
+            const VERSION = '1.2.0';
+
+            // Default options for the plugin.
+            const defaults = {}
+
+            // Cache for image elements
+            var cache = {}
+
+            // Cross-compatibility for Video.js 5 and 6.
+            const registerPlugin = videojs.registerPlugin || videojs.plugin
+            // const dom = videojs.dom || videojs;
+
+            /**
+             * Function to invoke when the player is ready.
+             *
+             * This is a great place for your plugin to initialize itself. When this
+             * function is called, the player will have its DOM and child components
+             * in place.
+             *
+             * @function onPlayerReady
+             * @param    {Player} player
+             *           A Video.js player object.
+             *
+             * @param    {Object} [options={}]
+             *           A plain object containing options for the plugin.
+             */
+            const onPlayerReady = (player, options) => {
+              player.addClass('vjs-vtt-thumbnails');
+              player.vttThumbnails = new vttThumbnailsPlugin(player, options);
+            }
+
+            /**
+             * A video.js plugin.
+             *
+             * In the plugin function, the value of \`this\` is a video.js \`Player\`
+             * instance. You cannot rely on the player being in a "ready" state here,
+             * depending on how the plugin is invoked. This may or may not be important
+             * to you; if not, remove the wait for "ready"!
+             *
+             * @function vttThumbnails
+             * @param    {Object} [options={}]
+             *           An object of options left to the plugin author to define.
+             */
+            const vttThumbnails = function (options) {
+              this.ready(() => {
+                onPlayerReady(this, videojs.mergeOptions(defaults, options))
+              })
+            }
+
+            /**
+             * VTT Thumbnails class.
+             *
+             * This class performs all functions related to displaying the vtt
+             * thumbnails.
+             */
+            class vttThumbnailsPlugin {
+
+              /**
+               * Plugin class constructor, called by videojs on
+               * ready event.
+               *
+               * @function  constructor
+               * @param    {Player} player
+               *           A Video.js player object.
+               *
+               * @param    {Object} [options={}]
+               *           A plain object containing options for the plugin.
+               *           - src: path to the .vtt file
+               *           - baseUrl (optional): host prepended to the image definitions
+               *           - preloadStrategy (optional): preload images in the cache, for smooth scrubbing (default: none, available: 'all')
+               */
+              constructor(player, options) {
+                this.player = player
+                this.options = options
+                this.listenForDurationChange();
+                this.initializeThumbnails();
+                this.registeredEvents = {};
+                return this;
+              }
+
+              src(source) {
+                this.resetPlugin();
+                this.options.src = source;
+                this.initializeThumbnails();
+              }
+
+              detach() {
+                this.resetPlugin();
+              }
+
+              resetPlugin() {
+                this.thumbnailHolder && this.thumbnailHolder.parentNode.removeChild(this.thumbnailHolder);
+                this.progressBar && this.progressBar.removeEventListener('mouseenter', this.registeredEvents.progressBarMouseEnter);
+                this.progressBar && this.progressBar.removeEventListener('mouseleave', this.registeredEvents.progressBarMouseLeave);
+                this.progressBar && this.progressBar.removeEventListener('mousemove', this.registeredEvents.progressBarMouseMove);
+                delete this.registeredEvents.progressBarMouseEnter;
+                delete this.registeredEvents.progressBarMouseLeave;
+                delete this.registeredEvents.progressBarMouseMove;
+                delete this.progressBar;
+                delete this.vttData;
+                delete this.thumbnailHolder;
+                delete this.timeHolder;
+                delete this.lastStyle;
+              }
+
+              listenForDurationChange() {
+                this.player.on('durationchange', () => {
+
+                })
+              }
+
+              /**
+               * Bootstrap the plugin.
+               */
+              initializeThumbnails() {
+                if (!this.options.src) {
+                  return
+                }
+                const baseUrl = this.getBaseUrl()
+                const url = this.getFullyQualifiedUrl(this.options.src, baseUrl)
+                this.getVttFile(url)
+                    .then((data) => {
+                      this.vttData = this.processVtt(data)
+                      this.setupThumbnailElement()
+
+                      if (this.options.hasOwnProperty('preloadStrategy')) {
+                        this.preload(this.vttData)
+                      }
+                    })
+              }
+
+              /**
+               * Builds a base URL should we require one.
+               *
+               * @returns {string}
+               */
+              getBaseUrl() {
+                return [
+                  window.location.protocol,
+                  '//',
+                  window.location.hostname,
+                  (window.location.port ? ':' + window.location.port : ''),
+                  window.location.pathname
+                ].join('').split(/([^\\/]*)$/gi).shift()
+              }
+
+              /**
+               * Grabs the contents of the VTT file.
+               *
+               * @param url
+               * @returns {Promise}
+               */
+              getVttFile(url) {
+                return new Promise((resolve, reject) => {
+                  const req = new XMLHttpRequest()
+                  req.data = {
+                    resolve: resolve
+                  }
+                  req.addEventListener('load', this.vttFileLoaded)
+                  req.open('GET', url)
+                  req.send()
+                })
+              }
+
+              /**
+               * Callback for loaded VTT file.
+               */
+              vttFileLoaded() {
+                this.data.resolve(this.responseText)
+              }
+
+              /**
+               * This will fill the cache and thus preload images
+               */
+              preload(data) {
+                data.forEach(item => this.setImageInCacheForItem(item))
+              }
+
+              setupThumbnailElement(data) {
+                const mouseDisplay = this.player.$('.vjs-mouse-display')
+                this.progressBar = this.player.$('.vjs-progress-control')
+                // thumbnail element
+                const thumbHolder = document.createElement('div')
+                thumbHolder.setAttribute('class', 'vjs-vtt-thumbnail-display')
+                this.progressBar.appendChild(thumbHolder)
+                this.thumbnailHolder = thumbHolder
+                // time element
+                const timeHolder = document.createElement('time')
+                timeHolder.setAttribute('class', 'vjs-vtt-thumbnail-time')
+                this.thumbnailHolder.appendChild(timeHolder)
+                this.timeHolder = timeHolder
+                if (mouseDisplay) {
+                  mouseDisplay.classList.add('vjs-hidden')
+                }
+                this.registeredEvents.progressBarMouseEnter = () => {
+                  return this.onBarMouseenter()
+                };
+                this.registeredEvents.progressBarMouseLeave = () => {
+                  return this.onBarMouseleave()
+                };
+                this.progressBar.addEventListener('mouseenter', this.registeredEvents.progressBarMouseEnter)
+                this.progressBar.addEventListener('mouseleave', this.registeredEvents.progressBarMouseLeave)
+              }
+
+              onBarMouseenter() {
+                this.mouseMoveCallback = (e) => {
+                  this.onBarMousemove(e)
+                }
+                this.registeredEvents.progressBarMouseMove = this.mouseMoveCallback;
+                this.progressBar.addEventListener('mousemove', this.registeredEvents.progressBarMouseMove)
+                this.showThumbnailHolder()
+              }
+
+              onBarMouseleave() {
+                if (this.registeredEvents.progressBarMouseMove) {
+                  this.progressBar.removeEventListener('mousemove', this.registeredEvents.progressBarMouseMove)
+                }
+                this.hideThumbnailHolder()
+              }
+
+              getXCoord(bar, mouseX) {
+                const rect = bar.getBoundingClientRect();
+                const docEl = document.documentElement;
+                return mouseX - (rect.left + (window.pageXOffset || docEl.scrollLeft || 0));
+              }
+
+              onBarMousemove(event) {
+                this.updateThumbnailStyle(
+                    videojs.dom.getPointerPosition(this.progressBar, event).x,
+                    this.progressBar.offsetWidth
+                )
+              }
+
+              setImageInCacheForItem(item) {
+                // Cache miss
+                if (item.css.url && !cache[item.css.url]) {
+                  let image = new Image();
+                  image.src = item.css.url;
+                  cache[item.css.url] = image;
+                }
+              }
+
+              getStyleForTime(time) {
+                for (let i = 0; i < this.vttData.length; ++i) {
+                  let item = this.vttData[i]
+                  if (time >= item.start && time < item.end) {
+                    this.setImageInCacheForItem(item)
+
+                    return item.css
+                  }
+                }
+              }
+
+              showThumbnailHolder() {
+                this.thumbnailHolder.style.opacity = '1'
+              }
+
+              hideThumbnailHolder() {
+                this.thumbnailHolder.style.opacity = '0'
+              }
+
+              updateThumbnailStyle(percent, width) {
+                const duration = this.player.duration()
+                const time = percent * duration
+                const currentStyle = this.getStyleForTime(time)
+
+                let timestamp = new Date(Math.round(time) * 1000).toISOString().substr(11, 8)
+                timestamp = duration > 3599 ? timestamp : timestamp.substring(3)
+                this.timeHolder.innerText = timestamp
+
+                if (!currentStyle) {
+                  return this.hideThumbnailHolder()
+                }
+
+                const xPos = percent * width
+                const thumbnailWidth = parseInt(this.thumbnailHolder.offsetWidth)
+                const halfthumbnailWidth = thumbnailWidth / 2
+                const marginRight = width - (xPos + halfthumbnailWidth)
+                const marginLeft = xPos - halfthumbnailWidth
+
+                if (marginLeft > 0 && marginRight > 0) {
+                  this.thumbnailHolder.style.transform = 'translateX(' + (xPos - halfthumbnailWidth) + 'px)'
+                } else if (marginLeft <= 0) {
+                  this.thumbnailHolder.style.transform = 'translateX(' + 0 + 'px)'
+                } else if (marginRight <= 0) {
+                  this.thumbnailHolder.style.transform = 'translateX(' + (xPos + marginRight - halfthumbnailWidth) + 'px)'
+                }
+
+                if (this.lastStyle && this.lastStyle === currentStyle) {
+                  return
+                }
+                this.lastStyle = currentStyle
+
+                for (let style in currentStyle) {
+                  if (currentStyle.hasOwnProperty(style)) {
+                    this.thumbnailHolder.style[style] = currentStyle[style]
+                  }
+                }
+              }
+
+              processVtt(data) {
+                const processedVtts = []
+                const vttDefinitions = data.split(/[\\r\\n][\\r\\n]/i)
+                vttDefinitions.forEach((vttDef) => {
+                  if (vttDef.match(/([0-9]{2}:)?([0-9]{2}:)?[0-9]{2}(.[0-9]{3})?( ?--> ?)([0-9]{2}:)?([0-9]{2}:)?[0-9]{2}(.[0-9]{3})?[\\r\\n]{1}.*/gi)) {
+                    let vttDefSplit = vttDef.split(/[\\r\\n]/i)
+                    let vttTiming = vttDefSplit[0]
+                    let vttTimingSplit = vttTiming.split(/ ?--> ?/i)
+                    let vttTimeStart = vttTimingSplit[0]
+                    let vttTimeEnd = vttTimingSplit[1]
+                    let vttImageDef = vttDefSplit[1]
+                    let vttCssDef = this.getVttCss(vttImageDef)
+
+                    processedVtts.push({
+                      start: this.getSecondsFromTimestamp(vttTimeStart),
+                      end: this.getSecondsFromTimestamp(vttTimeEnd),
+                      css: vttCssDef
+                    })
+
+                  }
+
+                })
+
+                return processedVtts
+              }
+
+              getFullyQualifiedUrl(path, base) {
+                if (path.indexOf('//') >= 0 || path.indexOf('/') === 0) {
+                  // We have a fully qualified path.
+                  return path
+                }
+                if (base.indexOf('//') === 0) {
+                  // We don't have a fully qualified path, but need to
+                  // be careful with trimming.
+                  return [
+                    base.replace(/\\/$/gi, ''),
+                    this.trim(path, '/')
+                  ].join('/')
+                }
+                if (base.indexOf('//') > 0) {
+                  // We don't have a fully qualified path, and should
+                  // trim both sides of base and path.
+                  return [
+                    this.trim(base, '/'),
+                    this.trim(path, '/')
+                  ].join('/')
+                }
+
+                // If all else fails.
+                return path
+              }
+
+              getPropsFromDef(def) {
+                const imageDefSplit = def.split(/#xywh=/i)
+                const imageUrl = imageDefSplit[0]
+                const imageCoords = imageDefSplit[1]
+                const splitCoords = imageCoords.match(/[0-9]+/gi)
+                return {
+                  x: splitCoords[0],
+                  y: splitCoords[1],
+                  w: splitCoords[2],
+                  h: splitCoords[3],
+                  image: imageUrl
+                }
+              }
+
+              getVttCss(vttImageDef) {
+
+                const cssObj = {}
+
+                // If there isn't a protocol, use the VTT source URL.
+                let baseSplit
+                if (this.options.baseUrl) {
+                  baseSplit = this.options.baseUrl
+                } else if (this.options.src.indexOf('//') >= 0) {
+                  baseSplit = this.options.src.split(/([^\\/]*)$/gi).shift()
+                } else {
+                  baseSplit = this.getBaseUrl() + this.options.src.split(/([^\\/]*)$/gi).shift()
+                }
+
+                vttImageDef = this.getFullyQualifiedUrl(vttImageDef, baseSplit)
+
+                // deal with regular thumbnails
+                if (!vttImageDef.match(/#xywh=/i)) {
+                  cssObj.background = 'url("' + vttImageDef + '")'
+                  cssObj.url = vttImageDef
+                  return cssObj
+                }
+
+                // deal with sprited thumbnails
+                const imageProps = this.getPropsFromDef(vttImageDef)
+                cssObj.background = 'url("' + imageProps.image + '") no-repeat -' + imageProps.x + 'px -' + imageProps.y + 'px'
+                cssObj.width = imageProps.w + 'px'
+                cssObj.height = imageProps.h + 'px'
+                cssObj.url = imageProps.image
+
+                return cssObj
+              }
+
+              doconstructTimestamp(timestamp) {
+                const splitStampMilliseconds = timestamp.split('.')
+                const timeParts = splitStampMilliseconds[0]
+                const timePartsSplit = timeParts.split(':')
+                return {
+                  milliseconds: parseInt(splitStampMilliseconds[1]) || 0,
+                  seconds: parseInt(timePartsSplit.pop()) || 0,
+                  minutes: parseInt(timePartsSplit.pop()) || 0,
+                  hours: parseInt(timePartsSplit.pop()) || 0,
+                }
+
+              }
+
+              getSecondsFromTimestamp(timestamp) {
+                const timestampParts = this.doconstructTimestamp(timestamp)
+                return parseInt((timestampParts.hours * (60 * 60)) +
+                    (timestampParts.minutes * 60) +
+                    timestampParts.seconds +
+                    (timestampParts.milliseconds / 1000))
+              }
+
+              trim(str, charlist) {
+                let whitespace = [
+                  ' ',
+                  '\\n',
+                  '\\r',
+                  '\\t',
+                  '\\f',
+                  '\x0b',
+                  '\xa0',
+                  '\u2000',
+                  '\u2001',
+                  '\u2002',
+                  '\u2003',
+                  '\u2004',
+                  '\u2005',
+                  '\u2006',
+                  '\u2007',
+                  '\u2008',
+                  '\u2009',
+                  '\u200a',
+                  '\u200b',
+                  '\u2028',
+                  '\u2029',
+                  '\u3000'
+                ].join('')
+                let l = 0
+                let i = 0
+                str += ''
+                if (charlist) {
+                  whitespace = (charlist + '').replace(/([[\\]().?/*{}+$^:])/g, '$1')
+                }
+                l = str.length
+                for (i = 0; i < l; i++) {
+                  if (whitespace.indexOf(str.charAt(i)) === -1) {
+                    str = str.substring(i)
+                    break
+                  }
+                }
+                l = str.length
+                for (i = l - 1; i >= 0; i--) {
+                  if (whitespace.indexOf(str.charAt(i)) === -1) {
+                    str = str.substring(0, i + 1)
+                    break
+                  }
+                }
+                return whitespace.indexOf(str.charAt(0)) === -1 ? str : ''
+              }
+
+            }
+
+            // Register the plugin with video.js.
+            registerPlugin('vttThumbnails', vttThumbnails)
+
+            // Include the version number.
+            vttThumbnails.VERSION = VERSION
+          </script>
+
+          <script>
+            'use strict';
+
+            let player;
+            document.addEventListener('DOMContentLoaded', () => {
+              player = videojs(document.querySelector('.video-js'), {
+                sources: [{
+                  src: '${new URL(`/alias/${aliasToken}/manifest.mpd#t=0`, getConfig().data.baseUrl).href}',
+                  type: 'application/dash+xml'
+                }],
+                playbackRates: [0.5, 1, 1.5, 2],
+                autoplay: true,
+
+                liveui: true,
+                liveTracker: {
+                  trackingThreshold: 0
+                },
+
+                userActions: {
+                  hotkeys: true
+                },
+
+                plugins: {
+                  vttThumbnails: {
+                    src: '${videoFrontendUrl}?type=webttv_thumbnails',
+                    showTimestamp: true
+                  }
+                }
+              });
+            });
+          </script>
+        </body>
+        </html>`;
+      liveTranscodeCache[inputFileAbsolutePath] = html;
+      res.send(html);
+    }
+  });
+  ffmpegProcess.on('exit', (code) => {
+    console.log(`ffmpeg process exited with code ${code}`);
+
+    if (!res.headersSent) {
+      res.status(500)
+          .send('ffmpeg process exited with code ' + code);
+    }
+
+    if (code != 0) {
+      liveTranscodeCache[inputFileAbsolutePath] = 'An error occurred';
+    }
+  });
+}
+
+const webVttThumbnailCache: { [key: string]: string } = {};
+
+async function handleWebVttThumbnailRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile): Promise<void> {
+  const SECONDS_BETWEEN_FRAMES: number = 5;
+
+  const inputFileAbsolutePath = file.getAbsolutePathOnHost();
+  if (inputFileAbsolutePath == null) {
+    throw new Error('File does not exist on host file system');
+  }
+
+  if (webVttThumbnailCache[inputFileAbsolutePath] != null) {
+    res
+        .type('text/vtt')
+        .send(webVttThumbnailCache[inputFileAbsolutePath]);
+    return;
+  }
+
+  const tmpDir = await user.getTmpFileSystem().createTmpDir('webVtt_thumbnails-');
+  const cwd = tmpDir.getAbsolutePathOnHost();
+  if (cwd == null) {
+    throw new Error('cwd is null');
+  }
+
+  await Fs.promises.mkdir(Path.join(cwd, 'frames'), {recursive: true});
+
+  const inputFileRelativePath = `input${Path.extname(file.getName())}`;
+
+  await Fs.promises.link(inputFileAbsolutePath, Path.join(cwd, inputFileRelativePath));
+
+  const ffmpegProcess = ChildProcess.spawn('ffmpeg',
+      [
+        '-hwaccel', 'cuda',
+        '-bitexact',
+        '-n',
+        '-i', inputFileRelativePath,
+
+        '-bt', '20',
+        '-vf', `fps=1/${SECONDS_BETWEEN_FRAMES},scale=240:-1`,
+
+        '-f', 'image2',
+        'frames/%d.png'
+      ],
+      {cwd});
+
+  ffmpegProcess.stdout.on('data', (data) => {
+    console.log(`[OUT] ${data}`);
+  });
+  ffmpegProcess.stderr.on('data', (data) => {
+    console.log(`[ERR] ${data}`);
+  });
+  ffmpegProcess.on('exit', async (code) => {
+    console.log(`ffmpeg process exited with code ${code}`);
+
+    if (code == 0) {
+      let frameCount = (await Fs.promises.readdir(Path.join(cwd, 'frames'))).length;
+
+      const ffmpegProcess = ChildProcess.spawn('ffmpeg',
+          [
+            '-hwaccel', 'cuda',
+            '-bitexact',
+            '-n',
+            '-i', 'frames/%d.png',
+
+            '-vf', `tile=${frameCount}x1`,
+
+            '-f', 'image2',
+            'frames.png'
+          ],
+          {cwd});
+
+      ffmpegProcess.stdout.on('data', (data) => {
+        console.log(`[OUT] ${data}`);
+      });
+      ffmpegProcess.stderr.on('data', (data) => {
+        console.log(`[ERR] ${data}`);
+      });
+      ffmpegProcess.on('exit', async (code) => {
+        console.log(`ffmpeg process exited with code ${code}`);
+
+        if (code == 0) {
+          const frameMetaData = await sharp(Path.join(cwd, 'frames/1.png')).metadata();
+
+          if (frameMetaData.width == null || frameMetaData.height == null) {
+            throw new Error('Failed to get frame dimensions');
+          }
+
+          const aliasToken = Crypto.createHash('sha256').update('webttv_thumbnails').update(inputFileAbsolutePath).digest().toString('hex');
+          registerAliasHandler(aliasToken, (req, res, next) => {
+            if (req.path == '/frames.png') {
+              res.sendFile(Path.join(cwd, 'frames.png'));
+            } else {
+              res.status(404)
+                  .send('Not found');
+            }
+          });
+
+          const imageUrl = new URL(`/alias/${aliasToken}/frames.png`, getConfig().data.baseUrl).href;
+
+          const toWebVttTime = (seconds: number): string => {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const seconds2 = Math.floor(seconds % 60);
+
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds2.toString().padStart(2, '0')}.000`;
+          };
+
+          let webVttContent = 'WEBVTT\n\n';
+
+          for (let i = 0; i < frameCount; ++i) {
+            webVttContent += `${toWebVttTime(i * SECONDS_BETWEEN_FRAMES)} --> ${toWebVttTime((i + 1) * SECONDS_BETWEEN_FRAMES)}\n`;
+            webVttContent += `${imageUrl}?#xywh=${frameMetaData.width * i},0,${frameMetaData.width},${frameMetaData.height}\n\n`;
+          }
+
+          webVttThumbnailCache[inputFileAbsolutePath] = webVttContent;
+          await Fs.promises.rm(Path.join(cwd, 'frames'), {recursive: true});
+
+          res.type('text/vtt')
+              .send(webVttContent);
+        } else {
+          res.status(500)
+              .send(`ffmpeg process exited with code ${code}`);
+        }
+      });
+    } else {
+      res.status(500)
+          .send(`ffmpeg process exited with code ${code}`);
+    }
+  });
 }
 
 async function generateBreadcrumbs(file: IUserFile): Promise<BreadcrumbItem[]> {
