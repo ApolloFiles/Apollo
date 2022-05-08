@@ -25,6 +25,7 @@ export default class WebServer {
     this.app.use(passport.initialize(), passport.authenticate('session'));
 
     this.app.use('/', express.static(Path.join(getAppResourcesDir(), 'public', 'static')));
+    this.app.use('/favicon.ico', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'favicon', 'favicon.ico')));
     this.app.use('/node_modules', express.static(Path.join(getAppResourcesDir(), '..', 'node_modules')));
 
     this.app.use('/admin', WebServer.requireValidLogin, adminRouter);
