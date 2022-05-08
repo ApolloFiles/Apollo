@@ -27,6 +27,11 @@ passport.use(new GitHubPassportStrategy({
     },
     async (accessToken: string, refreshToken: string, profile: any, done: any) => {
       const apolloUser = await new UserStorage().getUserByOauth('github', profile.id);
+
+      if (apolloUser == null) {
+        console.log(`GitHub Login failed for GitHub-UserId '${profile.id}' (no apollo user found)`);
+      }
+
       done(null, apolloUser ?? false);
     }
 ));
@@ -43,13 +48,18 @@ passport.use('microsoft', new Oauth2PassportStrategy({
           .get('https://graph.microsoft.com/v1.0/me', {'Authorization': `Bearer ${accessToken}`});
 
       if (httpRes.statusCode !== 200) {
-        done(new Error(`Microsoft Graph API returned static code ${httpRes.statusCode}`));
+        done(new Error(`Microsoft Graph API returned status code ${httpRes.statusCode}`));
         return;
       }
 
       profile = JSON.parse(httpRes.body.toString('utf-8'));
 
       const apolloUser = await new UserStorage().getUserByOauth('microsoft', profile.id);
+
+      if (apolloUser == null) {
+        console.log(`Microsoft Login failed for Microsoft-UserId '${profile.id}' (no apollo user found)`);
+      }
+
       done(null, apolloUser ?? false);
     }
 ));
