@@ -542,6 +542,7 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
 
           <link href="/node_modules/video.js/dist/video-js.min.css" rel="stylesheet">
           <link href="https://unpkg.com/pthumbnails@1.2.0/dist/videojs-vtt-thumbnails.css" rel="stylesheet">
+          <link href="https://unpkg.com/@samueleastdev/videojs-settings-menu@0.0.9/dist/videojs-settings-menu.css" rel="stylesheet">
         </head>
 
         <body>
@@ -560,6 +561,9 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
           <script>window.HELP_IMPROVE_VIDEOJS = false;</script>
           <script src="/node_modules/video.js/dist/video.min.js"></script>
           <script src="https://unpkg.com/videojs-persist@0.1.2/dist/videojs-persist.min.js"></script>
+          <script src="https://unpkg.com/videojs-contrib-quality-levels@2.1.0/dist/videojs-contrib-quality-levels.js"></script>
+          <script src="https://unpkg.com/@samueleastdev/videojs-dash-hls-bitrate-switcher@1.0.7/dist/videojs-dash-hls-bitrate-switcher.min.js"></script>
+          <script src="https://unpkg.com/@samueleastdev/videojs-settings-menu@0.0.9/dist/videojs-settings-menu.min.js"></script>
           <script>
             const VERSION = '1.2.0';
 
@@ -1048,6 +1052,14 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
                   src: '${new URL(`/alias/${aliasToken}/manifest.mpd#t=0`, getConfig().data.baseUrl).href}',
                   type: 'application/dash+xml'
                 }],
+
+                techOrder: ['html5'],
+                html5: {
+                  vhs: {
+                    overrideNative: true
+                  }
+                },
+
                 playbackRates: [0.5, 1, 1.5, 2],
                 autoplay: true,
 
@@ -1056,11 +1068,21 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
                   trackingThreshold: 0
                 },
 
-                userActions: {
-                  hotkeys: true
-                },
-
                 plugins: {
+                  dashHlsBitrateSwitcher: {
+                    support: 'both',
+                  },
+
+                  settingsMenu: {
+                    items: [
+                      'AudioTrackButton',
+                      'ChaptersButton',
+                      'SubsCapsButton',
+                      'PlaybackRateMenuButton',
+                      'RatesButton'
+                    ]
+                  },
+
                   vttThumbnails: {
                     src: '${videoFrontendUrl}?type=webttv_thumbnails',
                     showTimestamp: true
