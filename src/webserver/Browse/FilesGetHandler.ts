@@ -463,33 +463,42 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
   await Fs.promises.link(inputFileAbsolutePath, Path.join(cwd, inputFileRelativePath));
   const GOP_SIZE = 100;
   const FPS = 30;
-  // ffmpeg -i input.mkv -c:v h264_nvenc -preset p6 -profile:v high -tune hq -rc-lookahead 8 -bf 2 -rc vbr -cq 26 -b:v 0 -maxrate 120M -bufsize 240M output.mkv
   const ffmpegProcess = ChildProcess.spawn('ffmpeg',
       [
         '-hwaccel', 'cuda',
         '-bitexact',
         '-n',
         '-i', inputFileRelativePath,
-        '-preset', 'llhq',
-        '-rc:v', 'cbr',
+        '-map_chapters', '0',
+        '-map_metadata', '0',
+        // '-c:v', 'libx264',
+        '-c:v', 'h264_nvenc',
+        '-preset', 'p6',
+        '-profile:v', 'high',
+        '-tune', 'hq',
+        '-rc-lookahead', '8',
+        '-bf', '2',
+        '-rc', 'vbr',
+        '-cq', '26',
+
         '-keyint_min', GOP_SIZE.toString(),
         '-g', GOP_SIZE.toString(),
         '-sc_threshold', '0',
-        // '-tune', 'll',
         '-r', FPS.toString(),
-        '-c:v', 'h264_nvenc',
-        // '-c:v', 'libx264',
         '-pix_fmt', 'yuv420p',
 
-        // '-map', 'v:0', '-s:0', '1280x720', '-b:v:0', '4M',
-        '-map', 'v:0', '-s:1', '1920x1080', '-vf',`subtitles=${inputFileRelativePath}`, '-b:v:1', '10M', /*'-b:v:6', '4.5M', '-maxrate:6', '4.8M', '-bufsize:6', '8M',*/
+        '-map', 'v:0',
+        '-s:0', '1920x1080',
+        '-vf:0', `subtitles=${inputFileRelativePath}`,
+        '-b:v:0', '0',
+        '-maxrate:0', '120M',
+        '-bufsize:0', '240M',
 
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-ac', '2',
-        '-ar', '48000',
-
-        '-map', '0:a',
+        '-map', '0:a:0',
+        '-c:a:0', 'aac',
+        '-b:a:0', '128k',
+        '-ac:0', '2',
+        '-ar:0', '48000',
 
         '-init_seg_name', 'init_$RepresentationID$',
         '-media_seg_name', 'chunk_$RepresentationID$_$Number$',
