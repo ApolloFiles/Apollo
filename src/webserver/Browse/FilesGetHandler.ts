@@ -545,8 +545,8 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
         </head>
 
         <body>
-          <div>
-            <video class="video-js vjs-big-play-centered vjs-fluid"
+          <div style="height: 80vh">
+            <video class="video-js vjs-big-play-centered vjs-fill"
                    poster="${videoFrontendUrl}?type=thumbnail"
                    controls>
               <p class="vjs-no-js">
