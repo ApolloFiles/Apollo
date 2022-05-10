@@ -500,6 +500,13 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
         '-ac:0', '2',
         '-ar:0', '48000',
 
+        // FIXME: video player does not support same language streams and only shows first
+        '-map', '0:a:1',
+        '-c:a:1', 'aac',
+        '-b:a:1', '128k',
+        '-ac:1', '2',
+        '-ar:1', '48000',
+
         '-init_seg_name', 'init_$RepresentationID$',
         '-media_seg_name', 'chunk_$RepresentationID$_$Number$',
         '-use_template', '1',
@@ -509,7 +516,7 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
         '-update_period', '1',
         '-dash_segment_type', 'mp4',
         '-utc_timing_url', 'https://time.akamai.com/?iso',
-        '-adaptation_sets', 'id=0,streams=v id=1,streams=a',
+        '-adaptation_sets', 'id=0,streams=v id=1,streams=1 id=2,streams=2',
 
         '-f', 'dash',
         'DASH/manifest.mpd'
@@ -1070,7 +1077,6 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
                 },
 
                 playbackRates: [0.5, 1, 1.5, 2],
-                autoplay: true,
 
                 liveui: true,
                 liveTracker: {
