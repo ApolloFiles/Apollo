@@ -559,6 +559,7 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
 
           <script>window.HELP_IMPROVE_VIDEOJS = false;</script>
           <script src="/node_modules/video.js/dist/video.min.js"></script>
+          <script src="https://unpkg.com/videojs-persist@0.1.2/dist/videojs-persist.min.js"></script>
           <script>
             const VERSION = '1.2.0';
 
@@ -1063,6 +1064,9 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
                   vttThumbnails: {
                     src: '${videoFrontendUrl}?type=webttv_thumbnails',
                     showTimestamp: true
+                  },
+                  persist: {
+                    playbackRate: false
                   }
                 }
               });
