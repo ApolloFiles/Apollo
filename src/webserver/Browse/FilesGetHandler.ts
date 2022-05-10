@@ -1111,6 +1111,8 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
               });
             });
           </script>
+          
+          <button onclick="player.currentTime(0)">Jump to 0 seconds</button>
         </body>
         </html>`;
       liveTranscodeCache[inputFileAbsolutePath] = html;
