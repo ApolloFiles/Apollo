@@ -1106,6 +1106,8 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
                     playbackRate: false
                   }
                 }
+              }, () => {
+                player.currentTime(0);
               });
             });
           </script>
