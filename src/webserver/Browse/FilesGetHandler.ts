@@ -399,6 +399,13 @@ async function handleFileRequest(req: express.Request, res: express.Response, us
     start: bytesStart,
     end: bytesEnd
   });
+  fileReadStream.on('error', (err) => {
+    console.error(err);
+
+    fileReadStream.destroy();
+    res.end();
+  });
+
   res.on('close', () => {
     fileReadStream.destroy();
   });
@@ -1111,7 +1118,7 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
               });
             });
           </script>
-          
+
           <button onclick="player.currentTime(0)">Jump to 0 seconds</button>
         </body>
         </html>`;
