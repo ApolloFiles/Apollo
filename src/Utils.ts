@@ -82,4 +82,21 @@ export default class Utils {
   static tryReplacingBadCharactersForFileName(fileName: string): string {
     return fileName.replace(/[\\/:*?"<>|]/g, '_');
   }
+
+  /**
+   * @author https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze
+   */
+  static deepFreeze(object: any): void {
+    const propNames = Object.getOwnPropertyNames(object);
+
+    for (const name of propNames) {
+      const value = object[name];
+
+      if (value && typeof value === 'object') {
+        this.deepFreeze(value);
+      }
+    }
+
+    Object.freeze(object);
+  }
 }

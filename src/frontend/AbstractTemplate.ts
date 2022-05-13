@@ -3,6 +3,7 @@ import express from 'express';
 import Fs from 'fs';
 import Path from 'path';
 import { getAppResourcesDir, isProduction } from '../Constants';
+import Utils from '../Utils';
 
 export abstract class AbstractTemplate {
   protected static instance: AbstractTemplate;
@@ -22,7 +23,7 @@ export abstract class AbstractTemplate {
   public abstract render(req: express.Request, data?: any): string;
 
   protected renderEjs(data: object & { global: { templateId: string, req: { body: { [key: string]: unknown } }, apolloConfig: object } }): string {
-    Object.freeze(data.global);
+    Utils.deepFreeze(data.global);
 
     return Ejs.render(this.getTemplateContents(), data, {
       strict: true,
