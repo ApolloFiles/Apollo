@@ -1,6 +1,6 @@
 import express from 'express';
 import Path from 'path';
-import { getAppResourcesDir } from '../Constants';
+import { getAppResourcesDir, getConfig } from '../Constants';
 import { AbstractTemplate } from './AbstractTemplate';
 
 export type FileIcon =
@@ -33,7 +33,12 @@ export class FilesTemplate extends AbstractTemplate {
   render(req: express.Request, data: FilesTemplateData): string {
     return super.renderEjs({
       ...data,
-      global: {templateId: this.templateId, req: {body: req.method === 'GET' ? req.query : req.body ?? {}}}
+
+      global: {
+        templateId: this.templateId,
+        req: {body: req.method === 'GET' ? req.query : req.body ?? {}},
+        apolloConfig: getConfig().data
+      }
     });
   }
 }
