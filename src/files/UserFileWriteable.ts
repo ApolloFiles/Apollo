@@ -55,24 +55,22 @@ export default class UserFileWriteable implements IUserFileWriteable {
       throw new Error('File is already in trash bin');
     }
 
-    const srcFileSystemRootPathOnHost = this.userFile.getFileSystem().getAbsolutePathOnHost();
     const srcAbsolutePathOnHost = this.userFile.getAbsolutePathOnHost();
     if (srcAbsolutePathOnHost == null) {
       throw new Error('File path is null');
     }
 
-    const relativeFileInTrashBin = Path.relative(srcFileSystemRootPathOnHost, srcAbsolutePathOnHost);
-    // console.log(`From '${srcFileSystemRootPathOnHost}' to '${srcAbsolutePathOnHost}': ${relativeFileInTrashBin}`);
     const targetFileSystem = this.userFile.getOwner().getTrashBinFileSystem();
-    const targetFile = targetFileSystem.getFile(relativeFileInTrashBin);
-    const targetFileAbsolutePathOnHost = targetFile.getAbsolutePathOnHost();
+    const targetFile = targetFileSystem.getFile(this.userFile.getPath());
 
+    const targetFileAbsolutePathOnHost = targetFile.getAbsolutePathOnHost();
     if (targetFileAbsolutePathOnHost == null) {
       throw new Error('File path is null');
     }
 
     await targetFileSystem.acquireLock(this.req, targetFile, async (writeableFile) => {
-      await targetFileSystem.acquireLock(this.req,
+      await targetFileSystem.acquireLock(
+          this.req,
           targetFileSystem.getFile(Path.dirname(targetFile.getPath())),
           (writeableParentFile) => writeableParentFile.mkdir({recursive: true})
       );
@@ -104,8 +102,6 @@ export default class UserFileWriteable implements IUserFileWriteable {
         });
       }
     });
-
-    // await Fs.promises.rename(filePath, Path.join(Path.dirname(filePath), 'trash', Path.basename(filePath)));
   }
 
   async deleteIgnoringTrashBin(options?: Fs.RmOptions): Promise<void> {
