@@ -150,11 +150,14 @@ export default class VideoLiveTranscode {
             `-r`, TARGET_FPS.toString(),
             `-pix_fmt`, 'yuv420p',
 
-            `-vf`, videoFilters.join(','),
             `-b:v`, '0',
             `-maxrate`, '120M',
             `-bufsize`, '240M'
         );
+
+        if (videoFilters.length > 0) {
+          result.push(`-vf`, videoFilters.join(','));
+        }
       } else if (stream.codecType == 'audio') {
         const audioStream = stream as AudioStream;
 
