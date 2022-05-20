@@ -4,6 +4,5 @@ module.exports = {
   testEnvironment: 'node',
   clearMocks: true,
   collectCoverageFrom: ['src/**/*.ts'],
-  setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.ts'],
-  testPathIgnorePatterns: ['<rootDir>/.stryker-tmp/']
+  setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.ts']
 };

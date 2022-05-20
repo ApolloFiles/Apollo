@@ -29,7 +29,6 @@
     "build": "tsc",
 
     "test": "jest --coverage",
-    "test:mutant": "stryker run",
     "dev": "nodemon --ext ts --watch ./src --exec \"ts-node src/index.ts\"",
 
     "snyk": "npm run build && snyk test",
@@ -65,9 +64,6 @@
     "video.js": "^7.18.1"
   },
   "devDependencies": {
-    "@stryker-mutator/core": "^6.0.2",
-    "@stryker-mutator/jest-runner": "^6.0.2",
-    "@stryker-mutator/typescript-checker": "^6.0.2",
     "@tsconfig/node16": "^1.0.2",
     "@types/archiver": "^5.3.1",
     "@types/ejs": "^3.1.0",
