@@ -45,7 +45,7 @@
     "linux"
   ],
   "dependencies": {
-    "@spraxdev/node-commons": "github:spraxdev/node-commons#59afe89cbc9cf6e2edd503d224153dee35745b19",
+    "@spraxdev/node-commons": "github:spraxdev/node-commons#b113d806128c2414c3c4cb5029ec1bbaafd82a8d",
     "archiver": "^5.3.1",
     "async-mutex": "^0.3.2",
     "bootstrap": "^5.1.3",
