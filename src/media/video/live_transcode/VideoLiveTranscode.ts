@@ -109,7 +109,8 @@ export default class VideoLiveTranscode {
     ];
 
     let outputStreamIndexCounter = 0;
-    let hasSubtitleStream = streams.some(stream => stream.codecType == 'subtitle');
+    const subtitleStream = streams.find(stream => stream.codecType == 'subtitle');
+    const hasSubtitleStream = subtitleStream != null;
     for (const stream of streams) {
       if (stream.codecType == 'video') {
         const videoStream = stream as VideoStream;
@@ -131,7 +132,11 @@ export default class VideoLiveTranscode {
         const videoFilters = [];
 
         if (hasSubtitleStream) {
-          videoFilters.push(`subtitles=filename='${inputFilePath}'`/* + ':stream_index=' */);
+          if (['hdmv_pgs_subtitle', 'dvb_subtitle', 'dvd_subtitle'].includes(subtitleStream.codecName)) {
+            videoFilters.push(`[0:v:${videoStream.index}][0:s]overlay`);
+          } else {
+            videoFilters.push(`subtitles=filename='${inputFilePath}'`/* + ':stream_index=' */);
+          }
         }
         if (videoStream.width != targetWidth) {
           videoFilters.push(`scale=${targetWidth}:-1`);
@@ -156,7 +161,7 @@ export default class VideoLiveTranscode {
         );
 
         if (videoFilters.length > 0) {
-          result.push(`-vf`, videoFilters.join(','));
+          result.push(`-filter_complex`, videoFilters.join(','));
         }
       } else if (stream.codecType == 'audio') {
         const audioStream = stream as AudioStream;
