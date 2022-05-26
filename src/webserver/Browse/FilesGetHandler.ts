@@ -515,6 +515,10 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
     manifestFileName: liveTranscode.manifestFileName,
     manifestMimeType: liveTranscode.manifestMimeType,
     chapters,
+
+    debug: {
+      streams: streamsToTranscode
+    }
   };
   liveTranscodeCache[inputFileAbsolutePath] = videoLiveTranscodeData;
 

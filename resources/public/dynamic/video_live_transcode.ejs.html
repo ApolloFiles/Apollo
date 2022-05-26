@@ -58,6 +58,24 @@
     <% } %>
   </div>
 
+  <% if (locals.debug) { %>
+  <div id="debugContainer">
+    <h2>Streams in this transcode</h2>
+
+    <div style="display: flex; justify-content: space-evenly">
+      <% for (const stream of locals.debug.streams) { %>
+      <div id="stream_<%= stream.index %>">
+        <strong>Stream-Index:</strong>&nbsp;<%= stream.index %>
+        <br>
+        <strong>Stream-Typ:</strong>&nbsp;<%= stream.codecType %>
+        <br>
+        <strong>Language:</strong>&nbsp;<%= stream.tags.language ?? '-' %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+  <% } %>
+
   <script>window.HELP_IMPROVE_VIDEOJS = false;</script>
   <script src="/node_modules/video.js/dist/video.min.js"></script>
   <script src="https://unpkg.com/videojs-persist@0.1.2/dist/videojs-persist.min.js"></script>
