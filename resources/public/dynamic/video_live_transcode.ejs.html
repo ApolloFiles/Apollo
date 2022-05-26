@@ -633,8 +633,9 @@
     document.addEventListener('DOMContentLoaded', () => {
       player = videojs(document.querySelector('.video-js'), {
         sources: [{
-          src: '<%- new URL(`/alias/${locals.aliasToken}/manifest.mpd#t=0`, locals.global.apolloConfig.baseUrl).href -%>',
-          type: 'application/dash+xml'
+          // src: '<%- new URL(`/alias/${locals.aliasToken}/manifest.mpd#t=0`, locals.global.apolloConfig.baseUrl).href -%>',
+          src: '<%- new URL(`/alias/${locals.aliasToken}/${locals.manifestFileName}#t=0`, locals.global.apolloConfig.baseUrl).href -%>',
+          type: '<%- locals.manifestMimeType -%>'
         }],
 
         techOrder: ['html5'],

@@ -12,8 +12,9 @@ import IUserFile from '../../files/IUserFile';
 import FileSearch from '../../FileSearch';
 import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
 import UrlBuilder from '../../frontend/UrlBuilder';
-import VideoLiveTranscodeTemplate from '../../frontend/VideoLiveTranscodeTemplate';
+import VideoLiveTranscodeTemplate, { VideoLiveTransCodeTemplateData } from '../../frontend/VideoLiveTranscodeTemplate';
 import VideoAnalyser from '../../media/video/analyser/VideoAnalyser';
+import { Stream } from '../../media/video/analyser/VideoAnalyser.Types';
 import VideoLiveTranscode from '../../media/video/live_transcode/VideoLiveTranscode';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
@@ -427,7 +428,7 @@ async function handleFileRequest(req: express.Request, res: express.Response, us
   fileReadStream.pipe(res);
 }
 
-const liveTranscodeCache: { [key: string]: string } = {};
+const liveTranscodeCache: { [key: string]: string | VideoLiveTransCodeTemplateData } = {};
 
 async function handleFileLiveTranscodeRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile): Promise<void> {
   // FIXME: video player does not support same language streams and only shows first
@@ -451,15 +452,21 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
   }
 
   if (liveTranscodeCache[inputFileAbsolutePath] != null) {
-    res.send(liveTranscodeCache[inputFileAbsolutePath]);
+    const data = liveTranscodeCache[inputFileAbsolutePath];
+
+    if (typeof data == 'string') {
+      res.send(data);
+      return;
+    }
+
+    res.send(new VideoLiveTranscodeTemplate().render(req, data));
     return;
   }
 
-  const inputStreams = await VideoAnalyser.analyze(inputFileAbsolutePath, true);
+  const analyzedVideo = await VideoAnalyser.analyze(inputFileAbsolutePath, true);
+  const streamsToTranscode: Stream[] = [];
 
-  const streamsToTranscode = [];
-
-  const videoStream = inputStreams.streams.find(s => s.codecType == 'video');
+  const videoStream = analyzedVideo.streams.find(s => s.codecType == 'video');
   if (videoStream == null) {
     throw new Error('No video stream found');
   }
@@ -476,7 +483,7 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
     streamsToTranscode.push(subtitleStream);
   }
 
-  const liveDashTranscode = await VideoLiveTranscode.startLiveDashTranscode(user, file, streamsToTranscode);
+  const liveTranscode = await VideoLiveTranscode.startLiveHlsTranscode(user, file, streamsToTranscode);
 
   const videoFrontendUrl = await UrlBuilder.buildUrl(file);
   const aliasToken = Crypto.createHash('sha256')
@@ -488,11 +495,20 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
   registerAliasHandler(aliasToken, (req, res, next) => {
     res.set('Access-Control-Allow-Origin', '*');
 
-    express.static(liveDashTranscode.publicDir)(req, res, next);
+    express.static(liveTranscode.publicDir)(req, res, next);
   });
 
-  const html = new VideoLiveTranscodeTemplate().render(req, {videoFrontendUrl, aliasToken});
-  liveTranscodeCache[inputFileAbsolutePath] = html;
+  const videoLiveTranscodeData: VideoLiveTransCodeTemplateData = {
+    videoFileName: file.getName(),
+    videoFrontendUrl,
+    aliasToken,
+
+    manifestFileName: liveTranscode.manifestFileName,
+    manifestMimeType: liveTranscode.manifestMimeType,
+  };
+  liveTranscodeCache[inputFileAbsolutePath] = videoLiveTranscodeData;
+
+  const html = new VideoLiveTranscodeTemplate().render(req, videoLiveTranscodeData);
   res.send(html);
 }
 

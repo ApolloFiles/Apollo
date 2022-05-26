@@ -7,7 +7,24 @@ import IUserFile from '../../../files/IUserFile';
 import { AudioStream, Stream, VideoStream } from '../analyser/VideoAnalyser.Types';
 
 export default class VideoLiveTranscode {
+  static async startLiveHlsTranscode(user: AbstractUser, file: IUserFile, streams: Stream[]): Promise<{ publicDir: string, manifestFileName: string, manifestMimeType: string }> {
+    const {inputFilePathForFfmpeg, cwd, inputFileIsLink, publicOutputDir} = await this.prepareLiveTranscode(user, file);
+
+    const manifestFileName = 'master.m3u8';
+    const ffmpegArgs = this.generateFfmpegHlsArguments(inputFilePathForFfmpeg, streams, manifestFileName);
+
+    return this.startLiveTranscodeProcess(ffmpegArgs, cwd, inputFileIsLink, inputFilePathForFfmpeg, publicOutputDir, manifestFileName, 'application/x-mpegURL');
+  }
+
   static async startLiveDashTranscode(user: AbstractUser, file: IUserFile, streams: Stream[]): Promise<{ publicDir: string, manifestFileName: string }> {
+    const {inputFilePathForFfmpeg, cwd, inputFileIsLink, publicOutputDir} = await this.prepareLiveTranscode(user, file);
+    const manifestFileName = 'manifest.mpd';
+
+    const ffmpegArgs = this.generateFfmpegDashArguments(inputFilePathForFfmpeg, streams, `public/${manifestFileName}`);
+    return this.startLiveTranscodeProcess(ffmpegArgs, cwd, inputFileIsLink, inputFilePathForFfmpeg, publicOutputDir, manifestFileName, 'application/dash+xml');
+  }
+
+  private static async prepareLiveTranscode(user: AbstractUser, file: IUserFile): Promise<{ inputFilePathForFfmpeg: string, cwd: string, inputFileIsLink: boolean, publicOutputDir: string }> {
     const inputFileAbsolutePath = file.getAbsolutePathOnHost();
     if (inputFileAbsolutePath == null) {
       throw new Error('File does not exist on host file system');
@@ -29,16 +46,21 @@ export default class VideoLiveTranscode {
       await Fs.promises.link(inputFileAbsolutePath, Path.join(cwd, inputFilePathForFfmpeg));
       inputFileIsLink = true;
     } catch (err) {
-      console.error(`Failed creating hardlink from '${inputFileAbsolutePath}' to '${Path.join(cwd, inputFilePathForFfmpeg)}', falling back to absolute path`);
+      console.error(`Failed creating hardlink from '${inputFileAbsolutePath}' to '${Path.join(cwd, inputFilePathForFfmpeg)}', falling back to absolute path: ${err}`);
 
       inputFilePathForFfmpeg = inputFileAbsolutePath;
     }
 
-    const manifestFileName = 'manifest.mpd';
+    return {
+      inputFilePathForFfmpeg,
+      cwd,
+      inputFileIsLink,
+      publicOutputDir
+    };
+  }
 
-    const ffmpegArgs = this.generateFfmpegDashArguments(inputFilePathForFfmpeg, streams, `public/${manifestFileName}`);
-
-    return new Promise(async (resolve, reject): Promise<void> => {
+  private static async startLiveTranscodeProcess(ffmpegArgs: string[], cwd: string, inputFileIsLink: boolean, inputFilePathForFfmpeg: string, publicDir: string, manifestFileName: string, manifestMimeType: string): Promise<{ publicDir: string, manifestFileName: string, manifestMimeType: string }> {
+    return new Promise((resolve, reject) => {
       const ffmpegProcess = ChildProcess.spawn('ffmpeg', ffmpegArgs, {cwd});
       ffmpegProcess.on('error', (err) => {
         if (inputFileIsLink) {
@@ -60,15 +82,17 @@ export default class VideoLiveTranscode {
           return;
         }
 
-        const manifestAbsolutePath = Path.join(publicOutputDir, manifestFileName);
+        const manifestAbsolutePath = Path.join(publicDir, manifestFileName);
         if (!Fs.existsSync(manifestAbsolutePath) || Fs.statSync(manifestAbsolutePath).size <= 1) {
           return;
         }
 
         alreadyResolved = true;
         return resolve({
-          publicDir: publicOutputDir,
-          manifestFileName: manifestFileName
+          publicDir,
+
+          manifestFileName,
+          manifestMimeType
         });
       });
 
@@ -85,6 +109,140 @@ export default class VideoLiveTranscode {
         }
       });
     });
+  }
+
+  private static generateFfmpegHlsArguments(inputFilePath: string, streams: Stream[], outputMasterFileName: string): string[] {
+    const result = [
+      '-bitexact',
+      '-n', // Do not overwrite if file already exists and fail instead
+
+      '-i', inputFilePath,
+
+      '-map_chapters', '0', // Copy existing chapters from input file
+      '-map_metadata', '0', // Copy existing metadata from input file
+
+      /* Use NVENC hardware acceleration for encoding with some sane high quality settings */
+      '-c:v', 'h264_nvenc',
+      '-preset', 'p6',
+      '-profile', 'high',
+      '-tune', 'hq',
+      '-rc-lookahead', '8',
+      '-bf', '2',
+      '-rc', 'vbr',
+      '-cq', '26'
+    ];
+
+    const audioGroupName = 'audio';
+    const varStreamMap = [];
+    const outputStreamCounter = {video: 0, audio: 0};
+
+    let outputStreamIndexCounter = 0;
+    const subtitleStreams = streams.filter(stream => stream.codecType == 'subtitle');
+    const hasSubtitleStream = subtitleStreams.length > 0;
+    for (const stream of streams) {
+      if (stream.codecType == 'video') {
+        const videoStream = stream as VideoStream;
+
+        let avgSourceFps = 30;
+        if (StringUtils.isNumeric(videoStream.avgFrameRate)) {
+          avgSourceFps = parseInt(videoStream.avgFrameRate, 10);
+        } else if (videoStream.avgFrameRate.includes('/')) {
+          const [num, den] = videoStream.avgFrameRate.split('/');
+          avgSourceFps = parseInt(num, 10) / parseInt(den, 10);
+        }
+
+        let targetWidth = 1920;
+
+        if (targetWidth > videoStream.width) {
+          targetWidth = videoStream.width;
+        }
+
+        let currentVideoStream = `[0:${videoStream.index}]`;
+        const videoFilters = [];
+
+        if (hasSubtitleStream) {
+          let videoStreamCounter = 0;
+          for (const subtitleStream of subtitleStreams) {
+            if (['hdmv_pgs_subtitle', 'dvb_subtitle', 'dvd_subtitle'].includes(subtitleStream.codecName)) {
+              videoFilters.push(`${currentVideoStream}[0:${subtitleStream.index}]overlay${currentVideoStream = `[v${videoStreamCounter++}]`}`);
+            } else {
+              videoFilters.push(`subtitles=filename='${inputFilePath}'`/* + ':stream_index=' */);
+            }
+          }
+        }
+        if (videoStream.width != targetWidth) {
+          videoFilters.push(`scale=${targetWidth}:-1`);
+        }
+
+        const TARGET_FPS = avgSourceFps >= 60 ? 60 : Math.min(avgSourceFps, 30);
+        const GROUP_OF_PICTURES_SIZE = Math.round(TARGET_FPS * 2);
+
+        ++outputStreamIndexCounter;
+        result.push(
+            '-map', `${currentVideoStream}`,
+
+            '-flags', '+cgop',
+            `-g`, GROUP_OF_PICTURES_SIZE.toString(),
+            `-sc_threshold`, '0',
+            // `-r`, TARGET_FPS.toString(),
+            `-pix_fmt`, 'yuv420p',
+
+            `-b:v`, '0',
+            `-maxrate`, '120M',
+            `-bufsize`, '240M'
+        );
+
+        if (videoFilters.length > 0) {
+          result.push(`-filter_complex`, videoFilters.join(','));
+        }
+
+        varStreamMap.push(`v:${outputStreamCounter.video++},agroup:${audioGroupName},name:video`);
+      } else if (stream.codecType == 'audio') {
+        const audioStream = stream as AudioStream;
+
+        const targetChannelCount = Math.min(audioStream.channels, 2);
+        const targetSampleRate = StringUtils.isNumeric(audioStream.sampleRate) ? Math.min(parseInt(audioStream.sampleRate, 10), 48000) : 48000;
+
+        ++outputStreamIndexCounter;
+        result.push(
+            '-map', `0:${audioStream.index}`,
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-ac', targetChannelCount.toString(),
+            '-ar', targetSampleRate.toString()
+        );
+
+        // ISO 639-2 language code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)
+        varStreamMap.push(`a:${outputStreamCounter.audio++},agroup:${audioGroupName},name:${audioStream.tags.language ?? 'und'},language:${audioStream.tags.language ?? 'und'},default:${outputStreamCounter.audio == 1 ? 'yes' : 'no'}`);
+      }
+    }
+
+    // TODO: Add silent audio stream if no audio stream is present
+    // TODO: add text subtitle streams instead of hard-subbing or make configurable
+
+    result.push(
+        '-hls_list_size', '0',
+        '-hls_time', '2',
+        '-hls_init_time', '2',
+        '-hls_allow_cache', '1',
+        '-hls_segment_filename', 'public/stream_%v/chunk_%d.ts',
+        '-hls_enc', '0',
+        '-hls_segment_type', 'mpegts',
+        '-hls_playlist_type', 'event',
+        '-master_pl_name', outputMasterFileName,
+        // '-master_pl_publish_rate', '1',
+        '-hls_flags', 'independent_segments',
+        '-var_stream_map', varStreamMap.join(' '),
+        // '-use_timeline', '1',
+        // '-streaming', '1',
+        // '-update_period', '1',
+        // '-adaptation_sets', adaptionSets.trimStart(),
+
+        '-f', 'hls',
+        `public/stream_%v/manifest.m3u8`
+    );
+
+    return result;
   }
 
   private static generateFfmpegDashArguments(inputFilePath: string, streams: Stream[], outputManifestPath: string): string[] {
@@ -169,7 +327,7 @@ export default class VideoLiveTranscode {
         const targetChannelCount = Math.min(audioStream.channels, 2);
         const targetSampleRate = StringUtils.isNumeric(audioStream.sampleRate) ? Math.min(parseInt(audioStream.sampleRate, 10), 48000) : 48000;
 
-        // FIXME: video player does not support same language streams and only shows first
+        // FIXME: video player does not support multiple same language streams and only shows first
         ++outputStreamIndexCounter;
         result.push(
             '-map', `0:${audioStream.index}`,
