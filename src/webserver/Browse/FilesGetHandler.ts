@@ -472,15 +472,15 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
   }
   streamsToTranscode.push(videoStream);
 
-  let audioStream = inputStreams.streams.find(s => s.codecType == 'audio');
-  if (audioStream == null) {
+  const audioStreams = analyzedVideo.streams.filter(s => s.codecType == 'audio');
+  if (audioStreams.length <= 0) {
     throw new Error('No audio stream found');
   }
-  streamsToTranscode.push(audioStream);
+  streamsToTranscode.push(...audioStreams);
 
-  let subtitleStream = inputStreams.streams.find(s => s.codecType == 'subtitle');
-  if (subtitleStream != null) {
-    streamsToTranscode.push(subtitleStream);
+  const subtitleStreams = analyzedVideo.streams.filter(s => s.codecType == 'subtitle');
+  if (subtitleStreams.length > 0) {
+    streamsToTranscode.push(...subtitleStreams);
   }
 
   const liveTranscode = await VideoLiveTranscode.startLiveHlsTranscode(user, file, streamsToTranscode);
