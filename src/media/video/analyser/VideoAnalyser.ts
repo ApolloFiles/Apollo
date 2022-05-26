@@ -2,13 +2,13 @@ import ChildProcess from 'child_process';
 import * as type from './VideoAnalyser.Types';
 
 export default class VideoAnalyser {
-  static async analyze(absolutePath: string, includeStreams: true): Promise<type.VideoAnalysisWithStreams>;
-  static async analyze(absolutePath: string, includeStreams?: false): Promise<type.VideoFileAnalysis>;
-  static async analyze(absolutePath: string, includeStreams: boolean = false): Promise<type.VideoFileAnalysis | type.VideoAnalysisWithStreams> {
+  static async analyze(absolutePath: string, extendedAnalysis: true): Promise<type.ExtendedVideoAnalysis>;
+  static async analyze(absolutePath: string, extendedAnalysis?: false): Promise<type.VideoFileAnalysis>;
+  static async analyze(absolutePath: string, extendedAnalysis: boolean = false): Promise<type.VideoFileAnalysis | type.ExtendedVideoAnalysis> {
     return new Promise((resolve, reject): void => {
-      const processArgs = ['-print_format', 'json', '-show_format'];
-      if (includeStreams) {
-        processArgs.push('-show_streams');
+      const processArgs = ['-print_format', 'json=compact=1', '-show_format'];
+      if (extendedAnalysis) {
+        processArgs.push('-show_streams', '-show_chapters');
       }
       processArgs.push(absolutePath);
 
@@ -33,8 +33,27 @@ export default class VideoAnalyser {
         const probeJson = JSON.parse(probeJsonString);
         const fileAnalysis = this.extractFileAnalysis(probeJson);
 
-        if (!includeStreams) {
+        if (!extendedAnalysis) {
           return resolve(fileAnalysis);
+        }
+
+        const chapters: type.VideoChapterAnalysis['chapters'] = [];
+        if (probeJson.chapters) {
+          for (const chapter of probeJson.chapters) {
+            chapters.push({
+              id: chapter.id,
+
+              timeBase: chapter.time_base,
+
+              start: chapter.start,
+              startTime: chapter.start_time,
+
+              end: chapter.end,
+              endTime: chapter.end_time,
+
+              tags: chapter.tags ?? {}
+            });
+          }
         }
 
         const analyzedStreams: type.VideoStreamAnalysis['streams'] = [];
@@ -55,7 +74,7 @@ export default class VideoAnalyser {
           }
         }
 
-        return resolve({...fileAnalysis, streams: analyzedStreams});
+        return resolve({...fileAnalysis, chapters, streams: analyzedStreams});
       });
     });
   }

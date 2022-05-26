@@ -1,4 +1,26 @@
-export type VideoAnalysisWithStreams = VideoFileAnalysis & VideoStreamAnalysis;
+export type ExtendedVideoAnalysis = VideoFileAnalysis & VideoChapterAnalysis & VideoStreamAnalysis;
+
+export interface VideoChapterAnalysis {
+  readonly chapters: Chapter[];
+}
+
+export interface Chapter {
+  readonly  id: number;
+
+  readonly timeBase: string;
+
+  readonly start: number;
+  readonly startTime: string;
+
+  readonly end: number;
+  readonly endTime: string;
+
+  readonly tags: {
+    readonly [key: string]: string;
+
+    readonly title: string;
+  };
+}
 
 export interface VideoStreamAnalysis {
   readonly streams: Stream[];
