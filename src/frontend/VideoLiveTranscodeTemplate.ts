@@ -10,6 +10,8 @@ export type VideoLiveTransCodeTemplateData = {
 
   manifestFileName: string;
   manifestMimeType: string;
+
+  chapters: { label: string, start: number }[];
 };
 
 export default class VideoLiveTranscodeTemplate extends SimpleTemplate {

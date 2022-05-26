@@ -464,6 +464,15 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
   }
 
   const analyzedVideo = await VideoAnalyser.analyze(inputFileAbsolutePath, true);
+
+  const chapters: { label: string, start: number }[] = [];
+  for (const chapter of analyzedVideo.chapters) {
+    chapters.push({
+      label: chapter.tags.title ?? '',
+      start: parseInt(chapter.startTime)
+    });
+  }
+
   const streamsToTranscode: Stream[] = [];
 
   const videoStream = analyzedVideo.streams.find(s => s.codecType == 'video');
@@ -505,6 +514,7 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
 
     manifestFileName: liveTranscode.manifestFileName,
     manifestMimeType: liveTranscode.manifestMimeType,
+    chapters,
   };
   liveTranscodeCache[inputFileAbsolutePath] = videoLiveTranscodeData;
 

@@ -21,6 +21,42 @@
       </p>
     </video>
   </div>
+  <button onclick="player.currentTime(0)">Jump to 0 seconds</button>
+
+  <div id="chapterContainer">
+    <h2>Chapters</h2>
+
+    <% if (locals.chapters.length > 0) { %>
+    <ul>
+      <%
+      function formatSeconds(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secondsLeft = seconds % 60;
+
+        let formattedTime = '';
+
+        if (hours > 0) {
+          formattedTime += ('0' + hours).slice(-2) + ':';
+        }
+
+        formattedTime += ('0' + minutes).slice(-2) + ':' + ('0' + secondsLeft).slice(-2);
+
+        return formattedTime;
+      }
+      %>
+      <% for (const chapter of locals.chapters) { %>
+      <li>
+        <button onclick="player.currentTime(<%= chapter.start %>)"
+                title="Jump to <%= chapter.start %> seconds"><%= formatSeconds(chapter.start) %></button>
+        – <%= chapter.label %>
+      </li>
+      <% } %>
+    </ul>
+    <% } else { %>
+    <p>No chapters available</p>
+    <% } %>
+  </div>
 
   <script>window.HELP_IMPROVE_VIDEOJS = false;</script>
   <script src="/node_modules/video.js/dist/video.min.js"></script>
@@ -680,7 +716,5 @@
       });
     });
   </script>
-
-  <button onclick="player.currentTime(0)">Jump to 0 seconds</button>
 </body>
 </html>
