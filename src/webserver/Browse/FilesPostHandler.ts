@@ -35,7 +35,8 @@ export function filesHandlePost(req: express.Request, res: express.Response, fro
       await WebServer.runMiddleware(req, res, expressFileUpload({
         abortOnLimit: true,
         useTempFiles: true,
-        tempFileDir: Path.join(user.getTmpFileSystem().getAbsolutePathOnHost(), 'uploads')
+        tempFileDir: Path.join(user.getTmpFileSystem().getAbsolutePathOnHost(), 'uploads'),
+        preservePath: true
       }));
     }
     // await runMiddleware(req, res, express.json());
