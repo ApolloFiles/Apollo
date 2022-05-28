@@ -6,6 +6,7 @@ import AbstractUser from '../../../AbstractUser';
 import IUserFile from '../../../files/IUserFile';
 import { AudioStream, Stream, VideoStream } from '../analyser/VideoAnalyser.Types';
 
+// TODO: automatically detect if hardware acceleration (nvec) is available and restart transcode if it fails because of it
 export default class VideoLiveTranscode {
   static async startLiveHlsTranscode(user: AbstractUser, file: IUserFile, streams: Stream[]): Promise<{ publicDir: string, manifestFileName: string, manifestMimeType: string }> {
     const {inputFilePathForFfmpeg, cwd, inputFileIsLink, publicOutputDir} = await this.prepareLiveTranscode(user, file);
@@ -119,17 +120,7 @@ export default class VideoLiveTranscode {
       '-i', inputFilePath,
 
       '-map_chapters', '0', // Copy existing chapters from input file
-      '-map_metadata', '0', // Copy existing metadata from input file
-
-      /* Use NVENC hardware acceleration for encoding with some sane high quality settings */
-      '-c:v', 'h264_nvenc',
-      '-preset', 'p6',
-      '-profile', 'high',
-      '-tune', 'hq',
-      '-rc-lookahead', '8',
-      '-bf', '2',
-      '-rc', 'vbr',
-      '-cq', '26'
+      '-map_metadata', '0' // Copy existing metadata from input file
     ];
 
     const audioGroupName = 'audio';
@@ -184,6 +175,16 @@ export default class VideoLiveTranscode {
         ++outputStreamIndexCounter;
         result.push(
             '-map', `${currentVideoStream}`,
+
+            /* Use NVENC hardware acceleration for encoding with some sane high quality settings */
+            '-c', 'h264_nvenc',
+            '-preset', 'p6',
+            '-profile', 'high',
+            '-tune', 'hq',
+            '-rc-lookahead', '8',
+            '-bf', '2',
+            '-rc', 'vbr',
+            '-cq', '26',
 
             '-flags', '+cgop',
             `-g`, GROUP_OF_PICTURES_SIZE.toString(),
