@@ -3,6 +3,7 @@ import { EOL } from 'os';
 import path from 'path';
 import sharp, { Sharp } from 'sharp';
 import IUserFile from './files/IUserFile';
+import VideoAnalyser from './media/video/analyser/VideoAnalyser';
 
 export default class ThumbnailGenerator {
   readonly sharpMimeTypes: string[];
@@ -62,10 +63,20 @@ export default class ThumbnailGenerator {
     }
 
     if (!this.sharpMimeTypes.includes(mimeType)) {
-      if (mimeType.startsWith('video/')) {
+      let thumbnail: Sharp | null = null;
+
+      if (mimeType.startsWith('video/') || mimeType.startsWith('audio/')) {
+        thumbnail = await this.extractVideoCover(file);
+      }
+
+      if (thumbnail == null && mimeType.startsWith('video/')) {
+        thumbnail = (await this.generateVideoThumbnail(file)).img;
+      }
+
+      if (thumbnail != null) {
         return {
           mime: 'image/png',
-          data: await (await this.generateVideoThumbnail(file)).img.png().toBuffer({resolveWithObject: false})
+          data: await thumbnail.png().toBuffer({resolveWithObject: false})
         };
       }
 
@@ -90,6 +101,65 @@ export default class ThumbnailGenerator {
       mime: 'image/png',
       data: await sharpInstance.toBuffer()
     };
+  }
+
+  private async extractVideoCover(file: IUserFile): Promise<Sharp | null> {
+    const filePath = await file.getAbsolutePathOnHost();
+    if (filePath == null) throw new Error('filePath is null');
+
+    return new Promise(async (resolve, reject): Promise<void> => {
+      const videoStreams = await VideoAnalyser.analyze(filePath, true);
+      const potentialCoverStreams = videoStreams.streams.filter(stream => stream.codecType == 'video' && stream.avgFrameRate == '0/0');
+
+      let coverStream: { fileName: string, streamSpecifier: string } | null = null;
+      for (const stream of potentialCoverStreams) {
+        if (coverStream == null ||
+            (stream.tags.mimetype != null && this.sharpMimeTypes.includes(stream.tags.mimetype.toLowerCase()))) {
+          coverStream = {fileName: stream.tags.filename ?? 'extracted_cover.png', streamSpecifier: `0:${stream.index}`};
+        }
+
+        if (stream.tags.filename?.toLowerCase().startsWith('cover.')) {
+          break;
+        }
+      }
+
+      if (coverStream == null) {
+        return resolve(null);
+      }
+
+      // FIXME: Delete cwd when done
+      // FIXME: write lock on cwd
+      const cwdFile = await file.getOwner().getTmpFileSystem().createTmpDir('thumbnail-');
+      const cwd = cwdFile.getAbsolutePathOnHost();
+      if (cwd == null) {
+        throw new Error('cwd is null');
+      }
+
+      const args = ['-i', filePath, '-map', coverStream.streamSpecifier, '-frames', '1', '-f', 'image2', coverStream.fileName];
+
+      const processInfo = this.spawn('ffmpeg', args, {cwd});
+      const process = processInfo.process;
+      process.on('error', (err) => reject(err));
+
+      let outBuff = '';
+      let errBuff = '';
+
+      process.stdout.on('data', (chunk) => {
+        outBuff += chunk.toString();
+      });
+      process.stderr.on('data', (chunk) => {
+        errBuff += chunk.toString();
+      });
+
+      const coverFilePath = path.join(cwd, coverStream.fileName);
+      process.on('close', async (code): Promise<void> => {
+        if (code != 0) {
+          return reject(new Error(`Executing command 'ffmpeg' exited with code ${code} (log=${/*processInfo.logFile*/ '-'},stderr='${errBuff}',stdout='${outBuff}')`));
+        }
+
+        resolve(sharp(coverFilePath));
+      });
+    });
   }
 
   private async generateVideoThumbnail(file: IUserFile, sampleSize: number = 3, width = 500): Promise<{ img: Sharp }> {
