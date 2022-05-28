@@ -157,13 +157,17 @@ export default class VideoLiveTranscode {
           targetWidth = videoStream.width;
         }
 
-        let currentVideoStream = `[0:${videoStream.index}]`;
+        let currentVideoStream = `0:${videoStream.index}`;
         const videoFilters = [];
 
         if (hasSubtitleStream) {
           let videoStreamCounter = 0;
           for (const subtitleStream of subtitleStreams) {
             if (['hdmv_pgs_subtitle', 'dvb_subtitle', 'dvd_subtitle'].includes(subtitleStream.codecName)) {
+              if (currentVideoStream.indexOf('[') === -1) {
+                currentVideoStream = `[${currentVideoStream}]`;
+              }
+
               videoFilters.push(`${currentVideoStream}[0:${subtitleStream.index}]overlay${currentVideoStream = `[v${videoStreamCounter++}]`}`);
             } else {
               videoFilters.push(`subtitles=filename='${inputFilePath}'`/* + ':stream_index=' */);
