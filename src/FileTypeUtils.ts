@@ -19,7 +19,9 @@ export default class FileTypeUtils {
       fileMimeType = await this.getMimeTypeFromFileApp(path);
     }
 
-    if (fileMimeType == null || fileMimeType == 'inode/x-empty') {
+    if (fileMimeType == null ||
+        fileMimeType == 'inode/x-empty' ||
+        (fileMimeType == 'application/octet-stream' && path.toLowerCase().endsWith('.mp3'))) {
       const lookUpByExtension = MimeType.lookup(path);
 
       if (lookUpByExtension) {
