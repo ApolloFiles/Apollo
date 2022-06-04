@@ -591,9 +591,11 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
             args.push('-i', imagePath);
           }
 
-          args.push(
-              '-filter_complex', `hstack=inputs=${imageFiles.length}`,
+          if (imageFiles.length > 1) {
+            args.push('-filter_complex', `hstack=inputs=${imageFiles.length}`);
+          }
 
+          args.push(
               '-f', 'image2',
               chunkFilePath
           );
