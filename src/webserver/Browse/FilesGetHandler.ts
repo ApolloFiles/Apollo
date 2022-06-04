@@ -482,6 +482,16 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
   streamsToTranscode.push(videoStream);
 
   const audioStreams = analyzedVideo.streams.filter(s => s.codecType == 'audio');
+  audioStreams.sort((a, b) => {
+    if (a.tags.language == 'jpn' && b.tags.language != 'jpn') {
+      return -1;
+    }
+    if (a.tags.language != 'jpn' && b.tags.language == 'jpn') {
+      return 1;
+    }
+
+    return 0;
+  });
   if (audioStreams.length <= 0) {
     throw new Error('No audio stream found');
   }
