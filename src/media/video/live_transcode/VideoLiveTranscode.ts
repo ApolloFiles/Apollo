@@ -8,11 +8,11 @@ import { AudioStream, Stream, VideoStream } from '../analyser/VideoAnalyser.Type
 
 // TODO: automatically detect if hardware acceleration (nvec) is available and restart transcode if it fails because of it
 export default class VideoLiveTranscode {
-  static async startLiveHlsTranscode(user: AbstractUser, file: IUserFile, streams: Stream[]): Promise<{ publicDir: string, manifestFileName: string, manifestMimeType: string }> {
+  static async startLiveHlsTranscode(user: AbstractUser, file: IUserFile, streamsToTranscode: Stream[], allStreamsInInput: Stream[]): Promise<{ publicDir: string, manifestFileName: string, manifestMimeType: string }> {
     const {inputFilePathForFfmpeg, cwd, inputFileIsLink, publicOutputDir} = await this.prepareLiveTranscode(user, file);
 
     const manifestFileName = 'master.m3u8';
-    const ffmpegArgs = this.generateFfmpegHlsArguments(inputFilePathForFfmpeg, streams, manifestFileName);
+    const ffmpegArgs = this.generateFfmpegHlsArguments(inputFilePathForFfmpeg, streamsToTranscode, allStreamsInInput, manifestFileName);
 
     return this.startLiveTranscodeProcess(ffmpegArgs, cwd, inputFileIsLink, inputFilePathForFfmpeg, publicOutputDir, manifestFileName, 'application/x-mpegURL');
   }
@@ -112,7 +112,7 @@ export default class VideoLiveTranscode {
     });
   }
 
-  private static generateFfmpegHlsArguments(inputFilePath: string, streams: Stream[], outputMasterFileName: string): string[] {
+  private static generateFfmpegHlsArguments(inputFilePath: string, streamsToTranscode: Stream[], allStreamsInInput: Stream[], outputMasterFileName: string): string[] {
     const result = [
       '-bitexact',
       '-n', // Do not overwrite if file already exists and fail instead
@@ -128,9 +128,9 @@ export default class VideoLiveTranscode {
     const outputStreamCounter = {video: 0, audio: 0};
 
     let outputStreamIndexCounter = 0;
-    const subtitleStreams = streams.filter(stream => stream.codecType == 'subtitle');
+    const subtitleStreams = streamsToTranscode.filter(stream => stream.codecType == 'subtitle');
     const hasSubtitleStream = subtitleStreams.length > 0;
-    for (const stream of streams) {
+    for (const stream of streamsToTranscode) {
       if (stream.codecType == 'video') {
         const videoStream = stream as VideoStream;
 
@@ -161,7 +161,18 @@ export default class VideoLiveTranscode {
 
               videoFilters.push(`${currentVideoStream}[0:${subtitleStream.index}]overlay${currentVideoStream = `[v${videoStreamCounter++}]`}`);
             } else {
-              videoFilters.push(`subtitles=filename='${inputFilePath}'`/* + ':stream_index=' */);
+              let subtitleStreamIndex = 0;
+              for (const inInputStream of allStreamsInInput) {
+                if (inInputStream.index == subtitleStream.index) {
+                  break;
+                }
+
+                if (inInputStream.codecType == 'subtitle') {
+                  ++subtitleStreamIndex;
+                }
+              }
+
+              videoFilters.push(`subtitles=filename='${inputFilePath}'` + ':stream_index=' + subtitleStreamIndex);
             }
           }
         }

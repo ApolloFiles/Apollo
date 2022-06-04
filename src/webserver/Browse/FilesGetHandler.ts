@@ -492,7 +492,7 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
     streamsToTranscode.push(...subtitleStreams);
   }
 
-  const liveTranscode = await VideoLiveTranscode.startLiveHlsTranscode(user, file, streamsToTranscode);
+  const liveTranscode = await VideoLiveTranscode.startLiveHlsTranscode(user, file, streamsToTranscode, analyzedVideo.streams);
 
   const videoFrontendUrl = await UrlBuilder.buildUrl(file);
   const aliasToken = Crypto.createHash('sha256')
