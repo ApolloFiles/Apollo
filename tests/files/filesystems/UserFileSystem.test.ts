@@ -86,11 +86,11 @@ describe('#getSize', () => {
   });
 
   test('Size of directory with text file', async () => {
-    const emptyFileSystemSize = user.getDefaultFileSystem().getSize();
+    const emptyFileSystemSize = await user.getDefaultFileSystem().getSize();
 
     await TestHelper.createFile(user.getDefaultFileSystem(), '/root.txt', 'Hello Jester!');
     await expect(user.getDefaultFileSystem().getFiles('/')).resolves.toHaveLength(1);
 
-    await expect(user.getDefaultFileSystem().getSize()).resolves.toBeGreaterThan(await emptyFileSystemSize);
+    await expect(user.getDefaultFileSystem().getSize()).resolves.toBeGreaterThan(emptyFileSystemSize);
   });
 });
