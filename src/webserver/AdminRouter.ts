@@ -1,28 +1,30 @@
-import ChildProcess from 'child_process';
 import express from 'express';
 import Fs from 'fs';
+import ProcessBuilder from '../process_manager/ProcessBuilder';
 
 export const adminRouter = express.Router();
 
-adminRouter.use((req, res, next) => {
-  const fileDescriptors = [];
+adminRouter.use(async (req, res, next): Promise<void> => {
+  const childProcess = await new ProcessBuilder('pgrep', ['--parent', process.pid.toString()])
+      .bufferStdOut()
+      .runPromised();
 
-  const childProcesses = ChildProcess.spawnSync('pgrep', ['--parent', process.pid.toString()]);
-
-  if (childProcesses.error) {
-    next(childProcesses.error);
-    return;
+  if (childProcess.err) {
+    return next(childProcess.err);
   }
-  if (childProcesses.status != 0 && childProcesses.status != 1) {
+
+  if (childProcess.code != 0 && childProcess.code != 1) {
     res.status(500)
         .send('Could not find child processes using pgrep');
     return;
   }
 
+  const fileDescriptors = [];
   const processIds = [
     process.pid,
-    ...childProcesses.stdout.toString().split('\n')
+    ...childProcess.process.bufferedStdOut.toString('utf-8').split('\n')
   ];
+
   for (const pid of processIds) {
     try {
       for (const fd of Fs.readdirSync(`/proc/${pid}/fd`)) {
@@ -86,7 +88,6 @@ adminRouter.use((req, res, next) => {
     responseStr += '<pre>No open file descriptors</pre>';
   }
 
-  res
-      .type('text/html')
+  res.type('text/html')
       .send(responseStr);
 });

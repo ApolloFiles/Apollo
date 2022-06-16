@@ -1,82 +1,71 @@
-import ChildProcess from 'child_process';
+import ProcessBuilder from '../../../process_manager/ProcessBuilder';
 import * as type from './VideoAnalyser.Types';
 
 export default class VideoAnalyser {
   static async analyze(absolutePath: string, extendedAnalysis: true): Promise<type.ExtendedVideoAnalysis>;
   static async analyze(absolutePath: string, extendedAnalysis?: false): Promise<type.VideoFileAnalysis>;
   static async analyze(absolutePath: string, extendedAnalysis: boolean = false): Promise<type.VideoFileAnalysis | type.ExtendedVideoAnalysis> {
-    return new Promise((resolve, reject): void => {
-      const processArgs = ['-print_format', 'json=compact=1', '-show_format'];
-      if (extendedAnalysis) {
-        processArgs.push('-show_streams', '-show_chapters');
+
+    const processArgs = ['-print_format', 'json=compact=1', '-show_format'];
+    if (extendedAnalysis) {
+      processArgs.push('-show_streams', '-show_chapters');
+    }
+    processArgs.push(absolutePath);
+
+    const childProcess = await new ProcessBuilder('ffprobe', processArgs)
+        .errorOnNonZeroExit()
+        .bufferStdOut()
+        .runPromised();
+
+    if (childProcess.err) {
+      throw childProcess.err;
+    }
+
+    const probeJson = JSON.parse(childProcess.process.bufferedStdOut.toString('utf-8'));
+    const fileAnalysis = this.extractFileAnalysis(probeJson);
+
+    if (!extendedAnalysis) {
+      return fileAnalysis;
+    }
+
+    const chapters: type.VideoChapterAnalysis['chapters'] = [];
+    if (probeJson.chapters) {
+      for (const chapter of probeJson.chapters) {
+        chapters.push({
+          id: chapter.id,
+
+          timeBase: chapter.time_base,
+
+          start: chapter.start,
+          startTime: chapter.start_time,
+
+          end: chapter.end,
+          endTime: chapter.end_time,
+
+          tags: chapter.tags ?? {}
+        });
       }
-      processArgs.push(absolutePath);
+    }
 
-      const process = ChildProcess.spawn('ffprobe', processArgs);
+    const analyzedStreams: type.VideoStreamAnalysis['streams'] = [];
+    for (const stream of probeJson.streams) {
+      const baseStream = this.extractBaseStream(stream);
 
-      process.on('error', (err) => {
-        reject(err);
-      });
+      switch (baseStream.codecType) {
+        case 'video':
+          analyzedStreams.push(this.extractVideoStream(baseStream, stream));
+          break;
+        case 'audio':
+          analyzedStreams.push(this.extractAudioStream(baseStream, stream));
+          break;
 
-      let probeJsonString = '';
-      process.stdout.on('data', (data) => {
-        probeJsonString += data;
-      });
+        default:
+          analyzedStreams.push(baseStream);
+          break;
+      }
+    }
 
-      process.on('exit', (code) => {
-        console.log(`ffprobe child process exited with code ${code}`);
-
-        if (code !== 0) {
-          return reject(new Error(`ffprobe exited with code ${code}`));
-        }
-
-        const probeJson = JSON.parse(probeJsonString);
-        const fileAnalysis = this.extractFileAnalysis(probeJson);
-
-        if (!extendedAnalysis) {
-          return resolve(fileAnalysis);
-        }
-
-        const chapters: type.VideoChapterAnalysis['chapters'] = [];
-        if (probeJson.chapters) {
-          for (const chapter of probeJson.chapters) {
-            chapters.push({
-              id: chapter.id,
-
-              timeBase: chapter.time_base,
-
-              start: chapter.start,
-              startTime: chapter.start_time,
-
-              end: chapter.end,
-              endTime: chapter.end_time,
-
-              tags: chapter.tags ?? {}
-            });
-          }
-        }
-
-        const analyzedStreams: type.VideoStreamAnalysis['streams'] = [];
-        for (const stream of probeJson.streams) {
-          const baseStream = this.extractBaseStream(stream);
-
-          switch (baseStream.codecType) {
-            case 'video':
-              analyzedStreams.push(this.extractVideoStream(baseStream, stream));
-              break;
-            case 'audio':
-              analyzedStreams.push(this.extractAudioStream(baseStream, stream));
-              break;
-
-            default:
-              analyzedStreams.push(baseStream);
-              break;
-          }
-        }
-
-        return resolve({...fileAnalysis, chapters, streams: analyzedStreams});
-      });
-    });
+    return {...fileAnalysis, chapters, streams: analyzedStreams};
   }
 
   private static extractFileAnalysis(rawProbeResult: any): type.VideoFileAnalysis {

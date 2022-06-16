@@ -1,5 +1,6 @@
 import ChildProcess from 'child_process';
 import * as MimeType from 'mime-types';
+import ProcessBuilder from './process_manager/ProcessBuilder';
 
 export default class FileTypeUtils {
   protected useFileApp: boolean;
@@ -16,7 +17,7 @@ export default class FileTypeUtils {
     let fileMimeType: string | null = null;
 
     if (this.useFileApp) {
-      fileMimeType = await this.getMimeTypeFromFileApp(path);
+      fileMimeType = await FileTypeUtils.getMimeTypeFromFileApp(path);
     }
 
     if (fileMimeType == null ||
@@ -37,34 +38,24 @@ export default class FileTypeUtils {
   }
 
   // TODO: add support für path array
-  private async getMimeTypeFromFileApp(path: string): Promise<string | null> {
-    return new Promise((resolve, reject) => {
-      const fileProcess = ChildProcess.spawn('file', ['--mime-type', '--preserve-date', '--separator=', '-E', '--raw', '--print0', path],
-          {stdio: ['ignore', 'pipe', 'pipe']});
+  private static async getMimeTypeFromFileApp(path: string): Promise<string | null> {
+    const childProcessArgs = ['--mime-type', '--preserve-date', '--separator=', '-E', '--raw', '--print0', path];
+    const childProcessResult = await new ProcessBuilder('file', childProcessArgs)
+        .errorOnNonZeroExit()
+        .bufferStdOut()
+        .runPromised();
 
-      fileProcess.on('error', reject);
+    if (childProcessResult.err) {
+      throw childProcessResult.err;
+    }
 
-      let stdout = '';
-      fileProcess.stdout.on('data', (data) => {
-        stdout += data;
-      });
+    const args = childProcessResult.process.bufferedStdOut.toString('utf-8').split('\0');
 
-      fileProcess.on('close', (code) => {
-        const args = stdout.toString().split('\0');
+    if (args.length !== 2) {
+      throw new Error(`Invalid output from 'file': ${args}`);
+    }
 
-        if (args.length != 2) {
-          reject(new Error(`Invalid output from 'file': ${args}`));
-          return;
-        }
-
-        if (code == 0) {
-          resolve(args[1].trim() || null);
-          return;
-        }
-
-        reject(new Error(`'file' exited with code ${code}: ${stdout}`));
-      });
-    });
+    return args[1].trim() || null;
   }
 
   static isFileAppAvailable(): boolean {

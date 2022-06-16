@@ -8,7 +8,7 @@ export function createFilesRouter(frontendType: 'browse' | 'trash'): express.Rou
   router.use('/', (req, res, next) => {
     Utils.restful(req, res, next,
         {
-          get: filesHandleGet(req, res, frontendType),
+          get: filesHandleGet(req, res, next, frontendType),
           post: filesHandlePost(req, res, frontendType)
         });
   });

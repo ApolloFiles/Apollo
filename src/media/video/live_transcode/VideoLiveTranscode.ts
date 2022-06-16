@@ -1,9 +1,9 @@
 import { StringUtils } from '@spraxdev/node-commons';
-import ChildProcess from 'child_process';
 import Fs from 'fs';
 import Path from 'path';
 import AbstractUser from '../../../AbstractUser';
 import IUserFile from '../../../files/IUserFile';
+import ProcessBuilder from '../../../process_manager/ProcessBuilder';
 import { AudioStream, Stream, VideoStream } from '../analyser/VideoAnalyser.Types';
 
 // TODO: automatically detect if hardware acceleration (nvec) is available and restart transcode if it fails because of it
@@ -62,23 +62,29 @@ export default class VideoLiveTranscode {
 
   private static async startLiveTranscodeProcess(ffmpegArgs: string[], cwd: string, inputFileIsLink: boolean, inputFilePathForFfmpeg: string, publicDir: string, manifestFileName: string, manifestMimeType: string): Promise<{ publicDir: string, manifestFileName: string, manifestMimeType: string }> {
     return new Promise((resolve, reject) => {
-      const ffmpegProcess = ChildProcess.spawn('ffmpeg', ffmpegArgs, {cwd});
-      ffmpegProcess.on('error', (err) => {
+      let alreadyResolved = false;
+
+      const ffmpegChildProcess = new ProcessBuilder('ffmpeg', ffmpegArgs)
+          .errorOnNonZeroExit()
+          .withCwd(cwd)
+          .run();
+
+      ffmpegChildProcess.on('exit', (code, signal, err) => {
         if (inputFileIsLink) {
           Fs.unlinkSync(Path.join(cwd, inputFilePathForFfmpeg));
         }
 
-        reject(err);
+        if (err) {
+          return reject(err);
+        }
+
+        if (!alreadyResolved) {
+          alreadyResolved = true;
+          return reject(new Error(`'${ffmpegChildProcess.command}' somehow finished before the manifest file has been created`));
+        }
       });
 
-      ffmpegProcess.stdout.on('data', (data) => {
-        console.log(`[OUT] ${data}`);
-      });
-
-      let alreadyResolved = false;
-      ffmpegProcess.stderr.on('data', async (data) => {
-        console.log(`[ERR] ${data}`);
-
+      ffmpegChildProcess.on('stderr', () => {
         if (alreadyResolved) {
           return;
         }
@@ -95,19 +101,6 @@ export default class VideoLiveTranscode {
           manifestFileName,
           manifestMimeType
         });
-      });
-
-      ffmpegProcess.on('exit', (code) => {
-        console.log(`ffmpeg process exited with code ${code}`);
-
-        if (inputFileIsLink) {
-          Fs.unlinkSync(Path.join(cwd, inputFilePathForFfmpeg));
-        }
-
-        if (!alreadyResolved) {
-          alreadyResolved = true;
-          reject(new Error(`ffmpeg process exited with code ${code}`));
-        }
       });
     });
   }

@@ -1,5 +1,4 @@
 import * as Archiver from 'archiver';
-import ChildProcess from 'child_process';
 import Crypto from 'crypto';
 import express from 'express';
 import * as fastDirectorySize from 'fast-directory-size';
@@ -16,6 +15,7 @@ import VideoLiveTranscodeTemplate, { VideoLiveTransCodeTemplateData } from '../.
 import VideoAnalyser from '../../media/video/analyser/VideoAnalyser';
 import { Stream } from '../../media/video/analyser/VideoAnalyser.Types';
 import VideoLiveTranscode from '../../media/video/live_transcode/VideoLiveTranscode';
+import ProcessBuilder from '../../process_manager/ProcessBuilder';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
 import { registerAliasHandler } from '../AliasRouter';
@@ -24,7 +24,7 @@ import WebServer from '../WebServer';
 type FileRequestType = 'thumbnail' | 'download' | 'search' | 'live_transcode' | 'webttv_thumbnails';
 const allowedFileRequestTypes = ['thumbnail', 'download', 'search', 'live_transcode', 'webttv_thumbnails'];  // Needs to be identical to FileRequestType
 
-export function filesHandleGet(req: express.Request, res: express.Response, frontendType: 'browse' | 'trash'): () => Promise<void> {
+export function filesHandleGet(req: express.Request, res: express.Response, next: express.NextFunction, frontendType: 'browse' | 'trash'): () => Promise<void> {
   return async () => {
     if (req.query.type != null && (typeof req.query.type != 'string' || !allowedFileRequestTypes.includes(req.query.type))) {
       res.status(400)
@@ -57,7 +57,7 @@ export function filesHandleGet(req: express.Request, res: express.Response, fron
     }
 
     if (await file.isFile()) {
-      await handleFileRequest(req, res, user, file, fileRequestType);
+      await handleFileRequest(req, res, next, user, file, fileRequestType);
       return;
     }
 
@@ -343,7 +343,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
   //     '<ul>';
 }
 
-async function handleFileRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile, fileRequestType?: FileRequestType): Promise<void> {
+async function handleFileRequest(req: express.Request, res: express.Response, next: express.NextFunction, user: AbstractUser, file: IUserFile, fileRequestType?: FileRequestType): Promise<void> {
   if (fileRequestType == 'search') {
     res.status(400)
         .type('text/plain')
@@ -374,7 +374,7 @@ async function handleFileRequest(req: express.Request, res: express.Response, us
   }
 
   if (fileRequestType == 'webttv_thumbnails') {
-    return handleWebVttThumbnailRequest(req, res, user, file);
+    return handleWebVttThumbnailRequest(req, res, next, user, file);
   }
 
   console.log(`User '${user.getDisplayName()}' requested file '${file.getPath()}'`);
@@ -538,7 +538,7 @@ async function handleFileLiveTranscodeRequest(req: express.Request, res: express
 
 const webVttThumbnailCache: { [key: string]: string } = {};
 
-async function handleWebVttThumbnailRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile): Promise<void> {
+async function handleWebVttThumbnailRequest(req: express.Request, res: express.Response, next: express.NextFunction, user: AbstractUser, file: IUserFile): Promise<void> {
   const SECONDS_BETWEEN_FRAMES: number = 5;
 
   const inputFileAbsolutePath = file.getAbsolutePathOnHost();
@@ -565,7 +565,7 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
 
   await Fs.promises.link(inputFileAbsolutePath, Path.join(cwd, inputFileRelativePath));
 
-  const ffmpegProcess = ChildProcess.spawn('ffmpeg',
+  const childProcess = await new ProcessBuilder('ffmpeg',
       [
         '-hwaccel', 'cuda',
         '-bitexact',
@@ -577,127 +577,103 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
 
         '-f', 'image2',
         'frames/%d.png'
-      ],
-      {cwd});
+      ])
+      .errorOnNonZeroExit()
+      .withCwd(cwd)
+      .runPromised();
 
-  ffmpegProcess.stdout.on('data', (data) => {
-    console.log(`[OUT] ${data}`);
-  });
-  ffmpegProcess.stderr.on('data', (data) => {
-    console.log(`[ERR] ${data}`);
-  });
-  ffmpegProcess.on('exit', async (code) => {
-    console.log(`ffmpeg process exited with code ${code}`);
 
-    if (code == 0) {
-      const mergeFramesIntoChunkImage = async (imageFiles: string[], chunkFilePath: string): Promise<void> => {
-        return new Promise((resolve, reject) => {
-          const args = [
-            '-bitexact',
-            '-n'
-          ];
+  if (childProcess.err) {
+    throw childProcess.err;
+  }
 
-          for (const imagePath of imageFiles) {
-            args.push('-i', imagePath);
-          }
+  const mergeFramesIntoChunkImage = async (imageFiles: string[], chunkFilePath: string): Promise<void> => {
+    const args = [
+      '-bitexact',
+      '-n'
+    ];
 
-          if (imageFiles.length > 1) {
-            args.push('-filter_complex', `hstack=inputs=${imageFiles.length}`);
-          }
+    for (const imagePath of imageFiles) {
+      args.push('-i', imagePath);
+    }
 
-          args.push(
-              '-f', 'image2',
-              chunkFilePath
-          );
+    if (imageFiles.length > 1) {
+      args.push('-filter_complex', `hstack=inputs=${imageFiles.length}`);
+    }
 
-          const ffmpegProcess = ChildProcess.spawn('ffmpeg', args, {cwd});
+    args.push(
+        '-f', 'image2',
+        chunkFilePath
+    );
 
-          ffmpegProcess.stdout.on('data', (data) => {
-            console.log(`[OUT] ${data}`);
-          });
-          ffmpegProcess.stderr.on('data', (data) => {
-            console.log(`[ERR] ${data}`);
-          });
+    const childProcess = await new ProcessBuilder('ffmpeg', args)
+        .withCwd(cwd)
+        .runPromised();
 
-          ffmpegProcess.on('error', (err) => reject(err));
+    if (childProcess.err) {
+      throw childProcess.err;
+    }
+  };
 
-          ffmpegProcess.on('exit', (code) => {
-            console.log(`ffmpeg process exited with code ${code}`);
+  const frameFiles = (await Fs.promises.readdir(Path.join(cwd, 'frames'))).map((fileName) => Path.join('frames', fileName));
+  frameFiles.sort(getFileNameCollator().compare);
 
-            if (code == 0) {
-              return resolve();
-            }
+  const chunkSize = 6;
+  for (let i = 0; i < frameFiles.length; i += chunkSize) {
+    const chunk = frameFiles.slice(i, i + chunkSize);
 
-            reject(new Error(`ffmpeg process exited with code ${code}`));
-          });
-        });
-      };
+    await mergeFramesIntoChunkImage(chunk, `chunk_${i / chunkSize}.png`);
+  }
 
-      const frameFiles = (await Fs.promises.readdir(Path.join(cwd, 'frames'))).map((fileName) => Path.join('frames', fileName));
-      frameFiles.sort(getFileNameCollator().compare);
+  const frameMetaData = await sharp(Path.join(cwd, 'frames/1.png')).metadata();
+  if (frameMetaData.width == null || frameMetaData.height == null) {
+    throw new Error('Failed to get frame dimensions');
+  }
 
-      const chunkSize = 6;
-      for (let i = 0; i < frameFiles.length; i += chunkSize) {
-        const chunk = frameFiles.slice(i, i + chunkSize);
-
-        await mergeFramesIntoChunkImage(chunk, `chunk_${i / chunkSize}.png`);
-      }
-
-      const frameMetaData = await sharp(Path.join(cwd, 'frames/1.png')).metadata();
-      if (frameMetaData.width == null || frameMetaData.height == null) {
-        throw new Error('Failed to get frame dimensions');
-      }
-
-      const aliasToken = Crypto.createHash('sha256')
-          .update('webttv_thumbnails')
-          .update(inputFileAbsolutePath)
-          .digest()
-          .toString('hex');
-      registerAliasHandler(aliasToken, (req, res, next) => {
-        if (req.path.match(/\/chunk_\d+.png/) != null) {
-          res.sendFile(Path.join(cwd, req.path));
-        } else {
-          res.status(404)
-              .send('Not found');
-        }
-      });
-
-      const generateImageUrl: (fileName: string) => string = (fileName) => {
-        return new URL(`/alias/${aliasToken}/${fileName}`, getConfig().data.baseUrl).href;
-      };
-      const toWebVttTime = (seconds: number): string => {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const seconds2 = Math.floor(seconds % 60);
-
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds2.toString().padStart(2, '0')}.000`;
-      };
-
-      let webVttContent = 'WEBVTT\n\n';
-
-      for (let i = 0; i < frameFiles.length; i += chunkSize) {
-        const chunk = frameFiles.slice(i, i + chunkSize);
-        const chunkFileName = `chunk_${i / chunkSize}.png`;
-
-        for (let j = 0; j < chunk.length; ++j) {
-          const frameStart = (i * SECONDS_BETWEEN_FRAMES) + (j * SECONDS_BETWEEN_FRAMES);
-
-          webVttContent += `${toWebVttTime(frameStart)} --> ${toWebVttTime(frameStart + SECONDS_BETWEEN_FRAMES)}\n`;
-          webVttContent += `${generateImageUrl(chunkFileName)}?#xywh=${frameMetaData.width * j},0,${frameMetaData.width},${frameMetaData.height}\n\n`;
-        }
-      }
-
-      webVttThumbnailCache[inputFileAbsolutePath] = webVttContent;
-      await Fs.promises.rm(Path.join(cwd, 'frames'), {recursive: true});
-
-      res.type('text/vtt')
-          .send(webVttContent);
-
+  const aliasToken = Crypto.createHash('sha256')
+      .update('webttv_thumbnails')
+      .update(inputFileAbsolutePath)
+      .digest()
+      .toString('hex');
+  registerAliasHandler(aliasToken, (req, res) => {
+    if (req.path.match(/\/chunk_\d+.png/) != null) {
+      res.sendFile(Path.join(cwd, req.path));
     } else {
-      res.status(500)
-          .send(`ffmpeg process exited with code ${code}`);
+      res.status(404)
+          .send('Not found');
     }
   });
+
+  const generateImageUrl: (fileName: string) => string = (fileName) => {
+    return new URL(`/alias/${aliasToken}/${fileName}`, getConfig().data.baseUrl).href;
+  };
+  const toWebVttTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const seconds2 = Math.floor(seconds % 60);
+
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds2.toString().padStart(2, '0')}.000`;
+  };
+
+  let webVttContent = 'WEBVTT\n\n';
+
+  for (let i = 0; i < frameFiles.length; i += chunkSize) {
+    const chunk = frameFiles.slice(i, i + chunkSize);
+    const chunkFileName = `chunk_${i / chunkSize}.png`;
+
+    for (let j = 0; j < chunk.length; ++j) {
+      const frameStart = (i * SECONDS_BETWEEN_FRAMES) + (j * SECONDS_BETWEEN_FRAMES);
+
+      webVttContent += `${toWebVttTime(frameStart)} --> ${toWebVttTime(frameStart + SECONDS_BETWEEN_FRAMES)}\n`;
+      webVttContent += `${generateImageUrl(chunkFileName)}?#xywh=${frameMetaData.width * j},0,${frameMetaData.width},${frameMetaData.height}\n\n`;
+    }
+  }
+
+  webVttThumbnailCache[inputFileAbsolutePath] = webVttContent;
+  await Fs.promises.rm(Path.join(cwd, 'frames'), {recursive: true});
+
+  res.type('text/vtt')
+      .send(webVttContent);
 }
 
 async function generateBreadcrumbs(file: IUserFile): Promise<BreadcrumbItem[]> {

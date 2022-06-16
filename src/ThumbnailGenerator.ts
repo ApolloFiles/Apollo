@@ -1,9 +1,8 @@
-import ChildProcess, { SpawnOptionsWithoutStdio } from 'child_process';
-import { EOL } from 'os';
 import path from 'path';
 import sharp, { Sharp } from 'sharp';
 import IUserFile from './files/IUserFile';
 import VideoAnalyser from './media/video/analyser/VideoAnalyser';
+import ProcessBuilder from './process_manager/ProcessBuilder';
 
 export default class ThumbnailGenerator {
   readonly sharpMimeTypes: string[];
@@ -70,7 +69,7 @@ export default class ThumbnailGenerator {
       }
 
       if (thumbnail == null && mimeType.startsWith('video/')) {
-        thumbnail = (await this.generateVideoThumbnail(file)).img;
+        thumbnail = (await ThumbnailGenerator.generateVideoThumbnail(file)).img;
       }
 
       if (thumbnail != null) {
@@ -107,199 +106,112 @@ export default class ThumbnailGenerator {
     const filePath = await file.getAbsolutePathOnHost();
     if (filePath == null) throw new Error('filePath is null');
 
-    return new Promise(async (resolve, reject): Promise<void> => {
-      const videoStreams = await VideoAnalyser.analyze(filePath, true);
-      const potentialCoverStreams = videoStreams.streams.filter(stream => stream.codecType == 'video' && stream.avgFrameRate == '0/0');
 
-      let coverStream: { fileName: string, streamSpecifier: string } | null = null;
-      for (const stream of potentialCoverStreams) {
-        if (coverStream == null ||
-            (stream.tags.mimetype != null && this.sharpMimeTypes.includes(stream.tags.mimetype.toLowerCase()))) {
-          coverStream = {fileName: stream.tags.filename ?? 'extracted_cover.png', streamSpecifier: `0:${stream.index}`};
-        }
+    const videoStreams = await VideoAnalyser.analyze(filePath, true);
+    const potentialCoverStreams = videoStreams.streams.filter(stream => stream.codecType == 'video' && stream.avgFrameRate == '0/0');
 
-        if (stream.tags.filename?.toLowerCase().startsWith('cover.')) {
-          break;
-        }
+    let coverStream: { fileName: string, streamSpecifier: string } | null = null;
+    for (const stream of potentialCoverStreams) {
+      if (coverStream == null ||
+          (stream.tags.mimetype != null && this.sharpMimeTypes.includes(stream.tags.mimetype.toLowerCase()))) {
+        coverStream = {fileName: stream.tags.filename ?? 'extracted_cover.png', streamSpecifier: `0:${stream.index}`};
       }
 
-      if (coverStream == null) {
-        return resolve(null);
+      if (stream.tags.filename?.toLowerCase().startsWith('cover.')) {
+        break;
       }
+    }
 
-      // FIXME: Delete cwd when done
-      // FIXME: write lock on cwd
-      const cwdFile = await file.getOwner().getTmpFileSystem().createTmpDir('thumbnail-');
-      const cwd = cwdFile.getAbsolutePathOnHost();
-      if (cwd == null) {
-        throw new Error('cwd is null');
-      }
+    if (coverStream == null) {
+      return null;
+    }
 
-      const args = ['-i', filePath, '-map', coverStream.streamSpecifier, '-frames', '1', '-f', 'image2', coverStream.fileName];
+    // FIXME: Delete cwd when done
+    // FIXME: write lock on cwd
+    const cwdFile = await file.getOwner().getTmpFileSystem().createTmpDir('thumbnail-');
+    const cwd = cwdFile.getAbsolutePathOnHost();
+    if (cwd == null) {
+      throw new Error('cwd is null');
+    }
 
-      const processInfo = this.spawn('ffmpeg', args, {cwd});
-      const process = processInfo.process;
-      process.on('error', (err) => reject(err));
+    const args = ['-i', filePath, '-map', coverStream.streamSpecifier, '-frames', '1', '-f', 'image2', coverStream.fileName];
 
-      let outBuff = '';
-      let errBuff = '';
+    const childProcess = await new ProcessBuilder('ffmpeg', args)
+        .errorOnNonZeroExit()
+        .withCwd(cwd)
+        .runPromised();
 
-      process.stdout.on('data', (chunk) => {
-        outBuff += chunk.toString();
-      });
-      process.stderr.on('data', (chunk) => {
-        errBuff += chunk.toString();
-      });
+    if (childProcess.err) {
+      throw childProcess.err;
+    }
 
-      const coverFilePath = path.join(cwd, coverStream.fileName);
-      process.on('close', async (code): Promise<void> => {
-        if (code != 0) {
-          return reject(new Error(`Executing command 'ffmpeg' exited with code ${code} (log=${/*processInfo.logFile*/ '-'},stderr='${errBuff}',stdout='${outBuff}')`));
-        }
-
-        resolve(sharp(coverFilePath));
-      });
-    });
+    return sharp(path.join(cwd, coverStream.fileName));
   }
 
-  private async generateVideoThumbnail(file: IUserFile, sampleSize: number = 3, width = 500): Promise<{ img: Sharp }> {
+  private static async generateVideoThumbnail(file: IUserFile, sampleSize: number = 3, width = 500): Promise<{ img: Sharp }> {
     if (sampleSize <= 0) throw new Error('sampleSize has to be positive');
 
     const filePath = await file.getAbsolutePathOnHost();
 
     if (filePath == null) throw new Error('filePath is null');
 
-    return new Promise(async (resolve, reject): Promise<void> => {
-      let videoDuration = 0;
+    let videoDuration = 0;
 
-      const ffProbeProcess = this.spawn('ffprobe', ['-select_streams', 'v:0', '-show_entries', 'format=duration', '-print_format', 'json=c=1', filePath]).process;
-      let ffProbeOutStr = '';
-      ffProbeProcess.stdout.on('data', (chunk) => {
-        ffProbeOutStr += chunk.toString();
-      });
-      ffProbeProcess.on('error', console.error);
-      ffProbeProcess.on('close', async (code) => {
-        if (code == 0) {
-          const ffProbeOut = JSON.parse(ffProbeOutStr);
+    // TODO: Create hardlink of file to cwd or ensure that process cannot modify the file
+    const probeChildProcess = await new ProcessBuilder('ffprobe', ['-select_streams', 'v:0', '-show_entries', 'format=duration', '-print_format', 'json=c=1', filePath])
+        .bufferStdOut()
+        .runPromised();
 
-          if (typeof ffProbeOut?.format?.duration == 'string') {
-            videoDuration = parseFloat(ffProbeOut.format.duration);
-          } else if (typeof ffProbeOut?.format?.duration == 'number') {
-            videoDuration = ffProbeOut.format.duration;
-          }
-        } else {
-          // TODO: Use ffmpeg as fallback? or just use the first frame?
-          // let ppOut = '';
-          // const pp = processManager.spawn(ffMpegPath, ['-bitexact', '-nostats', '-i', absPath, '-map', 'v:0', '-c:v', 'copy', '-f', 'null', '/dev/null']).process;
-          // pp.stderr.on('data', (chunk) => {
-          //   ppOut += chunk.toString();
-          // });
-          // pp.on('error', console.error);
-          // pp.on('close', (code) => {
-          //   if (code == 0) {
-          //     let line = ppOut.substring(ppOut.lastIndexOf('frame='));
-          //     line = line.substring(0, line.indexOf('\n'));
-          //
-          //     for (const s of line.split(' ')) {
-          //       const args = s.split('=', 2);
-          //
-          //       if (args[0] == 'time') {
-          //         console.log('Time:', args[1]);
-          //       }
-          //     }
-          //   }
-          // });
-        }
+    if (probeChildProcess.err != null) {
+      console.error(probeChildProcess.err);
+    } else if (probeChildProcess.code == 0) {
+      const ffProbeOut = JSON.parse(probeChildProcess.process.bufferedStdOut.toString('utf-8'));
 
-        // FIXME: Delete cwd when done
-        // FIXME: write lock on cwd
-        const cwdFile = await file.getOwner().getTmpFileSystem().createTmpDir('thumbnail-');
-        const cwd = cwdFile.getAbsolutePathOnHost();
-        if (cwd == null) {
-          throw new Error('cwd is null');
-        }
+      if (typeof ffProbeOut?.format?.duration == 'string') {
+        videoDuration = parseFloat(ffProbeOut.format.duration);
+      } else if (typeof ffProbeOut?.format?.duration == 'number') {
+        videoDuration = ffProbeOut.format.duration;
+      }
+    }
 
-        const args = ['-i', filePath];
+    // FIXME: Delete cwd when done
+    // FIXME: write lock on cwd
+    const cwdFile = await file.getOwner().getTmpFileSystem().createTmpDir('thumbnail-');
+    const cwd = cwdFile.getAbsolutePathOnHost();
+    if (cwd == null) {
+      throw new Error('cwd is null');
+    }
 
-        args.unshift('-ss', Math.floor(0.1 * videoDuration).toString(), '-noaccurate_seek');
-        args.push('-map', 'v:0', '-vf', `select='eq(pict_type,PICT_TYPE_I)',scale=${width}:-2`, '-vsync', 'vfr');
-        args.push('-vframes', sampleSize.toString(), 'frame%01d.png');
+    const args = ['-i', filePath];
+    args.unshift('-ss', Math.floor(0.1 * videoDuration).toString(), '-noaccurate_seek');
+    args.push('-map', 'v:0', '-vf', `select='eq(pict_type,PICT_TYPE_I)',scale=${width}:-2`, '-vsync', 'vfr');
+    args.push('-vframes', sampleSize.toString(), 'frame%01d.png');
 
-        const processInfo = this.spawn('ffmpeg', args, {cwd});
-        const process = processInfo.process;
-        process.on('error', (err) => reject(err));
+    const childProcess = await new ProcessBuilder('ffmpeg', args)
+        .errorOnNonZeroExit()
+        .withCwd(cwd)
+        .runPromised();
 
-        let outBuff = '';
-        let errBuff = '';
+    if (childProcess.err) {
+      throw childProcess.err;
+    }
 
-        process.stdout.on('data', (chunk) => {
-          outBuff += chunk.toString();
-        });
-        process.stderr.on('data', (chunk) => {
-          errBuff += chunk.toString();
-        });
+    let highestDelta = -1;
+    let result: Sharp | null = null;
+    for (let i = 0; i < sampleSize; ++i) {
+      const pic = sharp(path.join(cwd, `frame${i + 1}.png`));
+      const picTrimmedStats = await pic.clone().trim().stats();
 
-        process.on('close', async (code): Promise<void> => {
-          if (code != 0) {
-            return reject(new Error(`Executing command 'ffmpeg' exited with code ${code} (log=${/*processInfo.logFile*/ '-'},stderr='${errBuff}',stdout='${outBuff}')`));
-          }
+      const delta = Color.deltaESquared({r: 0, g: 0, b: 0}, picTrimmedStats.dominant) *
+          Color.deltaESquared({r: 255, g: 255, b: 255}, picTrimmedStats.dominant) * (await pic.stats()).entropy;
 
-          let highestDelta = -1;
-          let result: Sharp | null = null;
-          for (let i = 0; i < sampleSize; ++i) {
-            const pic = sharp(path.join(cwd, `frame${i + 1}.png`));
-            const picTrimmedStats = await pic.clone().trim().stats();
+      if (highestDelta == -1 || delta > highestDelta) {
+        highestDelta = delta;
+        result = pic;
+      }
+    }
 
-            const delta = Color.deltaESquared({r: 0, g: 0, b: 0}, picTrimmedStats.dominant) *
-                Color.deltaESquared({r: 255, g: 255, b: 255}, picTrimmedStats.dominant) * (await pic.stats()).entropy;
-
-            if (highestDelta == -1 || delta > highestDelta) {
-              highestDelta = delta;
-              result = pic;
-            }
-          }
-
-          resolve({
-            img: result as Sharp
-          });
-        });
-      });
-    });
-  }
-
-  private spawn(command: string, args: ReadonlyArray<string>, options?: SpawnOptionsWithoutStdio & { allowTermination?: boolean }) {
-    // const logFile = path.join(this.logDirectory, `${this.taskId++}.log`);
-    // const logStream = fs.createWriteStream(logFile, {flags: 'a'});
-    // ProcessManager.log({logStream}, 'ProcessManager', `Starting process ${JSON.stringify({
-    //   systemTime: new Date().toUTCString(),
-    //   command,
-    //   args,
-    //   allowTermination: options?.allowTermination
-    // }, null, 2)}`);
-
-    const process = ChildProcess.spawn(command, args, options);
-    const processData = {process, /*logStream, logFile,*/ allowTermination: options?.allowTermination};
-
-    // ProcessManager.log(processData, 'ProcessManager', `Got PID #${process.pid}`);
-
-    // this.runningProcesses.push(processData);
-
-    process.stdout.on('data', (chunk) => /*ProcessManager.log(processData, 'OUT', chunk)*/ console.log('[OUT]' + chunk.toString()));
-    process.stderr.on('data', (chunk) => /*ProcessManager.log(processData, 'ERR', chunk)*/ console.error('[ERR]' + chunk.toString()));
-
-    process.on('error',
-        (err) => /* ProcessManager.log(processData, 'ProcessManager', `An error occurred:${EOL}${err.stack} ${JSON.stringify(err, null, 2)}` */ console.error(`An error occurred:${EOL}${err.stack} ${JSON.stringify(err, null, 2)}`));
-    process.on('exit',
-        (code, signal) => /* ProcessManager.log(processData, 'ProcessManager', `The process exited (code=${code}, signal=${signal}).` */ console.error(`The process exited (code=${code}, signal=${signal}).`));
-
-    process.on('close', (code, signal) => {
-      console.log(`The process exited and closed all stdio streams (code=${code}, signal=${signal}).`);
-      // ProcessManager.log(processData, 'ProcessManager', `The process exited and closed all stdio streams (code=${code}, signal=${signal}).`);
-
-      // this.removeProcess(processData);
-    });
-
-    return processData;
+    return {img: result as Sharp};
   }
 }
 
