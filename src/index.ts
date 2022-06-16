@@ -1,4 +1,4 @@
-import { getConfig } from './Constants';
+import { getConfig, getProcessManager } from './Constants';
 import WebServer from './webserver/WebServer';
 
 let webServer: WebServer | undefined;
@@ -41,13 +41,13 @@ function shutdownHook() {
     //   }
     // }
 
-    // try {
-    //   await processManager.shutdown();
-    // } catch (err) {
-    //   console.error(err);
-    // } finally {
-    //   console.log('ProcessManager shut down.');
-    // }
+    try {
+      await getProcessManager().shutdown();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      console.log('ProcessManager shut down.');
+    }
 
     process.exit();
   };

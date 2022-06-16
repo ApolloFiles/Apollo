@@ -4,9 +4,11 @@ import Os from 'os';
 import Path from 'path';
 import FileTypeUtils from './FileTypeUtils';
 import { ApolloConfig } from './global';
+import ProcessManager from './process_manager/ProcessManager';
 
 const IS_PRODUCTION = process.env.NODE_ENV?.toLowerCase() === 'production';
 
+let processManager: ProcessManager;
 let fileTypeUtils: FileTypeUtils;
 let fileNameCollator: Intl.Collator;
 
@@ -68,6 +70,18 @@ export function getAppTmpDir(): string {
 
 export function getUserStorageTmpRoot(): string {
   return Path.join(getWorkingRoot(), 'tmp', 'user-storage', Path.sep);
+}
+
+export function getProcessManager(): ProcessManager {
+  if (processManager == null) {
+    processManager = new ProcessManager();
+  }
+
+  return processManager;
+}
+
+export function getProcessLogDir(): string {
+  return Path.join(getWorkingRoot(), 'logs', 'child_processes', Path.sep);
 }
 
 export function getFileTypeUtils(): FileTypeUtils {
