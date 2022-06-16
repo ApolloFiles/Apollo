@@ -1,4 +1,4 @@
-import path from 'path';
+import Path from 'path';
 import sharp, { Sharp } from 'sharp';
 import IUserFile from './files/IUserFile';
 import VideoAnalyser from './media/video/analyser/VideoAnalyser';
@@ -145,7 +145,7 @@ export default class ThumbnailGenerator {
       throw childProcess.err;
     }
 
-    return sharp(path.join(cwd, coverStream.fileName));
+    return sharp(Path.join(cwd, coverStream.fileName));
   }
 
   private static async generateVideoThumbnail(file: IUserFile, sampleSize: number = 3, width = 500): Promise<{ img: Sharp }> {
@@ -199,7 +199,7 @@ export default class ThumbnailGenerator {
     let highestDelta = -1;
     let result: Sharp | null = null;
     for (let i = 0; i < sampleSize; ++i) {
-      const pic = sharp(path.join(cwd, `frame${i + 1}.png`));
+      const pic = sharp(Path.join(cwd, `frame${i + 1}.png`));
       const picTrimmedStats = await pic.clone().trim().stats();
 
       const delta = Color.deltaESquared({r: 0, g: 0, b: 0}, picTrimmedStats.dominant) *
