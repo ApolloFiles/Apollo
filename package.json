@@ -35,7 +35,10 @@
     "snyk:docker": "npm run docker:build && snyk container test apollo:dev --file=Dockerfile",
 
     "docker:build": "npm run build && docker build --rm --tag apollo:dev .",
-    "docker:dev": "npm run docker:build && (docker stop apollo;docker rm apollo;echo '') && docker run --name apollo --cpus 2 --memory 1G --volume apollo-dev:/app/storage/ apollo:dev"
+    "docker:dev": "npm run docker:build && (docker stop apollo;docker rm apollo;echo '') && docker run --name apollo --cpus 2 --memory 1G --volume apollo-dev:/app/storage/ apollo:dev",
+
+    "contributors:add": "all-contributors add",
+    "contributors:generate": "all-contributors generate"
   },
   "engines": {
     "node": ">=16.0.0",
@@ -78,6 +81,7 @@
     "@types/passport-oauth2": "^1.4.11",
     "@types/session-file-store": "^1.2.2",
     "@types/sharp": "^0.30.2",
+    "all-contributors-cli": "^6.20.0",
     "jest": "^28.1.0",
     "nodemon": "^2.0.16",
     "snyk": "^1.946.0",

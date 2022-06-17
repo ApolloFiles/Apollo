@@ -1,0 +1,35 @@
+{
+  "projectName": "Apollo",
+  "projectOwner": "ApolloFiles",
+  "repoType": "github",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitConvention": "none",
+  "contributors": [
+    {
+      "login": "JNSAPH",
+      "name": "Jonas",
+      "avatar_url": "https://avatars.githubusercontent.com/u/35976079?v=4",
+      "profile": "https://github.com/JNSAPH",
+      "contributions": [
+        "design",
+        "ideas"
+      ]
+    },
+    {
+      "login": "NudelErde",
+      "name": "NudelErde",
+      "avatar_url": "https://avatars.githubusercontent.com/u/37987062?v=4",
+      "profile": "https://github.com/NudelErde",
+      "contributions": [
+        "code",
+        "userTesting",
+        "ideas"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7
+}
