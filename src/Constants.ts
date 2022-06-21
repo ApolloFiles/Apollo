@@ -1,4 +1,4 @@
-import { ConfigFile } from '@spraxdev/node-commons';
+import { ConfigFile, HttpClient } from '@spraxdev/node-commons';
 import Fs from 'fs';
 import Os from 'os';
 import Path from 'path';
@@ -11,6 +11,7 @@ const IS_PRODUCTION = process.env.NODE_ENV?.toLowerCase() === 'production';
 let processManager: ProcessManager;
 let fileTypeUtils: FileTypeUtils;
 let fileNameCollator: Intl.Collator;
+let httpClient: HttpClient;
 
 const APP_ROOT = Path.resolve(Path.dirname(__dirname));
 const WORKING_DIR_ROOT = determineDefaultWorkingRoot();
@@ -29,6 +30,91 @@ export function getConfig(): ConfigFile<ApolloConfig> {
       webserver: {
         host: '0.0.0.0',
         port: 8080
+      },
+
+      login: {
+        thirdParty: {
+          microsoft: {
+            enabled: false,
+            type: 'OAuth2',
+            displayName: 'Microsoft',
+
+            clientId: '',
+            clientSecret: '',
+
+            scopes: ['openid', 'profile'],
+            requestBodyContentType: 'x-www-form-urlencoded',
+
+            authorizeUrl: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize',
+            tokenUrl: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token',
+
+            accountInfo: {
+              url: 'https://graph.microsoft.com/oidc/userinfo',
+              idField: ['sub'],
+              nameField: ['name']
+            }
+          },
+          google: {
+            enabled: false,
+            type: 'OAuth2',
+            displayName: 'Google',
+
+            clientId: '',
+            clientSecret: '',
+
+            scopes: ['https://www.googleapis.com/auth/userinfo.profile'],
+            requestBodyContentType: 'x-www-form-urlencoded',
+
+            authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+            tokenUrl: 'https://oauth2.googleapis.com/token',
+
+            accountInfo: {
+              url: 'https://www.googleapis.com/userinfo/v2/me',
+              idField: ['id'],
+              nameField: ['name']
+            }
+          },
+          github: {
+            enabled: false,
+            type: 'OAuth2',
+            displayName: 'GitHub',
+
+            clientId: '',
+            clientSecret: '',
+
+            scopes: ['identify'],
+            requestBodyContentType: 'json',
+
+            authorizeUrl: 'https://github.com/login/oauth/authorize',
+            tokenUrl: 'https://github.com/login/oauth/access_token',
+
+            accountInfo: {
+              url: 'https://api.github.com/user',
+              idField: ['id'],
+              nameField: ['login']
+            }
+          },
+          discord: {
+            enabled: false,
+            type: 'OAuth2',
+            displayName: 'Discord',
+
+            clientId: '',
+            clientSecret: '',
+
+            scopes: [],
+            requestBodyContentType: 'x-www-form-urlencoded',
+
+            authorizeUrl: 'https://discord.com/api/oauth2/authorize',
+            tokenUrl: 'https://discord.com/api/oauth2/token',
+
+            accountInfo: {
+              url: 'https://discordapp.com/api/users/@me',
+              idField: ['id'],
+              nameField: ['username']
+            }
+          }
+        }
       },
 
       oauth: {
@@ -98,6 +184,28 @@ export function getFileNameCollator(): Intl.Collator {
   }
 
   return fileNameCollator;
+}
+
+export function getHttpClient(): HttpClient {
+  if (httpClient == null) {
+    const packageJson = getPackageJson();
+
+    httpClient = new HttpClient(HttpClient.generateUserAgent(
+        packageJson.name ?? 'Unknown-App-Name',
+        packageJson.version ?? 'Unknown-App-Version'
+    ));
+  }
+
+  return httpClient;
+}
+
+function getPackageJson(): { name?: string, version?: string } {
+  const packageJsonPath = Path.join(__dirname, '..', 'package.json');
+  if (!Fs.existsSync(packageJsonPath)) {
+    return {};
+  }
+
+  return JSON.parse(Fs.readFileSync(packageJsonPath, 'utf8'));
 }
 
 function determineDefaultWorkingRoot(): string {

@@ -3,11 +3,11 @@ import express from 'express';
 import expressSession from 'express-session';
 import Fs from 'fs';
 import * as Http from 'http';
-import passport from 'passport';
 import Path from 'path';
 import SessionFileStore from 'session-file-store';
 import AbstractUser from '../AbstractUser';
-import { getAppConfigDir, getAppResourcesDir } from '../Constants';
+import { getAppConfigDir, getAppResourcesDir, getConfig } from '../Constants';
+import UserStorage from '../UserStorage';
 import { adminRouter } from './AdminRouter';
 import { createAliasRouter } from './AliasRouter';
 import { createFilesRouter } from './Browse/FilesRouter';
@@ -23,7 +23,6 @@ export default class WebServer {
     this.app.disable('x-powered-by');
 
     this.setupSessionMiddleware();
-    this.app.use(passport.initialize(), passport.authenticate('session'));
 
     this.app.use('/', express.static(Path.join(getAppResourcesDir(), 'public', 'static')));
     this.app.use('/favicon.ico', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'favicon', 'favicon.ico')));
@@ -35,9 +34,27 @@ export default class WebServer {
     this.app.use('/trash', WebServer.requireValidLogin, createFilesRouter('trash'));
     this.app.use('/alias', /*WebServer.requireValidLogin, FIXME */ createAliasRouter());
     this.app.use('/login', loginRouter);
-    this.app.use('/logout', (req, res) => {
-      req.logout();
-      res.redirect('/');
+    this.app.use('/logout', (req: express.Request, res, next) => {
+      // Store cookie properties for manual deletion
+      const cookie = req.session.cookie;
+      cookie.maxAge = 0;
+
+      // Destroy session
+      req.session.destroy((err) => {
+        if (err) return next(err);
+
+        // Delete cookie
+        res.clearCookie('sessID', {
+          domain: cookie.domain,
+          httpOnly: cookie.httpOnly,
+          maxAge: 0,
+          path: cookie.path,
+          sameSite: cookie.sameSite,
+          secure: cookie.secure == 'auto' ? req.secure : cookie.secure
+        });
+
+        res.redirect('/');
+      });
     });
 
     this.setupErrorHandling();
@@ -69,21 +86,37 @@ export default class WebServer {
     Fs.mkdirSync(sessionDirectory, {recursive: true});
 
     this.app.use(expressSession({
+      name: 'sessID',
       secret: 'keyboard cat', // TODO
+      store: new (SessionFileStore(expressSession))({path: sessionDirectory, retries: 0}),
       resave: false,
       saveUninitialized: false,
-      // store: new expressSession.MemoryStore() // TODO
-      store: new (SessionFileStore(expressSession))({path: sessionDirectory, retries: 0})
+      rolling: true,
+      unset: 'destroy',
+      cookie: {
+        secure: getConfig().data.baseUrl.startsWith('https://'),
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: /*getDatabase().isAvailable() ? 30 * 24 * 60 * 60 * 1000*/ /* 30d */ /*:*/ 30 * 24 * 60 * 60 * 1000 /* 14d */  // TODO
+      }
     }));
+
+    this.app.use(async (req: express.Request, res, next): Promise<void> => {
+      if (req.session.userId != null) {
+        req.user = await new UserStorage().getUser(req.session.userId);
+      }
+
+      next();
+    });
   }
 
   private setupErrorHandling(): void {
-    this.app.use((req, res, next) => {
+    this.app.use((req: express.Request, res, next) => {
       const htmlTemplate = Fs.readFileSync(Path.join(getAppResourcesDir(), 'error_pages', '404.html'), 'utf-8');
 
       res.status(404)
           .type('text/html')
-          .send(StringUtils.format(htmlTemplate, {'currentUserName': (req.user as AbstractUser)?.getDisplayName() ?? '<em>-</em>'}));
+          .send(StringUtils.format(htmlTemplate, {'currentUserName': req.user?.getDisplayName() ?? '<em>-</em>'}));
     });
 
     this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
