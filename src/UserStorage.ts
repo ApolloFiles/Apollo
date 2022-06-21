@@ -7,12 +7,12 @@ import IUserStorage from './IUserStorage';
 type UsersFile = { id: number, displayName: string, oauth: { [provider: string]: string } }[];
 
 export default class UserStorage implements IUserStorage {
-  async getUser(id: bigint): Promise<AbstractUser | null> {
+  async getUser(id: number): Promise<AbstractUser | null> {
     const currentUsers = UserStorage.getCurrentUsers();
     const user = currentUsers.find(u => u.id.toString() === id.toString());
 
     if (user) {
-      return new AbstractUser(BigInt(user.id), user.displayName);
+      return new AbstractUser(user.id, user.displayName);
     }
 
     return null;
@@ -23,7 +23,7 @@ export default class UserStorage implements IUserStorage {
 
     for (const user of currentUsers) {
       if (user.oauth[provider] == id) {
-        return new AbstractUser(BigInt(user.id), user.displayName);
+        return new AbstractUser(user.id, user.displayName);
       }
     }
 
@@ -42,7 +42,7 @@ export default class UserStorage implements IUserStorage {
     Fs.mkdirSync(getAppConfigDir(), {recursive: true});
     Fs.writeFileSync(Path.join(getAppConfigDir(), 'users.json'), JSON.stringify(currentUsers));
 
-    return new AbstractUser(BigInt(userId), displayName);
+    return new AbstractUser(userId, displayName);
   }
 
   private static getCurrentUsers(): UsersFile {

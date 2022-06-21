@@ -7,14 +7,14 @@ import UserTmpFileSystem from './files/filesystems/UserTmpFileSystem';
 import UserTrashBinFileSystem from './files/filesystems/UserTrashBinFileSystem';
 
 export default class AbstractUser {
-  protected readonly id: bigint;
+  protected readonly id: number;
   protected displayName: string;
 
   protected defaultFileSystem: IUserFileSystem;
   protected tmpFileSystem: IUserTmpFileSystem;
   protected trashBinFileSystem: IUserFileSystem;
 
-  constructor(id: bigint, displayName: string) {
+  constructor(id: number, displayName: string) {
     this.id = id;
     this.displayName = displayName;
 
@@ -23,7 +23,7 @@ export default class AbstractUser {
     this.trashBinFileSystem = new UserTrashBinFileSystem(this);
   }
 
-  getId(): bigint {
+  getId(): number {
     return this.id;
   }
 
