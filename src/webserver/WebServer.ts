@@ -8,10 +8,11 @@ import SessionFileStore from 'session-file-store';
 import AbstractUser from '../AbstractUser';
 import { getAppConfigDir, getAppResourcesDir, getConfig } from '../Constants';
 import UserStorage from '../UserStorage';
+import Utils from '../Utils';
 import { adminRouter } from './AdminRouter';
 import { createAliasRouter } from './AliasRouter';
 import { createFilesRouter } from './Browse/FilesRouter';
-import { loginRouter } from './LoginRouter';
+import { generateLoginRedirectUri, loginRouter } from './LoginRouter';
 
 export default class WebServer {
   protected app: express.Application;
@@ -54,6 +55,14 @@ export default class WebServer {
         });
 
         res.redirect('/');
+      });
+    });
+
+    this.app.all('/', (req: express.Request, res, next) => {
+      Utils.restful(req, res, next, {
+        get: () => {
+          res.redirect('/browse/');
+        }
       });
     });
 
@@ -152,11 +161,21 @@ export default class WebServer {
     throw new Error('User not logged in');
   }
 
+  static async saveSession(req: express.Request): Promise<void> {
+    return new Promise((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          return reject(err);
+        }
+
+        resolve();
+      });
+    });
+  }
+
   private static requireValidLogin(req: express.Request, res: express.Response, next: express.NextFunction): void {
     if (!(req.user instanceof AbstractUser)) {
-      res.status(401)
-          .type('text/html')
-          .send(Fs.readFileSync(Path.join(getAppResourcesDir(), 'error_pages', '401.html'), 'utf8'));
+      res.redirect(generateLoginRedirectUri(req));
       return;
     }
 

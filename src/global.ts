@@ -8,6 +8,8 @@ declare module 'express' {
 declare module 'express-session' {
   interface SessionData {
     userId?: AbstractUser['id'];
+
+    oAuthReturnTo?: string;
   }
 }
 

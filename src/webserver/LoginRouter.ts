@@ -6,15 +6,21 @@ import { getConfig, getHttpClient } from '../Constants';
 import { ApolloConfig } from '../global';
 import UserStorage from '../UserStorage';
 import Utils from '../Utils';
+import WebServer from './WebServer';
 
 export const loginRouter = express.Router();
 
 loginRouter.all('/', (req: express.Request, res, next) => {
   Utils.restful(req, res, next, {
     get: () => {
-      if (req.user) {
-        res.redirect('/');
-        // TODO: Wenn bereits eingeloggt, umleiten (query param beachten, wenn kein param sagen dass man bereits eingeloggt ist statt umleiten)
+      if (req.user instanceof AbstractUser) {
+        if (req.query.code == null) {
+          res.redirect(extractReturnTo(req));
+          return;
+        }
+
+        res.status(401)
+            .send('You are already logged in.');
         return;
       }
 
@@ -27,7 +33,7 @@ loginRouter.all('/', (req: express.Request, res, next) => {
           continue;
         }
 
-        html += `<a href="${Path.join(req.originalUrl, 'third-party', thirdPartyKey)}">${thirdParty.displayName ?? thirdPartyKey}</a><br>`;
+        html += `<a href="${Path.join('/login/third-party/', thirdPartyKey)}?returnTo=${encodeURIComponent(extractReturnTo(req))}">${thirdParty.displayName ?? thirdPartyKey}</a><br>`;
       }
 
       res.status(401)
@@ -36,10 +42,19 @@ loginRouter.all('/', (req: express.Request, res, next) => {
   });
 });
 
-loginRouter.all('/third-party/:thirdPartyProviderKey?', (req, res, next) => {
+loginRouter.all('/third-party/:thirdPartyProviderKey?', (req: express.Request, res, next) => {
   Utils.restful(req, res, next, {
     get: async (): Promise<void> => {
-      // TODO: Wenn bereits eingeloggt aber ohne code query param etc., dann umleiten ansonsten Fehlermeldung zeigen
+      if (req.user instanceof AbstractUser) {
+        if (req.query.code == null) {
+          res.redirect(extractReturnTo(req));
+          return;
+        }
+
+        res.status(401)
+            .send('You are already logged in.');
+        return;
+      }
 
       const thirdPartyProviderKey = req.params.thirdPartyProviderKey;
       const thirdPartyProvider = getConfig().data.login.thirdParty[thirdPartyProviderKey as string];
@@ -68,6 +83,43 @@ loginRouter.all('/third-party/:thirdPartyProviderKey?', (req, res, next) => {
   });
 });
 
+function extractReturnTo(req: express.Request): string {
+  const returnTo = req.query.returnTo;
+
+  if (typeof returnTo != 'string' || !returnTo.startsWith('/')) {
+    return '/browse/';
+  }
+
+  if (returnTo.indexOf('?') == -1) {
+    return returnTo;
+  }
+
+  return returnTo.substring(0, returnTo.indexOf('?'));
+}
+
+export function generateLoginRedirectUri(req: express.Request, returnToPath?: string) {
+  if (returnToPath != null && !returnToPath.startsWith('/')) {
+    throw new Error('returnToPath must start with /');
+  }
+
+  const uri = '/login';
+
+  if (returnToPath == null && typeof req.query.returnTo == 'string') {
+    returnToPath = getOriginalPath(req);
+  }
+
+  if (returnToPath == null) {
+    return uri;
+  }
+
+  // remove query params from returnToPath
+  if (returnToPath.indexOf('?') != -1) {
+    returnToPath = returnToPath.substring(0, returnToPath.indexOf('?'));
+  }
+
+  return `${uri}?returnTo=${encodeURIComponent(returnToPath)}`;
+}
+
 function getOriginalPath(req: express.Request): string {
   if (!req.originalUrl.startsWith('/')) {
     throw new Error('originalUrl must start with /');
@@ -84,6 +136,10 @@ function getOriginalPath(req: express.Request): string {
 }
 
 async function handleOAuth2Request(req: express.Request, res: express.Response, next: express.NextFunction, thirdPartyProviderKey: string, thirdPartyProvider: ApolloConfig['login']['thirdParty'][string]): Promise<void> {
+  const returnToOnSuccess = req.session.oAuthReturnTo ?? extractReturnTo(req);
+  delete req.session.oAuthReturnTo;
+  await WebServer.saveSession(req);
+
   if (req.query.error || req.query.error_description) {
     const errorType = typeof req.query.error == 'string' ? req.query.error : 'unknown';
     const errorDescription = typeof req.query.error_description == 'string' ? req.query.error_description : '–';
@@ -94,6 +150,9 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
   }
 
   if (typeof req.query.code != 'string' || req.query.code.length <= 0) {
+    req.session.oAuthReturnTo = extractReturnTo(req);
+    await WebServer.saveSession(req);
+
     res.redirect(thirdPartyProvider.authorizeUrl + '?' + querystring.stringify({
       client_id: thirdPartyProvider.clientId,
       redirect_uri: new URL(getOriginalPath(req), getConfig().data.baseUrl).href,
@@ -182,11 +241,11 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
   // TODO: Update stored OAuth account data if necessary
   // TODO: Add profile image functionality
 
-  updateSessionData(req, apolloUser);
+  await updateSessionData(req, apolloUser);
 
   console.log(`User '${apolloUser.getDisplayName()}' (id=${apolloUser.getId()}) successfully logged in from '${req.ip}' via ${thirdPartyProviderKey} (User-Agent='${req.header('User-Agent') ?? ''}')`);
 
-  res.redirect('/');
+  res.redirect(returnToOnSuccess);
 }
 
 function getValueForKeyPath(obj: object, keys: string[]): any {
@@ -203,6 +262,8 @@ function getValueForKeyPath(obj: object, keys: string[]): any {
   return currObj;
 }
 
-function updateSessionData(req: express.Request, user: AbstractUser): void {
+async function updateSessionData(req: express.Request, user: AbstractUser): Promise<void> {
   req.session.userId = user.getId();
+
+  await WebServer.saveSession(req);
 }
