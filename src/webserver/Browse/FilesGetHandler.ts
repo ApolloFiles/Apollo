@@ -111,7 +111,6 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
     const zip = Archiver.create('zip', {store: true, forceZip64: true});
     zip.pipe(res);
 
-
     res.on('close', () => {
       zip.abort();
       zip.end();
@@ -142,8 +141,14 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
 async function sendDirectoryView(req: express.Request, res: express.Response, type: 'browse' | 'trash', requestedFile: IUserFile | null, files: IUserFile[]): Promise<void> {
   const directoryFiles: IUserFile[] = [];
   for (const innerFile of files) {
-    if (await innerFile.isDirectory()) {
-      directoryFiles.push(innerFile);
+    try {
+      if (await innerFile.isDirectory()) {
+        directoryFiles.push(innerFile);
+      }
+    } catch (err: any) {
+      if (err?.code != 'ENOENT') {
+        throw err;
+      }
     }
   }
 
@@ -160,46 +165,52 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
 
   const filesToRender: FilesTemplateData['files'] = [];
   for (const innerFile of files) {
-    const innerFileMimeType = await innerFile.getMimeType();
-    const innerFileStat = await innerFile.stat();
+    try {
+      const innerFileMimeType = await innerFile.getMimeType();
+      const innerFileStat = await innerFile.stat();
 
-    let fileIcon: FileIcon = 'folder';
+      let fileIcon: FileIcon = 'folder';
 
-    if (innerFileStat.isFile()) {
-      fileIcon = 'insert_drive_file';
+      if (innerFileStat.isFile()) {
+        fileIcon = 'insert_drive_file';
 
-      if (innerFileMimeType != null) {
-        if (innerFileMimeType.startsWith('image/')) {
-          fileIcon = 'image';
-        } else if (innerFileMimeType == 'application/pdf') {
-          fileIcon = 'picture_as_pdf'; // FIXME: The icon is not for a file but too generic
-        } else if (innerFileMimeType == 'application/json') {
-          fileIcon = 'data_object'; // FIXME: The icon is not for a file but too generic
-        } else if (['text/xml', 'text/html'].includes(innerFileMimeType)) {
-          fileIcon = 'code';  // FIXME: The icon is not for a file but too generic
-        } else if (innerFileMimeType == 'application/zip') {
-          fileIcon = 'folder_zip';
-        } else if (innerFileMimeType.startsWith('audio/')) {
-          fileIcon = 'audio_file';
-        } else if (innerFileMimeType.startsWith('text/')) {
-          fileIcon = 'description';
-        } else if (innerFileMimeType.startsWith('video/')) {
-          fileIcon = 'video_file';
+        if (innerFileMimeType != null) {
+          if (innerFileMimeType.startsWith('image/')) {
+            fileIcon = 'image';
+          } else if (innerFileMimeType == 'application/pdf') {
+            fileIcon = 'picture_as_pdf'; // FIXME: The icon is not for a file but too generic
+          } else if (innerFileMimeType == 'application/json') {
+            fileIcon = 'data_object'; // FIXME: The icon is not for a file but too generic
+          } else if (['text/xml', 'text/html'].includes(innerFileMimeType)) {
+            fileIcon = 'code';  // FIXME: The icon is not for a file but too generic
+          } else if (innerFileMimeType == 'application/zip') {
+            fileIcon = 'folder_zip';
+          } else if (innerFileMimeType.startsWith('audio/')) {
+            fileIcon = 'audio_file';
+          } else if (innerFileMimeType.startsWith('text/')) {
+            fileIcon = 'description';
+          } else if (innerFileMimeType.startsWith('video/')) {
+            fileIcon = 'video_file';
+          }
         }
       }
+
+      filesToRender.push({
+        icon: fileIcon,
+        name: innerFile.getName(),
+        owner: 'Ich',
+        lastChanged: innerFileStat.mtime,
+        size: Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string)),
+        mimeType: innerFileMimeType,
+
+        frontendUrl: await UrlBuilder.buildUrl(innerFile, innerFileStat)
+      });
+      // responseStr += `<li><a class="${innerFileStat.isFile() ? 'hoverable' : ''}" href="${}">${innerFile.getName()}</a> (${innerFileStat.isFile() ? innerFileMimeType : 'Directory'}; ${Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string))})<div class="hover-box"><img width="256px" height="256px" ${innerFileStat.isFile() ? '' : 'disabled-'}src="${Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()))}?type=thumbnail"></div></li>`;
+    } catch (err: any) {
+      if (err?.code != 'ENOENT') {
+        throw err;
+      }
     }
-
-    filesToRender.push({
-      icon: fileIcon,
-      name: innerFile.getName(),
-      owner: 'Ich',
-      lastChanged: innerFileStat.mtime,
-      size: Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string)),
-      mimeType: innerFileMimeType,
-
-      frontendUrl: await UrlBuilder.buildUrl(innerFile, innerFileStat)
-    });
-    // responseStr += `<li><a class="${innerFileStat.isFile() ? 'hoverable' : ''}" href="${}">${innerFile.getName()}</a> (${innerFileStat.isFile() ? innerFileMimeType : 'Directory'}; ${Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string))})<div class="hover-box"><img width="256px" height="256px" ${innerFileStat.isFile() ? '' : 'disabled-'}src="${Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()))}?type=thumbnail"></div></li>`;
   }
 
   const totalStorageUsage = requestedFile ? Utils.prettifyFileSize(await requestedFile.getFileSystem().getSize()) : -1;
