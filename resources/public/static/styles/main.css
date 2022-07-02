@@ -1,6 +1,7 @@
 @import "/node_modules/bootstrap/dist/css/bootstrap.min.css";
 @import "/node_modules/material-design-icons-iconfont/dist/material-design-icons.min.css";
 @import "colors.css";
+@import "hr-section-break.css";
 
 nav.breadcrumb-nav {
     /* TODO: Use other svg instead of the bootstrap example */

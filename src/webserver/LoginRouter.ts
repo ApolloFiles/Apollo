@@ -3,6 +3,7 @@ import Path from 'path';
 import * as querystring from 'querystring';
 import AbstractUser from '../AbstractUser';
 import { getConfig, getHttpClient } from '../Constants';
+import { LoginTemplate, LoginTemplateData } from '../frontend/LoginTemplate';
 import { ApolloConfig } from '../global';
 import UserStorage from '../UserStorage';
 import Utils from '../Utils';
@@ -14,7 +15,7 @@ loginRouter.all('/', (req: express.Request, res, next) => {
   Utils.restful(req, res, next, {
     get: () => {
       if (req.user instanceof AbstractUser) {
-        if (req.query.code == null) {
+        if (typeof req.query.returnTo == 'string') {
           res.redirect(extractReturnTo(req));
           return;
         }
@@ -24,7 +25,7 @@ loginRouter.all('/', (req: express.Request, res, next) => {
         return;
       }
 
-      let html = '<h1><u>You are not logged in.</u></h1><br><br>';
+      const oAuthProvider: LoginTemplateData['oAuthProvider'] = [];
 
       for (const thirdPartyKey in getConfig().data.login.thirdParty) {
         const thirdParty = getConfig().data.login.thirdParty[thirdPartyKey];
@@ -33,11 +34,16 @@ loginRouter.all('/', (req: express.Request, res, next) => {
           continue;
         }
 
-        html += `<a href="${Path.join('/login/third-party/', thirdPartyKey)}?returnTo=${encodeURIComponent(extractReturnTo(req))}">${thirdParty.displayName ?? thirdPartyKey}</a><br>`;
+        oAuthProvider.push({
+          id: thirdPartyKey,
+          displayName: thirdParty.displayName ?? thirdPartyKey,
+          href: `${Path.join('/login/third-party/', thirdPartyKey)}?returnTo=${encodeURIComponent(extractReturnTo(req))}`
+        });
       }
 
       res.status(401)
-          .send(html);
+          .type('text/html')
+          .send(new LoginTemplate().render(req, {oAuthProvider}));
     }
   });
 });
