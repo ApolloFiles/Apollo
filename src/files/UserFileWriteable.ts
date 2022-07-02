@@ -3,6 +3,8 @@ import Fs from 'fs';
 import NodeEvents from 'node:events';
 import NodeStream from 'node:stream';
 import Path from 'path';
+import BackgroundProcess from '../process_manager/BackgroundProcess';
+import FileIndex from './index/FileIndex';
 import IUserFile from './IUserFile';
 import IUserFileWriteable from './IUserFileWriteable';
 
@@ -25,8 +27,11 @@ export default class UserFileWriteable implements IUserFileWriteable {
       throw new Error('File path is null');
     }
 
-    await Fs.promises.mkdir(Path.dirname(filePath), {recursive: true});
+    const firstDirCreated = await Fs.promises.mkdir(Path.dirname(filePath), {recursive: true});
     await Fs.promises.writeFile(filePath, data, options);
+
+    UserFileWriteable.updateFileIndexMkDir(this.userFile, firstDirCreated != null);
+    UserFileWriteable.updateFileIndexWrite(this.userFile);
   }
 
   async mkdir(options?: Fs.MakeDirectoryOptions): Promise<void> {
@@ -36,7 +41,8 @@ export default class UserFileWriteable implements IUserFileWriteable {
       throw new Error('File path is null');
     }
 
-    await Fs.promises.mkdir(filePath, options);
+    const firstDirCreated = await Fs.promises.mkdir(filePath, options);
+    UserFileWriteable.updateFileIndexMkDir(this.userFile, firstDirCreated != null);
   }
 
   async move(destination: IUserFileWriteable): Promise<void> {
@@ -47,7 +53,8 @@ export default class UserFileWriteable implements IUserFileWriteable {
       throw new Error(`Path cannot be null (src="${srcPath}",dest="${destPath}")`);
     }
 
-    return Fs.promises.rename(srcPath, destPath);
+    await Fs.promises.rename(srcPath, destPath);
+    UserFileWriteable.updateFileIndexRename(this.userFile, destination);
   }
 
   async moveToTrashBin(): Promise<void> {
@@ -76,8 +83,7 @@ export default class UserFileWriteable implements IUserFileWriteable {
       );
 
       if (!(await targetFile.exists())) {
-        await Fs.promises.rename(srcAbsolutePathOnHost, targetFileAbsolutePathOnHost);
-        return;
+        return this.move(writeableFile);
       }
 
       let newTargetFile: IUserFile;
@@ -97,7 +103,7 @@ export default class UserFileWriteable implements IUserFileWriteable {
           if (!await newTargetFile.exists()) {
             loop = false;
 
-            await Fs.promises.rename(srcAbsolutePathOnHost, newTargetFileAbsolutePathOnHost);
+            return this.move(writeableFile);
           }
         });
       }
@@ -111,15 +117,73 @@ export default class UserFileWriteable implements IUserFileWriteable {
       throw new Error('File path is null');
     }
 
-    if (options?.recursive != true && await this.userFile.isDirectory()) {
-      await Fs.promises.rmdir(filePath, options);
-      return;
-    }
-
     await Fs.promises.rm(filePath, options);
+    UserFileWriteable.updateFileIndexDelete(this.userFile);
   }
 
   getUserFile(): IUserFile {
     return this.userFile;
+  }
+
+  protected static updateFileIndexWrite(userFile: IUserFile): void {
+    const fileIndex = FileIndex.getInstance();
+    if (fileIndex == null) {
+      return;
+    }
+
+    new BackgroundProcess<void>(async (ctx) => {
+      ctx.log(`Updating file index for file '${userFile.getPath()}' in '${userFile.getFileSystem().getUniqueId()}'`);
+      return fileIndex.refreshIndex(userFile, false, true);
+    }, undefined, userFile.getOwner());
+  }
+
+  protected static updateFileIndexDelete(userFile: IUserFile): void {
+    const fileIndex = FileIndex.getInstance();
+    if (fileIndex == null) {
+      return;
+    }
+
+    new BackgroundProcess<void>(async (ctx) => {
+      ctx.log(`Deleting file indices for '${userFile.getPath()}' in '${userFile.getFileSystem().getUniqueId()}'`);
+      return fileIndex.deleteIndex(userFile);
+    }, undefined, userFile.getOwner());
+  }
+
+  protected static updateFileIndexRename(src: IUserFile, dest: IUserFileWriteable): void {
+    const fileIndex = FileIndex.getInstance();
+    if (fileIndex == null) {
+      return;
+    }
+
+    new BackgroundProcess<void>(async (ctx) => {
+          ctx.log(`Renames file indices from '${src.getPath()}' in '${src.getFileSystem().getUniqueId()}' to '${dest.getUserFile().getPath()}' in '${dest.getUserFile().getFileSystem().getUniqueId()}'`);
+
+          await fileIndex.renameIndex(src, dest.getUserFile());
+        },
+        undefined, src.getOwner());
+  }
+
+  protected static updateFileIndexMkDir(userFile: IUserFile, recursive: boolean): void {
+    const fileIndex = FileIndex.getInstance();
+    if (fileIndex == null) {
+      return;
+    }
+
+    new BackgroundProcess<void>(async (ctx) => {
+      if (!recursive) {
+        ctx.log(`Creating file index for directory '${userFile.getPath()}' in '${userFile.getFileSystem().getUniqueId()}'`);
+        return fileIndex.refreshIndex(userFile, false, true);
+      }
+
+      ctx.log(`Creating file indices recursively for directory '${userFile.getPath()}' in '${userFile.getFileSystem().getUniqueId()}'`);
+
+      let currentFile = userFile.getFileSystem().getFile('/');
+
+      await fileIndex.refreshIndex(currentFile, false, true);
+      for (const pathSegment of userFile.getPath().split('/')) {
+        currentFile = userFile.getFileSystem().getFile(Path.join(currentFile.getPath(), pathSegment));
+        await fileIndex.refreshIndex(currentFile, false, true);
+      }
+    }, undefined, userFile.getOwner());
   }
 }

@@ -45,7 +45,7 @@ export default class PostgresDatabase implements SqlDatabase {
     return this.pool.end();
   }
 
-  static sanitizeLikePattern(input: string): string {
+  static escapeForLikePattern(input: string): string {
     return input.replace(/#/g, '##')
         .replace(/_/g, '#_')
         .replace(/%/g, '#%');
