@@ -7,8 +7,8 @@ import Path from 'path';
 import sharp from 'sharp';
 import AbstractUser from '../../AbstractUser';
 import { getConfig, getFileNameCollator } from '../../Constants';
+import FileIndex from '../../files/index/FileIndex';
 import IUserFile from '../../files/IUserFile';
-import FileSearch from '../../FileSearch';
 import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
 import UrlBuilder from '../../frontend/UrlBuilder';
 import VideoLiveTranscodeTemplate, { VideoLiveTransCodeTemplateData } from '../../frontend/VideoLiveTranscodeTemplate';
@@ -93,7 +93,13 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
       return;
     }
 
-    const searchResult = await FileSearch.searchFile(file, req.query.search);
+    const fileIndex = FileIndex.getInstance();
+    if (fileIndex == null) {
+      res.status(500)
+          .send('Search is not available without an file index');
+      return;
+    }
+    const searchResult = await fileIndex.search(file, req.query.search);
     await sendDirectoryView(req, res, type, null, searchResult);
     return;
   }
