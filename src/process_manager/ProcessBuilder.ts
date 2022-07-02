@@ -7,7 +7,7 @@ import TmpFiles from '../TmpFiles';
 import { ChildProcessExitCode, ChildProcessExitSignal, ChildProcessOptions, IChildProcess } from './IChildProcess';
 
 // TODO: Allow configuring uid and gui for processes and use them to ensure that only the cwd can be accessed (or at least written to).
-//       Alternatively maybe chroot could be used to isolate the process
+//       Alternatively maybe chroot could be used to isolate the process?
 export default class ProcessBuilder {
   private _command: string;
   private _args: string[];

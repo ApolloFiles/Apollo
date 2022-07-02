@@ -3,13 +3,23 @@ import EventEmitter from 'events';
 import Fs from 'fs';
 import Path from 'path';
 import { getProcessLogDir } from '../Constants';
-import { IChildProcess, ChildProcessOptions } from './IChildProcess';
+import BackgroundProcess from './BackgroundProcess';
+import { ChildProcessOptions, IChildProcess } from './IChildProcess';
+import { IProcess } from './IProcess';
 
 export default class ProcessManager {
   private readonly runningProcesses: IChildProcess[] = [];
 
   private shuttingDown: boolean = false;
   private onProcessExit?: () => void;
+
+  register(process: IProcess): void {
+    if (this.shuttingDown) {
+      throw new Error(`Tried to register process while shutting down (uniqueId='${process.uniqueId}',type='${process.constructor.name}')`);
+    }
+
+    ProcessManager.initProcessLog(process);
+  }
 
   create(uniqueId: string, command: string, args: string[], options: ChildProcessOptions): IChildProcess {
     if (this.shuttingDown) {
@@ -27,35 +37,58 @@ export default class ProcessManager {
       }
     });
 
-    ProcessManager.initProcessLog(process, options);
+    ProcessManager.initProcessLog(process);
 
     return process;
   }
 
-  private static initProcessLog(process: IChildProcess, processOptions: ChildProcessOptions): void {
+  private static initProcessLog(process: IProcess): void {
     Fs.mkdirSync(getProcessLogDir(), {recursive: true});
     const logWriteStream = Fs.createWriteStream(Path.join(getProcessLogDir(), `${process.uniqueId}.log`));
 
+    let additionalInitValues: { [key: string]: any } = {};
+    if (process instanceof ApolloChildProcess) {
+      additionalInitValues = {
+        pid: process.pid,
+        command: process.command,
+        args: process.args
+      };
+    }
+
     ProcessManager.writeToLog(logWriteStream, JSON.stringify({
       uniqueId: process.uniqueId,
-      pid: process.pid,
+      options: process.options,
 
-      command: process.command,
-      args: process.args,
-      options: processOptions
+      ...additionalInitValues
     }, null, 2));
     ProcessManager.writeToLog(logWriteStream);
 
     process.on('stdout', (data) => ProcessManager.writeToLog(logWriteStream, data.toString('utf-8'), 'stdout'));
     process.on('stderr', (data) => ProcessManager.writeToLog(logWriteStream, data.toString('utf-8'), 'stderr'));
 
-    process.once('exit', (code, signal, err) => {
-      if (err) {
-        ProcessManager.writeToLog(logWriteStream, `Exited with an error after ${new Date().getTime() - process.started.getTime()} ms:\n${JSON.stringify(err, null, 2)}`);
-      } else {
-        ProcessManager.writeToLog(logWriteStream, `Exited with code '${code}' and signal '${signal}' after ${new Date().getTime() - process.started.getTime()} ms`);
-      }
-    });
+    // TODO: put exit-event into IProcess interface and put provided arguments into additionalData
+    if (process instanceof ApolloChildProcess) {
+      process.once('exit', (code, signal, err) => this.logProcessDone(process, logWriteStream, err, {code, signal}));
+    } else if (process instanceof BackgroundProcess) {
+      process.result
+          .then(() => this.logProcessDone(process, logWriteStream))
+          .catch(err => this.logProcessDone(err, logWriteStream));
+    } else {
+      console.error(`Cannot init process log for unknown process type '${process.constructor.name}'`);
+    }
+  }
+
+  private static logProcessDone(process: IProcess, logStream: Fs.WriteStream, err?: Error, additionalData?: { [key: string]: any }): void {
+    const executionTime = new Date().getTime() - process.started.getTime();
+
+    let baseMessage: string;
+    if (err) {
+      baseMessage = `Exited with an error after ${executionTime} ms:\n${JSON.stringify(err, null, 2)}`;
+    } else {
+      baseMessage = `Exited after ${executionTime} ms`;
+    }
+
+    ProcessManager.writeToLog(logStream, `${baseMessage}${additionalData ? `\n\nAdditional data:\n${JSON.stringify(additionalData, null, 2)}` : ''}`);
   }
 
   private static writeToLog(logStream: Fs.WriteStream, message?: string, eventToEmit?: 'stdout' | 'stderr'): void {
@@ -117,12 +150,12 @@ export default class ProcessManager {
 class ApolloChildProcess extends EventEmitter implements IChildProcess {
   private static readonly ZERO_BUFFER = Buffer.alloc(0);
 
-  readonly uniqueId: string;
-  readonly started: Date;
+  public readonly uniqueId: string;
+  public readonly started: Date;
 
-  readonly command: string;
-  readonly args: string[];
-  readonly options: ChildProcessOptions;
+  public readonly command: string;
+  public readonly args: string[];
+  public readonly options: ChildProcessOptions;
 
   bufferedStdOut = ApolloChildProcess.ZERO_BUFFER;
   bufferedStdErr = ApolloChildProcess.ZERO_BUFFER;
@@ -137,7 +170,7 @@ class ApolloChildProcess extends EventEmitter implements IChildProcess {
 
     this.command = command;
     this.args = args;
-    this.options = options;
+    this.options = Object.freeze(options);
 
     this.spawnedProcess = ChildProcess.spawn(command, args, {
       cwd: this.options.cwd,
