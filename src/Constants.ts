@@ -2,6 +2,8 @@ import { ConfigFile, HttpClient } from '@spraxdev/node-commons';
 import Fs from 'fs';
 import Os from 'os';
 import Path from 'path';
+import PostgresDatabase from './database/postgres/PostgresDatabase';
+import SqlDatabase from './database/SqlDatabase';
 import FileTypeUtils from './FileTypeUtils';
 import { ApolloConfig } from './global';
 import ProcessManager from './process_manager/ProcessManager';
@@ -12,6 +14,7 @@ let processManager: ProcessManager;
 let fileTypeUtils: FileTypeUtils;
 let fileNameCollator: Intl.Collator;
 let httpClient: HttpClient;
+let postgresqlDb: PostgresDatabase | null;
 
 const APP_ROOT = Path.resolve(Path.dirname(__dirname));
 const WORKING_DIR_ROOT = determineDefaultWorkingRoot();
@@ -30,6 +33,22 @@ export function getConfig(): ConfigFile<ApolloConfig> {
       webserver: {
         host: '0.0.0.0',
         port: 8080
+      },
+
+      database: {
+        postgres: {
+          enabled: false,
+
+          host: 'localhost',
+          port: 5432,
+
+          username: 'apollo',
+          password: 'v3ryS3cret',
+          database: 'apollo',
+
+          ssl: true,
+          poolSize: 4
+        }
       },
 
       login: {
@@ -186,6 +205,18 @@ export function getHttpClient(): HttpClient {
   }
 
   return httpClient;
+}
+
+export function getSqlDatabase(): SqlDatabase | null {
+  if (postgresqlDb === undefined) {
+    postgresqlDb = null;
+
+    if (getConfig().data.database.postgres.enabled) {
+      postgresqlDb = new PostgresDatabase(getConfig().data.database.postgres);
+    }
+  }
+
+  return postgresqlDb;
 }
 
 function getPackageJson(): { name?: string, version?: string } {

@@ -1,4 +1,4 @@
-import { getConfig, getProcessManager } from './Constants';
+import { getConfig, getProcessManager, getSqlDatabase } from './Constants';
 import WebServer from './webserver/WebServer';
 
 let webServer: WebServer | undefined;
@@ -31,15 +31,15 @@ function shutdownHook() {
   console.log('Shutting down...');
 
   const postWebserver = async (): Promise<never> => {
-    // if (database) {
-    //   try {
-    //     await database.shutdown();
-    //   } catch (err) {
-    //     console.error(err);
-    //   } finally {
-    //     console.log('Database handler has been shutdown.');
-    //   }
-    // }
+    if (getSqlDatabase()) {
+      try {
+        await getSqlDatabase()?.shutdown();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        console.log('Database handler has been shutdown.');
+      }
+    }
 
     try {
       await getProcessManager().shutdown();

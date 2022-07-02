@@ -21,6 +21,22 @@ export interface ApolloConfig {
     readonly port: number;
   };
 
+  readonly database: {
+    readonly postgres: {
+      readonly enabled: boolean;
+
+      readonly host: string;
+      readonly port: number;
+
+      readonly username: string;
+      readonly password: string;
+      readonly database: string;
+
+      readonly ssl: boolean;
+      readonly poolSize: number;
+    };
+  };
+
   readonly login: {
     readonly thirdParty: {
       readonly [key: string]: {
