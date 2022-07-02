@@ -37,7 +37,7 @@ describe('Constructor input validation', () => {
 describe('#getFile', () => {
   test.each([
     '/test.txt', '/Test.txt',
-    '/dir', '/dir/'
+    '/dir', '/dir/Sub:!', '/C:\\\\Users\\Jester\\'
   ])('UserFile constructor inputs unmodified', (path) => {
     const userFile = user.getDefaultFileSystem().getFile(path);
 
@@ -48,6 +48,10 @@ describe('#getFile', () => {
 
   test('#getFile with relative path', () => {
     expect(() => user.getDefaultFileSystem().getFile('test')).toThrowError('Path must be absolute');
+  });
+
+  test('#getFile with trailing slash', () => {
+    expect(user.getDefaultFileSystem().getFile('/dir/').getPath()).toBe('/dir');
   });
 
   test.each(['/..', '/../', '/.', '////', '/test/../..'])('Potentially harmful path %O', (path) => {

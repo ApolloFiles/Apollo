@@ -16,11 +16,14 @@ export default class UserFile implements IUserFile {
     }
 
     path = Path.normalize(path);
+    if (path.length > 1 && path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
 
     this.userFileSystem = userFileSystem;
     this.path = path;
 
-    // This should be impossible as we join two absolute paths but just in case something goes extremely wrong in the future
+    // This should be impossible as we join two absolute paths but just in case something goes extremely wrong
     if (!this.getAbsolutePathOnHost().startsWith(userFileSystem.getAbsolutePathOnHost())) {
       throw new Error('Path must be inside the user file system');
     }
@@ -90,7 +93,6 @@ export default class UserFile implements IUserFile {
   getReadStream(options?: { start?: number, end?: number }): NodeStream.Readable {
     return Fs.createReadStream(this.getAbsolutePathOnHost(), options);
   }
-
 
   async stat(): Promise<Fs.Stats> {
     return Fs.promises.stat(this.getAbsolutePathOnHost());
