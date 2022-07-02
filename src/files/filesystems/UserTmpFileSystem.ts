@@ -11,6 +11,10 @@ export default class UserTmpFileSystem extends UserFileSystem implements IUserTm
     super(owner, Path.join(getUserStorageTmpRoot(), owner.getId().toString()));
   }
 
+  getUniqueId(): string {
+    return `apollo:user-tmp:${this.getOwner().getId()}`;
+  }
+
   async createTmpDir(prefix?: string): Promise<IUserFile> {
     const tmpDirAbsolutePathOnHost = await Fs.promises.mkdtemp(Path.join(this.getAbsolutePathOnHost(), prefix ?? ''));
 

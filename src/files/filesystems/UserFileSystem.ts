@@ -38,6 +38,10 @@ export default class UserFileSystem implements IUserFileSystem {
     this.rootOnHost = rootOnHost + Path.sep;
   }
 
+  getUniqueId(): string {
+    return `apollo:user:${this.getOwner().getId()}`;
+  }
+
   getFile(path: string): IUserFile {
     return new UserFile(this, path);
   }

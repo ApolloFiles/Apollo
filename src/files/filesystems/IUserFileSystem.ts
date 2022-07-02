@@ -4,6 +4,8 @@ import IUserFile from '../IUserFile';
 import IUserFileWriteable from '../IUserFileWriteable';
 
 export default interface IUserFileSystem {
+  getUniqueId(): string;
+
   getOwner(): AbstractUser;
 
   getFile(path: string): IUserFile;
