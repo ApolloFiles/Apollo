@@ -115,17 +115,6 @@ export function getConfig(): ConfigFile<ApolloConfig> {
             }
           }
         }
-      },
-
-      oauth: {
-        github: {
-          clientId: '',
-          clientSecret: ''
-        },
-        microsoft: {
-          clientId: '',
-          clientSecret: ''
-        }
       }
     });
     cfg.saveIfChanged();
