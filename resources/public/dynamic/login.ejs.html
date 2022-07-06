@@ -29,24 +29,26 @@
             <h1>Login to Apollo</h1>
           </div>
 
-          <div class="third-party-login-container">
-            <h6 class="text-muted">Sign in with</h6>
+          <!-- @formatter:off -->
+          <% if (locals.oAuthProvider.length > 0) { %>
+            <div class="third-party-login-container">
+              <h6 class="text-muted">Sign in with</h6>
 
-            <div class="d-flex flex-wrap">
-              <!-- @formatter:off -->
-              <% for (const provider of locals.oAuthProvider) { %>
-              <a class="p-2 btn btn-outline-secondary" href="<%- provider.href %>" role="button"><% _%>
-                  <%_ %><img src="/icons/login/third-party/<%- encodeURIComponent(provider.id) %>.svg"
-                             class="third-party-img" alt="<%= provider.displayName %>'s logo">&nbsp;<%= provider.displayName _%>
-                <%_ %></a>
-              <%_ } -%>
-              <!-- @formatter:on -->
+              <div class="d-flex flex-wrap">
+                <% for (const provider of locals.oAuthProvider) { %>
+                <a class="p-2 btn btn-outline-secondary" href="<%- provider.href %>" role="button"><% _%>
+                    <%_ %><img src="/icons/login/third-party/<%- encodeURIComponent(provider.id) %>.svg"
+                               class="third-party-img" alt="<%= provider.displayName %>'s logo">&nbsp;<%= provider.displayName _%>
+                  <%_ %></a>
+                <%_ } -%>
+              </div>
             </div>
-          </div>
 
-          <div class="hr-section-break mt-4 mb-4">
-            <span>or continue with</span>
-          </div>
+            <div class="hr-section-break mt-4 mb-4">
+              <span>or continue with</span>
+            </div>
+          <%_ } -%>
+          <!-- @formatter:on -->
 
           <div class="first-party-login-container">
             <form method="post" enctype="application/x-www-form-urlencoded">
