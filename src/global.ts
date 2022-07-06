@@ -19,6 +19,8 @@ export interface ApolloConfig {
   readonly webserver: {
     readonly host: string;
     readonly port: number;
+
+    readonly trustProxy: string[] | number;
   };
 
   readonly database: {

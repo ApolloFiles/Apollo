@@ -5,6 +5,7 @@ import { filesHandlePost } from './FilesPostHandler';
 
 export function createFilesRouter(frontendType: 'browse' | 'trash'): express.Router {
   const router = express.Router();
+
   router.use('/', (req, res, next) => {
     Utils.restful(req, res, next,
         {

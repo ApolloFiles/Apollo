@@ -22,6 +22,7 @@ export default class WebServer {
     this.app = express();
 
     this.app.disable('x-powered-by');
+    this.app.set('trust proxy', getConfig().data.webserver.trustProxy);
 
     this.setupSessionMiddleware();
 
