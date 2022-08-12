@@ -1,4 +1,5 @@
 import { ConfigFile, HttpClient } from '@spraxdev/node-commons';
+import Crypto from 'crypto';
 import Fs from 'fs';
 import Os from 'os';
 import Path from 'path';
@@ -135,6 +136,13 @@ export function getConfig(): ConfigFile<ApolloConfig> {
             }
           }
         }
+      },
+
+      secrets: {
+        session: (() => {
+          console.log('Generating session secret...');
+          return Crypto.randomBytes(32).toString('hex');
+        }) as any as string
       }
     });
     cfg.saveIfChanged();

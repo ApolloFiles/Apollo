@@ -63,4 +63,8 @@ export interface ApolloConfig {
       };
     };
   };
+
+  readonly secrets: {
+    readonly session: string;
+  };
 }

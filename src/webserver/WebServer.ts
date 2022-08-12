@@ -98,7 +98,11 @@ export default class WebServer {
     this.app.use(expressSession({
       name: 'sessID',
       secret: 'keyboard cat', // TODO
-      store: new (SessionFileStore(expressSession))({path: sessionDirectory, retries: 0}),
+      store: new (SessionFileStore(expressSession))({
+        path: sessionDirectory,
+        retries: 0,
+        secret: getConfig().data.secrets.session
+      }),
       resave: false,
       saveUninitialized: false,
       rolling: true,
