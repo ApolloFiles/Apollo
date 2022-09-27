@@ -30,10 +30,6 @@ export default class WebServer {
 
     this.setupSessionMiddleware();
 
-    this.app.use('/', express.static(Path.join(getAppResourcesDir(), 'public', 'static')));
-    this.app.use('/favicon.ico', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'favicon', 'favicon.ico')));
-    this.app.use('/node_modules', express.static(Path.join(getAppResourcesDir(), '..', 'node_modules')));
-
     this.app.use('/admin', WebServer.requireValidLogin, adminRouter);
 
     this.app.use('/browse', WebServer.requireValidLogin, createFilesRouter('browse'));
@@ -70,6 +66,11 @@ export default class WebServer {
         }
       });
     });
+
+    const staticRouteOptions = {index: false, etag: false, redirect: false};
+    this.app.use('/', express.static(Path.join(getAppResourcesDir(), 'public', 'static'), staticRouteOptions));
+    this.app.use('/favicon.ico', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'favicon', 'favicon.ico'), staticRouteOptions));
+    this.app.use('/node_modules', express.static(Path.join(getAppResourcesDir(), '..', 'node_modules'), staticRouteOptions));
 
     this.setupErrorHandling();
   }
