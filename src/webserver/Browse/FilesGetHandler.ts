@@ -1,7 +1,6 @@
 import * as Archiver from 'archiver';
 import Crypto from 'crypto';
 import express from 'express';
-import * as fastDirectorySize from 'fast-directory-size';
 import Fs from 'fs';
 import Path from 'path';
 import sharp from 'sharp';
@@ -166,8 +165,8 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
   const filesToRender: FilesTemplateData['files'] = [];
   for (const innerFile of files) {
     try {
-      const innerFileMimeType = await innerFile.getMimeType();
       const innerFileStat = await innerFile.stat();
+      const innerFileMimeType = await innerFile.getMimeType();
 
       let fileIcon: FileIcon = 'folder';
 
@@ -200,7 +199,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
         name: innerFile.getName(),
         owner: 'Ich',
         lastChanged: innerFileStat.mtime,
-        size: Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string)),
+        size: Utils.prettifyFileSize(await innerFile.getSize()),
         mimeType: innerFileMimeType,
 
         frontendUrl: await UrlBuilder.buildUrl(innerFile, innerFileStat)

@@ -1,9 +1,10 @@
 import { Mutex } from 'async-mutex';
 import express from 'express';
-import * as fastDirectorySize from 'fast-directory-size';
+import * as FastDirectorySize from 'fast-directory-size';
 import Fs from 'fs';
 import * as Path from 'path';
 import AbstractUser from '../../AbstractUser';
+import { getFileStatCache } from '../../Constants';
 import IUserFile from '../IUserFile';
 import IUserFileWriteable from '../IUserFileWriteable';
 import UserFile from '../UserFile';
@@ -54,8 +55,17 @@ export default class UserFileSystem implements IUserFileSystem {
     return this.owner;
   }
 
-  async getSize(): Promise<number> {
-    return await fastDirectorySize.getDirectorySize(this.getAbsolutePathOnHost());
+  async getSize(forceRefresh: boolean = false): Promise<number> {
+    if (!forceRefresh) {
+      const cachedSize = await getFileStatCache().getDirectorySize(this.getAbsolutePathOnHost());
+      if (cachedSize != null) {
+        return cachedSize;
+      }
+    }
+
+    const size = await FastDirectorySize.getDirectorySize(this.getAbsolutePathOnHost());
+    await getFileStatCache().setDirectorySize(this.getAbsolutePathOnHost(), size);
+    return size;
   }
 
   async acquireLock(req: express.Request, file: IUserFile, action: (file: IUserFileWriteable) => void | Promise<void>): Promise<void> {

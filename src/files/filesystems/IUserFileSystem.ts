@@ -11,7 +11,7 @@ export default interface IUserFileSystem {
   getFile(path: string): IUserFile;
   getFiles(path: string): Promise<IUserFile[]>;
 
-  getSize(): Promise<number>;
+  getSize(forceRefresh?: boolean): Promise<number>;
 
   acquireLock(req: express.Request, file: IUserFile, action: (file: IUserFileWriteable) => void | Promise<void>): Promise<void>;
 

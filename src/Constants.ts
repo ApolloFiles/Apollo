@@ -3,6 +3,7 @@ import Crypto from 'crypto';
 import Fs from 'fs';
 import Os from 'os';
 import Path from 'path';
+import FileStatCache from './cache/FileStatCache';
 import PostgresDatabase from './database/postgres/PostgresDatabase';
 import SqlDatabase from './database/SqlDatabase';
 import FileTypeUtils from './FileTypeUtils';
@@ -16,6 +17,7 @@ let fileTypeUtils: FileTypeUtils;
 let fileNameCollator: Intl.Collator;
 let httpClient: HttpClient;
 let postgresqlDb: PostgresDatabase | null;
+let fileStatCache: FileStatCache;
 
 const APP_ROOT = Path.resolve(Path.dirname(__dirname));
 const WORKING_DIR_ROOT = determineDefaultWorkingRoot();
@@ -226,6 +228,14 @@ export function getSqlDatabase(): SqlDatabase | null {
   }
 
   return postgresqlDb;
+}
+
+export function getFileStatCache(): FileStatCache {
+  if (fileStatCache == null) {
+    fileStatCache = new FileStatCache();
+  }
+
+  return fileStatCache;
 }
 
 function getPackageJson(): { name?: string, version?: string } {

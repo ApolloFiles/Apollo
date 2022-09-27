@@ -59,6 +59,7 @@
     "fast-directory-size": "github:SpraxDev/Fast-Directory-Size",
     "material-design-icons-iconfont": "^6.7.0",
     "mime-types": "^2.1.35",
+    "node-cache": "^5.1.2",
     "pg": "^8.7.3",
     "session-file-store": "^1.5.0",
     "sharp": "^0.30.7",

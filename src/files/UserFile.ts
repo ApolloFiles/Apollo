@@ -1,14 +1,17 @@
+import * as FastDirectorySize from 'fast-directory-size';
 import * as Fs from 'fs';
 import * as NodeStream from 'node:stream';
 import * as Path from 'path';
 import AbstractUser from '../AbstractUser';
-import { getFileTypeUtils } from '../Constants';
+import { getFileStatCache, getFileTypeUtils } from '../Constants';
 import IUserFileSystem from './filesystems/IUserFileSystem';
 import IUserFile from './IUserFile';
 
 export default class UserFile implements IUserFile {
   private readonly userFileSystem: IUserFileSystem;
   private readonly path: string;
+
+  private cachedGeneratedCacheId: string | undefined;
 
   constructor(userFileSystem: IUserFileSystem, path: string) {
     if (!Path.isAbsolute(path)) {
@@ -94,22 +97,69 @@ export default class UserFile implements IUserFile {
     return Fs.createReadStream(this.getAbsolutePathOnHost(), options);
   }
 
-  async stat(): Promise<Fs.Stats> {
-    return Fs.promises.stat(this.getAbsolutePathOnHost());
-  }
-
-  async getMimeType(): Promise<string | null> {
-    if (!(await this.isFile())) {
-      return null;
+  async stat(forceRefresh: boolean = false): Promise<Fs.Stats> {
+    if (!forceRefresh) {
+      const cachedStat = await getFileStatCache().getStat(this);
+      if (cachedStat != null) {
+        return cachedStat;
+      }
     }
 
-    return getFileTypeUtils().getMimeType(this.getAbsolutePathOnHost());
+    const fileStat = await Fs.promises.stat(this.getAbsolutePathOnHost());
+    await getFileStatCache().setStat(this, fileStat);
+    return fileStat;
   }
 
-  async generateCacheId(): Promise<string> {
-    const fileStat = await this.exists() ? await this.stat() : {mtimeMs: -1, size: -1};
+  async getMimeType(forceRefresh: boolean = false): Promise<string | null> {
+    if (!forceRefresh) {
+      const cachedMimeType = await getFileStatCache().getMimeType(this);
+      if (cachedMimeType !== undefined) {
+        return cachedMimeType;
+      }
+    }
 
-    return Buffer.from(this.getAbsolutePathOnHost() + ';' + fileStat.mtimeMs + ';' + fileStat.size)
-        .toString('base64');
+    let mimeType = null;
+    if (await this.isFile()) {
+      mimeType = await getFileTypeUtils().getMimeType(this.getAbsolutePathOnHost());
+    }
+
+    await getFileStatCache().setMimeType(this, mimeType);
+    return mimeType;
+  }
+
+  async getSize(forceRefresh?: boolean): Promise<number> {
+    if (await this.isFile()) {
+      return this.stat(forceRefresh).then((stat) => stat.size);
+    }
+
+    if (!(await this.isDirectory())) {
+      return -1;
+    }
+
+    if (!forceRefresh) {
+      const cachedSize = await getFileStatCache().getDirectorySize(this.getAbsolutePathOnHost());
+      if (cachedSize != null) {
+        return cachedSize;
+      }
+    }
+
+    const size = await FastDirectorySize.getDirectorySize(this.getAbsolutePathOnHost());
+    await getFileStatCache().setDirectorySize(this.getAbsolutePathOnHost(), size);
+    return size;
+  }
+
+  async generateCacheId(forceRefresh: boolean = false): Promise<string> {
+    if (forceRefresh || this.cachedGeneratedCacheId == null) {
+      let fileStat = {mtimeMs: -1, size: -1};
+      try {
+        fileStat = await Fs.promises.stat(this.getAbsolutePathOnHost());
+      } catch (fileNotExists) {
+      }
+
+      this.cachedGeneratedCacheId = Buffer.from(this.getAbsolutePathOnHost() + ';' + fileStat.mtimeMs + ';' + fileStat.size)
+          .toString('base64');
+    }
+
+    return this.cachedGeneratedCacheId;
   }
 }
