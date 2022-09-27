@@ -7,6 +7,7 @@ import Path from 'path';
 import SessionFileStore from 'session-file-store';
 import AbstractUser from '../AbstractUser';
 import { getAppConfigDir, getAppResourcesDir, getConfig } from '../Constants';
+import { ServerTiming } from '../ServerTiming';
 import UserStorage from '../UserStorage';
 import Utils from '../Utils';
 import { adminRouter } from './AdminRouter';
@@ -24,6 +25,8 @@ export default class WebServer {
     this.app.disable('x-powered-by');
     this.app.set('trust proxy', getConfig().data.webserver.trustProxy);
     this.app.set('etag', false);
+
+    this.app.use(ServerTiming.getExpressMiddleware(true /*!isProduction()*/));  // TODO: remove debug
 
     this.setupSessionMiddleware();
 
@@ -96,6 +99,11 @@ export default class WebServer {
     const sessionDirectory = Path.join(getAppConfigDir(), 'sessions');
     Fs.mkdirSync(sessionDirectory, {recursive: true});
 
+    this.app.use((req, res: express.Response, next) => {
+      res.locals.timings?.startNext('session');
+      next();
+    });
+
     this.app.use(expressSession({
       name: 'sessID',
       secret: 'keyboard cat', // TODO
@@ -116,10 +124,12 @@ export default class WebServer {
       }
     }));
 
-    this.app.use(async (req: express.Request, res, next): Promise<void> => {
+    this.app.use(async (req: express.Request, res: express.Response, next): Promise<void> => {
       if (req.session.userId != null) {
         req.user = await new UserStorage().getUser(req.session.userId);
       }
+
+      res.locals.timings?.startNext('sessionEnd');
 
       next();
     });

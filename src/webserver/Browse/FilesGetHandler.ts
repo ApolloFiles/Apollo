@@ -24,7 +24,9 @@ type FileRequestType = 'thumbnail' | 'download' | 'search' | 'live_transcode' | 
 const allowedFileRequestTypes = ['thumbnail', 'download', 'search', 'live_transcode', 'webttv_thumbnails'];  // Needs to be identical to FileRequestType
 
 export function filesHandleGet(req: express.Request, res: express.Response, next: express.NextFunction, frontendType: 'browse' | 'trash'): () => Promise<void> {
-  return async () => {
+  return async (): Promise<void> => {
+    res.locals.timings?.startNext('#filesHandleGet');
+
     if (req.query.type != null && (typeof req.query.type != 'string' || !allowedFileRequestTypes.includes(req.query.type))) {
       res.status(400)
           .send('Invalid type requested');
@@ -47,15 +49,18 @@ export function filesHandleGet(req: express.Request, res: express.Response, next
         return;
       }
 
+      res.locals.timings?.startNext('createUserRootDirectory');
       await fileSystem.acquireLock(req, file, (writeableFile) => writeableFile.mkdir({recursive: true}));
     }
 
     if (await file.isDirectory()) {
+      res.locals.timings?.startNext('handleDirectoryRequest');
       await handleDirectoryRequest(req, res, user, file, frontendType, fileRequestType);
       return;
     }
 
     if (await file.isFile()) {
+      res.locals.timings?.startNext('handleFileRequest');
       await handleFileRequest(req, res, next, user, file, fileRequestType);
       return;
     }
@@ -92,18 +97,23 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
       return;
     }
 
+    res.locals.timings?.startNext('searchFiles:init');
     const fileIndex = FileIndex.getInstance();
     if (fileIndex == null) {
       res.status(500)
           .send('Search is not available without an file index');
       return;
     }
+    res.locals.timings?.startNext('searchFiles:start');
     const searchResult = await fileIndex.search(file, req.query.search);
+    res.locals.timings?.startNext('searchFiles:render');
     await sendDirectoryView(req, res, type, null, searchResult);
     return;
   }
 
   if (fileRequestType === 'download') {
+    res.locals.timings?.startNext('downloadDirectory:init');
+
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(file.getName())}.zip"`);
 
@@ -125,6 +135,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
       return;
     }
 
+    res.locals.timings?.startNext('downloadDirectory:zip');
     zip.directory(absolutePathOnHost, file.getName());
     await zip.finalize();
 
@@ -133,11 +144,15 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
 
   console.debug(`User '${user.getDisplayName()}' requested directory '${file.getPath()}'`);
 
+  res.locals.timings?.startNext('getFileList');
   const files = await file.getFiles();
+  res.locals.timings?.startNext('sendDirectoryView');
   await sendDirectoryView(req, res, type, file, files);
 }
 
 async function sendDirectoryView(req: express.Request, res: express.Response, type: 'browse' | 'trash', requestedFile: IUserFile | null, files: IUserFile[]): Promise<void> {
+  res.locals.timings?.startNext('#sendDirectoryView_findDirectories');
+
   const directoryFiles: IUserFile[] = [];
   for (const innerFile of files) {
     try {
@@ -151,6 +166,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
     }
   }
 
+  res.locals.timings?.startNext('#sendDirectoryView_sortFileList');
   files.sort((a, b) => {
     if (directoryFiles.includes(a) && !directoryFiles.includes(b)) {
       return -1;
@@ -162,6 +178,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
     return getFileNameCollator().compare(a.getName(), b.getName());
   });
 
+  res.locals.timings?.startNext('#sendDirectoryView_prepareFileListForRender');
   const filesToRender: FilesTemplateData['files'] = [];
   for (const innerFile of files) {
     try {
@@ -212,8 +229,10 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
     }
   }
 
+  res.locals.timings?.startNext('#sendDirectoryView_calculateTotalStorageUsage');
   const totalStorageUsage = requestedFile ? Utils.prettifyFileSize(await requestedFile.getFileSystem().getSize()) : -1;
 
+  res.locals.timings?.startNext('#sendDirectoryView_render');
   res.type('text/html')
       .send(new FilesTemplate(type).render(req,
           {

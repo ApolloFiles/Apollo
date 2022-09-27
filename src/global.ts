@@ -1,10 +1,18 @@
 import AbstractUser from './AbstractUser';
+import { ServerTiming } from './ServerTiming';
 
 declare module 'express' {
   interface Request {
     user?: AbstractUser | null;
   }
+
+  interface Response {
+    locals: {
+      timings?: ServerTiming;
+    };
+  }
 }
+
 declare module 'express-session' {
   interface SessionData {
     userId?: AbstractUser['id'];
