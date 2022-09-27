@@ -23,6 +23,7 @@ export default class WebServer {
 
     this.app.disable('x-powered-by');
     this.app.set('trust proxy', getConfig().data.webserver.trustProxy);
+    this.app.set('etag', false);
 
     this.setupSessionMiddleware();
 
