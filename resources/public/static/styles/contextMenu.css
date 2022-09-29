@@ -1,0 +1,23 @@
+.context-menu {
+    background-color: #fff;
+    border:           1px solid #ccc;
+    box-shadow:       0 2px 4px rgba(0, 0, 0, 0.2);
+    position:         absolute;
+    z-index:          1000;
+    max-width:        30vw;
+    border-radius:    6px;
+}
+
+.context-menu .material-icons {
+    padding-right: 5px;
+}
+
+.context-menu .context-menu-item {
+    cursor:        pointer;
+    padding:       3px 20px;
+    border-bottom: 1px solid #ccc;
+}
+
+.context-menu .context-menu-item:hover {
+    background-color: #eee;
+}
