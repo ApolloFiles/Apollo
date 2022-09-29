@@ -16,6 +16,5 @@ if (!validLocals) {
 <tr class="file-list-item" data-file-item="<%- encodeURI(JSON.stringify(locals.file)) %>">
   <td><a class="a-stealth d-block h-100 w-100" href="<%- locals.file.frontendUrl %>"><span class="material-icons icon-inline <%- locals.file.icon %>"></span> <%= locals.file.name %></a></td>
   <td class="fit-column"><%= locals.file.owner %></td>
-  <td class="fit-column"><time datetime="<%- locals.file.lastChanged.toUTCString() %>"><%= locals.file.lastChanged.toUTCString() %></time></td>
   <td class="fit-column"><%= locals.file.size ?? '-' %></td>
 </tr>
