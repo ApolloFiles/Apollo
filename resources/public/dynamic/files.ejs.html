@@ -35,11 +35,21 @@
       <!-- @formatter:on -->
       <br><br>
 
-      <!-- @formatter:off -->
-      <%- include('/dynamic/html-modules/files/content-favorites.ejs.html', {lastFavoriteFiles: locals.lastFavoriteFiles}); %>
-      <%- include('/dynamic/html-modules/files/content-recent-files.ejs.html', {recentFiles: locals.recentFiles}); %>
-      <%- include('/dynamic/html-modules/files/content-file-list.ejs.html', {files: locals.files, breadcrumbs: locals.breadcrumbs }); %>
-      <!-- @formatter:on -->
+      <div id="view-files">
+        <!-- @formatter:off -->
+        <%# include('/dynamic/html-modules/files/content-favorites.ejs.html', {lastFavoriteFiles: locals.lastFavoriteFiles}); %>
+        <%# include('/dynamic/html-modules/files/content-recent-files.ejs.html', {recentFiles: locals.recentFiles}); %>
+        <%- include('/dynamic/html-modules/files/content-file-list.ejs.html', {files: locals.files, breadcrumbs: locals.breadcrumbs }); %>
+        <!-- @formatter:on -->
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed-bottom p-3 bottom-0 end-0 d-none" style="left: revert; width: 15%;">
+    <div class="card text-center" id="multi-file-selection-status">
+      <div class="card-body">
+        <p class="card-text">Es sind n Dateien gewählt</p>
+      </div>
     </div>
   </div>
 

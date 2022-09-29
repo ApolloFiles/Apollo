@@ -1,6 +1,10 @@
 @import "sidebar.css";
 @import "contextMenu.css";
 
+.file-list-item.selected {
+    background-color: rgba(0, 0, 0, 0.125);
+}
+
 table td.fit-column,
 table th.fit-column {
     width:       1px;
