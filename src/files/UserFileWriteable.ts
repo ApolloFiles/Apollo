@@ -3,6 +3,7 @@ import Fs from 'fs';
 import NodeEvents from 'node:events';
 import NodeStream from 'node:stream';
 import Path from 'path';
+import { getFileStatCache } from '../Constants';
 import BackgroundProcess from '../process_manager/BackgroundProcess';
 import FileIndex from './index/FileIndex';
 import IUserFile from './IUserFile';
@@ -30,6 +31,7 @@ export default class UserFileWriteable implements IUserFileWriteable {
     const firstDirCreated = await Fs.promises.mkdir(Path.dirname(filePath), {recursive: true});
     await Fs.promises.writeFile(filePath, data, options);
 
+    await getFileStatCache().clearFile(this.userFile);
     UserFileWriteable.updateFileIndexMkDir(this.userFile, firstDirCreated != null);
     UserFileWriteable.updateFileIndexWrite(this.userFile);
   }
@@ -42,6 +44,8 @@ export default class UserFileWriteable implements IUserFileWriteable {
     }
 
     const firstDirCreated = await Fs.promises.mkdir(filePath, options);
+
+    await getFileStatCache().clearFile(this.userFile);
     UserFileWriteable.updateFileIndexMkDir(this.userFile, firstDirCreated != null);
   }
 
@@ -54,6 +58,9 @@ export default class UserFileWriteable implements IUserFileWriteable {
     }
 
     await Fs.promises.rename(srcPath, destPath);
+
+    await getFileStatCache().clearFile(this.userFile);
+    await getFileStatCache().clearFile(destination.getUserFile());
     UserFileWriteable.updateFileIndexRename(this.userFile, destination);
   }
 
@@ -118,6 +125,8 @@ export default class UserFileWriteable implements IUserFileWriteable {
     }
 
     await Fs.promises.rm(filePath, options);
+
+    await getFileStatCache().clearFile(this.userFile);
     UserFileWriteable.updateFileIndexDelete(this.userFile);
   }
 

@@ -12,6 +12,34 @@ export default class FileStatCache {
     });
   }
 
+  clearAll(): void {
+    this.cache.flushAll();
+  }
+
+  async clearFile(file: IUserFile): Promise<void> {
+    const cacheClear = Promise.all([
+      this.getCacheKey(file, 'stat').then(key => this.cache.del(key)),
+      this.getCacheKey(file, 'mimeType').then(key => this.cache.del(key))
+    ]);
+
+    if (file.getPath().lastIndexOf('/') === 0) {
+      this.cache.keys()
+          .filter(key => key.endsWith(`:directorySize`))
+          .forEach(key => this.cache.del(key));
+    } else {
+      const subdirPath = file.getFileSystem().getFile(file.getPath().substring(0, file.getPath().indexOf('/', 1) + 1)).getAbsolutePathOnHost();
+
+      if (subdirPath != null) {
+        this.cache.keys()
+            .filter(key => key.startsWith(subdirPath))
+            .forEach(key => this.cache.del(key));
+      }
+    }
+
+
+    await cacheClear;
+  }
+
   async setStat(file: IUserFile, stat: Fs.Stats): Promise<void> {
     this.cache.set(await this.getCacheKey(file, 'stat'), stat);
   }

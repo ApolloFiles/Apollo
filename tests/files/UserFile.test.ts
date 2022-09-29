@@ -1,7 +1,6 @@
 import Fs from 'fs';
 import Path from 'path';
 import AbstractUser from '../../src/AbstractUser';
-import UserFile from '../../src/files/UserFile';
 import FileTypeUtils from '../../src/FileTypeUtils';
 import UserStorage from '../../src/UserStorage';
 import TestHelper from '../TestHelper';
@@ -33,14 +32,14 @@ describe('', () => {
     await expect(fileSystemRoot.isFile()).resolves.toBe(false);
     await expect(fileSystemRoot.exists()).resolves.toBe(true);
 
-    await expect(fileSystemRoot.getFiles()).resolves.toEqual([]);
-
     await expect(fileSystemRoot.read()).rejects.toThrowError();
 
     await expect(fileSystemRoot.getMimeType()).resolves.toBeNull();
     expect(mockFileTypeUtils).toHaveBeenCalledTimes(0);
 
     await expect(fileSystemRoot.stat()).resolves.toEqual(Fs.statSync(absolutePathOnHost as string));
+
+    await expect(fileSystemRoot.getFiles()).resolves.toEqual([]);
   });
 
   test('existing file', async () => {
@@ -79,36 +78,29 @@ describe('', () => {
 
 describe('#generateCacheId', () => {
   test.each(['/', '/test.txt', '/subdir/', '/subdir/test.txt'])('For %O', async (filePath) => {
-    let enableMocks = false;
-    const mockStat = jest.spyOn(UserFile.prototype, 'stat').mockImplementation(async () => {
-      if (!enableMocks) {
-        return Fs.promises.stat(fileSystemFile.getAbsolutePathOnHost() as string);
-      }
-
-      return {
-        mtimeMs: 100,
-        size: 10
-      } as any;
-    });
-
     const fileSystem = user.getDefaultFileSystem();
     const fileSystemFile = fileSystem.getFile(filePath);
 
     await expect(fileSystemFile.exists()).resolves.toBe(filePath == '/');
 
-    const firstCacheId = await fileSystemFile.generateCacheId();
+    const firstCacheId = await fileSystemFile.generateCacheId(true);
     expect(firstCacheId).not.toBeNull();
-    expect(firstCacheId).toBe(await fileSystemFile.generateCacheId());
+    expect(firstCacheId).toBe(await fileSystemFile.generateCacheId(true));
 
-    enableMocks = true;
+    if (filePath.endsWith('.txt')) {
+      await Fs.promises.mkdir(Path.dirname(fileSystemFile.getAbsolutePathOnHost() as string), {recursive: true});
+      await Fs.promises.writeFile(fileSystemFile.getAbsolutePathOnHost() as string, 'test');
+    } else {
+      await Fs.promises.mkdir(fileSystemFile.getAbsolutePathOnHost() as string, {recursive: true});
+      await Fs.promises.utimes(fileSystemFile.getAbsolutePathOnHost() as string, 100, 100);
+    }
+
     await expect(fileSystemFile.exists()).resolves.toBe(true);
 
-    const secondCacheId = await fileSystemFile.generateCacheId();
+    const secondCacheId = await fileSystemFile.generateCacheId(true);
     expect(secondCacheId).not.toBeNull();
-    expect(secondCacheId).toBe(await fileSystemFile.generateCacheId());
+    expect(secondCacheId).toBe(await fileSystemFile.generateCacheId(true));
 
     expect(firstCacheId).not.toBe(secondCacheId);
-
-    expect(mockStat).toHaveBeenCalledTimes(filePath == '/' ? 10 : 8);
   });
 });
