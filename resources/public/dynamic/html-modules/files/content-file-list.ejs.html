@@ -68,3 +68,108 @@ if (!validLocals) {
     <% }); %>
   </tbody>
 </table>
+
+<script src="/scripts/files/fileSelection.js"></script>
+<script src="/scripts/contextMenu.js"></script>
+
+<script>
+  'use strict';
+
+  new ContextMenu('tr.file-list-item[data-file-item]', (element) => {
+    const fileInfo = parseFileInfo(element);
+    if (fileInfo == null) {
+      console.error('Failed to parse file info');
+      return [];
+    }
+
+    if (!isFileSelected(fileInfo)) {
+      clearFileSelection();
+      toggleFileSelection(fileInfo, element);
+    }
+
+    if (currentFileSelection.length !== 1) {
+      return [{
+        text: 'Multi-Select-Context-Menu-Not-Support',
+        icon: 'error',
+        clickListener: () => alert('Still no support :shrug:')
+      }];
+    }
+
+    return [
+      {
+        text: 'Im neuen Tab öffnen',
+        icon: 'open_in_new',
+        clickListener: () => window.open(fileInfo.frontendUrl, '_blank')
+      },
+      {
+        icon: 'file_download',
+        text: 'Herunterladen',
+        clickListener: () => window.open(`${fileInfo.frontendUrl}?type=download`, '_blank')
+      },
+      {
+        icon: 'edit',
+        text: 'Umbenennen',
+        clickListener: () => {
+          const newName = prompt('Neuer Dateiname', fileInfo.name);
+
+          if (newName === fileInfo.name) {
+            alert('Es wurde ein identischer Name gewählt');
+            return;
+          }
+
+          fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `action=apollo-rename&value=${encodeURIComponent(fileInfo.name)}&newValue=${encodeURIComponent(newName)}`
+          })
+              .then(res => {
+                if (res.status !== 200) {
+                  throw new Error(`Could not rename file (HTTP-Code ${res.status})`);
+                }
+
+                window.location.reload();
+              })
+              .catch(error => {
+                console.error(error);
+                alert('Es ist ein Fehler aufgetreten:\n' + error.message);
+                window.location.reload();
+              });
+        }
+      },
+      {
+        icon: 'delete_outline',
+        text: 'Löschen',
+        clickListener: () => {
+          fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `action=apollo-delete-file&value=${encodeURIComponent(fileInfo.name)}`
+          })
+              .then(res => {
+                if (res.status !== 200) {
+                  throw new Error(`Could not move file to trash (HTTP-Code ${res.status})`);
+                }
+
+                window.location.reload();
+              })
+              .catch(error => {
+                console.error(error);
+                alert('Es ist ein Fehler aufgetreten:\n' + error.message);
+                window.location.reload();
+              });
+        }
+      },
+      {
+        icon: 'live_tv',
+        text: 'Live Transcode',
+        clickListener: () => window.open(`${fileInfo.frontendUrl}?type=live_transcode`, '_blank').focus()
+      }
+      // {icon: 'share', text: 'Share with…', clickListener: console.log},
+      // {icon: 'info', text: 'Eigenschaften', clickListener: console.log}
+    ];
+  });
+</script>
