@@ -46,6 +46,10 @@ export default class FileTypeUtils {
         .runPromised();
 
     if (childProcessResult.err) {
+      if (childProcessResult.process.bufferedStdOut.includes('No such file or directory')) {
+        return null;
+      }
+
       throw childProcessResult.err;
     }
 
