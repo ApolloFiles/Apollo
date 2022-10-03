@@ -28,6 +28,11 @@ export default class WebServer {
 
     this.app.use(ServerTiming.getExpressMiddleware(true /*!isProduction()*/));  // TODO: remove debug
 
+    const staticRouteOptions = {index: false, etag: false, redirect: false};
+    this.app.use('/', express.static(Path.join(getAppResourcesDir(), 'public', 'static'), staticRouteOptions));
+    this.app.use('/favicon.ico', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'favicon', 'favicon.ico'), staticRouteOptions));
+    this.app.use('/node_modules', express.static(Path.join(getAppResourcesDir(), '..', 'node_modules'), staticRouteOptions));
+
     this.setupSessionMiddleware();
 
     this.app.use('/admin', WebServer.requireValidLogin, adminRouter);
@@ -66,11 +71,6 @@ export default class WebServer {
         }
       });
     });
-
-    const staticRouteOptions = {index: false, etag: false, redirect: false};
-    this.app.use('/', express.static(Path.join(getAppResourcesDir(), 'public', 'static'), staticRouteOptions));
-    this.app.use('/favicon.ico', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'favicon', 'favicon.ico'), staticRouteOptions));
-    this.app.use('/node_modules', express.static(Path.join(getAppResourcesDir(), '..', 'node_modules'), staticRouteOptions));
 
     this.setupErrorHandling();
   }
