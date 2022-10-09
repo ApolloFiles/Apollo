@@ -2,6 +2,7 @@ import ChildProcess from 'child_process';
 import EventEmitter from 'events';
 import Fs from 'fs';
 import Path from 'path';
+import AbstractUser from '../AbstractUser';
 import { getProcessLogDir } from '../Constants';
 import BackgroundProcess from './BackgroundProcess';
 import { ChildProcessOptions, IChildProcess } from './IChildProcess';
@@ -40,6 +41,14 @@ export default class ProcessManager {
     ProcessManager.initProcessLog(process);
 
     return process;
+  }
+
+  public getRunningProcesses(user?: AbstractUser): IChildProcess[] {
+    if (user != null) {
+      return this.runningProcesses.filter(process => process.user?.getId() === user.getId());
+    }
+
+    return this.runningProcesses.slice();
   }
 
   private static initProcessLog(process: IProcess): void {
@@ -152,6 +161,7 @@ class ApolloChildProcess extends EventEmitter implements IChildProcess {
 
   public readonly uniqueId: string;
   public readonly started: Date;
+  public readonly user?: AbstractUser;
 
   public readonly command: string;
   public readonly args: string[];
@@ -162,11 +172,12 @@ class ApolloChildProcess extends EventEmitter implements IChildProcess {
 
   private readonly spawnedProcess: ChildProcess.ChildProcess;
 
-  constructor(uniqueId: string, command: string, args: string[], options: ChildProcessOptions) {
+  constructor(uniqueId: string, command: string, args: string[], options: ChildProcessOptions, user?: AbstractUser) {
     super();
 
     this.uniqueId = uniqueId;
     this.started = new Date();
+    this.user = user;
 
     this.command = command;
     this.args = args;
