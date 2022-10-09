@@ -72,8 +72,77 @@ if (!validLocals) {
 <script src="/scripts/files/fileSelection.js"></script>
 <script src="/scripts/contextMenu.js"></script>
 
+<style>
+    .file-list-item.over {
+        border: 3px dotted #666;
+    }
+</style>
 <script>
   'use strict';
+  const fileListElements = document.querySelectorAll('#file-list .file-list-item');
+  for (const item of fileListElements) {
+    item.addEventListener('dragstart', handleDragStart);
+    item.addEventListener('dragover', handleDragOver);
+    item.addEventListener('dragenter', handleDragEnter);
+    item.addEventListener('dragleave', handleDragLeave);
+    item.addEventListener('dragend', handleDragEnd);
+    item.addEventListener('drop', handleDrop);
+  }
+
+  let dragSrcEl;
+
+  /**
+   * @param {DragEvent} e
+   */
+  function handleDragStart(e) {
+    this.style.opacity = '0.4';
+
+    dragSrcEl = this;
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+  }
+
+  function handleDragEnd(event) {
+    for (const item of fileListElements) {
+      item.classList.remove('over');
+    }
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault();
+    return false;
+  }
+
+  function handleDragEnter(event) {
+    this.classList.add('over');
+  }
+
+  function handleDragLeave(event) {
+    this.classList.remove('over');
+  }
+
+  function handleDrop(event) {
+    event.stopPropagation();
+
+    if (dragSrcEl !== this) {
+      dragSrcEl.innerHTML = this.innerHTML;
+      this.innerHTML = event.dataTransfer.getData('text/html');
+    }
+
+    this.style.opacity = '';
+    dragSrcEl.style.opacity = '';
+
+    return false;
+  }
+</script>
+
+<script>
+  'use strict';
+
+  for (const element of document.querySelectorAll('#file-list .file-list-item')) {
+    element.setAttribute('draggable', 'true');
+  }
 
   new ContextMenu('tr.file-list-item[data-file-item]', (element) => {
     const fileInfo = parseFileInfo(element);
