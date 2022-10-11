@@ -32,16 +32,16 @@
 }
 
 /* To have it symmetric, evenly apply the margin to the left and right of the even/odd elements */
-.third-party-login-container button:nth-child(even) {
+.third-party-login-container a:nth-child(even) {
     margin-left: .25rem;
 }
 
-.third-party-login-container button:nth-child(odd) {
+.third-party-login-container a:nth-child(odd) {
     margin-right: .25rem;
 }
 
 /* Last item should be full width */
-.third-party-login-container button:last-child:nth-child(odd) {
+.third-party-login-container a:last-child:nth-child(odd) {
     flex:   50%;
     margin: unset;
 }
