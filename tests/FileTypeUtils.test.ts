@@ -56,10 +56,6 @@ describe('FileTypeUtils with and without file executable', () => {
   test.each([true, false, undefined])('Non existing file', async (useFileApp) => {
     const mimeType = new FileTypeUtils(useFileApp).getMimeType(Path.join(tmpDir, 'undefined'));
 
-    if (useFileApp === false) {
-      await expect(mimeType).resolves.toBeNull();
-    } else {
-      await expect(mimeType).rejects.toThrowError();
-    }
+    await expect(mimeType).resolves.toBeNull();
   });
 });
