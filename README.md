@@ -48,6 +48,7 @@ Special thanks goes to these wonderful people ([emoji key](https://allcontributo
 <table>
   <tr>
     <td align="center"><a href="https://jb.gg/OpenSourceSupport"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="100px;" alt=""/><br /><sub><b>JetBrains OS License</b></sub></a></td>
+    <td align="center"><a href="https://education.github.com/pack"><img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="100px;" alt=""/><br /><sub><b>GitHub Student Developer Pack</b></sub></a></td>
   </tr>
 </table>
 
