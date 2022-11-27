@@ -12,6 +12,18 @@ nav.breadcrumb-nav {
     vertical-align: bottom;
 }
 
+.material-icons.icon-spinner {
+    animation: icon-spinner 2s infinite linear;
+}
+@keyframes icon-spinner {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(359deg);
+    }
+}
+
 a.a-stealth,
 a.a-stealth:hover,
 a.a-stealth:focus {
