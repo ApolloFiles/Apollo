@@ -10,6 +10,7 @@ nav.breadcrumb-nav {
 
 .material-icons.icon-inline {
     vertical-align: bottom;
+    user-select: none;
 }
 
 .material-icons.icon-spinner {
