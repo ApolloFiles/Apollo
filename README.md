@@ -29,10 +29,12 @@ Special thanks goes to these wonderful people ([emoji key](https://allcontributo
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <table>
-  <tr>
-    <td align="center"><a href="https://github.com/JNSAPH"><img src="https://avatars.githubusercontent.com/u/35976079?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Jonas</b></sub></a><br /><a href="#design-JNSAPH" title="Design">🎨</a> <a href="#ideas-JNSAPH" title="Ideas, Planning, & Feedback">🤔</a></td>
-    <td align="center"><a href="https://github.com/NudelErde"><img src="https://avatars.githubusercontent.com/u/37987062?v=4?s=100" width="100px;" alt=""/><br /><sub><b>NudelErde</b></sub></a><br /><a href="https://github.com/ApolloFiles/Apollo/commits?author=NudelErde" title="Code">💻</a> <a href="#userTesting-NudelErde" title="User Testing">📓</a> <a href="#ideas-NudelErde" title="Ideas, Planning, & Feedback">🤔</a></td>
-  </tr>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/JNSAPH"><img src="https://avatars.githubusercontent.com/u/35976079?v=4?s=100" width="100px;" alt="Jonas"/><br /><sub><b>Jonas</b></sub></a><br /><a href="#design-JNSAPH" title="Design">🎨</a> <a href="#ideas-JNSAPH" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/NudelErde"><img src="https://avatars.githubusercontent.com/u/37987062?v=4?s=100" width="100px;" alt="NudelErde"/><br /><sub><b>NudelErde</b></sub></a><br /><a href="https://github.com/ApolloFiles/Apollo/commits?author=NudelErde" title="Code">💻</a> <a href="#userTesting-NudelErde" title="User Testing">📓</a> <a href="#ideas-NudelErde" title="Ideas, Planning, & Feedback">🤔</a></td>
+    </tr>
+  </tbody>
 </table>
 
 <!-- markdownlint-restore -->
