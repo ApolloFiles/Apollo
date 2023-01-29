@@ -17,7 +17,11 @@ export default class FileTypeUtils {
     let fileMimeType: string | null = null;
 
     if (this.useFileApp) {
-      fileMimeType = await FileTypeUtils.getMimeTypeFromFileApp(path);
+      try {
+        fileMimeType = await FileTypeUtils.getMimeTypeFromFileApp(path);
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     if (fileMimeType == null ||
