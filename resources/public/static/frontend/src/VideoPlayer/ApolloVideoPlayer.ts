@@ -57,6 +57,7 @@ export default class ApolloVideoPlayer {
 
     this.initializeFullscreenCapabilities();
     this.initializePlayerStateStorage();
+    this.initializeControlsVisibility();
 
     this.updateDisplayedVolume();
     this.updateDisplayedProgress();
@@ -353,6 +354,81 @@ export default class ApolloVideoPlayer {
 
     this._videoElement.addEventListener('volumechange', () => storePlayerState(), {passive: true});
     restorePlayerState();
+  }
+
+  private initializeControlsVisibility(): void {
+    const controlsContainer = this.allPlayerElements.controlsContainer;
+
+    let controlsVisible = true;
+    let controlsTimeout: number | null = null;
+
+    function showControls(): void {
+      if (controlsVisible) {
+        return;
+      }
+
+      controlsVisible = true;
+      controlsContainer.classList.remove('d-none');
+    }
+
+    const videoWrapper = this.videoWrapper;
+    const hideAdditionalControlContainers = this.hideAdditionalControlContainers.bind(this);
+    const isPlayerLoading = () => this.wrappingElement.classList.contains('is-loading');
+
+    function hideControls(mousePosition: { x: number, y: number }): void {
+      if (!controlsVisible) {
+        return;
+      }
+      if (videoWrapper.paused || videoWrapper.ended || isPlayerLoading()) {
+        return;
+      }
+
+      const controlsPosition = controlsContainer.getBoundingClientRect();
+      if (mousePosition.x >= controlsPosition.left && mousePosition.x <= controlsPosition.right &&
+          mousePosition.y >= controlsPosition.top && mousePosition.y <= controlsPosition.bottom) {
+        return;
+      }
+
+      controlsVisible = false;
+      controlsContainer.classList.add('d-none');
+      hideAdditionalControlContainers();
+    }
+
+    function resetControlsTimeout(mousePosition: { x: number, y: number }): void {
+      if (controlsTimeout != null) {
+        clearTimeout(controlsTimeout);
+      }
+      controlsTimeout = window.setTimeout(() => hideControls(mousePosition), 2000);
+    }
+
+    this.wrappingElement.addEventListener('mousemove', (event) => {
+      showControls();
+      resetControlsTimeout({x: event.clientX, y: event.clientY});
+    });
+
+    this.wrappingElement.addEventListener('mouseleave', (event) => {
+      hideControls({x: event.clientX, y: event.clientY});
+    });
+
+    this.wrappingElement.addEventListener('click', (event) => {
+      showControls();
+      resetControlsTimeout({x: event.clientX, y: event.clientY});
+    });
+
+    this._videoElement.addEventListener('play', () => {
+      showControls();
+      resetControlsTimeout({x: 0, y: 0});
+    });
+
+    this._videoElement.addEventListener('pause', () => {
+      showControls();
+      resetControlsTimeout({x: 0, y: 0});
+    });
+
+    this._videoElement.addEventListener('ended', () => {
+      showControls();
+      resetControlsTimeout({x: 0, y: 0});
+    });
   }
 
   private findAllPlayerElements(): AllPlayerElements {
