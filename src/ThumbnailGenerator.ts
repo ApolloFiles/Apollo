@@ -65,11 +65,19 @@ export default class ThumbnailGenerator {
       let thumbnail: Sharp | null = null;
 
       if (mimeType.startsWith('video/') || mimeType.startsWith('audio/')) {
-        thumbnail = await this.extractVideoCover(file);
+        try {
+          thumbnail = await this.extractVideoCover(file);
+        } catch (err) {
+          console.error('Unable to extract video cover:', err);
+        }
       }
 
       if (thumbnail == null && mimeType.startsWith('video/')) {
-        thumbnail = (await ThumbnailGenerator.generateVideoThumbnail(file)).img;
+        try {
+          thumbnail = (await ThumbnailGenerator.generateVideoThumbnail(file)).img;
+        } catch (err) {
+          console.error('Unable to generate video thumbnail:', err);
+        }
       }
 
       if (thumbnail != null) {
@@ -105,7 +113,6 @@ export default class ThumbnailGenerator {
   private async extractVideoCover(file: IUserFile): Promise<Sharp | null> {
     const filePath = await file.getAbsolutePathOnHost();
     if (filePath == null) throw new Error('filePath is null');
-
 
     const videoStreams = await VideoAnalyser.analyze(filePath, true);
     const potentialCoverStreams = videoStreams.streams.filter(stream => stream.codecType == 'video' && stream.avgFrameRate == '0/0');
