@@ -34,7 +34,7 @@
     "snyk": "npm run build && snyk test",
     "snyk:docker": "npm run docker:build && snyk container test apollo:dev --file=Dockerfile",
 
-    "docker:build": "npm run build && docker build --rm --tag apollo:dev .",
+    "docker:build": "docker build --pull --rm --target dev --tag apollo:dev .",
     "docker:dev": "npm run docker:build && (docker stop apollo;docker rm apollo;echo '') && docker run --name apollo --cpus 2 --memory 1G --volume apollo-dev:/app/storage/ apollo:dev",
 
     "contributors:add": "all-contributors add",

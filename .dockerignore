@@ -1,7 +1,14 @@
 *
-!dist/
-!resources/
 !package.json
 !package-lock.json
+!tsconfig.json
 !LICENSE
 !README.md
+
+!src/
+!resources/
+resources/public/static/frontend/dist/
+resources/public/static/frontend/node_modules/
+
+# TODO: remove the debug line below
+!apollo_g_streamer
