@@ -16,6 +16,7 @@ export default interface VideoElementWrapper {
   get ended(): boolean;
 
   loadMedia(mediaUri: string): Promise<void>;
+  getLoadedMediaUri(): string | null;
 
   play(): Promise<void>;
   pause(): void;

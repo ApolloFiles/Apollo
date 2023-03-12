@@ -1,5 +1,4 @@
 import express from 'express';
-import { Stream } from '../media/video/analyser/VideoAnalyser.Types';
 import { SimpleTemplate } from './SimpleTemplate';
 
 export type NEW_VideoLiveTransCodeTemplateData = {
@@ -7,17 +6,6 @@ export type NEW_VideoLiveTransCodeTemplateData = {
 
   videoFileName: string;
   videoFrontendUrl: string;
-
-  aliasToken: string;
-
-  manifestFileName: string;
-  manifestMimeType: string;
-
-  chapters: { label: string, start: number }[];
-
-  debug?: {
-    streams: Stream[];
-  };
 };
 
 export default class NEW_VideoLiveTranscodeTemplate extends SimpleTemplate {

@@ -15,7 +15,7 @@ import NEW_VideoLiveTranscodeTemplate, {
 import UrlBuilder from '../../frontend/UrlBuilder';
 import VideoAnalyser from '../../media/video/analyser/VideoAnalyser';
 import { Stream } from '../../media/video/analyser/VideoAnalyser.Types';
-import GstVideoLiveTranscode from '../../media/video/live_transcode/GstVideoLiveTranscode';
+import GstVideoLiveTranscode from '../../media/video/live_transcode/gst_app/GstVideoLiveTranscode';
 import ProcessBuilder from '../../process_manager/ProcessBuilder';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';

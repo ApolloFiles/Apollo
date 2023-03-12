@@ -1,3 +1,4 @@
+import * as CommunicationProtocol from '../../../../../../src/media/video/live_transcode/synced_video_playback/CommunicationProtocol';
 import HlsVideoWrapper from './HlsVideoWrapper';
 import HTMLVideoElementWrapper from './HTMLVideoElementWrapper';
 import LiveTranscodeVideoWrapper from './LiveTranscodeVideoWrapper';
@@ -65,7 +66,7 @@ export default class ApolloVideoPlayer {
     this.allPlayerElements.playerControls.classList.remove('d-none');
   }
 
-  async loadMedia(mediaUri: string, mode: 'native' | 'hls' | 'live_transcode' = 'native'): Promise<void> {
+  async loadMedia(mediaUri: string, mode: CommunicationProtocol.MediaMode = 'native'): Promise<void> {
     this._videoWrapper.destroyWrapper();
 
     switch (mode) {
@@ -115,7 +116,7 @@ export default class ApolloVideoPlayer {
     this._videoElement.addEventListener('durationchange', () => this.updateDisplayedProgress(), {passive: true});
     this._videoElement.addEventListener('loadedmetadata', () => {
       this.updateDisplayedProgress();
-      this.disableAllTextTracks();
+      // this.disableAllTextTracks();
     }, {passive: true});
     this._videoElement.addEventListener('timeupdate', () => this.updateDisplayedProgress(), {passive: true});
     this._videoElement.addEventListener('progress', () => this.updateDisplayedProgress(), {passive: true});
@@ -428,11 +429,7 @@ export default class ApolloVideoPlayer {
     this.allPlayerElements.settingsContainer.classList.add('d-none');
   }
 
-  private static updateIcon(element: HTMLElement, iconName: string): void {
-    element.innerText = iconName;
-  }
-
-  private static formatTime(time: number): string {
+  static formatTime(time: number): string {
     if (Number.isNaN(time)) {
       return '00:00';
     }
@@ -443,6 +440,10 @@ export default class ApolloVideoPlayer {
       this.padWithZeroes(minutes.toString(), 2),
       this.padWithZeroes(seconds.toString(), 2)
     ].join(':');
+  }
+
+  private static updateIcon(element: HTMLElement, iconName: string): void {
+    element.innerText = iconName;
   }
 
   private static padWithZeroes(string: string, length: number): string {

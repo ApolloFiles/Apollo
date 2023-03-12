@@ -26,13 +26,6 @@ export default class GstVideoLiveTranscode {
         }
     );
 
-    // const gstAppProcess = new ProcessBuilder()
-    //     .withEnv(process.env)
-    //     // .withEnvVar('GST_DEBUG', '2')
-    //     .withUser(user)
-    //     .withCwd(targetDir)
-    //     .withStdIn()
-    //     .run();
     return WrappedGstAppProcess.wrapAndInitialize(gstProcess, targetDir);
   }
 }

@@ -42,12 +42,12 @@ class HlsManifest {
 }
 
 export default class GstAppProcessWrapper {
-  private static readonly COLON_CHAR = ':'.charCodeAt(0);
+  private static readonly COLON_CHAR: number = ':'.charCodeAt(0);
 
   private readonly gstAppProcess: ChildProcess.ChildProcess;
   private readonly gstAppProcessWorkingDir: string;
 
-  private manifestReady = new HlsManifest();
+  private videoManifestReady = new HlsManifest();
 
   private stdoutBuffer = Buffer.alloc(64 * 1024);
   private stdoutBufferWriteOffset = 0;
@@ -58,8 +58,8 @@ export default class GstAppProcessWrapper {
     this.gstAppProcessWorkingDir = gstAppProcessWorkingDir;
   }
 
-  async waitForManifest(): Promise<{ path: string, duration: number }> {
-    return this.manifestReady.waitForReady(); // FIXME: Stop waiting on exit and error
+  async waitForVideoManifest(): Promise<{ path: string, duration: number }> {
+    return this.videoManifestReady.waitForReady(); // FIXME: Stop waiting on exit and error
   }
 
   private initialize() {
@@ -125,7 +125,7 @@ export default class GstAppProcessWrapper {
               throw new Error('Unexpected value for duration: ' + JSON.stringify(duration));
             }
 
-            this.manifestReady.setReady(Path.join(this.gstAppProcessWorkingDir, relativePathToManifest), parseInt(duration));
+            this.videoManifestReady.setReady(Path.join(this.gstAppProcessWorkingDir, relativePathToManifest), parseInt(duration));
             break;
           default:
             throw new Error('Unexpected command: ' + command);

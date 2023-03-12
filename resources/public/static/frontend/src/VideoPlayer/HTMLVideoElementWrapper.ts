@@ -51,6 +51,10 @@ export default class HTMLVideoElementWrapper implements VideoElementWrapper {
     this.videoElement.src = mediaUri;
   }
 
+  getLoadedMediaUri(): string | null {
+    return this.videoElement.src || null;
+  }
+
   play(): Promise<void> {
     return this.videoElement.play();
   }

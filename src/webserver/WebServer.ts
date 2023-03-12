@@ -5,7 +5,7 @@ import Fs from 'fs';
 import * as Http from 'http';
 import Path from 'path';
 import SessionFileStore from 'session-file-store';
-import WebSocket from 'websocket';
+import { WebSocketServer } from 'ws';
 import AbstractUser from '../AbstractUser';
 import { getAppConfigDir, getAppResourcesDir, getConfig } from '../Constants';
 import { createLiveTranscodeRouter } from '../media/video/live_transcode/LiveTranscodeRouter';
@@ -20,7 +20,7 @@ import { generateLoginRedirectUri, loginRouter } from './LoginRouter';
 export default class WebServer {
   protected app: express.Application;
   protected server?: Http.Server;
-  protected webSocketServer?: WebSocket.server;
+  protected webSocketServer?: WebSocketServer;
 
   protected listenEventHandlers: (() => void)[] = [];
 
@@ -82,22 +82,60 @@ export default class WebServer {
   }
 
   async listen(port: number, host?: string): Promise<void> {
-    return new Promise((resolve) => {
-      this.shutdown();
+    const startListening = async (): Promise<void> => {
+      return new Promise((resolve) => {
+        this.server = this.app.listen(port, host ?? '127.0.0.1', () => resolve());
+      });
+    };
 
-      this.server = this.app.listen(port, host ?? '127.0.0.1', () => resolve());
-      this.webSocketServer = new WebSocket.server({
-        httpServer: this.server,
-        autoAcceptConnections: false,
-        ignoreXForwardedFor: true
+    await this.shutdown();
+    await startListening();
+
+    this.webSocketServer = new WebSocketServer({server: this.server, maxPayload: 5 * 1024 * 1024 /* 5 MiB */});
+    this.webSocketServer.on('error', console.error);
+    this.webSocketServer.on('connection', (client, request) => {
+      client.on('close', (code, reason) => {
+        console.log(`WebSocket from ${request.socket.remoteAddress} closed: ${code} ${reason}`);
       });
 
-      this.listenEventHandlers.forEach((handler) => handler());
+      console.log('WebSocket connection accepted from ' + request.socket.remoteAddress);
+      client.on('pong', () => (client as any).isAlive = true);
+      (client as any).isAlive = true;
     });
+
+    const intervalTask = setInterval(() => {
+      this.webSocketServer?.clients.forEach((client) => {
+        if ((client as any).isAlive === false) {
+          return client.terminate();
+        }
+
+        (client as any).isAlive = false;
+        client.ping();
+      });
+    }, 10_000);
+    this.webSocketServer.on('close', () => clearInterval(intervalTask));
+
+    this.listenEventHandlers.forEach((handler) => handler());
   }
 
   async shutdown(): Promise<void> {
-    this.webSocketServer?.shutDown();
+    const closeWebSocketServer = async (): Promise<void> => {
+      return new Promise((resolve) => {
+        if (this.webSocketServer == null) {
+          resolve();
+          return;
+        }
+
+        this.webSocketServer.close((err) => {
+          if (err) {
+            console.error(err);
+          }
+          resolve();
+        });
+      });
+    };
+
+    await closeWebSocketServer();
     this.webSocketServer = undefined;
 
     if (this.server == null) {
@@ -115,7 +153,7 @@ export default class WebServer {
     this.listenEventHandlers.push(handler);
   }
 
-  getWebSocketServer(): WebSocket.server | undefined {
+  getWebSocketServer(): WebSocketServer | undefined {
     return this.webSocketServer;
   }
 
