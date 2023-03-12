@@ -162,4 +162,8 @@ export default class UserFile implements IUserFile {
 
     return this.cachedGeneratedCacheId;
   }
+
+  equals(other: IUserFile): boolean {
+    return this.getAbsolutePathOnHost() === other.getAbsolutePathOnHost();
+  }
 }

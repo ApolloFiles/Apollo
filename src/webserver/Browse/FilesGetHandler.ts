@@ -9,11 +9,13 @@ import { getConfig, getFileNameCollator } from '../../Constants';
 import FileIndex from '../../files/index/FileIndex';
 import IUserFile from '../../files/IUserFile';
 import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
+import NEW_VideoLiveTranscodeTemplate, {
+  NEW_VideoLiveTransCodeTemplateData
+} from '../../frontend/NEW_VideoLiveTranscodeTemplate';
 import UrlBuilder from '../../frontend/UrlBuilder';
-import VideoLiveTranscodeTemplate, { VideoLiveTransCodeTemplateData } from '../../frontend/VideoLiveTranscodeTemplate';
 import VideoAnalyser from '../../media/video/analyser/VideoAnalyser';
 import { Stream } from '../../media/video/analyser/VideoAnalyser.Types';
-import VideoLiveTranscode from '../../media/video/live_transcode/VideoLiveTranscode';
+import GstVideoLiveTranscode from '../../media/video/live_transcode/GstVideoLiveTranscode';
 import ProcessBuilder from '../../process_manager/ProcessBuilder';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
@@ -405,7 +407,9 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
   }
 
   if (fileRequestType == 'live_transcode') {
-    return handleFileLiveTranscodeRequest(req, res, user, file);
+    res.status(410 /* GONE */)
+        .send('Live transcoding has moved to a separate endpoint');
+    return;
   }
 
   if (fileRequestType == 'webttv_thumbnails') {
@@ -461,114 +465,6 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
   }
 
   fileReadStream.pipe(res);
-}
-
-const liveTranscodeCache: { [key: string]: string | VideoLiveTransCodeTemplateData } = {};
-
-async function handleFileLiveTranscodeRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile): Promise<void> {
-  // FIXME: video player does not support same language streams and only shows first
-  /*
-    Quality targets for the future:
-    * Similar To Source (not exactly the same but fps, resolution, bitrate, etc. should be the same)
-    * 1080p (12M)
-    * 1080p (10M)
-    * 1080p (8M)
-    * 720p (4M)
-    * 720p (3M)
-    * 720p (2M)
-    * 480p (1.5M)
-   */
-  // const preferredAudioLanguages = ['jpn', 'ger', 'deu', 'eng'];
-  // const preferredSubtitleLanguages = ['ger', 'deu', 'eng'];
-
-  const inputFileAbsolutePath = file.getAbsolutePathOnHost();
-  if (inputFileAbsolutePath == null) {
-    throw new Error('File does not exist on host file system');
-  }
-
-  if (liveTranscodeCache[inputFileAbsolutePath] != null) {
-    const data = liveTranscodeCache[inputFileAbsolutePath];
-
-    if (typeof data == 'string') {
-      res.send(data);
-      return;
-    }
-
-    res.send(new VideoLiveTranscodeTemplate().render(req, data));
-    return;
-  }
-
-  const analyzedVideo = await VideoAnalyser.analyze(inputFileAbsolutePath, true);
-
-  const chapters: { label: string, start: number }[] = [];
-  for (const chapter of analyzedVideo.chapters) {
-    chapters.push({
-      label: chapter.tags.title ?? '',
-      start: parseInt(chapter.startTime)
-    });
-  }
-
-  const streamsToTranscode: Stream[] = [];
-
-  const videoStream = analyzedVideo.streams.find(s => s.codecType == 'video');
-  if (videoStream == null) {
-    throw new Error('No video stream found');
-  }
-  streamsToTranscode.push(videoStream);
-
-  const audioStreams = analyzedVideo.streams.filter(s => s.codecType == 'audio');
-  audioStreams.sort((a, b) => {
-    if (a.tags.language == 'jpn' && b.tags.language != 'jpn') {
-      return -1;
-    }
-    if (a.tags.language != 'jpn' && b.tags.language == 'jpn') {
-      return 1;
-    }
-
-    return 0;
-  });
-  if (audioStreams.length <= 0) {
-    throw new Error('No audio stream found');
-  }
-  streamsToTranscode.push(...audioStreams);
-
-  const subtitleStreams = analyzedVideo.streams.filter(s => s.codecType == 'subtitle');
-  if (subtitleStreams.length > 0) {
-    streamsToTranscode.push(...subtitleStreams);
-  }
-
-  const liveTranscode = await VideoLiveTranscode.startLiveHlsTranscode(user, file, streamsToTranscode, analyzedVideo.streams);
-
-  const videoFrontendUrl = await UrlBuilder.buildUrl(file);
-  const aliasToken = Crypto.createHash('sha256')
-      .update('live_transcode')
-      .update(inputFileAbsolutePath)
-      .digest()
-      .toString('hex');
-
-  registerAliasHandler(aliasToken, (req, res, next) => {
-    res.set('Access-Control-Allow-Origin', '*');
-
-    express.static(liveTranscode.publicDir)(req, res, next);
-  });
-
-  const videoLiveTranscodeData: VideoLiveTransCodeTemplateData = {
-    videoFileName: file.getName(),
-    videoFrontendUrl,
-    aliasToken,
-
-    manifestFileName: liveTranscode.manifestFileName,
-    manifestMimeType: liveTranscode.manifestMimeType,
-    chapters,
-
-    debug: {
-      streams: streamsToTranscode
-    }
-  };
-  liveTranscodeCache[inputFileAbsolutePath] = videoLiveTranscodeData;
-
-  const html = new VideoLiveTranscodeTemplate().render(req, videoLiveTranscodeData);
-  res.send(html);
 }
 
 const webVttThumbnailCache: { [key: string]: string } = {};

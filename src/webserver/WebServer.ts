@@ -5,8 +5,10 @@ import Fs from 'fs';
 import * as Http from 'http';
 import Path from 'path';
 import SessionFileStore from 'session-file-store';
+import WebSocket from 'websocket';
 import AbstractUser from '../AbstractUser';
 import { getAppConfigDir, getAppResourcesDir, getConfig } from '../Constants';
+import { createLiveTranscodeRouter } from '../media/video/live_transcode/LiveTranscodeRouter';
 import { ServerTiming } from '../ServerTiming';
 import UserStorage from '../UserStorage';
 import Utils from '../Utils';
@@ -18,6 +20,9 @@ import { generateLoginRedirectUri, loginRouter } from './LoginRouter';
 export default class WebServer {
   protected app: express.Application;
   protected server?: Http.Server;
+  protected webSocketServer?: WebSocket.server;
+
+  protected listenEventHandlers: (() => void)[] = [];
 
   constructor() {
     this.app = express();
@@ -39,6 +44,7 @@ export default class WebServer {
 
     this.app.use('/browse', WebServer.requireValidLogin, createFilesRouter('browse'));
     this.app.use('/trash', WebServer.requireValidLogin, createFilesRouter('trash'));
+    this.app.use('/live_transcode', WebServer.requireValidLogin, createLiveTranscodeRouter(this));
     this.app.use('/alias', /*WebServer.requireValidLogin, FIXME */ createAliasRouter());
     this.app.use('/login', loginRouter);
     this.app.use('/logout', (req: express.Request, res, next) => {
@@ -80,20 +86,37 @@ export default class WebServer {
       this.shutdown();
 
       this.server = this.app.listen(port, host ?? '127.0.0.1', () => resolve());
+      this.webSocketServer = new WebSocket.server({
+        httpServer: this.server,
+        autoAcceptConnections: false,
+        ignoreXForwardedFor: true
+      });
+
+      this.listenEventHandlers.forEach((handler) => handler());
     });
   }
 
   async shutdown(): Promise<void> {
+    this.webSocketServer?.shutDown();
+    this.webSocketServer = undefined;
+
     if (this.server == null) {
       return;
     }
-
     return new Promise((resolve) => {
       this.server?.close(() => {
         this.server = undefined;
         resolve();
       });
     });
+  }
+
+  addListenEventHandler(handler: () => void): void {
+    this.listenEventHandlers.push(handler);
+  }
+
+  getWebSocketServer(): WebSocket.server | undefined {
+    return this.webSocketServer;
   }
 
   private setupSessionMiddleware(): void {

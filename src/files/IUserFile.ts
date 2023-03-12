@@ -28,4 +28,6 @@ export default interface IUserFile {
    * The id may contain sensitive information and is not meant to be displayed to the user.
    */
   generateCacheId(forceRefresh?: boolean): Promise<string>;
+
+  equals(other: IUserFile): boolean;
 }

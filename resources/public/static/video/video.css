@@ -60,15 +60,15 @@ Video Player
 }
 
 .video-player-controls-progress-container {
-    background-color: #000;
+    background-color: #6c6c6c;
     border-radius:    50px;
 }
 
 .video-player-controls-progress-container [role='progressbar'] {
-    height:           8px;
-    background-color: #ea2d63;
-    border-radius:    50px;
-    width:            0;
+    height:        12px;
+    background:    transparent;
+    border-radius: 50px;
+    width:         100%;
 }
 
 .video-player-controls-volume-container {
@@ -103,10 +103,6 @@ Video Player
 /*
 FIXME: Old stuff below - Still needed?
 */
-
-#videoContainer.buffering .loading-img {
-    display: block !important;
-}
 
 .parent {
     display:               grid;
