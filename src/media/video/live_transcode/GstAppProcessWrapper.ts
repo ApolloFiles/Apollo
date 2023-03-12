@@ -142,6 +142,19 @@ export default class GstAppProcessWrapper {
     });
     this.gstAppProcess.on('exit', (code, signal) => {
       console.log('GstAppProcessWrapper: exit:', code, signal);
+      if (code === 127) {
+        console.error('GstAppProcessWrapper: Exited with Code 127 - Please make sure gstreamer is installed');
+      }
+    });
+
+    this.gstAppProcess.stdin?.on('error', (err) => {
+      console.error('GstAppProcessWrapper: stdin-error:', err);
+    });
+    this.gstAppProcess.stdout?.on('error', (err) => {
+      console.error('GstAppProcessWrapper: stdout-error:', err);
+    });
+    this.gstAppProcess.stderr?.on('error', (err) => {
+      console.error('GstAppProcessWrapper: stderr-error:', err);
     });
 
     this.writeToStdin('STATE PLAYING\n').catch(console.error);
@@ -149,7 +162,7 @@ export default class GstAppProcessWrapper {
 
   private async writeToStdin(data: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.gstAppProcess.stdin === null) {
+      if (this.gstAppProcess.stdin == null) {
         return reject(new Error('GstAppProcessWrapper: stdin is null'));
       }
 
