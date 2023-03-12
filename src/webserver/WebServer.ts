@@ -208,6 +208,9 @@ export default class WebServer {
 
     this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
       console.error(err);
+      if (res.headersSent) {
+        return;
+      }
 
       res.status(500)
           .type('text/plain')

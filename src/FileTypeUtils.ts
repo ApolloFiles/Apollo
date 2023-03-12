@@ -47,6 +47,7 @@ export default class FileTypeUtils {
     const childProcessResult = await new ProcessBuilder('file', childProcessArgs)
         .errorOnNonZeroExit()
         .bufferStdOut()
+        .bufferStdErr()
         .runPromised();
 
     if (childProcessResult.err) {
@@ -60,7 +61,12 @@ export default class FileTypeUtils {
     const args = childProcessResult.process.bufferedStdOut.toString('utf-8').split('\0');
 
     if (args.length !== 2) {
-      throw new Error(`Invalid output from 'file': ${args}`);
+      throw new Error(`Invalid output from 'file': ${JSON.stringify({
+        stdout: childProcessResult.process.bufferedStdOut.toString('utf-8'),
+        stderr: childProcessResult.process.bufferedStdErr.toString('utf-8'),
+        args,
+        childProcessArgs
+      })}`);
     }
 
     return args[1].trim() || null;

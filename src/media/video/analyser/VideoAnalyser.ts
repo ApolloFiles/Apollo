@@ -5,7 +5,6 @@ export default class VideoAnalyser {
   static async analyze(absolutePath: string, extendedAnalysis: true): Promise<type.ExtendedVideoAnalysis>;
   static async analyze(absolutePath: string, extendedAnalysis?: false): Promise<type.VideoFileAnalysis>;
   static async analyze(absolutePath: string, extendedAnalysis: boolean = false): Promise<type.VideoFileAnalysis | type.ExtendedVideoAnalysis> {
-
     const processArgs = ['-print_format', 'json=compact=1', '-show_format'];
     if (extendedAnalysis) {
       processArgs.push('-show_streams', '-show_chapters');
@@ -21,7 +20,16 @@ export default class VideoAnalyser {
       throw childProcess.err;
     }
 
-    const probeJson = JSON.parse(childProcess.process.bufferedStdOut.toString('utf-8'));
+    const bufferedStdOutString = childProcess.process.bufferedStdOut.toString('utf-8');
+    let probeJson;
+    try {
+      probeJson = JSON.parse(bufferedStdOutString);
+    } catch (err) {
+      console.error('ffprobe exit code:', childProcess.code);
+      console.error('ffprobe stdOut:', bufferedStdOutString);
+      console.error('ffprobe stdErr:', childProcess.process.bufferedStdErr.toString('utf-8'));
+      throw err;
+    }
     const fileAnalysis = this.extractFileAnalysis(probeJson);
 
     if (!extendedAnalysis) {
