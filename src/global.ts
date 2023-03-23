@@ -21,6 +21,12 @@ declare module 'express-session' {
   }
 }
 
+declare module 'ws' {
+  interface WebSocket {
+    isAlive: boolean;
+  }
+}
+
 export interface ApolloConfig {
   readonly baseUrl: string;
 

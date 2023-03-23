@@ -91,6 +91,7 @@ export default class WebServer {
     await this.shutdown();
     await startListening();
 
+    // TODO: Write WebSocket abstraction to handle everything including sessions, authentication, trust-proxy-setting, etc.
     this.webSocketServer = new WebSocketServer({server: this.server, maxPayload: 5 * 1024 * 1024 /* 5 MiB */});
     this.webSocketServer.on('error', console.error);
     this.webSocketServer.on('connection', (client, request) => {
@@ -99,17 +100,17 @@ export default class WebServer {
       });
 
       console.log('WebSocket connection accepted from ' + request.socket.remoteAddress);
-      client.on('pong', () => (client as any).isAlive = true);
-      (client as any).isAlive = true;
+      client.on('pong', () => client.isAlive = true);
+      client.isAlive = true;
     });
 
     const intervalTask = setInterval(() => {
       this.webSocketServer?.clients.forEach((client) => {
-        if ((client as any).isAlive === false) {
+        if (client.isAlive === false) {
           return client.terminate();
         }
 
-        (client as any).isAlive = false;
+        client.isAlive = false;
         client.ping();
       });
     }, 10_000);
