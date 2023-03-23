@@ -1,6 +1,7 @@
 import Express from 'express';
 import Fs from 'node:fs';
 import Path from 'node:path';
+import { getFileTypeUtils } from '../../../Constants';
 import NEW_VideoLiveTranscodeTemplate, {
   NEW_VideoLiveTransCodeTemplateData
 } from '../../../frontend/NEW_VideoLiveTranscodeTemplate';
@@ -33,7 +34,7 @@ export function createLiveTranscodeRouter(webserver: WebServer): Express.Router 
 
   router.use('/s/:sessionId/f/', (req: Express.Request, res: Express.Response, next) => {
     Utils.restful(req, res, next, {
-      get: () => {
+      get: async (): Promise<void> => {
         const sessionId = req.params.sessionId;
         const session = playerSessions.find(sessionId);
         if (session == null) {
@@ -56,7 +57,7 @@ export function createLiveTranscodeRouter(webserver: WebServer): Express.Router 
           return;
         }
 
-        res.sendFile(requestedFile, next);
+        await Utils.sendFileRespectingRequestedRange(req, res, next, requestedFile, await getFileTypeUtils().getMimeType(requestedFile) ?? 'application/octet-stream');
       }
     });
   });
@@ -85,7 +86,7 @@ export function createLiveTranscodeRouter(webserver: WebServer): Express.Router 
         const fileSystem = user.getDefaultFileSystem();
 
         const requestedFilePath = decodeURI(req.path);
-        const file = await fileSystem.getFile(requestedFilePath);
+        const file = fileSystem.getFile(requestedFilePath);
 
         if (!(await file.exists())) {
           res.status(404)

@@ -9,13 +9,7 @@ import { getConfig, getFileNameCollator } from '../../Constants';
 import FileIndex from '../../files/index/FileIndex';
 import IUserFile from '../../files/IUserFile';
 import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
-import NEW_VideoLiveTranscodeTemplate, {
-  NEW_VideoLiveTransCodeTemplateData
-} from '../../frontend/NEW_VideoLiveTranscodeTemplate';
 import UrlBuilder from '../../frontend/UrlBuilder';
-import VideoAnalyser from '../../media/video/analyser/VideoAnalyser';
-import { Stream } from '../../media/video/analyser/VideoAnalyser.Types';
-import GstVideoLiveTranscode from '../../media/video/live_transcode/gst_app/GstVideoLiveTranscode';
 import ProcessBuilder from '../../process_manager/ProcessBuilder';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
@@ -417,54 +411,7 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
   }
 
   console.log(`User '${user.getDisplayName()}' requested file '${file.getPath()}'`);
-
-  res.type(await file.getMimeType() ?? 'text/plain');
-
-  res.setHeader('Accept-Ranges', 'bytes');
-
-  const fileSize = (await file.stat()).size;
-  const parsedRange = req.range(fileSize);
-
-  let bytesStart = undefined;
-  let bytesEnd = undefined;
-  if (Array.isArray(parsedRange)) {
-    bytesStart = parsedRange[0].start;
-    bytesEnd = parsedRange[0].end;
-
-    if (bytesEnd > fileSize) {
-      res.status(416)
-          .send(`Requested range not satisfiable (file has ${fileSize} bytes)`);
-      return;
-    }
-  }
-
-  const fileReadStream = file.getReadStream({
-    start: bytesStart,
-    end: bytesEnd
-  });
-  fileReadStream.on('error', (err) => {
-    console.error(err);
-
-    fileReadStream.destroy();
-    res.end();
-  });
-
-  res.on('close', () => {
-    fileReadStream.destroy();
-  });
-
-  if (fileRequestType == 'download') {
-    res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(file.getName())}"`);
-  }
-
-  res.setHeader('Content-Length', fileSize);
-  if (bytesStart != undefined && bytesEnd != undefined) {
-    res.status(206);
-    res.setHeader('Content-Length', bytesEnd - bytesStart + 1);
-    res.setHeader('Content-Range', `bytes ${bytesStart}-${bytesEnd}/${fileSize}`);
-  }
-
-  fileReadStream.pipe(res);
+  await Utils.sendFileRespectingRequestedRange(req, res, next, file, await file.getMimeType() ?? 'text/plain', fileRequestType == 'download');
 }
 
 const webVttThumbnailCache: { [key: string]: string } = {};

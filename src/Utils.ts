@@ -1,4 +1,7 @@
 import express from 'express';
+import Fs from 'node:fs';
+import Path from 'node:path';
+import IUserFile from './files/IUserFile';
 
 // TODO: Move to SpraxDev/Node-Commons
 export default class Utils {
@@ -57,6 +60,68 @@ export default class Utils {
       res.set('Allow', allowedMethods.join(', ').toUpperCase());
       res.sendStatus(405);  // TODO: send error-custom body
     }
+  }
+
+  static async sendFileRespectingRequestedRange(req: express.Request, res: express.Response, next: express.NextFunction, file: string | IUserFile, mimeType: string, sendAsAttachment: boolean = false): Promise<void> {
+    let fileStat: Fs.Stats;
+
+    if (typeof file === 'string') {
+      if (!Path.isAbsolute(file)) {
+        throw new Error('File path is not absolute');
+      }
+
+      fileStat = await Fs.promises.stat(file);
+    } else {
+      fileStat = await file.stat();
+    }
+
+    const fileSize = fileStat.size;
+    const parsedRange = req.range(fileSize);
+
+    let bytesStart = undefined;
+    let bytesEnd = undefined;
+    if (Array.isArray(parsedRange)) {
+      bytesStart = parsedRange[0].start;
+      bytesEnd = parsedRange[0].end;
+
+      if (bytesEnd > fileSize) {
+        res.status(416)
+            .send(`Requested range not satisfiable (file has ${fileSize} bytes)`);
+        return;
+      }
+    }
+
+    const readStreamOptions = {start: bytesStart, end: bytesEnd};
+    const fileReadStream = typeof file == 'string' ?
+        Fs.createReadStream(file, readStreamOptions) :
+        file.getReadStream(readStreamOptions);
+
+    fileReadStream.on('error', (err) => {
+      console.error(err);
+
+      fileReadStream.destroy();
+      res.end();
+    });
+
+    res.on('close', () => {
+      fileReadStream.destroy();
+    });
+
+    res.type(mimeType);
+    res.setHeader('Accept-Ranges', 'bytes');
+
+    if (sendAsAttachment) {
+      res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(typeof file == 'string' ? Path.basename(file) : file.getName())}"`);
+    }
+
+    res.setHeader('Content-Length', fileSize);
+    if (bytesStart != undefined && bytesEnd != undefined) {
+      res.status(206);
+      res.setHeader('Content-Length', bytesEnd - bytesStart + 1);
+      res.setHeader('Content-Range', `bytes ${bytesStart}-${bytesEnd}/${fileSize}`);
+    }
+
+    fileReadStream.pipe(res);
   }
 
   static prettifyFileSize(bytes: number, si: boolean = false): string {

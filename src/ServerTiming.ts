@@ -51,6 +51,7 @@ export class ServerTiming {
       if (timingsEnabled) {
         res.locals.timings = new ServerTiming();
 
+        // TODO: Also try and see if we can support #pipe()
         const orgSend = res.send;
         res.send = (body) => {
           res.locals.timings?.setHttpHeader(res);
