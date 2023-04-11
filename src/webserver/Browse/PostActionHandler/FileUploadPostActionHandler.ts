@@ -31,7 +31,7 @@ export default class FileUploadPostActionHandler implements IPostActionHandler {
 
     const uploadedFiles = req.files['value'];
 
-    let errored: string[] = [];
+    const errored: string[] = [];
 
     for (const uploadedFile of uploadedFiles) {
       const targetFile = user.getDefaultFileSystem().getFile(Path.join(decodeURI(req.path), uploadedFile.name));

@@ -23,7 +23,8 @@
   <script>
     window.ApolloData = window.ApolloData || {};
     window.ApolloData.LiveTranscode = {
-      sessionId: '<%- locals.sessionId -%>'
+      sessionId: '<%- locals.sessionId -%>',
+      displayName: '<%- locals.sessionDisplayName -%>'
     };
   </script>
 </head>
@@ -51,18 +52,42 @@
         </a>
       </div>
 
-      <div class="d-flex gap-3">
+      <!-- A text input for a video url, dropdown for PlayerMode and a button to start the video -->
+      <div class="container">
+        <div class="d-flex gap-3">
+          <div class="input-group">
+            <input type="text" class="form-control" placeholder="Media" id="debugVideoUrlInput"
+                   value="http://localhost:8080/browse/Video-Size-Changing-%5Co%E2%81%84.webm">
+          </div>
+
+          <div class="input-group">
+            <select class="form-select" id="debugPlayerModeSelect">
+              <option value="native" selected>Native</option>
+              <option value="hls">HLS</option>
+              <option value="live_transcode">Live Transcode</option>
+              <option value="youtube">YouTube</option>
+              <option value="twitch">Twitch</option>
+            </select>
+          </div>
+
+          <button class="btn btn-outline-secondary" type="button" id="debugChangeMediaButton">Play</button>
+        </div>
+      </div>
+
+      <div class="d-flex gap-3" id="debug5374890">
         <!-- TODO: tmp: video player -->
         <!-- TODO: Viel mehr mit hidden attribut statt 'd-none' arbeiten -->
         <!-- TODO: Use SVG instead of material-icons font (this also fixed the loading-img to be centered correctly) -->
         <figure class="video-player-container" id="videoContainer">
-          <video preload="metadata" controls playsinline
-                 poster="<%- locals.videoFrontendUrl %>?type=thumbnail">
-            <!--          <source src="https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/tears_of_steel_1080p.webm"-->
-            <!--                  type="video/webm">-->
-            <!--          <track src="/video/TOS-en.vtt" label="English" kind="subtitles" srclang="en">-->
-            <!--          <track src="/video/TOS-de.vtt" label="Deutsch" kind="subtitles" srclang="de">-->
-          </video>
+          <div class="video-player-wrapper" style="width: 100%; height: 100%">
+            <video preload="metadata" controls playsinline
+                   poster="<%- locals.videoFrontendUrl ?? '' %>?type=thumbnail">
+              <!--          <source src="https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/tears_of_steel_1080p.webm"-->
+              <!--                  type="video/webm">-->
+              <!--          <track src="/video/TOS-en.vtt" label="English" kind="subtitles" srclang="en">-->
+              <!--          <track src="/video/TOS-de.vtt" label="Deutsch" kind="subtitles" srclang="de">-->
+            </video>
+          </div>
 
           <div class="video-player-pause-overlay justify-content-start align-items-center">
             <img src="/logo.svg" alt="Apollo-Logo" width="32px" height="32px" class="image-filter-white">
@@ -120,7 +145,9 @@
                 <img src="https://placekitten.com/50/50">
               </div>
               <div class="flex-grow-1 ms-3">
-                <strong data-template-content="displayName"></strong><br>
+                <strong data-template-content="displayName"></strong>&nbsp;<span class="material-icons icon-inline"
+                                                                                 style="display: none"
+                                                                                 data-template-content="superMaster">star</span><br>
                 <small class="text-muted" data-template-content="currentTimes"></small>
               </div>
             </div>

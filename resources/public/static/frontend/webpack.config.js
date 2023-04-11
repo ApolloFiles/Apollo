@@ -4,7 +4,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   entry: {
-    liveTranscode: './src/LiveTranscode.ts'
+    liveTranscode: './src/LiveTranscode/index.ts'
   },
   devtool: 'source-map',
 

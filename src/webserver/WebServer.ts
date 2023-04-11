@@ -8,7 +8,7 @@ import SessionFileStore from 'session-file-store';
 import { WebSocketServer } from 'ws';
 import AbstractUser from '../AbstractUser';
 import { getAppConfigDir, getAppResourcesDir, getConfig } from '../Constants';
-import { createLiveTranscodeRouter } from '../media/video/live_transcode/LiveTranscodeRouter';
+import { createMediaRouter } from '../media/MediaRouter';
 import { ServerTiming } from '../ServerTiming';
 import UserStorage from '../UserStorage';
 import Utils from '../Utils';
@@ -44,7 +44,7 @@ export default class WebServer {
 
     this.app.use('/browse', WebServer.requireValidLogin, createFilesRouter('browse'));
     this.app.use('/trash', WebServer.requireValidLogin, createFilesRouter('trash'));
-    this.app.use('/live_transcode', WebServer.requireValidLogin, createLiveTranscodeRouter(this));
+    this.app.use('/media', WebServer.requireValidLogin, createMediaRouter(this));
     this.app.use('/alias', /*WebServer.requireValidLogin, FIXME */ createAliasRouter());
     this.app.use('/login', loginRouter);
     this.app.use('/logout', (req: express.Request, res, next) => {
@@ -95,22 +95,29 @@ export default class WebServer {
     this.webSocketServer = new WebSocketServer({server: this.server, maxPayload: 5 * 1024 * 1024 /* 5 MiB */});
     this.webSocketServer.on('error', console.error);
     this.webSocketServer.on('connection', (client, request) => {
+      client.apollo = {isAlive: true, pingRtt: -1, lastPingTimestamp: -1};
+
       client.on('close', (code, reason) => {
         console.log(`WebSocket from ${request.socket.remoteAddress} closed: ${code} ${reason}`);
       });
 
       console.log('WebSocket connection accepted from ' + request.socket.remoteAddress);
-      client.on('pong', () => client.isAlive = true);
-      client.isAlive = true;
+      client.on('pong', () => {
+        client.apollo.isAlive = true;
+        client.apollo.pingRtt = Date.now() - client.apollo.lastPingTimestamp;
+      });
     });
 
     const intervalTask = setInterval(() => {
       this.webSocketServer?.clients.forEach((client) => {
-        if (client.isAlive === false) {
-          return client.terminate();
+        if (client.apollo.isAlive === false) {
+          console.error('[DEBUG] Would normally close connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
+          // console.log('Closing WebSocket connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
+          // return client.terminate();
         }
 
-        client.isAlive = false;
+        client.apollo.isAlive = false;
+        client.apollo.lastPingTimestamp = Date.now();
         client.ping();
       });
     }, 10_000);

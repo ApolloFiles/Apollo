@@ -3,9 +3,9 @@ import { SimpleTemplate } from './SimpleTemplate';
 
 export type NEW_VideoLiveTransCodeTemplateData = {
   sessionId: string;
+  sessionDisplayName: string;
 
-  videoFileName: string;
-  videoFrontendUrl: string;
+  videoFrontendUrl?: string;
 };
 
 export default class NEW_VideoLiveTranscodeTemplate extends SimpleTemplate {

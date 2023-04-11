@@ -23,7 +23,12 @@ declare module 'express-session' {
 
 declare module 'ws' {
   interface WebSocket {
-    isAlive: boolean;
+    apollo: {
+      isAlive: boolean;
+
+      pingRtt: number;
+      lastPingTimestamp: number;
+    };
   }
 }
 

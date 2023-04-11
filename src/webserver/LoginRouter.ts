@@ -170,7 +170,7 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
     return;
   }
 
-  let tokenRequestBodyData = {
+  const tokenRequestBodyData = {
     client_id: thirdPartyProvider.clientId,
     client_secret: thirdPartyProvider.clientSecret,
     grant_type: 'authorization_code',
