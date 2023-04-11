@@ -24,6 +24,7 @@ declare module 'express-session' {
 declare module 'ws' {
   interface WebSocket {
     apollo: {
+      user?: AbstractUser;
       isAlive: boolean;
 
       pingRtt: number;

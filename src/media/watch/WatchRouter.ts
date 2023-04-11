@@ -1,15 +1,17 @@
 import express from 'express';
+import AbstractUser from '../../AbstractUser';
 import NEW_VideoLiveTranscodeTemplate from '../../frontend/NEW_VideoLiveTranscodeTemplate';
+import UserStorage from '../../UserStorage';
 import Utils from '../../Utils';
 import WebServer from '../../webserver/WebServer';
 import { WS_CLOSE_PROTOCOL_ERROR } from './sessions/WatchSessionClient';
 import WatchSessionStorage from './sessions/WatchSessionStorage';
 
-export function createWatchRouter(webserver: WebServer): express.Router {
+export function createWatchRouter(webserver: WebServer, sessionMiddleware: express.RequestHandler): express.Router {
   const router = express.Router();
 
   const sessionStorage = new WatchSessionStorage();
-  attachWebSocketConnectionHandler(webserver, sessionStorage);
+  attachWebSocketConnectionHandler(webserver, sessionMiddleware, sessionStorage);
 
   router.use('/new', (req: express.Request, res: express.Response, next) => {
     if (req.path !== '/') {
@@ -51,8 +53,7 @@ export function createWatchRouter(webserver: WebServer): express.Router {
         }
 
         res.send(new NEW_VideoLiveTranscodeTemplate().render(req, {
-          sessionId: session.id,
-          sessionDisplayName: req.user?.getDisplayName() ?? 'Anonymous'
+          sessionId: session.id
         }));
       }
     });
@@ -61,8 +62,12 @@ export function createWatchRouter(webserver: WebServer): express.Router {
   return router;
 }
 
-function attachWebSocketConnectionHandler(webserver: WebServer, sessionStorage: WatchSessionStorage): void {
+function attachWebSocketConnectionHandler(webserver: WebServer, sessionMiddleware: express.RequestHandler, sessionStorage: WatchSessionStorage): void {
   const mountRoot = '/_ws/media/watch/';
+
+  async function callSessionMiddleware(req: express.Request): Promise<void> {
+    return new Promise((resolve) => sessionMiddleware(req, {} as express.Response, () => resolve()));
+  }
 
   webserver.addListenEventHandler(() => {
     const websocketServer = webserver.getWebSocketServer();
@@ -70,7 +75,7 @@ function attachWebSocketConnectionHandler(webserver: WebServer, sessionStorage: 
       throw new Error('WebSocket server not initialized');
     }
 
-    websocketServer.on('connection', (client, request) => {
+    websocketServer.on('connection', async (client, request): Promise<void> => {
       client.on('error', console.error);
 
       if (!request.url?.startsWith(mountRoot)) {
@@ -79,7 +84,19 @@ function attachWebSocketConnectionHandler(webserver: WebServer, sessionStorage: 
       }
 
       // TODO: Check sub-protocol
-      // TODO: Check Apollo login
+
+      await callSessionMiddleware(request as any);
+      const sessionUserId = (request as any).session?.userId;
+
+      let user: AbstractUser | null = null;
+      if (typeof sessionUserId == 'number') {
+        user = await new UserStorage().getUser(sessionUserId);
+      }
+      if (user == null) {
+        client.close(WS_CLOSE_PROTOCOL_ERROR, 'Not logged into Apollo');
+        return;
+      }
+      client.apollo.user = user;
 
       const sessionIdAndPotentialGetParams = request.url.substring(mountRoot.length);
       const sessionId = sessionIdAndPotentialGetParams.split('?')[0];
@@ -92,8 +109,7 @@ function attachWebSocketConnectionHandler(webserver: WebServer, sessionStorage: 
 
       // TODO: Check file/session access
 
-      const getParams = new URLSearchParams(sessionIdAndPotentialGetParams.split('?')[1]);
-      session.welcomeClient(client, getParams.get('displayName') ?? 'Anonymous')
+      session.welcomeClient(client, client.apollo.user.getDisplayName())
           .catch(console.error);
     });
   });

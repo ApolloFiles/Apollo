@@ -3,7 +3,6 @@ import { SimpleTemplate } from './SimpleTemplate';
 
 export type NEW_VideoLiveTransCodeTemplateData = {
   sessionId: string;
-  sessionDisplayName: string;
 
   videoFrontendUrl?: string;
 };

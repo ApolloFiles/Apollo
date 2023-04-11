@@ -243,7 +243,6 @@ export default class SessionClient {
     }
 
     const protocolAndHost = origin.replace(/http/, 'ws');
-    const path = `/_ws/media/watch/${window.ApolloData.LiveTranscode.sessionId}`;
-    return `${protocolAndHost}${path}?displayName=${encodeURIComponent(window.ApolloData.LiveTranscode.displayName)}`;
+    return `${protocolAndHost}/_ws/media/watch/${window.ApolloData.LiveTranscode.sessionId}`;
   }
 }

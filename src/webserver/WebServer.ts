@@ -21,6 +21,7 @@ export default class WebServer {
   protected app: express.Application;
   protected server?: Http.Server;
   protected webSocketServer?: WebSocketServer;
+  protected sessionMiddleware?: express.RequestHandler;
 
   protected listenEventHandlers: (() => void)[] = [];
 
@@ -44,7 +45,7 @@ export default class WebServer {
 
     this.app.use('/browse', WebServer.requireValidLogin, createFilesRouter('browse'));
     this.app.use('/trash', WebServer.requireValidLogin, createFilesRouter('trash'));
-    this.app.use('/media', WebServer.requireValidLogin, createMediaRouter(this));
+    this.app.use('/media', WebServer.requireValidLogin, createMediaRouter(this, this.sessionMiddleware!));
     this.app.use('/alias', /*WebServer.requireValidLogin, FIXME */ createAliasRouter());
     this.app.use('/login', loginRouter);
     this.app.use('/logout', (req: express.Request, res, next) => {
@@ -174,9 +175,9 @@ export default class WebServer {
       next();
     });
 
-    this.app.use(expressSession({
+    this.sessionMiddleware = expressSession({
       name: 'sessID',
-      secret: 'keyboard cat', // TODO
+      secret: getConfig().data.secrets.session,
       store: new (SessionFileStore(expressSession))({
         path: sessionDirectory,
         retries: 0,
@@ -192,7 +193,8 @@ export default class WebServer {
         sameSite: 'lax',
         maxAge: /*getDatabase().isAvailable() ? 30 * 24 * 60 * 60 * 1000*/ /* 30d */ /*:*/ 30 * 24 * 60 * 60 * 1000 /* 14d */  // TODO
       }
-    }));
+    });
+    this.app.use(this.sessionMiddleware);
 
     this.app.use(async (req: express.Request, res: express.Response, next): Promise<void> => {
       if (req.session.userId != null) {
