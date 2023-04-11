@@ -19,18 +19,78 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function doDebugMediaInputs(player: ApolloVideoPlayer): void {
-  const debugVideoUrlInput = document.getElementById('debugVideoUrlInput');
   const debugPlayerModeSelect = document.getElementById('debugPlayerModeSelect');
+  const debugVideoUrlInput = document.getElementById('debugVideoUrlInput');
   const debugChangeMediaButton = document.getElementById('debugChangeMediaButton');
-  if (!(debugVideoUrlInput instanceof HTMLInputElement) || !(debugPlayerModeSelect instanceof HTMLSelectElement) || debugChangeMediaButton == null) {
+  const debugFileSelect = document.getElementById('debugFileSelect');
+  if (!(debugPlayerModeSelect instanceof HTMLSelectElement) || !(debugVideoUrlInput instanceof HTMLInputElement) || debugFileSelect == null || debugChangeMediaButton == null) {
     console.error('Unable to find all debug elements for media control');
     return;
   }
+
+  function updateUrlInput(modeSelect: HTMLSelectElement, inputElement: HTMLInputElement): void {
+    if (modeSelect.value === 'apollo_file' || modeSelect.value === 'live_transcode') {
+      inputElement.type = 'hidden';
+      debugFileSelect!.style.display = '';
+      return;
+    }
+
+    inputElement.type = 'text';
+    debugFileSelect!.style.display = 'none';
+  }
+
+  async function populateFileSelect(startPath: string = '/'): Promise<void> {
+    const ulElement = debugFileSelect!.querySelector<HTMLUListElement>('.dropdown-menu')!;
+    ulElement.innerHTML = '';
+
+    const apiRes = await fetch('/media/watch/tmp_api/files/list?startPath=' + encodeURIComponent(startPath));
+    if (!apiRes.ok) {
+      throw new Error('Unable to get file list');
+    }
+
+    const files: { path: string, name: string, isDir: boolean }[] = await apiRes.json();
+
+    const liElement = document.createElement('li');
+    const preElement = document.createElement('pre');
+    preElement.style.display = 'inline';
+    preElement.classList.add('dropdown-item-text');
+    preElement.innerText = startPath;
+    liElement.appendChild(preElement);
+    ulElement.appendChild(liElement);
+
+    for (const file of files) {
+      const liElement = document.createElement('li');
+
+      const button = document.createElement('button');
+      button.classList.add('dropdown-item');
+      button.type = 'button';
+      button.innerText = file.name + (file.isDir ? '/' : '');
+      button.addEventListener('click', () => {
+        if (file.isDir) {
+          populateFileSelect(file.path);
+          setTimeout(() => {
+            debugFileSelect!.click();
+          });
+          return;
+        }
+
+        (debugVideoUrlInput as HTMLInputElement).value = file.path;
+      });
+
+      liElement.appendChild(button);
+      ulElement.appendChild(liElement);
+    }
+  }
+
+  debugPlayerModeSelect.addEventListener('change', () => updateUrlInput(debugPlayerModeSelect, debugVideoUrlInput), {passive: true});
 
   debugChangeMediaButton.addEventListener('click', () => {
     player.requestMediaChange(debugPlayerModeSelect.value as PlayerMode, debugVideoUrlInput.value)
         .catch(console.error);
   });
+
+  updateUrlInput(debugPlayerModeSelect, debugVideoUrlInput);
+  populateFileSelect().catch(console.error);
 }
 
 function doMediaSyncDebugText(player: ApolloVideoPlayer): void {

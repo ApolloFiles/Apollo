@@ -55,18 +55,26 @@
       <div class="container">
         <div class="d-flex gap-3">
           <div class="input-group">
-            <input type="text" class="form-control" placeholder="Media" id="debugVideoUrlInput"
-                   value="http://localhost:8080/browse/Video-Size-Changing-%5Co%E2%81%84.webm">
-          </div>
-
-          <div class="input-group">
             <select class="form-select" id="debugPlayerModeSelect">
-              <option value="native" selected>Native</option>
-              <option value="hls">HLS</option>
-              <option value="live_transcode">Live Transcode</option>
+              <option value="apollo_file" selected>Select file (native)...</option>
+              <option value="live_transcode">Select file (live transcode)...</option>
+
+              <option value="native">URL (native)</option>
+              <option value="hls">HLS (URL)</option>
               <option value="youtube">YouTube</option>
               <option value="twitch">Twitch</option>
             </select>
+          </div>
+
+          <div class="input-group">
+            <input type="hidden" class="form-control" placeholder="Media" id="debugVideoUrlInput">
+
+            <div class="dropdown" style="display: none" id="debugFileSelect">
+              <button class="btn btn-secondary dropdown-toggle"
+                      type="button" data-bs-toggle="dropdown" aria-expanded="false">Select file...
+              </button>
+              <ul class="dropdown-menu"></ul>
+            </div>
           </div>
 
           <button class="btn btn-outline-secondary" type="button" id="debugChangeMediaButton">Play</button>

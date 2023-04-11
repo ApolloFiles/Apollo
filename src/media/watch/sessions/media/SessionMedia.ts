@@ -5,6 +5,7 @@ export default class SessionMedia {
   static readonly AVAILABLE_MEDIA: { [key in CommunicationProtocol.PlayerMode]: typeof SessionMedia } = {
     ['native']: SessionMedia,
     ['hls']: SessionMedia,
+    ['apollo_file']: SessionMedia,
     ['live_transcode']: SessionMedia,
     ['youtube']: SessionMedia,
     ['twitch']: SessionMedia

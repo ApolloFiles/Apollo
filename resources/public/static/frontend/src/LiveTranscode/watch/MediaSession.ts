@@ -58,7 +58,6 @@ export default class MediaSession {
     }
 
     this.sessionClient.sendChangeMedia(media, issuerClientId);
-    await this._videoPlayer._changeMedia(media?.mode ?? null, media?.uri ?? null, undefined, true);
   }
 
   _setConnectedClient(client: CommunicationProtocol.Client): void {

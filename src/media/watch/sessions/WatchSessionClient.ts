@@ -1,5 +1,8 @@
+import Fs from 'node:fs';
+import Path from 'node:path';
 import { RawData, WebSocket } from 'ws';
 import {
+  Media,
   Message,
   PlaybackStatePingMessage,
   RequestMediaChangeMessage,
@@ -80,7 +83,9 @@ export default class WatchSessionClient {
           break;
         }
 
-        await this.session.changeMedia(message.data.media.uri, message.data.media.mode, this.id);
+        // TODO: Delete old files + stop running live_transcode processes
+        const media = await this.preProcessMediaChange(message.data.media);
+        await this.session.changeMedia(media.uri, media.mode, message.data.issuerClientId);
         break;
 
       case 'requestMediaChange':
@@ -134,6 +139,36 @@ export default class WatchSessionClient {
     if (msg.data.clientId !== this.id) {
       this.socket.close(WS_CLOSE_PROTOCOL_ERROR, 'Provided clientId does not your own clientId');
     }
+  }
+
+  private async preProcessMediaChange(media: Media): Promise<Media> {
+    if (!['apollo_file', 'live_transcode'].includes(media.mode)) {
+      return media;
+    }
+    if (!Path.isAbsolute(media.uri)) {
+      throw new Error('Path in media change message is not absolute');
+    }
+
+    const requestedFile = this.socket.apollo.user!.getDefaultFileSystem().getFile(media.uri);
+
+    if (!await requestedFile.isFile()) {
+      throw new Error('Requested file is not a file');
+    }
+
+    const targetDir = this.session.workingDir.publicPath;
+    const randomName = Math.random().toString(36).substring(2) + Path.extname(media.uri);
+    const targetFile = Path.join(targetDir, randomName);
+    const srcPathOnHost = await requestedFile.getAbsolutePathOnHost();
+    if (srcPathOnHost == null) {
+      throw new Error('Could not get absolute path on host');
+    }
+    await Fs.promises.mkdir(Path.dirname(targetFile), {recursive: true});
+    await Fs.promises.link(srcPathOnHost, targetFile);
+
+    return {
+      mode: 'native',
+      uri: `./${encodeURIComponent(this.session.id)}/f/${encodeURIComponent(randomName)}`
+    };
   }
 
   static init(clientId: string, displayName: string, session: WatchSession, socket: WebSocket): WatchSessionClient {

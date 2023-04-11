@@ -1,5 +1,9 @@
 import express from 'express';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import AbstractUser from '../../AbstractUser';
+import { getFileNameCollator, getFileTypeUtils } from '../../Constants';
+import IUserFile from '../../files/IUserFile';
 import NEW_VideoLiveTranscodeTemplate from '../../frontend/NEW_VideoLiveTranscodeTemplate';
 import UserStorage from '../../UserStorage';
 import Utils from '../../Utils';
@@ -30,8 +34,25 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
   router.use('/s/:sessionId/f/', (req: express.Request, res: express.Response, next) => {
     Utils.restful(req, res, next, {
       get: async (): Promise<void> => {
-        const sessionId = req.params.sessionId;
-        res.send('GET ' + Utils.escapeHtml(req.baseUrl) + ' (sessionId: ' + Utils.escapeHtml(sessionId) + ')');
+        const session = sessionStorage.find(req.params.sessionId);
+        if (session == null) {
+          res.status(404).send('Session not found');
+          return;
+        }
+
+        const requestedFilePathOnHost = Path.join(session.workingDir.publicPath, req.path);
+        if (!requestedFilePathOnHost.startsWith(session.workingDir.publicPath)) {
+          res.status(403).send('Forbidden');
+          return;
+        }
+
+        if (!Fs.existsSync(requestedFilePathOnHost)) {
+          res.status(404).send('File not found');
+          return;
+        }
+
+        const mimeType = await getFileTypeUtils().getMimeType(requestedFilePathOnHost);
+        await Utils.sendFileRespectingRequestedRange(req, res, next, requestedFilePathOnHost, mimeType ?? 'application/octet-stream');
       }
     });
   });
@@ -55,6 +76,60 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
         res.send(new NEW_VideoLiveTranscodeTemplate().render(req, {
           sessionId: session.id
         }));
+      }
+    });
+  });
+
+  router.use('/tmp_api/files/list', (req: express.Request, res: express.Response, next) => {
+    Utils.restful(req, res, next, {
+      get: async (): Promise<void> => {
+        const startPath = req.query.startPath;
+        if (typeof startPath != 'string' || !Path.isAbsolute(startPath)) {
+          res.status(400).send();
+          return;
+        }
+
+        const user = WebServer.getUser(req);
+        const fileSystem = user.getDefaultFileSystem();
+        const files = await fileSystem.getFiles(startPath);
+
+        const directoryFiles: IUserFile[] = [];
+        for (const innerFile of files) {
+          try {
+            if (await innerFile.isDirectory()) {
+              directoryFiles.push(innerFile);
+            }
+          } catch (err: any) {
+            if (err?.code != 'ENOENT') {
+              throw err;
+            }
+          }
+        }
+
+        files.sort((a, b) => {
+          if (directoryFiles.includes(a) && !directoryFiles.includes(b)) {
+            return -1;
+          }
+          if (!directoryFiles.includes(a) && directoryFiles.includes(b)) {
+            return 1;
+          }
+
+          return getFileNameCollator().compare(a.getName(), b.getName());
+        });
+
+        const result: { path: string, name: string, isDir: boolean }[] = [];
+        for (const file of files) {
+          result.push({
+            path: file.getPath(),
+            name: file.getName(),
+            isDir: directoryFiles.includes(file)
+          });
+        }
+
+        if (startPath !== '/') {
+          result.unshift({path: Path.dirname(startPath), name: '..', isDir: true});
+        }
+        res.json(result);
       }
     });
   });

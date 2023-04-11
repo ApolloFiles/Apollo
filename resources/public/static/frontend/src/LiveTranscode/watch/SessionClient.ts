@@ -160,10 +160,6 @@ export default class SessionClient {
         break;
 
       case 'mediaChange':
-        if (this.isSuperMaster()) {
-          console.error('Received mediaChange message as super master (This is a server-side bug and will most certainly cause issues)');
-        }
-
         await this.session._videoPlayer._changeMedia(msg.data.media?.mode ?? null, msg.data.media?.uri ?? null);
         console.log('[DEBUG] Received mediaChange message:', msg.data);
         break;

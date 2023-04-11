@@ -1,4 +1,4 @@
-export type PlayerMode = 'native' | 'hls' | 'live_transcode' | 'youtube' | 'twitch';
+export type PlayerMode = 'native' | 'hls' | 'apollo_file' | 'live_transcode' | 'youtube' | 'twitch';
 
 export interface Client {
   readonly clientId: string;

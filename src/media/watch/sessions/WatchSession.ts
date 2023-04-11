@@ -1,4 +1,4 @@
-import Crypto from 'crypto';
+import Crypto from 'node:crypto';
 import { WebSocket } from 'ws';
 import {
   ClientConnectMessage,
@@ -64,7 +64,7 @@ export default class WatchSession {
         issuerClientId,
         media: media.toProtocolMedia()
       }
-    }, this.superMasterId ?? undefined);
+    });
   }
 
   async welcomeClient(socket: WebSocket, displayName: string): Promise<void> {
