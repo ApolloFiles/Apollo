@@ -31,6 +31,8 @@ export default class PlayerControls {
 
   private readonly fullscreenButton: HTMLElement;
 
+  private enabled = true;
+
   constructor(videoPlayerWrapper: HTMLElement, controlsContainer: HTMLElement, videoPlayerContainer: HTMLElement, playerState: PlayerState) {
     this.videoPlayerWrapper = videoPlayerWrapper;
     this.controlsContainer = controlsContainer;
@@ -60,15 +62,18 @@ export default class PlayerControls {
   }
 
   isEnabled(): boolean {
-    return !this.controlsContainer.classList.contains('d-none');
+    return this.enabled;
   }
 
   setEnabled(enabled: boolean): void {
-    if (enabled) {
+    this.enabled = enabled;
+
+    if (this.enabled) {
       this.controlsContainer.classList.remove('d-none');
-    } else {
-      this.controlsContainer.classList.add('d-none');
+      return;
     }
+
+    this.controlsContainer.classList.add('d-none');
   }
 
   updateUserInterface(): void {
