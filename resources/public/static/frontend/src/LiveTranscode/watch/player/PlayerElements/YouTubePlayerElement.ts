@@ -80,6 +80,10 @@ export default class YouTubePlayerElement extends PlayerElement {
     this.ytPlayer.pauseVideo();
   }
 
+  getTextTracks(): TextTrack[] {
+    return [];
+  }
+
   getBufferedRanges(): { start: number; end: number }[] {
     return [];
   }

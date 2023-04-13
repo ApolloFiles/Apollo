@@ -69,6 +69,10 @@ export default class NativePlayerElement extends PlayerElement {
     this.videoElement.pause();
   }
 
+  getTextTracks(): TextTrack[] {
+    return Array.from(this.videoElement.textTracks);
+  }
+
   getBufferedRanges(): { start: number, end: number }[] {
     const bufferedRanges = [];
     for (let i = 0; i < this.videoElement.buffered.length; ++i) {

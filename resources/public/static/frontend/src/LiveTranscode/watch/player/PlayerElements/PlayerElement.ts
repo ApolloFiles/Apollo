@@ -44,6 +44,8 @@ export default abstract class PlayerElement {
 
   abstract pause(): void;
 
+  abstract getTextTracks(): TextTrack[];
+
   abstract getBufferedRanges(): { start: number, end: number }[];
 
   abstract addPassiveEventListener(event: PlayerEvents, listener: () => void): void;

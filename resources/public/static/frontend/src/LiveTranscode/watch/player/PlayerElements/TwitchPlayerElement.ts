@@ -78,6 +78,10 @@ export default class TwitchPlayerElement extends PlayerElement {
     this.twitchPlayer.pause();
   }
 
+  getTextTracks(): TextTrack[] {
+    return [];
+  }
+
   getBufferedRanges(): { start: number, end: number }[] {
     return [];
   }

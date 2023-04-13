@@ -97,6 +97,10 @@ export default class PlayerState extends EventEmitter {
     this._getReferenceElement().currentTime = time;
   }
 
+  getTextTracks(): TextTrack[] {
+    return this.referenceElement?.getTextTracks() ?? [];
+  }
+
   getBufferedRanges(): { start: number, end: number }[] {
     return this.referenceElement?.getBufferedRanges() ?? [];
   }

@@ -366,29 +366,35 @@ export default class PlayerControls {
 
       this.hideVolumeSliderContainer();
 
+      const textTracks = this.playerState.getTextTracks();
+      const disableAllTextTracks = () => {
+        for (const textTrack of textTracks) {
+          textTrack.mode = 'disabled';
+        }
+      };
+
       const availableSubtitles: { [label: string]: () => void } = {};
-      // for (let i = 0; i < this._videoElement.textTracks.length; ++i) {
-      //   const textTrack = this._videoElement.textTracks[i];
-      //   if (textTrack.kind !== 'subtitles' && textTrack.kind !== 'captions') {
-      //     continue;
-      //   }
-      //
-      //   let entryLabel = textTrack.label;
-      //   let entryLabelCounter = 0;
-      //   while (entryLabel === 'None' || availableSubtitles[entryLabel] != null) {
-      //     ++entryLabelCounter;
-      //     entryLabel = `${textTrack.label} (${entryLabelCounter})`;
-      //   }
-      //
-      //   availableSubtitles[entryLabel] = () => {
-      //     this.disableAllTextTracks();
-      //     textTrack.mode = 'showing';
-      //   };
-      // }
-      //
-      // if (Object.keys(availableSubtitles).length > 0) {
-      // availableSubtitles['None'] = () => this.disableAllTextTracks();
-      // }
+      for (const textTrack of textTracks) {
+        if (textTrack.kind !== 'subtitles' && textTrack.kind !== 'captions') {
+          continue;
+        }
+
+        let entryLabel = textTrack.label;
+        let entryLabelCounter = 0;
+        while (entryLabel === 'None' || availableSubtitles[entryLabel] != null) {
+          ++entryLabelCounter;
+          entryLabel = `${textTrack.label} (${entryLabelCounter})`;
+        }
+
+        availableSubtitles[entryLabel] = () => {
+          disableAllTextTracks();
+          textTrack.mode = 'showing';
+        };
+      }
+
+      if (Object.keys(availableSubtitles).length > 0) {
+        availableSubtitles['None'] = () => disableAllTextTracks();
+      }
 
       const availableOptions = {
         'Quality': {
