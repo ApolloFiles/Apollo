@@ -105,7 +105,7 @@ export default class ApolloVideoPlayer {
 
     this._currentMedia = (type == null || src == null) ? null : {type, src};
 
-    if (this._playerState._getReferenceElement() instanceof NativePlayerElement) {
+    if (this._playerState.isNativeReferenceElement()) {
       this._controls.applyVideoPlayerStateFromLocalStorage();
     }
   }

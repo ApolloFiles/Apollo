@@ -1,5 +1,4 @@
 import { formatPlaybackTime } from '../PlaybackTimeFormatter';
-import NativePlayerElement from './PlayerElements/NativePlayerElement';
 import PlayerState from './PlayerState';
 
 const iconMapping = {
@@ -136,7 +135,7 @@ export default class PlayerControls {
     this.playerState.on('volumeChanged', () => {
       this.updateDisplayedVolume();
 
-      if (this.playerState._getReferenceElement() instanceof NativePlayerElement) {
+      if (this.playerState.isNativeReferenceElement()) {
         localStorage.setItem(PlayerControls.localStorageKey, JSON.stringify({
           volume: this.playerState.volume,
           muted: this.playerState.muted

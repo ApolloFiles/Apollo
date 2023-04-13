@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import NativePlayerElement from './PlayerElements/NativePlayerElement';
 import PlayerElement, { PlayerEvents } from './PlayerElements/PlayerElement';
 
 export default class PlayerState extends EventEmitter {
@@ -156,6 +157,10 @@ export default class PlayerState extends EventEmitter {
     }
 
     return this.referenceElement;
+  }
+
+  isNativeReferenceElement(): boolean {
+    return this.referenceElement instanceof NativePlayerElement;
   }
 
   private emitStateChanged(): void {
