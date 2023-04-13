@@ -1,9 +1,8 @@
 {
-  "extends": "@tsconfig/node16/tsconfig.json",
+  "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
     "sourceMap": true,
-    "outDir": "./dist",
-    "moduleResolution": "Node"
+    "outDir": "./dist"
   },
   "include": [
     "src/**/*.ts"
