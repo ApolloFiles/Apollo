@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
-import PlayerWrapper, { WrapperEvents } from './state_wrappers/PlayerWrapper';
+import PlayerElement, { PlayerEvents } from './PlayerElements/PlayerElement';
 
 export default class PlayerState extends EventEmitter {
   private readonly playerWithControlsContainer: HTMLElement;
 
-  private referenceElement: PlayerWrapper | null = null;
+  private referenceElement: PlayerElement | null = null;
 
   constructor(playerWithControlsContainer: HTMLElement) {
     super();
@@ -16,49 +16,49 @@ export default class PlayerState extends EventEmitter {
     if (this.referenceElement == null) {
       return 0;
     }
-    return this.getReferenceElement().currentTime;
+    return this._getReferenceElement().currentTime;
   }
 
   get duration(): number {
     if (this.referenceElement == null) {
       return 0;
     }
-    return this.getReferenceElement().duration;
+    return this._getReferenceElement().duration;
   }
 
   get playbackRate(): number {
     if (this.referenceElement == null) {
       return 1;
     }
-    return this.getReferenceElement().playbackRate;
+    return this._getReferenceElement().playbackRate;
   }
 
   set playbackRate(playbackRate: number) {
     if (this.referenceElement == null) {
       return;
     }
-    this.getReferenceElement().playbackRate = playbackRate;
+    this._getReferenceElement().playbackRate = playbackRate;
   }
 
   get paused(): boolean {
     if (this.referenceElement == null) {
       return true;
     }
-    return this.getReferenceElement().paused;
+    return this._getReferenceElement().paused;
   }
 
   get muted(): boolean {
     if (this.referenceElement == null) {
       return true;
     }
-    return this.getReferenceElement().muted;
+    return this._getReferenceElement().muted;
   }
 
   set muted(muted: boolean) {
     if (this.referenceElement == null) {
       return;
     }
-    this.getReferenceElement().muted = muted;
+    this._getReferenceElement().muted = muted;
   }
 
   get volume(): number {
@@ -66,22 +66,22 @@ export default class PlayerState extends EventEmitter {
       return 1;
     }
 
-    return this.getReferenceElement().volume;
+    return this._getReferenceElement().volume;
   }
 
   set volume(volume: number) {
     if (this.referenceElement == null) {
       return;
     }
-    this.getReferenceElement().volume = volume;
+    this._getReferenceElement().volume = volume;
   }
 
   async play(): Promise<void> {
-    await this.getReferenceElement().play();
+    await this._getReferenceElement().play();
   }
 
   pause(): void {
-    this.getReferenceElement().pause();
+    this._getReferenceElement().pause();
   }
 
   async togglePlay(): Promise<void> {
@@ -93,7 +93,7 @@ export default class PlayerState extends EventEmitter {
   }
 
   async seek(time: number): Promise<void> {
-    this.getReferenceElement().currentTime = time;
+    this._getReferenceElement().currentTime = time;
   }
 
   getBufferedRanges(): { start: number, end: number }[] {
@@ -108,7 +108,7 @@ export default class PlayerState extends EventEmitter {
     return super.on(event, listener);
   }
 
-  _setReferenceElement(referenceElement: PlayerWrapper | null) {
+  _setReferenceElement(referenceElement: PlayerElement | null) {
     this.referenceElement = referenceElement;
     this.emitStateChanged();
 
@@ -116,7 +116,7 @@ export default class PlayerState extends EventEmitter {
   }
 
   _prepareDestroyOfReferenceElement(): void {
-    this.referenceElement?.prepareDestroy();
+    this.referenceElement?.destroyPlayer();
   }
 
   private registerEventsOnReferenceElement(): void {
@@ -124,7 +124,7 @@ export default class PlayerState extends EventEmitter {
       return;
     }
 
-    const eventsToEmitStateChanged: WrapperEvents[] = [
+    const eventsToEmitStateChanged: PlayerEvents[] = [
       'play',
       'pause',
       'loadedmetadata',
@@ -136,7 +136,7 @@ export default class PlayerState extends EventEmitter {
       this.referenceElement.addPassiveEventListener(event, () => this.emitStateChanged());
     }
 
-    const eventsToEmitTimeChanged: WrapperEvents[] = [
+    const eventsToEmitTimeChanged: PlayerEvents[] = [
       'timeupdate',
       'durationchange',
       'progress',
@@ -150,7 +150,7 @@ export default class PlayerState extends EventEmitter {
     this.referenceElement.addPassiveEventListener('volumechange', () => this.emit('volumeChanged'));
   }
 
-  private getReferenceElement(): PlayerWrapper {
+  _getReferenceElement(): PlayerElement {
     if (this.referenceElement == null) {
       throw new Error('No reference element available right now');
     }

@@ -1,4 +1,5 @@
 import { formatPlaybackTime } from '../PlaybackTimeFormatter';
+import NativePlayerElement from './PlayerElements/NativePlayerElement';
 import PlayerState from './PlayerState';
 
 const iconMapping = {
@@ -57,7 +58,7 @@ export default class PlayerControls {
 
     this.registerEventListeners();
 
-    this.setEnabled(true);
+    this.setEnabled(false);
     this.updateUserInterface();
   }
 
@@ -135,10 +136,12 @@ export default class PlayerControls {
     this.playerState.on('volumeChanged', () => {
       this.updateDisplayedVolume();
 
-      localStorage.setItem(PlayerControls.localStorageKey, JSON.stringify({
-        volume: this.playerState.volume,
-        muted: this.playerState.muted
-      }));
+      if (this.playerState._getReferenceElement() instanceof NativePlayerElement) {
+        localStorage.setItem(PlayerControls.localStorageKey, JSON.stringify({
+          volume: this.playerState.volume,
+          muted: this.playerState.muted
+        }));
+      }
     });
 
     this.videoPlayerWrapper.addEventListener('click', () => {

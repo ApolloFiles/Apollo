@@ -11,7 +11,6 @@ import {
   WelcomeMessage
 } from './CommunicationProtocol';
 import SessionMedia from './media/SessionMedia';
-import AbstractSessionMedia from './media/SessionMedia';
 import TemporaryDirectory from './TemporaryDirectory';
 import WatchSessionClient from './WatchSessionClient';
 
@@ -19,7 +18,7 @@ export default class WatchSession {
   public readonly id: string;
   public readonly workingDir: TemporaryDirectory;
 
-  private currentMedia: AbstractSessionMedia | null = null;
+  private currentMedia: SessionMedia | null = null;
   private playbackState: PlaybackState = {paused: true, currentTime: 0, playbackRate: 1};
 
   private readonly connectedClients: Map<string, WatchSessionClient> = new Map();

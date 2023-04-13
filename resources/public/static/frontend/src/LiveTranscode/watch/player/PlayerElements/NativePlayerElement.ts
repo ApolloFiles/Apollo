@@ -1,10 +1,14 @@
-import PlayerWrapper, { WrapperEvents } from './PlayerWrapper';
+import PlayerElement, { PlayerEvents } from './PlayerElement';
 
-export default class NativePlayerWrapper implements PlayerWrapper {
-  private readonly videoElement: HTMLVideoElement;
+export default class NativePlayerElement extends PlayerElement {
+  protected readonly videoElement: HTMLVideoElement;
 
-  constructor(videoElement: HTMLVideoElement) {
-    this.videoElement = videoElement;
+  constructor(container: HTMLElement) {
+    super(container);
+
+    this.videoElement = document.createElement('video');
+    this.videoElement.playsInline = true;
+    this.container.appendChild(this.videoElement);
   }
 
   get currentTime(): number {
@@ -47,6 +51,15 @@ export default class NativePlayerWrapper implements PlayerWrapper {
     return this.videoElement.paused;
   }
 
+  async loadMedia(src?: string, poster?: string): Promise<void> {
+    this.videoElement.poster = poster ?? '';
+    this.videoElement.src = src ?? '';
+  }
+
+  destroyPlayer(): void {
+    this.videoElement.remove();
+  }
+
   async play(): Promise<void> {
     return this.videoElement.play();
   }
@@ -55,7 +68,7 @@ export default class NativePlayerWrapper implements PlayerWrapper {
     this.videoElement.pause();
   }
 
-  getBufferedRanges(): { start: number; end: number }[] {
+  getBufferedRanges(): { start: number, end: number }[] {
     const bufferedRanges = [];
     for (let i = 0; i < this.videoElement.buffered.length; ++i) {
       bufferedRanges.push({
@@ -66,11 +79,7 @@ export default class NativePlayerWrapper implements PlayerWrapper {
     return bufferedRanges;
   }
 
-  prepareDestroy(): void {
-    // nothing to do
-  }
-
-  addPassiveEventListener(event: WrapperEvents, listener: () => void): void {
+  addPassiveEventListener(event: PlayerEvents, listener: () => void): void {
     this.videoElement.addEventListener(event, listener, {passive: true});
   }
 }

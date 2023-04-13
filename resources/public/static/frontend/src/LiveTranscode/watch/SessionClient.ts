@@ -1,6 +1,7 @@
 import * as CommunicationProtocol from '../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import MediaSession from './MediaSession';
 import ClientStateElement from './player/ClientStateElement';
+import LiveTranscodePlayerElement from './player/PlayerElements/LiveTranscodePlayerElement';
 import PlayerState from './player/PlayerState';
 
 export default class SessionClient {
@@ -124,6 +125,11 @@ export default class SessionClient {
         if (msg.data.media != null) {
           await this.session._videoPlayer._changeMedia(msg.data.media.mode, msg.data.media.uri);
 
+          const referenceElement = this.session._videoPlayer._playerState._getReferenceElement();
+          if (referenceElement instanceof LiveTranscodePlayerElement) {
+            referenceElement.duration = msg.data.media?.duration ?? 0;
+          }
+
           if (msg.data.playbackState != null) {
             if (msg.data.playbackState.paused) {
               this.session._videoPlayer._playerState.pause();
@@ -160,8 +166,13 @@ export default class SessionClient {
         break;
 
       case 'mediaChange':
-        await this.session._videoPlayer._changeMedia(msg.data.media?.mode ?? null, msg.data.media?.uri ?? null);
         console.log('[DEBUG] Received mediaChange message:', msg.data);
+        await this.session._videoPlayer._changeMedia(msg.data.media?.mode ?? null, msg.data.media?.uri ?? null);
+
+        const referenceElement = this.session._videoPlayer._playerState._getReferenceElement();
+        if (referenceElement instanceof LiveTranscodePlayerElement) {
+          referenceElement.duration = msg.data.media?.duration ?? 0;
+        }
         break;
       case 'requestMediaChange':
         if (!this.isSuperMaster()) {

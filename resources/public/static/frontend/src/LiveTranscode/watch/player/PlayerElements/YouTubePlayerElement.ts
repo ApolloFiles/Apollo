@@ -1,76 +1,90 @@
-import PlayerWrapper, { WrapperEvents } from './PlayerWrapper';
+import PlayerElement, { PlayerEvents } from './PlayerElement';
 
-export default class YouTubePlayerWrapper implements PlayerWrapper {
-  private readonly youtubePlayer: any;
+export default class YouTubePlayerElement extends PlayerElement {
+  private static youTubeIframeApiLoaded = false;
 
-  constructor(youtubePlayer: any) {
-    this.youtubePlayer = youtubePlayer;
+  private ytPlayer?: any;
+
+  constructor(container: HTMLElement) {
+    super(container);
   }
 
   get currentTime(): number {
-    return this.youtubePlayer.getCurrentTime();
+    return this.ytPlayer?.getCurrentTime() ?? 0;
   }
 
   set currentTime(time: number) {
-    this.youtubePlayer.seekTo(time, true);
+    this.ytPlayer.seekTo(time, true);
   }
 
   get duration(): number {
-    return this.youtubePlayer.getDuration();
+    return this.ytPlayer?.getDuration() ?? 0;
   }
 
   get playbackRate(): number {
-    return this.youtubePlayer.getPlaybackRate();
+    return this.ytPlayer?.getPlaybackRate() ?? 1;
   }
 
   set playbackRate(playbackRate: number) {
-    this.youtubePlayer.setPlaybackRate(playbackRate);
+    this.ytPlayer.setPlaybackRate(playbackRate);
   }
 
   get muted(): boolean {
-    return this.youtubePlayer.isMuted();
+    return this.ytPlayer?.isMuted() ?? true;
   }
 
   set muted(muted: boolean) {
     if (muted) {
-      this.youtubePlayer.mute();
+      this.ytPlayer.mute();
       return;
     }
 
-    this.youtubePlayer.unMute();
+    this.ytPlayer.unMute();
   }
 
   get volume(): number {
-    return this.youtubePlayer.getVolume();
+    return this.ytPlayer?.getVolume() ?? 1;
   }
 
   set volume(volume: number) {
-    this.youtubePlayer.setVolume(volume);
+    this.ytPlayer.setVolume(volume);
   }
 
   get paused(): boolean {
+    if (this.ytPlayer == null) {
+      return true;
+    }
+
     // @ts-ignore
     const pausedState = YT.PlayerState.PAUSED;
-    return this.youtubePlayer.getPlayerState() === pausedState;
+    return this.ytPlayer.getPlayerState() === pausedState;
+  }
+
+  async loadMedia(src?: string, poster?: string): Promise<void> {
+    this.destroyPlayer();
+
+    await YouTubePlayerElement.loadYouTubeIframeApi();
+    this.ytPlayer = await YouTubePlayerElement.createYouTubePlayer(this.container, src ?? null, true, 'en');
+  }
+
+  destroyPlayer(): void {
+    this.ytPlayer?.destroy();
+    this.ytPlayer = undefined;
   }
 
   async play(): Promise<void> {
-    this.youtubePlayer.playVideo();
+    this.ytPlayer.playVideo();
   }
 
   pause(): void {
-    this.youtubePlayer.pauseVideo();
+    this.ytPlayer.pauseVideo();
   }
 
   getBufferedRanges(): { start: number; end: number }[] {
     return [];
   }
 
-  prepareDestroy(): void {
-    this.youtubePlayer.destroy();
-  }
-
-  addPassiveEventListener(event: WrapperEvents, listener: () => void): void {
+  addPassiveEventListener(event: PlayerEvents, listener: () => void): void {
     let translatedEvent: string;
     let translatedListener: (event: { data: any }) => void = () => listener();
 
@@ -127,18 +141,18 @@ export default class YouTubePlayerWrapper implements PlayerWrapper {
         return;
     }
 
-    this.youtubePlayer.addEventListener(translatedEvent, translatedListener);
+    this.ytPlayer.addEventListener(translatedEvent, translatedListener);
   }
 
-  static async createYouTubePlayerAndWaitForReadyEvent(videoPlayerWrapper: HTMLElement, videoId: string, autoplay: boolean, uiLanguage: string): Promise<any> {
+  private static async createYouTubePlayer(container: HTMLElement, videoId: string | null, autoplay: boolean, uiLanguage: string): Promise<any> {
     // @ts-ignore
     const YouTubePlayer = YT.Player;
 
     return new Promise((resolve, reject) => {
-      const ytPlayer = new YouTubePlayer(videoPlayerWrapper, {
+      const ytPlayer = new YouTubePlayer(container, {
         width: '100%',
         height: '100%',
-        videoId,
+        videoId: videoId ?? undefined,
         playerVars: {
           autoplay: autoplay ? 1 : 0,
           disablekb: 1,
@@ -156,6 +170,22 @@ export default class YouTubePlayerWrapper implements PlayerWrapper {
           }
         }
       });
+    });
+  }
+
+  private static async loadYouTubeIframeApi(): Promise<void> {
+    if (this.youTubeIframeApiLoaded) {
+      return;
+    }
+    this.youTubeIframeApiLoaded = true;
+
+    return new Promise(async (resolve): Promise<void> => {
+      (window as any).onYouTubeIframeAPIReady = () => {
+        delete (window as any).onYouTubeIframeAPIReady;
+        resolve();
+      };
+
+      await this.loadJs('https://www.youtube.com/iframe_api');
     });
   }
 }

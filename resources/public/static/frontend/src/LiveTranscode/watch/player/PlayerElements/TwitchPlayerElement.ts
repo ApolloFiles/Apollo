@@ -1,14 +1,16 @@
-import PlayerWrapper, { WrapperEvents } from './PlayerWrapper';
+import PlayerElement, { PlayerEvents } from './PlayerElement';
 
-export default class TwitchPlayerWrapper implements PlayerWrapper {
-  private readonly twitchPlayer: any;
+export default class TwitchPlayerElement extends PlayerElement {
+  private static loadedTwitchEmbedApi = false;
 
-  constructor(twitchPlayer: any) {
-    this.twitchPlayer = twitchPlayer;
+  private twitchPlayer?: any;
+
+  constructor(container: HTMLElement) {
+    super(container);
   }
 
   get currentTime(): number {
-    return this.twitchPlayer.getCurrentTime();
+    return this.twitchPlayer?.getCurrentTime() ?? 0;
   }
 
   set currentTime(time: number) {
@@ -16,7 +18,7 @@ export default class TwitchPlayerWrapper implements PlayerWrapper {
   }
 
   get duration(): number {
-    return this.twitchPlayer.getDuration();
+    return this.twitchPlayer?.getDuration() ?? 0;
   }
 
   get playbackRate(): number {
@@ -28,7 +30,7 @@ export default class TwitchPlayerWrapper implements PlayerWrapper {
   }
 
   get muted(): boolean {
-    return this.twitchPlayer.getMuted();
+    return this.twitchPlayer?.getMuted() ?? true;
   }
 
   set muted(muted: boolean) {
@@ -36,7 +38,7 @@ export default class TwitchPlayerWrapper implements PlayerWrapper {
   }
 
   get volume(): number {
-    return this.twitchPlayer.getVolume();
+    return this.twitchPlayer?.getVolume() ?? 1;
   }
 
   set volume(volume: number) {
@@ -44,7 +46,28 @@ export default class TwitchPlayerWrapper implements PlayerWrapper {
   }
 
   get paused(): boolean {
-    return this.twitchPlayer.isPaused();
+    return this.twitchPlayer?.isPaused() ?? true;
+  }
+
+  async loadMedia(src?: string, poster?: string): Promise<void> {
+    this.destroyPlayer();
+
+    await TwitchPlayerElement.loadTwitchEmbedApi();
+
+    // @ts-ignore
+    const TwitchPlayerClass = Twitch.Player;
+    this.twitchPlayer = new TwitchPlayerClass(this.container, {
+      width: '100%',
+      height: '100%',
+      channel: src,
+      autoplay: true
+    });
+    (window as any).TWITCH_PLAYER = this.twitchPlayer;
+  }
+
+  destroyPlayer(): void {
+    this.twitchPlayer?.destroy();
+    this.twitchPlayer = undefined;
   }
 
   async play(): Promise<void> {
@@ -55,15 +78,11 @@ export default class TwitchPlayerWrapper implements PlayerWrapper {
     this.twitchPlayer.pause();
   }
 
-  getBufferedRanges(): { start: number; end: number }[] {
+  getBufferedRanges(): { start: number, end: number }[] {
     return [];
   }
 
-  prepareDestroy(): void {
-    // nothing to do
-  }
-
-  addPassiveEventListener(event: WrapperEvents, listener: () => void): void {
+  addPassiveEventListener(event: PlayerEvents, listener: () => void): void {
     let translatedEvent: string;
 
     switch (event) {
@@ -101,5 +120,14 @@ export default class TwitchPlayerWrapper implements PlayerWrapper {
     }
 
     this.twitchPlayer.addEventListener(translatedEvent, listener);
+  }
+
+  private static async loadTwitchEmbedApi(): Promise<void> {
+    if (this.loadedTwitchEmbedApi) {
+      return;
+    }
+
+    this.loadedTwitchEmbedApi = true;
+    await this.loadJs('https://player.twitch.tv/js/embed/v1.js');
   }
 }
