@@ -8,6 +8,7 @@ export default class NativePlayerElement extends PlayerElement {
 
     this.videoElement = document.createElement('video');
     this.videoElement.playsInline = true;
+    this.videoElement.autoplay = true;
     this.container.appendChild(this.videoElement);
   }
 
