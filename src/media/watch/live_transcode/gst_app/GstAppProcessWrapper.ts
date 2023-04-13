@@ -62,6 +62,15 @@ export default class GstAppProcessWrapper {
     return this.videoManifestReady.waitForReady(); // FIXME: Stop waiting on exit and error
   }
 
+  async terminate(): Promise<void> {
+    if (this.gstAppProcess.killed || this.gstAppProcess.exitCode !== null) {
+      return;
+    }
+
+    this.gstAppProcess.kill('SIGKILL');
+    return new Promise((resolve) => this.gstAppProcess.on('exit', () => resolve()));
+  }
+
   private initialize() {
     this.gstAppProcess.stdout?.on('data', (data) => {
       if (!Buffer.isBuffer(data)) {

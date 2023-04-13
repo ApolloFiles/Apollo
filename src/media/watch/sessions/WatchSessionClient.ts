@@ -1,6 +1,9 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import { RawData, WebSocket } from 'ws';
+import AbstractUser from '../../../AbstractUser';
+import GstVideoLiveTranscode from '../live_transcode/gst_app/GstVideoLiveTranscode';
+import LiveTranscodeManifestGenerator from '../live_transcode/LiveTranscodeManifestGenerator';
 import {
   Media,
   Message,
@@ -39,6 +42,10 @@ export default class WatchSessionClient {
     if (this.socket.readyState === WebSocket.OPEN) {
       this.socket.close(WS_CLOSE_NORMAL);
     }
+  }
+
+  getApolloUser(): AbstractUser {
+    return this.socket.apollo.user!;
   }
 
   private isSuperMaster(): boolean {
@@ -83,9 +90,7 @@ export default class WatchSessionClient {
           break;
         }
 
-        // TODO: Delete old files + stop running live_transcode processes
-        const media = await this.preProcessMediaChange(message.data.media);
-        await this.session.changeMedia(media.uri, media.mode, message.data.issuerClientId);
+        await this.session.changeMedia(message.data.media, message.data.issuerClientId);
         break;
 
       case 'requestMediaChange':
@@ -139,36 +144,6 @@ export default class WatchSessionClient {
     if (msg.data.clientId !== this.id) {
       this.socket.close(WS_CLOSE_PROTOCOL_ERROR, 'Provided clientId does not your own clientId');
     }
-  }
-
-  private async preProcessMediaChange(media: Media): Promise<Media> {
-    if (!['apollo_file', 'live_transcode'].includes(media.mode)) {
-      return media;
-    }
-    if (!Path.isAbsolute(media.uri)) {
-      throw new Error('Path in media change message is not absolute');
-    }
-
-    const requestedFile = this.socket.apollo.user!.getDefaultFileSystem().getFile(media.uri);
-
-    if (!await requestedFile.isFile()) {
-      throw new Error('Requested file is not a file');
-    }
-
-    const targetDir = this.session.workingDir.publicPath;
-    const randomName = Math.random().toString(36).substring(2) + Path.extname(media.uri);
-    const targetFile = Path.join(targetDir, randomName);
-    const srcPathOnHost = await requestedFile.getAbsolutePathOnHost();
-    if (srcPathOnHost == null) {
-      throw new Error('Could not get absolute path on host');
-    }
-    await Fs.promises.mkdir(Path.dirname(targetFile), {recursive: true});
-    await Fs.promises.link(srcPathOnHost, targetFile);
-
-    return {
-      mode: 'native',
-      uri: `./${encodeURIComponent(this.session.id)}/f/${encodeURIComponent(randomName)}`
-    };
   }
 
   static init(clientId: string, displayName: string, session: WatchSession, socket: WebSocket): WatchSessionClient {

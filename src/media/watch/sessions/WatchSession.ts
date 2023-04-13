@@ -3,13 +3,14 @@ import { WebSocket } from 'ws';
 import {
   ClientConnectMessage,
   ClientDisconnectMessage,
+  Media,
   MediaChangeMessage,
   Message,
   PlaybackState,
-  PlayerMode,
   SuperMasterChangeMessage,
   WelcomeMessage
 } from './CommunicationProtocol';
+import BaseSessionMedia from './media/BaseSessionMedia';
 import SessionMedia from './media/SessionMedia';
 import TemporaryDirectory from './TemporaryDirectory';
 import WatchSessionClient from './WatchSessionClient';
@@ -18,7 +19,7 @@ export default class WatchSession {
   public readonly id: string;
   public readonly workingDir: TemporaryDirectory;
 
-  private currentMedia: SessionMedia | null = null;
+  private currentMedia: BaseSessionMedia | null = null;
   private playbackState: PlaybackState = {paused: true, currentTime: 0, playbackRate: 1};
 
   private readonly connectedClients: Map<string, WatchSessionClient> = new Map();
@@ -52,16 +53,19 @@ export default class WatchSession {
     });
   }
 
-  async changeMedia(nameOrUri: string, mode: PlayerMode, issuerClientId: string): Promise<void> {
-    console.log('[DEBUG] Changing media to', nameOrUri, 'with mode', mode);
-    const media = SessionMedia.constructMedia(nameOrUri, mode);
-    this.currentMedia = media;
+  async changeMedia(media: Media, issuerClientId: string): Promise<void> {
+    await this.currentMedia?.cleanup(this);
+
+    console.log('[DEBUG] Changing media to', media.uri, 'with mode', media.mode);
+    this.currentMedia = SessionMedia.constructSessionMedia(media);
+
+    await this.currentMedia.init(this, this.connectedClients.get(issuerClientId)!);
 
     await this._broadcast<MediaChangeMessage>({
       type: 'mediaChange',
       data: {
         issuerClientId,
-        media: media.toProtocolMedia()
+        media: this.currentMedia.data
       }
     });
   }
@@ -87,7 +91,7 @@ export default class WatchSession {
         clientId,
         displayName: client.displayName,
         clients: welcomeClientList,
-        media: this.currentMedia?.toProtocolMedia(),
+        media: this.currentMedia?.data,
         playbackState: this.playbackState
       }
     });

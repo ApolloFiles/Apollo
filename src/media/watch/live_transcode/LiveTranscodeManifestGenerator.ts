@@ -3,13 +3,13 @@ import Fs from 'node:fs';
 import Path from 'node:path';
 import { getFileNameCollator } from '../../../Constants';
 import ProcessBuilder from '../../../process_manager/ProcessBuilder';
-import VideoAnalyser from '../analyser/VideoAnalyser';
-import { ExtendedVideoAnalysis, Stream, SubtitleStream, VideoStream } from '../analyser/VideoAnalyser.Types';
+import VideoAnalyser from '../../video/analyser/VideoAnalyser';
+import { ExtendedVideoAnalysis, Stream, SubtitleStream, VideoStream } from '../../video/analyser/VideoAnalyser.Types';
 import GstAppProcessWrapper from './gst_app/GstAppProcessWrapper';
 import { ISO639_2ToISO639_1Mapping } from './language/ISO639_2ToISO639_1Mapping';
 
 export type LiveTranscodeManifest = {
-  publicDir: string,
+  manifestFileName: string,
   duration: number
 }
 
@@ -107,7 +107,7 @@ export default class LiveTranscodeManifestGenerator {
     await Fs.promises.writeFile(Path.join(this.publicDir, 'master.m3u8'), masterPlaylist);
 
     this.manifest = {
-      publicDir: this.publicDir,
+      manifestFileName: 'master.m3u8',
       duration: videoManifest.duration
     };
     return this.manifest;

@@ -16,7 +16,7 @@ export default class TemporaryDirectory {
   }
 
   static create(uid: string): TemporaryDirectory {
-    const tmpDir = Path.join(getAppTmpDir(), 'watch', 'sessions', uid, 'public'); // TODO: Make this whole path generation more portable/reusable
+    const tmpDir = Path.join(getAppTmpDir(), 'watch', 'sessions', uid); // TODO: Make this whole path generation more portable/reusable
     Fs.mkdirSync(tmpDir, {recursive: true});
     return new TemporaryDirectory(tmpDir);
   }
