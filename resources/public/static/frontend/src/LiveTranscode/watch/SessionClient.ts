@@ -54,6 +54,16 @@ export default class SessionClient {
     });
   }
 
+  sendRequestPlaybackStateChange(state: Partial<CommunicationProtocol.PlaybackState>): void {
+    this.send<CommunicationProtocol.RequestPlaybackStateChangeMessage>({
+      type: 'requestPlaybackStateChange',
+      data: {
+        clientId: this.clientId!,
+        state
+      }
+    });
+  }
+
   _sendPlaybackStatePing(playerState: PlayerState): void {
     this.send<CommunicationProtocol.PlaybackStatePingMessage>({
       type: 'playbackStatePing',
@@ -88,6 +98,12 @@ export default class SessionClient {
       this.websocket = null;
       this.clientId = null;
       this.displayName = null;
+
+      setTimeout(() => {
+        if (this.websocket == null || this.websocket.readyState > WebSocket.OPEN) {
+          this.connect();
+        }
+      }, 1000);
     });
     this.websocket.addEventListener('open', () => SessionClient.notification.success('Connected to server'));
 

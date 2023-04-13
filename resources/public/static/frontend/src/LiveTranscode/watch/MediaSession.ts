@@ -27,6 +27,10 @@ export default class MediaSession {
       }
     });
 
+    this._videoPlayer._playerState.on('seek', () => {
+      this.sessionClient._sendPlaybackStatePing(this._videoPlayer._playerState);
+    });
+
     this._videoPlayer._playerState.on('timeChanged', () => {
       this.sessionClient._clientStateElement.updateTime(this._videoPlayer._playerState.currentTime);
     });

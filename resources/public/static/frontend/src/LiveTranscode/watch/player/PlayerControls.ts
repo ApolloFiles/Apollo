@@ -1,4 +1,5 @@
 import { formatPlaybackTime } from '../PlaybackTimeFormatter';
+import PlayerController from './PlayerController';
 import PlayerState from './PlayerState';
 
 const iconMapping = {
@@ -14,6 +15,7 @@ export default class PlayerControls {
   private readonly controlsContainer: HTMLElement;
   private readonly videoPlayerContainer: HTMLElement;
   private readonly playerState: PlayerState;
+  private readonly playerController: PlayerController;
 
   private readonly playPauseButton: HTMLElement;
 
@@ -33,11 +35,12 @@ export default class PlayerControls {
 
   private enabled = true;
 
-  constructor(videoPlayerWrapper: HTMLElement, controlsContainer: HTMLElement, videoPlayerContainer: HTMLElement, playerState: PlayerState) {
+  constructor(videoPlayerWrapper: HTMLElement, controlsContainer: HTMLElement, videoPlayerContainer: HTMLElement, playerState: PlayerState, playerController: PlayerController) {
     this.videoPlayerWrapper = videoPlayerWrapper;
     this.controlsContainer = controlsContainer;
     this.videoPlayerContainer = videoPlayerContainer;
     this.playerState = playerState;
+    this.playerController = playerController;
 
     this.playPauseButton = this.controlsContainer.querySelector('[data-video-player-element="button-play"]')!;
 
@@ -144,10 +147,10 @@ export default class PlayerControls {
     });
 
     this.videoPlayerWrapper.addEventListener('click', () => {
-      this.playerState.togglePlay().catch(console.error);
+      this.playerController.togglePlay().catch(console.error);
     }, {passive: true});
     this.playPauseButton.addEventListener('click', () => {
-      this.playerState.togglePlay().catch(console.error);
+      this.playerController.togglePlay().catch(console.error);
     }, {passive: true});
 
     this.volumeButton.addEventListener('click', () => {
@@ -184,7 +187,7 @@ export default class PlayerControls {
       const rect = this.progressBarContainer.getBoundingClientRect();
       const pos = (event.clientX - rect.left) / this.progressBarContainer.offsetWidth;
 
-      this.playerState.seek(pos * this.playerState.duration).catch(console.error);
+      this.playerController.seek(pos * this.playerState.duration).catch(console.error);
     }, {passive: true});
 
 
@@ -202,7 +205,7 @@ export default class PlayerControls {
 
       const rect = progressBarContainer.getBoundingClientRect();
       const pos = (e.clientX - rect.left) / progressBarContainer.offsetWidth;
-      this.playerState.seek(pos * this.playerState.duration).catch(console.error);
+      this.playerController.seek(pos * this.playerState.duration).catch(console.error);
     }, {passive: true});
   }
 
@@ -403,12 +406,12 @@ export default class PlayerControls {
         'Audio': {},
         'Subtitles': availableSubtitles,
         'Speed': {
-          '0.5x': () => this.playerState.playbackRate = 0.5,
-          '0.75x': () => this.playerState.playbackRate = 0.75,
-          '1.0x': () => this.playerState.playbackRate = 1.0,
-          '1.25x': () => this.playerState.playbackRate = 1.25,
-          '1.50x': () => this.playerState.playbackRate = 1.5,
-          '2.00x': () => this.playerState.playbackRate = 2.0
+          '0.5x': () => this.playerController.playbackRate = 0.5,
+          '0.75x': () => this.playerController.playbackRate = 0.75,
+          '1.0x': () => this.playerController.playbackRate = 1.0,
+          '1.25x': () => this.playerController.playbackRate = 1.25,
+          '1.50x': () => this.playerController.playbackRate = 1.5,
+          '2.00x': () => this.playerController.playbackRate = 2.0
         }
       };
 

@@ -1,5 +1,6 @@
 import { PlayerMode } from '../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import MediaSession from '../MediaSession';
+import PlayerController from './PlayerController';
 import PlayerControls from './PlayerControls';
 import HlsPlayerElement from './PlayerElements/HlsPlayerElement';
 import LiveTranscodePlayerElement from './PlayerElements/LiveTranscodePlayerElement';
@@ -9,8 +10,8 @@ import YouTubePlayerElement from './PlayerElements/YouTubePlayerElement';
 import PlayerState from './PlayerState';
 
 export default class ApolloVideoPlayer {
-  // TODO: Gibt noch nen Player-Controller oder so, der den PlayerState callen kann oder merkt, dass er nicht SuperMaster ist und es stattdessen requestet und nix macht
   readonly _playerState: PlayerState;
+  readonly playerController: PlayerController;
   readonly _controls: PlayerControls;
   private readonly mediaSession: MediaSession;
 
@@ -25,9 +26,11 @@ export default class ApolloVideoPlayer {
 
     const playerControlsContainer = playerWithControlsContainer.querySelector<HTMLElement>('[data-video-player-element="player-controls"]')!;
     this._playerState = new PlayerState(playerWithControlsContainer);
-    this._controls = new PlayerControls(this.videoPlayerWrapper, playerControlsContainer, playerWithControlsContainer, this._playerState);
 
     this.mediaSession = new MediaSession(mediaSessionId, this);
+
+    this.playerController = new PlayerController(this._playerState, this.mediaSession);
+    this._controls = new PlayerControls(this.videoPlayerWrapper, playerControlsContainer, playerWithControlsContainer, this._playerState, this.playerController);
 
     this._playerState.on('stateChanged', () => {
       playerWithControlsContainer.classList.remove('is-loading', 'is-paused');
