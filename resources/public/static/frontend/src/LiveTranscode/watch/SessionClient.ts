@@ -1,3 +1,4 @@
+import AWN from 'awesome-notifications';
 import * as CommunicationProtocol from '../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import MediaSession from './MediaSession';
 import ClientStateElement from './player/ClientStateElement';
@@ -5,6 +6,8 @@ import LiveTranscodePlayerElement from './player/PlayerElements/LiveTranscodePla
 import PlayerState from './player/PlayerState';
 
 export default class SessionClient {
+  private static readonly notification = new AWN({});
+
   private readonly session: MediaSession;
 
   private clientId: string | null = null;
@@ -72,15 +75,21 @@ export default class SessionClient {
     console.log(`Connecting to websocket at '${webSocketUri}'...`);
 
     this.websocket = new WebSocket(webSocketUri, 'media-watch');
-    this.websocket.addEventListener('error', (err) => console.error('WebSocket error:', err));
+    this.websocket.addEventListener('error', (event) => {
+      console.error('WebSocket error:', event);
+      SessionClient.notification.alert('WebSocket error occurred...');
+    });
     this.websocket.addEventListener('close', (event) => {
       console.log('WebSocket closed:', event);
+      SessionClient.notification.alert(`Connection to server closed: [${event.code}] ${event.reason}`);
+
+      this.session._clearConnectedClients();
 
       this.websocket = null;
       this.clientId = null;
       this.displayName = null;
     });
-    this.websocket.addEventListener('open', () => console.log('WebSocket opened'));
+    this.websocket.addEventListener('open', () => SessionClient.notification.success('Connected to server'));
 
     this.websocket.addEventListener('message', (event) => {
       let msg;
