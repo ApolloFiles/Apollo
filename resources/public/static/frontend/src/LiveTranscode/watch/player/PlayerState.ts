@@ -109,7 +109,7 @@ export default class PlayerState extends EventEmitter {
     return this.playerWithControlsContainer.requestFullscreen();
   }
 
-  on(event: 'stateChanged' | 'timeChanged' | 'volumeChanged' | 'seek', listener: () => void): this {
+  on(event: 'pauseChanged' | 'stateChanged' | 'timeChanged' | 'volumeChanged' | 'seek', listener: () => void): this {
     return super.on(event, listener);
   }
 
@@ -127,6 +127,11 @@ export default class PlayerState extends EventEmitter {
   private registerEventsOnReferenceElement(): void {
     if (this.referenceElement == null) {
       return;
+    }
+
+    const eventsToEmitPauseChanged: PlayerEvents[] = ['play', 'pause'];
+    for (const event of eventsToEmitPauseChanged) {
+      this.referenceElement.addPassiveEventListener(event, () => this.emit('pauseChanged'));
     }
 
     const eventsToEmitStateChanged: PlayerEvents[] = [

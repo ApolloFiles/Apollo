@@ -310,7 +310,11 @@ export default class PlayerControls {
       resetControlsTimeout({x: event.clientX, y: event.clientY});
     });
 
-    this.playerState.on('stateChanged', () => {
+    this.playerState.on('pauseChanged', () => {
+      showControls();
+      resetControlsTimeout({x: 0, y: 0});
+    });
+    this.playerState.on('seek', () => {
       showControls();
       resetControlsTimeout({x: 0, y: 0});
     });
