@@ -17,6 +17,8 @@ export default class PlayerControls {
   private readonly playerState: PlayerState;
   private readonly playerController: PlayerController;
 
+  private readonly actualPlayerElementControlsContainer: HTMLElement;
+
   private readonly playPauseButton: HTMLElement;
 
   private readonly progressBarTimes: HTMLElement;
@@ -41,6 +43,8 @@ export default class PlayerControls {
     this.videoPlayerContainer = videoPlayerContainer;
     this.playerState = playerState;
     this.playerController = playerController;
+
+    this.actualPlayerElementControlsContainer = this.controlsContainer.querySelector('[data-video-player-element="controls-container"]')!;
 
     this.playPauseButton = this.controlsContainer.querySelector('[data-video-player-element="button-play"]')!;
 
@@ -72,11 +76,13 @@ export default class PlayerControls {
     this.enabled = enabled;
 
     if (this.enabled) {
+      this.videoPlayerWrapper.style.cursor = '';
       this.controlsContainer.classList.remove('d-none');
       return;
     }
 
     this.controlsContainer.classList.add('d-none');
+    this.videoPlayerWrapper.style.cursor = 'none';
   }
 
   updateUserInterface(): void {
@@ -250,6 +256,8 @@ export default class PlayerControls {
 
   private registerEventsForControlsVisibility(): void {
     const controlsContainer = this.controlsContainer;
+    const actualPlayerElementControlsContainer = this.actualPlayerElementControlsContainer;
+    const videoPlayerWrapper = this.videoPlayerWrapper;
 
     let controlsVisible = true;
     let controlsTimeout: number | null = null;
@@ -262,6 +270,7 @@ export default class PlayerControls {
       }
 
       controlsVisible = true;
+      videoPlayerWrapper.style.cursor = '';
       controlsContainer.classList.remove('d-none');
     }
 
@@ -278,13 +287,20 @@ export default class PlayerControls {
         return;
       }
 
-      const controlsPosition = controlsContainer.getBoundingClientRect();
-      if (mousePosition.x >= controlsPosition.left && mousePosition.x <= controlsPosition.right &&
-          mousePosition.y >= controlsPosition.top && mousePosition.y <= controlsPosition.bottom) {
+      const controlsContainerRect = actualPlayerElementControlsContainer.getBoundingClientRect();
+      const clientX = mousePosition.x;
+      const clientY = mousePosition.y;
+
+      const isMouseInsideControlsContainer = clientX >= controlsContainerRect.left &&
+          clientX <= controlsContainerRect.right &&
+          clientY >= controlsContainerRect.top &&
+          clientY <= controlsContainerRect.bottom;
+      if (isMouseInsideControlsContainer) {
         return;
       }
 
       controlsVisible = false;
+      videoPlayerWrapper.style.cursor = 'none';
       controlsContainer.classList.add('d-none');
       hideAdditionalControlContainers();
     }
