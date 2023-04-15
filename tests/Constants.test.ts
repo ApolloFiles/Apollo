@@ -136,3 +136,49 @@ describe('Correct working dir detected', () => {
     expect(workingRoot.endsWith('/ApolloFiles/')).toBe(true);
   });
 });
+
+describe('HttpClient User-Agent', () => {
+  let Constants: typeof import('../src/Constants');
+
+  beforeEach(() => {
+    jest.resetModules();
+    jest.mock('node:fs');
+    Constants = require('../src/Constants');
+  });
+
+  afterEach(() => {
+    jest.resetModules();
+  });
+
+  test.each([
+    [null],
+    [{name: 'apollo-jest-test', version: '1.2.3-JEST'}]
+  ])('For package.json %O', (packageJson) => {
+    const Fs = require('fs') as jest.Mocked<typeof import('fs')>;
+    Fs.existsSync.mockImplementation((path: Fs.PathLike) => {
+      if (typeof path != 'string' || !path.endsWith('/package.json')) {
+        throw new Error('Unexpected path: ' + path);
+      }
+
+      return packageJson != null;
+    });
+    Fs.readFileSync.mockImplementation((path: Fs.PathOrFileDescriptor) => {
+      if (typeof path != 'string' || !path.endsWith('/package.json')) {
+        throw new Error('Unexpected path: ' + path);
+      }
+
+      return JSON.stringify(packageJson);
+    });
+
+    const userAgent = Constants.getHttpClient().userAgent;
+
+    expect(Fs.existsSync).toHaveBeenCalled();
+
+    if (packageJson == null) {
+      expect(userAgent).toContain('Unknown');
+    } else {
+      expect(userAgent).toContain(packageJson.name);
+      expect(userAgent).toContain(packageJson.version);
+    }
+  });
+});

@@ -4,5 +4,8 @@ module.exports = {
   testEnvironment: 'node',
   clearMocks: true,
   collectCoverageFrom: ['src/**/*.ts'],
-  setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.ts']
+  setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.ts'],
+  coveragePathIgnorePatterns: [
+    '<rootDir>/src/media/watch/live_transcode/language/ISO639_2ToISO639_1Mapping.ts'
+  ]
 };

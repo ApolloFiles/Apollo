@@ -1,3 +1,4 @@
+import { handleRequestRestfully } from '@spraxdev/node-commons';
 import express from 'express';
 import Path from 'path';
 import * as querystring from 'querystring';
@@ -12,7 +13,7 @@ import WebServer from './WebServer';
 export const loginRouter = express.Router();
 
 loginRouter.all('/', (req: express.Request, res, next) => {
-  Utils.restful(req, res, next, {
+  handleRequestRestfully(req, res, next, {
     get: () => {
       if (req.user instanceof AbstractUser) {
         if (typeof req.query.returnTo == 'string') {
@@ -49,7 +50,7 @@ loginRouter.all('/', (req: express.Request, res, next) => {
 });
 
 loginRouter.all('/third-party/:thirdPartyProviderKey?', (req: express.Request, res, next) => {
-  Utils.restful(req, res, next, {
+  handleRequestRestfully(req, res, next, {
     get: async (): Promise<void> => {
       if (req.user instanceof AbstractUser) {
         if (req.query.code == null) {

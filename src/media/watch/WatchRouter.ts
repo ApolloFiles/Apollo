@@ -1,3 +1,4 @@
+import { handleRequestRestfully } from '@spraxdev/node-commons';
 import express from 'express';
 import Fs from 'node:fs';
 import Path from 'node:path';
@@ -23,7 +24,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
       return;
     }
 
-    Utils.restful(req, res, next, {
+    handleRequestRestfully(req, res, next, {
       get: async (): Promise<void> => {
         const session = sessionStorage.create();
         res.redirect(`./s/${session.id}`);
@@ -32,7 +33,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
   });
 
   router.use('/s/:sessionId/f/', (req: express.Request, res: express.Response, next) => {
-    Utils.restful(req, res, next, {
+    handleRequestRestfully(req, res, next, {
       get: async (): Promise<void> => {
         const session = sessionStorage.find(req.params.sessionId);
         if (session == null) {
@@ -63,7 +64,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
       return;
     }
 
-    Utils.restful(req, res, next, {
+    handleRequestRestfully(req, res, next, {
       get: async (): Promise<void> => {
         const session = sessionStorage.find(req.params.sessionId);
 
@@ -81,7 +82,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
   });
 
   router.use('/tmp_api/files/list', (req: express.Request, res: express.Response, next) => {
-    Utils.restful(req, res, next, {
+    handleRequestRestfully(req, res, next, {
       get: async (): Promise<void> => {
         const startPath = req.query.startPath;
         if (typeof startPath != 'string' || !Path.isAbsolute(startPath)) {

@@ -1,4 +1,4 @@
-import { StringUtils } from '@spraxdev/node-commons';
+import { handleRequestRestfully, StringUtils } from '@spraxdev/node-commons';
 import express from 'express';
 import expressSession from 'express-session';
 import Fs from 'node:fs';
@@ -11,7 +11,6 @@ import { getAppConfigDir, getAppResourcesDir, getConfig } from '../Constants';
 import { createMediaRouter } from '../media/MediaRouter';
 import { ServerTiming } from '../ServerTiming';
 import UserStorage from '../UserStorage';
-import Utils from '../Utils';
 import { adminRouter } from './AdminRouter';
 import { createAliasRouter } from './AliasRouter';
 import { createFilesRouter } from './Browse/FilesRouter';
@@ -72,7 +71,7 @@ export default class WebServer {
     });
 
     this.app.all('/', (req: express.Request, res, next) => {
-      Utils.restful(req, res, next, {
+      handleRequestRestfully(req, res, next, {
         get: () => {
           res.redirect('/browse/');
         }

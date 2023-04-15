@@ -1,5 +1,5 @@
+import { handleRequestRestfully } from '@spraxdev/node-commons';
 import express from 'express';
-import Utils from '../../Utils';
 import { filesHandleGet } from './FilesGetHandler';
 import { filesHandlePost } from './FilesPostHandler';
 
@@ -7,7 +7,7 @@ export function createFilesRouter(frontendType: 'browse' | 'trash'): express.Rou
   const router = express.Router();
 
   router.use('/', (req, res, next) => {
-    Utils.restful(req, res, next,
+    handleRequestRestfully(req, res, next,
         {
           get: filesHandleGet(req, res, next, frontendType),
           post: filesHandlePost(req, res, frontendType)

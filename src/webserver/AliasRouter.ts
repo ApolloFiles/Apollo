@@ -9,7 +9,7 @@ export function createAliasRouter(): express.Router {
 
   aliasRouter = express.Router();
   // router.use('/', (req, res, next) => {
-  //   Utils.restful(req, res, next,
+  //   handleRequestRestfully(req, res, next,
   //       {
   //         get: filesHandleGet(req, res, frontendType),
   //         post: filesHandlePost(req, res, frontendType)
