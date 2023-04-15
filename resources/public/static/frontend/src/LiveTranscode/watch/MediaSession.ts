@@ -133,18 +133,20 @@ export default class MediaSession {
       }
     }
 
-    let newOwnPlaybackRate = masterState.playbackRate;
+    let targetPlaybackRate = masterState.playbackRate;
 
-    const currentTimeDifference = masterState.currentTime - ownState.currentTime;
-    const currentTimeDifferenceAbs = Math.abs(currentTimeDifference);
-    if (currentTimeDifferenceAbs > 10 || masterState.paused) {
+    const timeDifference = masterState.currentTime - ownState.currentTime;
+    const absTimeDifference = Math.abs(timeDifference);
+    if (absTimeDifference > 10 || masterState.paused) {
       if (masterState.currentTime !== ownState.currentTime) {
         await ownState.seek(masterState.currentTime);
       }
-    } else if (currentTimeDifferenceAbs > .25) {
-      newOwnPlaybackRate += currentTimeDifferenceAbs / 10;
+    } else if (absTimeDifference > .5) {
+      targetPlaybackRate = Math.pow(2, Math.tanh(timeDifference / 15)) * masterState.playbackRate;
     }
 
-    ownState.playbackRate = newOwnPlaybackRate;
+    if (ownState.playbackRate !== targetPlaybackRate) {
+      ownState.playbackRate = targetPlaybackRate;
+    }
   }
 }
