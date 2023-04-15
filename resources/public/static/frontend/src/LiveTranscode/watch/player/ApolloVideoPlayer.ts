@@ -1,5 +1,6 @@
 import { PlayerMode } from '../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import MediaSession from '../MediaSession';
+import GlobalPlayerShortcuts from './GlobalPlayerShortcuts';
 import PlayerController from './PlayerController';
 import PlayerControls from './PlayerControls';
 import HlsPlayerElement from './PlayerElements/HlsPlayerElement';
@@ -13,6 +14,7 @@ export default class ApolloVideoPlayer {
   readonly _playerState: PlayerState;
   readonly playerController: PlayerController;
   readonly _controls: PlayerControls;
+  private readonly playerShortcut: GlobalPlayerShortcuts;
   private readonly mediaSession: MediaSession;
 
   private readonly videoPlayerWrapper: HTMLDivElement;
@@ -31,6 +33,7 @@ export default class ApolloVideoPlayer {
 
     this.playerController = new PlayerController(this._playerState, this.mediaSession);
     this._controls = new PlayerControls(this.videoPlayerWrapper, playerControlsContainer, playerWithControlsContainer, this._playerState, this.playerController);
+    this.playerShortcut = new GlobalPlayerShortcuts(playerWithControlsContainer, this._controls, this.playerController, this._playerState);
 
     this._playerState.on('stateChanged', () => {
       playerWithControlsContainer.classList.remove('is-loading', 'is-paused');

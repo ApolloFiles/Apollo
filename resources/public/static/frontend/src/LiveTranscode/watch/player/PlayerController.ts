@@ -30,11 +30,19 @@ export default class PlayerController {
 
   async seek(time: number): Promise<void> {
     if (this.shouldRequestStateChange()) {
-      this.session.getOwnClient()?.sendRequestPlaybackStateChange({currentTime: time});
+      this.session.getOwnClient()!.sendRequestPlaybackStateChange({currentTime: time});
       return;
     }
 
     await this.playerState.seek(time);
+  }
+
+  async seekBack10(): Promise<void> {
+    await this.seek(this.playerState.currentTime - 10);
+  }
+
+  async seekForward10(): Promise<void> {
+    await this.seek(this.playerState.currentTime + 10);
   }
 
   private shouldRequestStateChange(): boolean {

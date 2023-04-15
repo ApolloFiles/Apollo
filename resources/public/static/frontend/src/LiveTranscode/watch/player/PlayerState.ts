@@ -109,6 +109,14 @@ export default class PlayerState extends EventEmitter {
     return this.playerWithControlsContainer.requestFullscreen();
   }
 
+  toggleFullscreen(): Promise<void> {
+    if (document.fullscreenElement == null) {
+      return this.requestFullscreen();
+    } else {
+      return document.exitFullscreen();
+    }
+  }
+
   on(event: 'pauseChanged' | 'stateChanged' | 'timeChanged' | 'volumeChanged' | 'seek', listener: () => void): this {
     return super.on(event, listener);
   }
