@@ -48,7 +48,7 @@
     "linux"
   ],
   "dependencies": {
-    "@spraxdev/node-commons": "github:spraxdev/node-commons#69624a61de172fbb67463e251a35ce68e7891e67",
+    "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#30320dfe57e4e3d8972e000957aa422c6e7d166b",
     "archiver": "^5.3.1",
     "async-mutex": "^0.4.0",
     "bootstrap": "^5.2.3",
@@ -56,7 +56,7 @@
     "express": "^4.18.2",
     "express-fileupload": "^1.4.0",
     "express-session": "^1.17.3",
-    "fast-directory-size": "github:SpraxDev/Fast-Directory-Size",
+    "fast-directory-size": "github:SpraxDev/Fast-Directory-Size#f385f22770416f1d35dcf81ad0b387e2e71cfe86",
     "material-design-icons-iconfont": "^6.7.0",
     "mime-types": "^2.1.35",
     "node-cache": "^5.1.2",
