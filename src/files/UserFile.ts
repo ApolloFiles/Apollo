@@ -1,7 +1,7 @@
 import * as FastDirectorySize from 'fast-directory-size';
-import * as Fs from 'fs';
+import Fs from 'node:fs';
 import * as NodeStream from 'node:stream';
-import * as Path from 'path';
+import Path from 'node:path';
 import AbstractUser from '../AbstractUser';
 import { getFileStatCache, getFileTypeUtils } from '../Constants';
 import IUserFileSystem from './filesystems/IUserFileSystem';

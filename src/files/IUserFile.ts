@@ -1,5 +1,5 @@
-import Fs from 'fs';
-import * as Stream from 'node:stream';
+import Fs from 'node:fs';
+import * as NodeStream from 'node:stream';
 import AbstractUser from '../AbstractUser';
 import IUserFileSystem from './filesystems/IUserFileSystem';
 
@@ -17,7 +17,7 @@ export default interface IUserFile {
 
   getFiles(): Promise<IUserFile[]>;
   read(): Promise<Buffer>;
-  getReadStream(options?: { start?: number, end?: number }): Stream.Readable;
+  getReadStream(options?: { start?: number, end?: number }): NodeStream.Readable;
 
   stat(forceRefresh?: boolean): Promise<Fs.Stats>;
   getMimeType(forceRefresh?: boolean): Promise<string | null>;

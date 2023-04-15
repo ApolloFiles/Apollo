@@ -1,5 +1,5 @@
-import { Stats } from 'fs';
-import Path from 'path';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import AbstractUser from '../../AbstractUser';
 import { getSqlDatabase } from '../../Constants';
 import IUserFileSystem from '../../files/filesystems/IUserFileSystem';
@@ -37,7 +37,7 @@ export default class FileIndexTable {
     return files;
   }
 
-  async isFileUpToDate(file: IUserFile, fileStats: Stats): Promise<boolean> {
+  async isFileUpToDate(file: IUserFile, fileStats: Fs.Stats): Promise<boolean> {
     const dbRes = await FileIndexTable.getClient().query(
         `SELECT EXISTS(
                         SELECT
@@ -59,7 +59,7 @@ export default class FileIndexTable {
     return dbRes.rows[0].exists;
   }
 
-  async setFileIndex(file: IUserFile, fileStats: Stats, sha256?: Buffer): Promise<void> {
+  async setFileIndex(file: IUserFile, fileStats: Fs.Stats, sha256?: Buffer): Promise<void> {
     if (fileStats.isFile() && !(sha256 instanceof Buffer)) {
       throw new Error('SHA256 is required for file indexing');
     }

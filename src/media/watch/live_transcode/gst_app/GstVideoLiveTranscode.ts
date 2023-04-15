@@ -1,6 +1,6 @@
-import Fs from 'fs';
+import Fs from 'node:fs';
 import ChildProcess from 'node:child_process';
-import Path from 'path';
+import Path from 'node:path';
 import WrappedGstAppProcess from './GstAppProcessWrapper';
 
 export default class GstVideoLiveTranscode {

@@ -1,8 +1,8 @@
 import * as Archiver from 'archiver';
-import Crypto from 'crypto';
 import express from 'express';
-import Fs from 'fs';
-import Path from 'path';
+import Crypto from 'node:crypto';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import sharp from 'sharp';
 import AbstractUser from '../../AbstractUser';
 import { getConfig, getFileNameCollator } from '../../Constants';

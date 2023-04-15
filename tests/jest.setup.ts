@@ -1,6 +1,6 @@
-import Fs from 'fs';
-import Os from 'os';
-import Path from 'path';
+import Fs from 'node:fs';
+import Os from 'node:os';
+import Path from 'node:path';
 
 process.env.APOLLO_WORKING_ROOT = Fs.mkdtempSync(Path.join(Os.tmpdir(), 'apollo-tests'));
 

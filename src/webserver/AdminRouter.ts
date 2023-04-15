@@ -1,5 +1,5 @@
 import express from 'express';
-import Fs from 'fs';
+import Fs from 'node:fs';
 import ProcessBuilder from '../process_manager/ProcessBuilder';
 
 export const adminRouter = express.Router();

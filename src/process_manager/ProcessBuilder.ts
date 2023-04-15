@@ -1,6 +1,6 @@
-import ChildProcess from 'child_process';
-import Crypto from 'crypto';
-import Fs from 'fs';
+import ChildProcess from 'node:child_process';
+import Crypto from 'node:crypto';
+import Fs from 'node:fs';
 import AbstractUser from '../AbstractUser';
 import { getProcessManager } from '../Constants';
 import TmpFiles from '../TmpFiles';

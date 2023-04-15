@@ -1,9 +1,9 @@
 import { StringUtils } from '@spraxdev/node-commons';
 import express from 'express';
 import expressSession from 'express-session';
-import Fs from 'fs';
-import * as Http from 'http';
-import Path from 'path';
+import Fs from 'node:fs';
+import Http from 'node:http';
+import Path from 'node:path';
 import SessionFileStore from 'session-file-store';
 import { WebSocketServer } from 'ws';
 import AbstractUser from '../AbstractUser';

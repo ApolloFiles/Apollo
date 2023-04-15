@@ -1,5 +1,5 @@
-import Fs from 'fs';
-import Path from 'path';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import AbstractUser from '../../src/AbstractUser';
 import FileTypeUtils from '../../src/FileTypeUtils';
 import UserStorage from '../../src/UserStorage';

@@ -1,7 +1,7 @@
 import Ejs from 'ejs';
 import express from 'express';
-import Fs from 'fs';
-import Path from 'path';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import { getAppResourcesDir, isProduction } from '../Constants';
 import Utils from '../Utils';
 

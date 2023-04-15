@@ -1,5 +1,5 @@
-import Fs from 'fs';
-import Path from 'path';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import AbstractUser from './AbstractUser';
 import { getAppConfigDir } from './Constants';
 import IUserStorage from './IUserStorage';

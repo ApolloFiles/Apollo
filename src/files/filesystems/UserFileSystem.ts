@@ -1,8 +1,8 @@
 import { Mutex } from 'async-mutex';
 import express from 'express';
 import * as FastDirectorySize from 'fast-directory-size';
-import Fs from 'fs';
-import * as Path from 'path';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import AbstractUser from '../../AbstractUser';
 import { getFileStatCache } from '../../Constants';
 import IUserFile from '../IUserFile';

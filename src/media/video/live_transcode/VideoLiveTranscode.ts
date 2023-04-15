@@ -1,6 +1,6 @@
 import { StringUtils } from '@spraxdev/node-commons';
-import Fs from 'fs';
-import Path from 'path';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import AbstractUser from '../../../AbstractUser';
 import IUserFile from '../../../files/IUserFile';
 import ProcessBuilder from '../../../process_manager/ProcessBuilder';

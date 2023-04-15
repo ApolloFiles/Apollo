@@ -1,4 +1,4 @@
-import Fs from 'fs';
+import Fs from 'node:fs';
 import NodeCache from 'node-cache';
 import IUserFile from '../files/IUserFile';
 

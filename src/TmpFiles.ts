@@ -1,6 +1,6 @@
-import * as Crypto from 'crypto';
-import Fs from 'fs';
-import Path from 'path';
+import Crypto from 'node:crypto';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import { getAppTmpDir } from './Constants';
 
 export default class TmpFiles {

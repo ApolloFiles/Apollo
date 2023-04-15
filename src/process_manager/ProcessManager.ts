@@ -1,7 +1,7 @@
-import ChildProcess from 'child_process';
-import EventEmitter from 'events';
-import Fs from 'fs';
-import Path from 'path';
+import ChildProcess from 'node:child_process';
+import EventEmitter from 'node:events';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import AbstractUser from '../AbstractUser';
 import { getProcessLogDir } from '../Constants';
 import BackgroundProcess from './BackgroundProcess';

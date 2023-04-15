@@ -1,4 +1,4 @@
-import * as Fs from 'fs';
+import Fs from 'node:fs';
 import Os from 'os';
 import Path from 'path';
 

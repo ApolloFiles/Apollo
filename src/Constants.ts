@@ -1,8 +1,8 @@
 import { ConfigFile, HttpClient } from '@spraxdev/node-commons';
-import Crypto from 'crypto';
-import Fs from 'fs';
-import Os from 'os';
-import Path from 'path';
+import Crypto from 'node:crypto';
+import Fs from 'node:fs';
+import Os from 'node:os';
+import Path from 'node:path';
 import FileStatCache from './cache/FileStatCache';
 import PostgresDatabase from './database/postgres/PostgresDatabase';
 import SqlDatabase from './database/SqlDatabase';

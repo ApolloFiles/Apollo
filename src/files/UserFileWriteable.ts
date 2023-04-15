@@ -1,8 +1,8 @@
 import express from 'express';
-import Fs from 'fs';
-import NodeEvents from 'node:events';
-import NodeStream from 'node:stream';
-import Path from 'path';
+import * as NodeEvents from 'node:events';
+import Fs from 'node:fs';
+import Path from 'node:path';
+import * as NodeStream from 'node:stream';
 import { getFileStatCache } from '../Constants';
 import BackgroundProcess from '../process_manager/BackgroundProcess';
 import FileIndex from './index/FileIndex';
