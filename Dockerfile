@@ -28,8 +28,8 @@ RUN npm run build
 # Dev
 ##
 FROM restreamio/gstreamer:latest-prod AS dev
-RUN addgroup --gid 1000 node && \
-    adduser --uid 1000 --gid 1000 --shell /bin/sh node
+RUN groupadd --gid 1000 node && \
+    useradd --uid 1000 --gid 1000 --create-home --shell /bin/sh node
 
 RUN apt-get update && \
     apt-get -y install curl && \
