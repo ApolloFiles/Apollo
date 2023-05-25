@@ -3,6 +3,7 @@ import Fs from 'node:fs';
 import Path from 'node:path';
 import AbstractUser from '../../../AbstractUser';
 import IUserFile from '../../../files/IUserFile';
+import Utils from '../../../Utils';
 import IPostActionHandler from './IPostActionHandler';
 
 export default class FileUploadPostActionHandler implements IPostActionHandler {
@@ -34,7 +35,7 @@ export default class FileUploadPostActionHandler implements IPostActionHandler {
     const errored: string[] = [];
 
     for (const uploadedFile of uploadedFiles) {
-      const targetFile = user.getDefaultFileSystem().getFile(Path.join(decodeURI(req.path), uploadedFile.name));
+      const targetFile = user.getDefaultFileSystem().getFile(Path.join(Utils.decodeUriProperly(req.path), uploadedFile.name));
 
       await user.getDefaultFileSystem().acquireLock(req, targetFile, async () => {
         if (await targetFile.exists()) {

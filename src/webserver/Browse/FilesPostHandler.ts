@@ -1,6 +1,7 @@
 import express from 'express';
 import expressFileUpload from 'express-fileupload';
 import Path from 'path';
+import Utils from '../../Utils';
 import WebServer from '../WebServer';
 import CreateFilePostActionHandler from './PostActionHandler/CreateFilePostActionHandler';
 import DeleteFilePostActionHandler from './PostActionHandler/DeleteFilePostActionHandler';
@@ -45,7 +46,7 @@ export function filesHandlePost(req: express.Request, res: express.Response, fro
     const postValue = req.body.value;
     const postNewValue = req.body.newValue;
 
-    const filePath = postValue ? Path.join(decodeURI(req.path), postValue) : null;
+    const filePath = postValue ? Path.join(Utils.decodeUriProperly(req.path), postValue) : null;
     const file = filePath ? fileSystem.getFile(filePath) : null;
 
     for (const postActionHandler of postActionHandlers) {

@@ -115,4 +115,22 @@ export default class Utils {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
   }
+
+  static decodeUriProperly(uri: string): string {
+    return uri.split('/')
+        .map(decodeURIComponent)
+        .join('/');
+  }
+
+  static encodeUriProperly(uri: string): string {
+    return uri.split('/')
+        .map(encodeURIComponent)
+        .join('/');
+  }
+
+  static decodeUriIntoItsComponents(uri: string): string[] {
+    return uri.split('/')
+        .map(decodeURIComponent)
+        .filter((value) => value.length > 0);
+  }
 }

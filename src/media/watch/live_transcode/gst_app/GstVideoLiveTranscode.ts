@@ -1,6 +1,7 @@
 import Fs from 'node:fs';
 import ChildProcess from 'node:child_process';
 import Path from 'node:path';
+import Utils from '../../../../Utils';
 import WrappedGstAppProcess from './GstAppProcessWrapper';
 
 export default class GstVideoLiveTranscode {
@@ -16,7 +17,7 @@ export default class GstVideoLiveTranscode {
       throw new Error('targetDir does not exist');
     }
 
-    const fileUri = `file://${encodeURI(videoPath)}`; // FIXME: '#' or '?' for example are not properly encoded
+    const fileUri = `file://${Utils.encodeUriProperly(videoPath)}`;
 
     const command = '/home/christian/Downloads/apollo-g-streamer/cmake-build-debug/apollo_g_streamer' /* TODO */;
     const args = [fileUri];

@@ -71,3 +71,42 @@ describe('#tryReplacingBadCharactersForFileName', () => {
     expect(Utils.tryReplacingBadCharactersForFileName('abc123_' + invalidCharacter)).toBe('abc123__');
   });
 });
+
+describe('URI encoding and decoding', () => {
+  const commonTestCases = [
+    ['/foo%20bar', '/foo bar'],
+    ['/foo%3Fbar', '/foo?bar'],
+    ['/foo%23bar', '/foo#bar'],
+    ['/foo/', '/foo/'],
+    ['/foo/bar/', '/foo/bar/'],
+    ['/foo/bar/test%23file.txt', '/foo/bar/test#file.txt']
+  ];
+
+  test.each([
+    ...commonTestCases,
+    ['/foo%2Fbar', '/foo/bar'],
+    ['/foo/bar/test%23file.txt?foo=bar', '/foo/bar/test#file.txt?foo=bar'],
+    ['/foo/bar/test%23file.txt?foo=bar#test', '/foo/bar/test#file.txt?foo=bar#test']
+  ])('#decodeUriProperly with %s', (encodedUri, expectedDecodedUri) => {
+    expect(Utils.decodeUriProperly(encodedUri)).toBe(expectedDecodedUri);
+  });
+
+  test.each([
+    ...commonTestCases,
+    ['/foo/bar/test%23file.txt%3Ffoo%3Dbar', '/foo/bar/test#file.txt?foo=bar'],
+    ['/foo/bar/test%23file.txt%3Ffoo%3Dbar%23test', '/foo/bar/test#file.txt?foo=bar#test']
+  ])('#encodeUriProperly with %s', (expectedEncodedUri, decodedUri) => {
+    expect(Utils.encodeUriProperly(decodedUri)).toBe(expectedEncodedUri);
+  });
+
+  test.each([
+    ['/foo', ['foo']],
+    ['/foo/', ['foo']],
+    ['/foo/bar', ['foo', 'bar']],
+    ['/foo/bar/', ['foo', 'bar']],
+    ['/foo/bar/test%23file.txt', ['foo', 'bar', 'test#file.txt']],
+    ['/foo%2Fbar', ['foo/bar']]
+  ])('#decodeUriIntoItsComponents with %s', (encodedUri, expectedDecodedComponents) => {
+    expect(Utils.decodeUriIntoItsComponents(encodedUri)).toEqual(expectedDecodedComponents);
+  });
+});

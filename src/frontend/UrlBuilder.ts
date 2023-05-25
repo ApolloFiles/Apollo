@@ -1,6 +1,7 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import IUserFile from '../files/IUserFile';
+import Utils from '../Utils';
 
 export default class UrlBuilder {
   static async buildUrl(file: IUserFile, fileStat?: Fs.Stats): Promise<string> {
@@ -16,6 +17,6 @@ export default class UrlBuilder {
 
     const isDirectory = fileStat?.isDirectory() ?? await file.isDirectory();
 
-    return Path.join(basePath, encodeURI(file.getPath()), isDirectory ? '/' : '');
+    return Path.join(basePath, Utils.encodeUriProperly(file.getPath()), isDirectory ? '/' : '');
   }
 }

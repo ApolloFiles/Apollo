@@ -34,7 +34,7 @@ export function filesHandleGet(req: express.Request, res: express.Response, next
     const user = WebServer.getUser(req);
     const fileSystem = frontendType == 'browse' ? user.getDefaultFileSystem() : user.getTrashBinFileSystem();
 
-    const requestedFilePath = decodeURI(req.path);
+    const requestedFilePath = Utils.decodeUriProperly(req.path);
     const file = await fileSystem.getFile(requestedFilePath);
 
     if (!(await file.exists())) {
@@ -366,7 +366,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
           }
       ));
 
-  // let responseStr = `${file.getPath() == '/' ? '' : `<a href="${encodeURI(Path.dirname(decodeURI(req.originalUrl)))}">Go up to ${Path.dirname(file.getPath())}</a>`}` +
+  // let responseStr = `${file.getPath() == '/' ? '' : `<a href="${Utils.encodeUriProperly(Path.dirname(Utils.decodeUriProperly(req.originalUrl)))}">Go up to ${Path.dirname(file.getPath())}</a>`}` +
   //     `` +
   //     `<form method="post"><input name="action" type="hidden" value="${new CreateFilePostActionHandler(false).getActionKey()}"><input name="value" placeholder="Dateiname" type="text" required><button type="submit">Create file</button></form>` +
   //     `<form method="post"><input name="action" type="hidden" value="${new CreateFilePostActionHandler(true).getActionKey()}"><input name="value" placeholder="Ordnername" type="text" required><button type="submit">Create directory</button></form>` +
