@@ -143,7 +143,7 @@ export default class GstAppProcessWrapper {
     });
 
     this.gstAppProcess.stderr?.on('data', (data) => {
-      // console.log('GstAppProcessWrapper: stderr:', data.toString());
+      console.log('GstAppProcessWrapper: stderr:', data.toString());
     });
 
     this.gstAppProcess.on('error', (err) => {
