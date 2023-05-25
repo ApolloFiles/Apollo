@@ -33,7 +33,14 @@ export default class ApolloFileMedia extends BaseSessionMedia {
   }
 
   async cleanup(session: WatchSession): Promise<void> {
-    await Fs.rm(session.workingDir.workingPath, {recursive: true, force: true});
+    try {
+      await Fs.rm(session.workingDir.workingPath, {recursive: true, force: true});
+    } catch (err) {
+      if ((err as any).code !== 'ENOTEMPTY') {
+        throw err;
+      }
+      console.error(err);
+    }
   }
 
   protected determineHardLinkTargetDir(session: WatchSession): string {
