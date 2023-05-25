@@ -1,4 +1,5 @@
-import { getConfig, getProcessManager, getSqlDatabase } from './Constants';
+import Fs from 'node:fs';
+import { getAppTmpDir, getConfig, getProcessManager, getSqlDatabase } from './Constants';
 import WebServer from './webserver/WebServer';
 
 let webServer: WebServer | undefined;
@@ -15,6 +16,9 @@ function index() {
     process.on('SIGQUIT', shutdownHook);
     process.on('SIGHUP', shutdownHook);
   }
+
+  Fs.rmSync(getAppTmpDir(), {recursive: true, force: true});
+  Fs.mkdirSync(getAppTmpDir(), {recursive: true});
 
   webServer = new WebServer();
 
