@@ -212,7 +212,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
         name: innerFile.getName(),
         owner: 'Ich',
         lastChanged: innerFileStat.mtime,
-        size: Utils.prettifyFileSize(await innerFile.getSize()),
+        size: /*Utils.prettifyFileSize(await innerFile.getSize())*/ '-',
         mimeType: innerFileMimeType,
 
         frontendUrl: await UrlBuilder.buildUrl(innerFile, innerFileStat)
@@ -226,7 +226,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
   }
 
   res.locals.timings?.startNext('#sendDirectoryView_calculateTotalStorageUsage');
-  const totalStorageUsage = requestedFile ? Utils.prettifyFileSize(await requestedFile.getFileSystem().getSize()) : -1;
+  const totalStorageUsage = /*requestedFile ? Utils.prettifyFileSize(await requestedFile.getFileSystem().getSize()) :*/ -1;
 
   res.locals.timings?.startNext('#sendDirectoryView_render');
   res.type('text/html')
