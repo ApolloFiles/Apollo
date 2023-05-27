@@ -65,5 +65,5 @@ COPY --from=builder /app/dist/ ./dist/
 COPY --from=builder /app/resources/public/static/frontend/dist/ ./resources/public/static/frontend/dist/
 
 # TODO: remove debug APOLLO_GST_TARGET_FPS env
-ENV APOLLO_GST_TARGET_FPS=60
+# ENV APOLLO_GST_TARGET_FPS=60
 CMD ["node", "--enable-source-maps", "dist/index.js"]
