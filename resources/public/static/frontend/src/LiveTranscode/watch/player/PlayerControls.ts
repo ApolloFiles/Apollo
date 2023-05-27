@@ -101,7 +101,7 @@ export default class PlayerControls {
     const progressPercentage = `${((currentTime / videoDuration) * 100)}%`;
     this.progressBar.style.background = `linear-gradient(to right, #ea2d63 0%, #ea2d63 ${progressPercentage}, #cecece ${progressPercentage}, #cecece ${bufferedPercentage}, transparent ${bufferedPercentage}, transparent 100%)`;
 
-    const formattedCurrentTime = formatPlaybackTime(currentTime);
+    const formattedCurrentTime = formatPlaybackTime(currentTime, (videoDuration > 60 * 60));
     const formattedTotalTime = formatPlaybackTime(videoDuration);
     this.progressBarTimes.innerHTML = `<strong>${formattedCurrentTime}</strong> / ${formattedTotalTime}`;
   }
