@@ -21,6 +21,7 @@ let fileStatCache: FileStatCache;
 
 const APP_ROOT = Path.resolve(Path.dirname(__dirname));
 const WORKING_DIR_ROOT = determineDefaultWorkingRoot();
+const APP_TMP_DIR = determineAppTmpDir();
 
 let cfg: ConfigFile<ApolloConfig>;
 
@@ -170,11 +171,11 @@ export function getUserStorageRoot(): string {
 }
 
 export function getAppTmpDir(): string {
-  return Path.join(getWorkingRoot(), 'tmp', 'app', Path.sep);
+  return APP_TMP_DIR;
 }
 
 export function getUserStorageTmpRoot(): string {
-  return Path.join(getWorkingRoot(), 'tmp', 'user-storage', Path.sep);
+  return Path.join(getAppTmpDir(), 'user-storage', Path.sep);
 }
 
 export function getProcessManager(): ProcessManager {
@@ -260,4 +261,22 @@ function determineDefaultWorkingRoot(): string {
   Fs.mkdirSync(workingRoot, {recursive: true});
 
   return workingRoot;
+}
+
+function determineAppTmpDir(): string {
+  let tmpDir = process.env.APOLLO_TMP_DIR;
+
+  if (tmpDir == null || tmpDir.length === 0) {
+    tmpDir = Path.join(getWorkingRoot(), 'tmp', 'app', Path.sep);
+    Fs.mkdirSync(tmpDir, {recursive: true});
+    console.log(`Using ${JSON.stringify(tmpDir)} as app tmp dir (APOLLO_TMP_DIR not set)`);
+  } else {
+    tmpDir = Path.join(tmpDir, 'apollo_tmp');
+    tmpDir = Path.resolve(tmpDir) + Path.sep;
+
+    Fs.mkdirSync(tmpDir, {recursive: true});
+    console.log(`Using ${JSON.stringify(tmpDir)} as app tmp dir`);
+  }
+
+  return tmpDir;
 }

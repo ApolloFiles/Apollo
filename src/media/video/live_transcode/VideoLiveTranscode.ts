@@ -4,6 +4,7 @@ import Path from 'node:path';
 import AbstractUser from '../../../AbstractUser';
 import IUserFile from '../../../files/IUserFile';
 import ProcessBuilder from '../../../process_manager/ProcessBuilder';
+import Utils from '../../../Utils';
 import { AudioStream, Stream, VideoStream } from '../analyser/VideoAnalyser.Types';
 
 // TODO: automatically detect if hardware acceleration (nvec) is available and restart transcode if it fails because of it
@@ -44,7 +45,7 @@ export default class VideoLiveTranscode {
     let inputFilePathForFfmpeg = `input${Path.extname(file.getName())}`;
 
     try {
-      await Fs.promises.link(inputFileAbsolutePath, Path.join(cwd, inputFilePathForFfmpeg));
+      await Utils.createHardLinkAndFallbackToSymbolicLinkIfCrossDevice(inputFileAbsolutePath, Path.join(cwd, inputFilePathForFfmpeg));
       inputFileIsLink = true;
     } catch (err) {
       console.error(`Failed creating hardlink from '${inputFileAbsolutePath}' to '${Path.join(cwd, inputFilePathForFfmpeg)}', falling back to absolute path: ${err}`);

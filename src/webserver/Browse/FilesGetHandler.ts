@@ -441,7 +441,7 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
 
   const inputFileRelativePath = `input${Path.extname(file.getName())}`;
 
-  await Fs.promises.link(inputFileAbsolutePath, Path.join(cwd, inputFileRelativePath));
+  await Utils.createHardLinkAndFallbackToSymbolicLinkIfCrossDevice(inputFileAbsolutePath, Path.join(cwd, inputFileRelativePath));
 
   const childProcess = await new ProcessBuilder('ffmpeg',
       [

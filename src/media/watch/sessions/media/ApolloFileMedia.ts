@@ -1,5 +1,6 @@
 import Fs from 'node:fs/promises';
 import Path from 'node:path';
+import Utils from '../../../../Utils';
 import WatchSession from '../WatchSession';
 import WatchSessionClient from '../WatchSessionClient';
 import BaseSessionMedia from './BaseSessionMedia';
@@ -23,7 +24,7 @@ export default class ApolloFileMedia extends BaseSessionMedia {
     this.hardLinkedFilePath = Path.join(hardLinkTargetDir, hardLinkFileName);
 
     await Fs.mkdir(hardLinkTargetDir, {recursive: true});
-    await Fs.link(srcPathOnHost, this.hardLinkedFilePath);
+    await Utils.createHardLinkAndFallbackToSymbolicLinkIfCrossDevice(srcPathOnHost, this.hardLinkedFilePath);
 
     this.data = {
       mode: 'native',

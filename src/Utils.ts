@@ -133,4 +133,20 @@ export default class Utils {
         .map(decodeURIComponent)
         .filter((value) => value.length > 0);
   }
+
+  /*
+   * TODO: Into own class and when creating the symlink, try creating a hardlink first into a separate folder and symlink that one
+   *       symlinking the 'extracted' hardlink keeps the app-isolation kind of intact (resolving the hardlink does not potentially end up in user space [and hardlinks are basically free])
+   *       This directory needs to be cleaned as soon as the file is no longer needed so maybe it's not worth the hassle?
+   *       Also there should be some kind of auto-detection or flag to use when symlinking from APP_DIR to APP_TMP_DIR and not try hardlink every time when it fails once
+   */
+  static async createHardLinkAndFallbackToSymbolicLinkIfCrossDevice(source: string, target: string): Promise<void> {
+    try {
+      await Fs.promises.link(source, target);
+    } catch (err: any) {
+      if (err.errno === -18 && err.code === 'EXDEV') {
+        await Fs.promises.symlink(source, target);
+      }
+    }
+  }
 }
