@@ -104,6 +104,8 @@ export default class PlayerControls {
     const formattedCurrentTime = formatPlaybackTime(currentTime, (videoDuration > 60 * 60));
     const formattedTotalTime = formatPlaybackTime(videoDuration);
     this.progressBarTimes.innerHTML = `<strong>${formattedCurrentTime}</strong> / ${formattedTotalTime}`;
+
+    this.progressBarTimes.title = `Seconds in buffer: ${((bufferedRange?.end ?? currentTime) - currentTime).toFixed(0)}`;
   }
 
   updateDisplayedVolume(): void {
