@@ -240,6 +240,10 @@ export default class SessionClient {
         }
         break;
 
+      case 'backendDebugInfo':
+        document.getElementById('backendDebugInfo')!.innerText = JSON.stringify(msg.data, null, 2);
+        break;
+
       default:
         console.warn('Received unknown message type:', msg);
         break;

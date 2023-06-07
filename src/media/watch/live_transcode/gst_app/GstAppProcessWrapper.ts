@@ -1,5 +1,7 @@
+import { StringUtils } from '@spraxdev/node-commons';
 import ChildProcess from 'node:child_process';
 import Path from 'path';
+import { BackendDebugInfoMessage } from '../../sessions/CommunicationProtocol';
 
 class HlsManifest {
   private duration: number = -1;
@@ -71,8 +73,14 @@ export default class GstAppProcessWrapper {
     return new Promise((resolve) => this.gstAppProcess.on('exit', () => resolve()));
   }
 
-  private initialize() {
+  async setPipelineState(pipelineState: 'PLAYING' | 'PAUSED'): Promise<void> {
+    return this.writeToStdin(`STATE ${pipelineState}\n`);
+  }
+
+  private initialize(onDebugData: (debugData: BackendDebugInfoMessage['data']) => void): void {
     this.gstAppProcess.stdout?.on('data', (data) => {
+      // TODO: try-catch this whole thing and terminate the gst process on error
+
       if (!Buffer.isBuffer(data)) {
         throw new Error('Unexpected data type: ' + typeof data);
       }
@@ -130,11 +138,40 @@ export default class GstAppProcessWrapper {
             }
 
             const duration = consumeToNextColon().toString();
-            if (!/^[0-9]+$/.test(duration)) {
+            if (!StringUtils.isNumeric(duration)) {
               throw new Error('Unexpected value for duration: ' + JSON.stringify(duration));
             }
 
             this.videoManifestReady.setReady(Path.join(this.gstAppProcessWorkingDir, relativePathToManifest), parseInt(duration));
+            break;
+          case 'PIPELINE_STATUS':
+            const pipelineState = consumeToNextColon().toString();
+
+            const srcPositionString = consumeToNextColon().toString();
+            if (!StringUtils.isNumeric(srcPositionString)) {
+              throw new Error('Unexpected value for srcPosition: ' + JSON.stringify(srcPositionString));
+            }
+
+            const durationString = consumeToNextColon().toString();
+            if (!StringUtils.isNumeric(durationString)) {
+              throw new Error('Unexpected value for duration: ' + JSON.stringify(durationString));
+            }
+
+            const processingSpeedMultiplierString = consumeToNextColon().toString();  // float
+            if (!/^\d+(\.\d+)?$/.test(processingSpeedMultiplierString)) {
+              throw new Error('Unexpected value for processingSpeedMultiplier: ' + JSON.stringify(processingSpeedMultiplierString));
+            }
+
+            const srcPosition = parseInt(srcPositionString);
+            const durationA = parseInt(durationString);
+            const processingSpeedMultiplier = parseFloat(processingSpeedMultiplierString);
+
+            onDebugData({
+              pipelineState,
+              srcPosition,
+              duration: durationA,
+              processingSpeedMultiplier
+            });
             break;
           default:
             throw new Error('Unexpected command: ' + command);
@@ -166,7 +203,7 @@ export default class GstAppProcessWrapper {
       console.error('GstAppProcessWrapper: stderr-error:', err);
     });
 
-    this.writeToStdin('STATE PLAYING\n').catch(console.error);
+    this.setPipelineState('PLAYING').catch(console.error);
   }
 
   private async writeToStdin(data: string): Promise<void> {
@@ -185,9 +222,9 @@ export default class GstAppProcessWrapper {
     });
   }
 
-  static wrapAndInitialize(process: ChildProcess.ChildProcess, workingDir: string): GstAppProcessWrapper {
+  static wrapAndInitialize(process: ChildProcess.ChildProcess, workingDir: string, onDebugData: (debugData: BackendDebugInfoMessage['data']) => void): GstAppProcessWrapper {
     const wrappedGstProcess = new GstAppProcessWrapper(process, workingDir);
-    wrappedGstProcess.initialize();
+    wrappedGstProcess.initialize(onDebugData);
 
     return wrappedGstProcess;
   }

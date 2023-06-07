@@ -25,7 +25,8 @@ export type Message =
     | PlaybackStatePingMessage
     | MediaChangeMessage
     | RequestMediaChangeMessage
-    | RequestPlaybackStateChangeMessage;
+    | RequestPlaybackStateChangeMessage
+    | BackendDebugInfoMessage;
 
 export type MessageType =
     'welcome'
@@ -35,7 +36,8 @@ export type MessageType =
     | 'playbackStatePing'
     | 'mediaChange'
     | 'requestMediaChange'
-    | 'requestPlaybackStateChange';
+    | 'requestPlaybackStateChange'
+    | 'backendDebugInfo';
 
 interface BaseMessage {
   readonly type: MessageType;
@@ -106,4 +108,9 @@ export interface RequestPlaybackStateChangeMessage extends BaseMessage {
     readonly clientId: string;
     readonly state: Partial<PlaybackState>;
   };
+}
+
+export interface BackendDebugInfoMessage extends BaseMessage {
+  readonly type: 'backendDebugInfo';
+  readonly data: { [key: string]: unknown };
 }

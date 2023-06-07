@@ -3,6 +3,7 @@ import Path from 'path';
 import WrappedGstAppProcess from '../../live_transcode/gst_app/GstAppProcessWrapper';
 import GstVideoLiveTranscode from '../../live_transcode/gst_app/GstVideoLiveTranscode';
 import LiveTranscodeManifestGenerator from '../../live_transcode/LiveTranscodeManifestGenerator';
+import { BackendDebugInfoMessage } from '../CommunicationProtocol';
 import WatchSession from '../WatchSession';
 import WatchSessionClient from '../WatchSessionClient';
 import ApolloFileMedia from './ApolloFileMedia';
@@ -17,7 +18,10 @@ export default class LiveTranscodeMedia extends ApolloFileMedia {
     const transcodeTargetDir = Path.join(session.workingDir.publicPath, transcodeDirName);
     await Fs.promises.mkdir(transcodeTargetDir, {recursive: true});
 
-    this.gstLiveTranscode = await GstVideoLiveTranscode.startTranscode(this.hardLinkedFilePath!, transcodeTargetDir);
+    const onDebugData: (debugData: BackendDebugInfoMessage['data']) => void = (debugData) => {
+      session._broadcast<BackendDebugInfoMessage>({type: 'backendDebugInfo', data: debugData});
+    };
+    this.gstLiveTranscode = await GstVideoLiveTranscode.startTranscode(this.hardLinkedFilePath!, transcodeTargetDir, onDebugData);
     const manifestGenerator = new LiveTranscodeManifestGenerator(this.hardLinkedFilePath!, transcodeTargetDir, this.gstLiveTranscode);
 
     const manifest = await manifestGenerator.generateManifest();
