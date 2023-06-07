@@ -1,6 +1,6 @@
 import { handleRequestRestfully } from '@spraxdev/node-commons';
 import express from 'express';
-import Path from 'path';
+import Path from 'node:path';
 import * as querystring from 'querystring';
 import AbstractUser from '../AbstractUser';
 import { getConfig, getHttpClient } from '../Constants';

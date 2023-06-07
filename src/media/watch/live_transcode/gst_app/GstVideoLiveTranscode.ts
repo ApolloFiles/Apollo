@@ -1,5 +1,5 @@
-import Fs from 'node:fs';
 import ChildProcess from 'node:child_process';
+import Fs from 'node:fs';
 import Path from 'node:path';
 import Utils from '../../../../Utils';
 import WrappedGstAppProcess from './GstAppProcessWrapper';
