@@ -1,5 +1,5 @@
 import Fs from 'node:fs';
-import { getAppTmpDir, getConfig, getProcessManager, getSqlDatabase } from './Constants';
+import {getAppTmpDir, getConfig, getProcessManager, getSqlDatabase} from './Constants';
 import WebServer from './webserver/WebServer';
 
 let webServer: WebServer | undefined;
@@ -7,7 +7,7 @@ let registeredShutdownHook: boolean = false;
 
 index();
 
-function index() {
+function index(): void {
   if (!registeredShutdownHook) {
     registeredShutdownHook = true;
 
@@ -23,15 +23,15 @@ function index() {
   webServer = new WebServer();
 
   webServer.listen(getConfig().data.webserver.port, getConfig().data.webserver.host)
-      .then(() => console.log(`Server started on ${getConfig().data.webserver.host}:${getConfig().data.webserver.port} (${getConfig().data.baseUrl})`))
-      .catch((err) => {
-        console.error(err);
+    .then(() => console.log(`Server started on ${getConfig().data.webserver.host}:${getConfig().data.webserver.port} (${getConfig().data.baseUrl})`))
+    .catch((err) => {
+      console.error(err);
 
-        shutdownHook();
-      });
+      shutdownHook();
+    });
 }
 
-function shutdownHook() {
+function shutdownHook(): void {
   console.log('Shutting down...');
 
   const postWebserver = async (): Promise<never> => {
@@ -58,16 +58,16 @@ function shutdownHook() {
 
   if (webServer) {
     webServer.shutdown()
-        .then(() => console.log('WebServer shut down.'))
-        .catch(console.error)
-        .finally(() => {
-          postWebserver()
-              .catch(console.error);
-        });
+      .then(() => console.log('WebServer shut down.'))
+      .catch(console.error)
+      .finally(() => {
+        postWebserver()
+          .catch(console.error);
+      });
 
     webServer = undefined;
   } else {
     postWebserver()
-        .catch(console.error);
+      .catch(console.error);
   }
 }
