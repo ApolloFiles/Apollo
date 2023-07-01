@@ -1,10 +1,10 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import AbstractUser from './AbstractUser';
-import { getAppConfigDir } from './Constants';
+import {getAppConfigDir} from './Constants';
 import IUserStorage from './IUserStorage';
 
-type UsersFile = { id: number, displayName: string, oauth: { [provider: string]: string } }[];
+type UsersFile = { id: number, displayName: string, oauth: { [provider: string]: string }, apiTokens: string[] }[];
 
 export default class UserStorage implements IUserStorage {
   async getUser(id: number): Promise<AbstractUser | null> {
@@ -13,6 +13,18 @@ export default class UserStorage implements IUserStorage {
 
     if (user) {
       return new AbstractUser(user.id, user.displayName);
+    }
+
+    return null;
+  }
+
+  async getUserForApiToken(token: string): Promise<AbstractUser | null> {
+    const currentUsers = UserStorage.getCurrentUsers();
+
+    for (const user of currentUsers) {
+      if (user.apiTokens.includes(token)) {
+        return new AbstractUser(user.id, user.displayName);
+      }
     }
 
     return null;
@@ -37,7 +49,8 @@ export default class UserStorage implements IUserStorage {
     currentUsers.push({
       id: userId,
       displayName,
-      oauth: {}
+      oauth: {},
+      apiTokens: []
     });
     Fs.mkdirSync(getAppConfigDir(), {recursive: true});
     Fs.writeFileSync(Path.join(getAppConfigDir(), 'users.json'), JSON.stringify(currentUsers));

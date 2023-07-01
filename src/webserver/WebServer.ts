@@ -1,20 +1,21 @@
-import { handleRequestRestfully, StringUtils } from '@spraxdev/node-commons';
+import {handleRequestRestfully, StringUtils} from '@spraxdev/node-commons';
 import express from 'express';
 import expressSession from 'express-session';
 import Fs from 'node:fs';
 import Http from 'node:http';
 import Path from 'node:path';
 import SessionFileStore from 'session-file-store';
-import { WebSocketServer } from 'ws';
+import {WebSocketServer} from 'ws';
 import AbstractUser from '../AbstractUser';
-import { getAppConfigDir, getAppResourcesDir, getConfig } from '../Constants';
-import { createMediaRouter } from '../media/MediaRouter';
-import { ServerTiming } from '../ServerTiming';
+import {getAppConfigDir, getAppResourcesDir, getConfig} from '../Constants';
+import {createMediaRouter} from '../media/MediaRouter';
+import {ServerTiming} from '../ServerTiming';
 import UserStorage from '../UserStorage';
-import { adminRouter } from './AdminRouter';
-import { createAliasRouter } from './AliasRouter';
-import { createFilesRouter } from './Browse/FilesRouter';
-import { generateLoginRedirectUri, loginRouter } from './LoginRouter';
+import {adminRouter} from './AdminRouter';
+import {createAliasRouter} from './AliasRouter';
+import {apiRouter} from './Api/ApiRouter';
+import {createFilesRouter} from './Browse/FilesRouter';
+import {generateLoginRedirectUri, loginRouter} from './LoginRouter';
 
 export default class WebServer {
   protected app: express.Application;
@@ -38,10 +39,11 @@ export default class WebServer {
     this.app.use('/favicon.ico', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'favicon', 'favicon.ico'), staticRouteOptions));
     this.app.use('/node_modules', express.static(Path.join(getAppResourcesDir(), '..', 'node_modules'), staticRouteOptions));
 
-    this.setupSessionMiddleware();
+    this.setupAuthenticationMiddlewares();
 
     this.app.use('/admin', WebServer.requireValidLogin, adminRouter);
 
+    this.app.use('/api', apiRouter);
     this.app.use('/browse', WebServer.requireValidLogin, createFilesRouter('browse'));
     this.app.use('/trash', WebServer.requireValidLogin, createFilesRouter('trash'));
     this.app.use('/media', WebServer.requireValidLogin, createMediaRouter(this, this.sessionMiddleware!));
@@ -69,6 +71,8 @@ export default class WebServer {
         res.redirect('/');
       });
     });
+
+    this.app.use('/api', WebServer.requireValidLogin, apiRouter);
 
     this.app.all('/', (req: express.Request, res, next) => {
       handleRequestRestfully(req, res, next, {
@@ -165,7 +169,7 @@ export default class WebServer {
     return this.webSocketServer;
   }
 
-  private setupSessionMiddleware(): void {
+  private setupAuthenticationMiddlewares(): void {
     const sessionDirectory = Path.join(getAppConfigDir(), 'sessions');
     Fs.mkdirSync(sessionDirectory, {recursive: true});
 
@@ -198,9 +202,35 @@ export default class WebServer {
     this.app.use(async (req: express.Request, res: express.Response, next): Promise<void> => {
       if (req.session.userId != null) {
         req.user = await new UserStorage().getUser(req.session.userId);
+
+        if (req.user != null) {
+          console.debug(`Authenticated request for user ${req.user.getId()} (${req.user.getDisplayName()}) from session`);
+        }
       }
 
       res.locals.timings?.startNext('sessionEnd');
+
+      next();
+    });
+
+    this.app.use(async (req: express.Request, res: express.Response, next): Promise<void> => {
+      if (req.user != null) {
+        next();
+        return;
+      }
+
+      const authHeader = req.header('Authorization');
+      if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+        next();
+        return;
+      }
+
+      const token = authHeader.substring('Bearer '.length);
+      const user = await new UserStorage().getUserForApiToken(token);
+      if (user != null) {
+        req.user = user;
+        console.debug(`Authenticated request for user ${req.user.getId()} (${req.user.getDisplayName()}) from ApiToken`);
+      }
 
       next();
     });
@@ -210,9 +240,10 @@ export default class WebServer {
     this.app.use((req: express.Request, res, next) => {
       const htmlTemplate = Fs.readFileSync(Path.join(getAppResourcesDir(), 'error_pages', '404.html'), 'utf-8');
 
-      res.status(404)
-          .type('text/html')
-          .send(StringUtils.format(htmlTemplate, {'currentUserName': req.user?.getDisplayName() ?? '<em>-</em>'}));
+      res
+        .status(404)
+        .type('text/html')
+        .send(StringUtils.format(htmlTemplate, {'currentUserName': req.user?.getDisplayName() ?? '<em>-</em>'}));
     });
 
     this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -221,9 +252,10 @@ export default class WebServer {
         return;
       }
 
-      res.status(500)
-          .type('text/plain')
-          .send(`${err.message}\n\n${err.stack}`);
+      res
+        .status(500)
+        .type('text/plain')
+        .send(`${err.message}\n\n${err.stack}`);
     });
   }
 
