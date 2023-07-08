@@ -1,11 +1,6 @@
-import Fs from 'node:fs';
-import Path from 'node:path';
-import { RawData, WebSocket } from 'ws';
+import {RawData, WebSocket} from 'ws';
 import AbstractUser from '../../../AbstractUser';
-import GstVideoLiveTranscode from '../live_transcode/gst_app/GstVideoLiveTranscode';
-import LiveTranscodeManifestGenerator from '../live_transcode/LiveTranscodeManifestGenerator';
 import {
-  Media,
   Message,
   PlaybackStatePingMessage,
   RequestMediaChangeMessage,

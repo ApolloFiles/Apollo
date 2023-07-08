@@ -2,7 +2,7 @@ import ChildProcess from 'node:child_process';
 import Fs from 'node:fs';
 import Path from 'node:path';
 import Utils from '../../../../Utils';
-import { BackendDebugInfoMessage } from '../../sessions/CommunicationProtocol';
+import {BackendDebugInfoMessage} from '../../sessions/CommunicationProtocol';
 import WrappedGstAppProcess from './GstAppProcessWrapper';
 
 export default class GstVideoLiveTranscode {
@@ -23,9 +23,9 @@ export default class GstVideoLiveTranscode {
     const command = '/home/christian/Downloads/apollo-g-streamer/cmake-build-debug/apollo_g_streamer' /* TODO */;
     const args = [fileUri];
     const gstProcess = ChildProcess.spawn(command, args, {
-          stdio: ['pipe', 'pipe', 'pipe'],
-          cwd: targetDir
-        }
+        stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: targetDir
+      }
     );
 
     return WrappedGstAppProcess.wrapAndInitialize(gstProcess, targetDir, onDebugData);

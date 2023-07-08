@@ -1,7 +1,8 @@
 import express from 'express';
 import Path from 'path';
-import { getAppResourcesDir, getConfig } from '../Constants';
-import { AbstractTemplate } from './AbstractTemplate';
+import {getAppResourcesDir, getConfig} from '../Constants';
+import Utils from '../Utils';
+import {AbstractTemplate} from './AbstractTemplate';
 
 export class SimpleTemplate extends AbstractTemplate {
   constructor(templateIdSuffix: string, relativeTemplateFilePath: string) {

@@ -1,5 +1,5 @@
 import AbstractUser from './AbstractUser';
-import { ServerTiming } from './ServerTiming';
+import {ServerTiming} from './ServerTiming';
 
 declare module 'express' {
   interface Request {

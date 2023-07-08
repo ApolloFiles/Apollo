@@ -1,5 +1,5 @@
 import Crypto from 'node:crypto';
-import { WebSocket } from 'ws';
+import {WebSocket} from 'ws';
 import {
   ClientConnectMessage,
   ClientDisconnectMessage,
@@ -77,12 +77,12 @@ export default class WatchSession {
     const client = WatchSessionClient.init(clientId, displayName, this, socket);
 
     const welcomeClientList = Array.from(this.connectedClients.values())
-        .map((client) => {
-          return {
-            clientId: client.id,
-            displayName: client.displayName
-          };
-        });
+      .map((client) => {
+        return {
+          clientId: client.id,
+          displayName: client.displayName
+        };
+      });
     this.connectedClients.set(clientId, client);
 
     await client._send<WelcomeMessage>({
