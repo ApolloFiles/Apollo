@@ -27,7 +27,7 @@ RUN npm run build
 ##
 # Dev
 ##
-FROM restreamio/gstreamer:latest-prod AS dev
+FROM ducksouplab/debian-gstreamer:debian11-gstreamer1.22.4 AS dev
 RUN groupadd --gid 1000 node && \
     useradd --uid 1000 --gid 1000 --create-home --shell /bin/sh node
 
