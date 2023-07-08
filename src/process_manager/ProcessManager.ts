@@ -196,7 +196,9 @@ class ApolloChildProcess extends EventEmitter implements IChildProcess {
 
       this.emit('exit', null, null, err);
     });
-    this.spawnedProcess.once('exit', (code, signal) => {
+
+    const hasSharedStdio = this.options.stdio.find((stream) => stream !== 'pipe' && stream !== 'ignore') != null;
+    this.spawnedProcess.once(hasSharedStdio ? 'exit' : 'close', (code, signal) => {
       const err = this.options.errorOnNonZeroExit && code !== 0 ? new Error(`Child process '${this.command}' exited with non zero code (code='${code}', uniqueId='${this.uniqueId}')`) : undefined;
 
       this.emit('exit', code, signal, err);
