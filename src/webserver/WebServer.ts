@@ -202,10 +202,6 @@ export default class WebServer {
     this.app.use(async (req: express.Request, res: express.Response, next): Promise<void> => {
       if (req.session.userId != null) {
         req.user = await new UserStorage().getUser(req.session.userId);
-
-        if (req.user != null) {
-          console.debug(`Authenticated request for user ${req.user.getId()} (${req.user.getDisplayName()}) from session`);
-        }
       }
 
       res.locals.timings?.startNext('sessionEnd');
