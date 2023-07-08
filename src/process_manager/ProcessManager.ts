@@ -88,7 +88,7 @@ export default class ProcessManager {
   }
 
   private static logProcessDone(process: IProcess, logStream: Fs.WriteStream, err?: Error, additionalData?: { [key: string]: any }): void {
-    const executionTime = new Date().getTime() - process.started.getTime();
+    const executionTime = process.started == null ? 0 : new Date().getTime() - process.started.getTime();
 
     let baseMessage: string;
     if (err) {
