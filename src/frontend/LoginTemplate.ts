@@ -24,7 +24,11 @@ export class LoginTemplate extends AbstractTemplate {
       global: {
         templateId: this.templateId,
         req: {body: req.method === 'GET' ? req.query : req.body ?? {}},
-        apolloConfig: getConfig().data
+        apolloConfig: getConfig().data,
+
+        HELPERS: {
+          escapeHtml: Utils.escapeHtml
+        }
       }
     });
   }

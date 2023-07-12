@@ -22,7 +22,7 @@ export abstract class AbstractTemplate {
 
   public abstract render(req: express.Request, data?: any): string;
 
-  protected renderEjs(data: object & { global: { templateId: string, req: { body: { [key: string]: unknown } }, apolloConfig: object } }): string {
+  protected renderEjs(data: object & { global: { templateId: string, req: { body: { [key: string]: unknown } }, apolloConfig: object, HELPERS: { escapeHtml: Function } } }): string {
     Utils.deepFreeze(data.global);
 
     return Ejs.render(this.getTemplateContents(), data, {
