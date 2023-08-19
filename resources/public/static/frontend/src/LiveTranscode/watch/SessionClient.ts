@@ -99,6 +99,11 @@ export default class SessionClient {
       this.clientId = null;
       this.displayName = null;
 
+      if (event.reason === 'Invalid session ID') {
+        alert('The requested session does no longer exist! You may reload the page.');
+        return;
+      }
+
       setTimeout(() => {
         if (this.websocket == null || this.websocket.readyState > WebSocket.OPEN) {
           this.connect();
