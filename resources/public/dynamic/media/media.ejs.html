@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Media-View</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+          integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/8.4.4/swiper-bundle.min.css"
+          integrity="sha512-pJrGHWDVOeiy4UkMtHu0fpD8oLLssFcaW0fsVXUkA1/jDLopa554Z1AZo5SKtekHnnmyat0ipiP0snKDrt0GNg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesome-notifications/3.1.3/style.min.css"
+          integrity="sha512-OTW82wYvOeYGbTBnbaHnV8fiF62MbNsY+wcYvqMGANrdRAKA9U4heJkje6I0vtNNvdbic8IiKEJVzS3LH5jyQw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="/video/style.css">
+
+    <link rel="stylesheet" href="/styles/main.css">
+    <!-- TODO: Clean and merge style.css, sprax.css and video.css -->
+    <link rel="stylesheet" href="/video/sprax.css">
+    <link rel="stylesheet" href="/video/video.css">
+</head>
+
+<body>
+<div class="d-flex">
+    <div class="side-menu">
+        <img src="/logo.svg" alt="Apollo-Logo" width="48px" height="48px">
+
+        <div class="side-menu-items">
+            <div><span class="material-icons icon-inline side-menu-icon" role="button">search</span></div>
+            <div><span class="material-icons icon-inline side-menu-icon side-menu-icon-active"
+                       role="button">play_circle</span></div>
+            <div><span class="material-icons icon-inline side-menu-icon" role="button">folder</span></div>
+            <div><span class="material-icons icon-inline side-menu-icon" role="button">settings</span></div>
+        </div>
+    </div>
+
+    <!-- FIXME: inline-styles prüfen -->
+    <div class="ps-md-4 ps-md-3 ps-2 pe-lg-0 pe-2 pb-4" style="width: 93.3%;margin-left: auto;">
+        <!-- user profile -->
+        <div class="d-flex justify-content-end pt-5 pe-md-5 pe-4 pb-4">
+            <a href="#" class="user_img">
+                <img src="https://i.pravatar.cc/500?u=Apollo" alt="user image">
+            </a>
+        </div>
+
+        <p><em><strong>TODO: Ein Such-Feld?</strong></em></p>
+
+        <p class="fw_600 h3 mb-4">Media-Libraries</p>
+        <p><em><strong>TODO: Die Liste ist by-default nach activity sortiert, Nutzer kann aber sagen, dass er nach X sortiert haben will</strong></em></p>
+        <p><em><strong>TODO: Keine billo Text-Liste xd</strong></em></p>
+        <% if (locals.libraries.length > 0) { %>
+            <ul>
+                <% for (const library of locals.libraries) { %>
+                <li><a href="/media/library/<%= library.id %>"><%= library.name %></a></li>
+                <% } %>
+            </ul>
+        <% } else { %>
+            <p><em>Es existieren keine!</em></p>
+        <% } %>
+
+        <p><em><strong>TODO: Der stuff hier drunter ist Library-Übergreifend</strong></em></p>
+
+        <!-- Continue Watching -->
+        <div>
+            <h2 class="fw_600 h3 mb-4">Continue Watching</h2>
+
+            <div class="wrap_continue_watching_videos position-relative">
+                <div class="swiper s_continue_watching_videos">
+                    <div class="swiper-wrapper">
+                        <div class="swiper-slide video-thumbnail" data-debug-duplicate-element>
+                            <img src="http://localhost:8080/browse/Animemes-u3cz3d.mp4?type=thumbnail" loading="lazy" width="500"
+                                 height="416">
+
+                            <div class="progress video-progress">
+                                <div class="progress-bar" role="progressbar" aria-label="30% of video watched"
+                                     style="width: 30%"
+                                     aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar" role="progressbar" aria-label="70% of video still unwatched"
+                                     style="width: 70%" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+
+                            <div class="p-2">
+                                <p class="txt_dark fw-bold mb-0">Kikis kleiner Lieferservice</p>
+                                <p class="txt_silver">Movie</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="swiper-button-prev"><i class="fas fa-chevron-left"></i></div>
+                    <div class="swiper-button-next"><i class="fas fa-chevron-right"></i></div>
+                </div>
+                <div class="swiper-pagination pb-5"></div>
+            </div>
+        </div>
+
+        <!-- Recently added -->
+        <div>
+            <h2 class="fw_600 h3 mb-4">Recently added</h2>
+
+            <div class="position-relative">
+                <div class="swiper thumbnail_videos">
+                    <div class="swiper-wrapper">
+
+                        <div class="swiper-slide video_col" data-debug-duplicate-element>
+                            <a class="video_col_bg">
+                                <img
+                                        src="https://m.media-amazon.com/images/M/MV5BMzQ1ODFkNzItZWJmMC00NmQyLTg4OTEtZWYxNmZhZmU0MWJmXkEyXkFqcGdeQXVyNjc2NjA5MTU@._V1_.jpg"
+                                        loading="lazy"
+                                        alt="video image"
+                                        style="width: 100%;height: 100%;object-fit: cover;position: absolute;top: 0;left: 0;aspect-ratio: 3/2;"
+                                        width="354" height="500">
+                                <span class="v_tags">CC</span>
+                                <span class="v_tags">3,6/5<span class="material-icons icon-inline"
+                                                                style="color: #ffdc00;font-size: 1rem;">star</span></span>
+                            </a>
+                            <div style="width: 100%;height: 2px;background-color: #ea2d63"></div>
+
+                            <div class="py-2 px-1">
+                                <p class="txt_dark fw-bold mb-0 fs_12">Kikis kleiner Lieferservice</p>
+                                <p class="txt_silver fs_12">Movie</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="swiper-button-prev"><i class="fas fa-chevron-left"></i></div>
+                    <div class="swiper-button-next"><i class="fas fa-chevron-right"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+  for (const baseElement of document.querySelectorAll('[data-debug-duplicate-element]')) {
+    for (let i = 0; i < 15; ++i) {
+      baseElement.parentElement.append(baseElement.cloneNode(true));
+    }
+  }
+</script>
+
+<!-- TODO: Check if we can get rid of swiper and maybe even bootstrap-js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/8.4.4/swiper-bundle.min.js"
+        integrity="sha512-k2o1KZdvUi59PUXirfThShW9Gdwtk+jVYum6t7RmyCNAVyF9ozijFpvLEWmpgqkHuqSWpflsLf5+PEW6Lxy/wA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.2/js/bootstrap.bundle.min.js"
+        integrity="sha512-BOsvKbLb0dB1IVplOL9ptU1EYA+LuCKEluZWRUYG73hxqNBU85JBIBhPGwhQl7O633KtkjMv8lvxZcWP+N3V3w=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script>
+  new Swiper('.s_continue_watching_videos', {
+    simulateTouch: false,
+    pagination: {
+      el: '.wrap_continue_watching_videos .swiper-pagination',
+      clickable: true
+    },
+    navigation: {
+      nextEl: '.swiper-button-next',
+      prevEl: '.swiper-button-prev'
+    },
+    breakpoints: {
+      0: {
+        slidesPerView: 1,
+        spaceBetween: 15
+      },
+      480: {
+        slidesPerView: 2,
+        spaceBetween: 30
+      },
+      768: {
+        slidesPerView: 3,
+        spaceBetween: 30
+      },
+      992: {
+        slidesPerView: 3.9,
+        spaceBetween: 30
+      },
+      1400: {
+        slidesPerView: 4.9,
+        spaceBetween: 30
+      },
+      1800: {
+        slidesPerView: 5.9,
+        spaceBetween: 30
+      },
+      2000: {
+        slidesPerView: 6.9,
+        spaceBetween: 30
+      },
+      2400: {
+        slidesPerView: 7.9,
+        spaceBetween: 30
+      },
+      2800: {
+        slidesPerView: 8.9,
+        spaceBetween: 30
+      }
+    }
+  });
+
+  // thumbnail_videos
+  let thumbnail_videos = document.querySelectorAll('.thumbnail_videos');
+  for (let i = 0; i < thumbnail_videos.length; i++) {
+    thumbnail_videos[i].setAttribute('id', `thumbnail_videos_${i + 1}`);
+    new Swiper(`#thumbnail_videos_${i + 1}`, {
+      slidesPerView: 'auto',
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev'
+      }
+    });
+  }
+</script>
+</body>
+</html>

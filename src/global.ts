@@ -59,6 +59,14 @@ export interface ApolloConfig {
     };
   };
 
+  readonly mediaLibrary: {
+    readonly externalProviders: {
+      readonly myAnimeList: {
+        readonly clientId: string;
+      }
+    };
+  };
+
   readonly login: {
     readonly thirdParty: {
       readonly [key: string]: {

@@ -56,6 +56,14 @@ export function getConfig(): ConfigFile<ApolloConfig> {
         }
       },
 
+      mediaLibrary: {
+        externalProviders: {
+          myAnimeList: {
+            clientId: ''
+          }
+        }
+      },
+
       login: {
         thirdParty: {
           microsoft: {

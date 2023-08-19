@@ -1,5 +1,8 @@
 import Fs from 'node:fs';
 import {getAppTmpDir, getConfig, getProcessManager, getSqlDatabase} from './Constants';
+import LibraryManager from './media/libraries/LibraryManager';
+import LibraryScanner from './media/libraries/scan/LibraryScanner';
+import UserStorage from './UserStorage';
 import WebServer from './webserver/WebServer';
 
 let webServer: WebServer | undefined;
@@ -19,6 +22,16 @@ function index(): void {
 
   Fs.rmSync(getAppTmpDir(), {recursive: true, force: true});
   Fs.mkdirSync(getAppTmpDir(), {recursive: true});
+
+  new UserStorage().getUser(1)
+    .then((user) => {
+      return new LibraryManager(user!).getLibraries()
+        .then((libraries) => {
+          return new LibraryScanner().scanLibrary(libraries[0])
+            .then(() => console.log('Done scanning library.'));
+        });
+    })
+    .catch(console.error);
 
   webServer = new WebServer();
 

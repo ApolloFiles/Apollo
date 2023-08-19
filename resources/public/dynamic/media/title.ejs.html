@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Media-View</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+          integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/8.4.4/swiper-bundle.min.css"
+          integrity="sha512-pJrGHWDVOeiy4UkMtHu0fpD8oLLssFcaW0fsVXUkA1/jDLopa554Z1AZo5SKtekHnnmyat0ipiP0snKDrt0GNg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="/video/style.css">
+
+    <link rel="stylesheet" href="/styles/main.css">
+    <!-- TODO: Clean and merge style.css, sprax.css and video.css -->
+    <link rel="stylesheet" href="/video/sprax.css">
+    <link rel="stylesheet" href="/video/video.css">
+</head>
+
+<body>
+<div class="d-flex">
+    <div class="side-menu">
+        <img src="/logo.svg" alt="Apollo-Logo" width="48px" height="48px">
+
+        <div class="side-menu-items">
+            <div><span class="material-icons icon-inline side-menu-icon" role="button">search</span></div>
+            <div><span class="material-icons icon-inline side-menu-icon side-menu-icon-active" role="button">play_circle</span></div>
+            <div><span class="material-icons icon-inline side-menu-icon" role="button">folder</span></div>
+            <div><span class="material-icons icon-inline side-menu-icon" role="button">settings</span></div>
+        </div>
+    </div>
+
+    <!-- FIXME: inline-styles prüfen -->
+    <div class="ps-md-4 ps-md-3 ps-2 pe-lg-0 pe-2 pb-4" style="width: 93.3%;margin-left: auto;">
+        <!-- user profile -->
+        <div class="d-flex justify-content-end pt-5 pe-md-5 pe-4 pb-4">
+            <a href="#" class="user_img">
+                <img src="https://i.pravatar.cc/500?u=Apollo" alt="user image">
+            </a>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col video-thumbnail"><img src="/media/library/<%= locals.library.id %>/<%= locals.title.id %>/assets/poster.png" loading="lazy" width="500" height="416" style="border-radius: 10px;height: inherit"></div>
+                <div class="col">
+                    <h1 style="color: #fff;"><%= locals.title.title %></h1>
+                    <small>n Staffeln · n Folgen</small>
+
+                    <p><%- locals.global.HELPERS.escapeHtml(locals.title.synopsis ?? '').replaceAll('\n', '<br>\n') || '<em>No Synopsis available</em>' %></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="pb-3"></div>
+
+        <div class="container">
+            <!-- TODO: Bei Filmen ohne Specials etc. gibt es keine Tabs oder nur einen generischen -->
+            <% if (locals.media.size > 0) { %>
+                <ul class="nav nav-tabs" role="tablist">
+                    <% let isFirstNavTab = true; %>
+                    <% for (const mediaEntry of locals.media) { %>
+                        <% const mediaGroupName = mediaEntry[0]; %>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link<%= isFirstNavTab ? ' active' : '' %>" id="media-tab-<%= mediaGroupName %>"
+                                    data-bs-toggle="tab" data-bs-target="#media-tab-<%= mediaGroupName %>-pane" role="tab"
+                                    aria-controls="home-tab-pane" aria-selected="true"><%= mediaGroupName %></button>
+                        </li>
+                        <% isFirstNavTab = false; %>
+                    <% } %>
+                </ul>
+                <div class="tab-content">
+                    <% let isFirstTabContent = true; %>
+                    <% for (const mediaEntry of locals.media) { %>
+                        <% const mediaGroupName = mediaEntry[0]; %>
+                        <% const mediaEntries = mediaEntry[1]; %>
+                        <div class="tab-pane fade<%= isFirstTabContent ? ' show active' : '' %>" role="tabpanel" tabindex="0"
+                             id="media-tab-<%= mediaGroupName %>-pane"
+                             aria-labelledby="media-tab-<%= mediaGroupName %>">
+
+                            <ul class="list-group">
+                                <% for (const media of mediaEntries) { %>
+                                    <li class="list-group-item">
+                                        <div class="row">
+                                            <div class="col-auto d-flex align-items-center"><%= media.episode ?? '?' %></div>
+                                            <div class="col-2 video-thumbnail"><img src="/media/library/<%= locals.library.id %>/<%= locals.title.id %>/<%= Buffer.from(media.filePath).toString('base64') %>/assets/thumbnail.png" width="500" height="416" style="border-radius: 10px;height: inherit"></div>
+                                            <div class="col">
+                                                <h2 style="color: #fff;"><%= media.name %></h2>
+                                                <p>Lorem Ipsum und so</p>
+                                            </div>
+                                            <div class="col-auto d-flex align-items-center gap-2 ps-5 pe-5">
+                                                <a href="/media/watch/new?libraryId=<%= locals.library.id %>&titleId=<%= locals.title.id %>&filePath=<%= encodeURIComponent(media.filePath) %>"><span class="material-icons" style="font-size: 36px">play_circle</span></a>
+                                                <span class="material-icons" style="font-size: 36px">group</span>
+                                                <span class="material-icons" style="font-size: 36px">playlist_add</span>
+                                                <a href="/media/library/<%= locals.library.id %>/<%= locals.title.id %>/<%= Buffer.from(media.filePath).toString('base64') %>/edit" target="_blank"><span class="material-icons" style="font-size: 36px">edit</span></a>
+                                            </div>
+                                            <div class="col-auto text-end">
+                                                <%= media.durationInSeconds <= 60 ? `${media.durationInSeconds} Sek.` : `${(media.durationInSeconds / 60).toFixed(0)} Min` %>
+                                                <br>
+                                                <span class="badge bg-primary">4K</span>
+                                                <span class="badge bg-primary">CC</span>
+                                            </div>
+                                        </div>
+                                    </li>
+<!--                                    <a href="#" class="list-group-item list-group-item-action active" aria-current="true">-->
+<!--                                    <a href="#" class="list-group-item list-group-item-action">-->
+<!--                                        <div class="d-flex w-100 justify-content-between">-->
+<!--                                            <h5 class="mb-1">List group item heading</h5>-->
+<!--                                            <small class="text-body-secondary">3 days ago</small>-->
+<!--                                        </div>-->
+<!--                                        <p class="mb-1">Some placeholder content in a paragraph.</p>-->
+<!--                                        <small class="text-body-secondary">And some muted small print.</small>-->
+<!--                                    </a>-->
+                                <% } %>
+                            </ul>
+
+                            <pre><%= JSON.stringify(mediaEntries, null, 2) %></pre>
+                        </div>
+                        <% isFirstTabContent = false; %>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <strong><em>Keine Medien gefunden!</em></strong>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"
+        integrity="sha512-VK2zcvntEufaimc+efOYi622VN5ZacdnufnmX7zIhCPmjhKnOi9ZDMtg1/ug5l183f19gG1/cBstPO4D8N/Img=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</body>
+</html>
