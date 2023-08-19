@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Media-View</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+          integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="/video/style.css">
+
+    <link rel="stylesheet" href="/styles/main.css">
+    <!-- TODO: Clean and merge style.css, sprax.css and video.css -->
+    <link rel="stylesheet" href="/video/sprax.css">
+</head>
+
+<body>
+<div class="d-flex">
+    <div class="side-menu">
+        <img src="/logo.svg" alt="Apollo-Logo" width="48px" height="48px">
+
+        <div class="side-menu-items">
+            <div><span class="material-icons icon-inline side-menu-icon" role="button">search</span></div>
+            <div><span class="material-icons icon-inline side-menu-icon side-menu-icon-active"
+                       role="button">play_circle</span></div>
+            <div><span class="material-icons icon-inline side-menu-icon" role="button">folder</span></div>
+            <div><span class="material-icons icon-inline side-menu-icon" role="button">settings</span></div>
+        </div>
+    </div>
+
+    <!-- FIXME: inline-styles prüfen -->
+    <div class="ps-md-4 ps-md-3 ps-2 pe-lg-0 pe-2 pb-4" style="width: 93.3%;margin-left: auto;">
+        <!-- user profile -->
+        <div class="d-flex justify-content-end pt-5 pe-md-5 pe-4 pb-4">
+            <a href="#" class="user_img">
+                <img src="https://i.pravatar.cc/500?u=Apollo" alt="user image">
+            </a>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <h1>Editing file '<%= locals.videoAnalysis.fileName %>'</h1>
+                <p>
+                    <strong>Erkanntes Dateiformat
+                        <em>(<%= locals.videoAnalysis.probeScore %>% Zuversicht)</em>:</strong>
+                    <%= locals.videoAnalysis.formatNameLong %>
+                    <br>
+                    <strong>Erkannte Videolänge:</strong> <%= locals.videoAnalysis.duration %> Sekunden
+                </p>
+            </div>
+
+            <div class="row">
+                <p class="text-danger">Hier gespeicherte Änderungen werden als Metadaten direkt in die Datei
+                    geschrieben!</p>
+                <hr>
+            </div>
+
+            <script>
+              function submitForm() {
+                const fileTagData = collectFileTagData();
+                const streamTagData = collectStreamTagData();
+
+                fetch(location.pathname, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({fileTags: fileTagData, streamTags: streamTagData})
+                }).then(response => {
+                  if (!response.ok) {
+                    response.text()
+                      .then((body) => alert(`Failed to save changes: ${body}`));
+                    return;
+                  }
+
+                  alert('Successfully saved changes!');
+                  window.location.href = window.location.pathname;
+                });
+              }
+
+              document.addEventListener('DOMContentLoaded', () => {
+                addEmptyFileTagRow();
+
+                <% for (const stream of locals.videoAnalysis.streams) { %>
+                    addEmptyStreamTagRow('<%= stream.index %>');
+                <% } %>
+              });
+            </script>
+
+            <script>
+              function addEmptyFileTagRow() {
+                const tagInputs = document.createElement('div');
+                tagInputs.classList.add('input-group');
+                tagInputs.innerHTML = `
+                    <div class="col-1">
+                        <input type="text" data-editKey="tagOrder" pattern="[0-9]+" aria-label="Order index used for sorting" class="form-control" placeholder="Order" style="display: none">
+                    </div>
+
+                    <input type="text" data-editKey="tagKey" aria-label="Tag identifier/key" class="form-control" placeholder="Key">
+                    <input type="text" data-editKey="tagValue" aria-label="Tag value for given identifier/key" class="form-control" placeholder="Value">
+
+                    <span class="btn btn-danger material-icons" onclick="deleteFileTagRow(event)">delete</span>`;
+
+                document.getElementById('fileTagRow').appendChild(tagInputs);
+              }
+
+              function deleteFileTagRow(event) {
+                const tagInputs = event.target.parentElement;
+                tagInputs.remove();
+
+                if (collectFileTagData().length === 0) {
+                  addEmptyFileTagRow();
+                }
+              }
+
+              /** @return {Array<{order: number, key: string, value: string}>} */
+              function collectFileTagData() {
+                const tagData = [];
+
+                const tagRows = document.querySelectorAll('#fileTagRow .input-group');
+                for (const tagRow of tagRows) {
+                  const order = tagRow.querySelector('[data-editKey="tagOrder"]').value;
+                  const key = tagRow.querySelector('[data-editKey="tagKey"]').value;
+                  const value = tagRow.querySelector('[data-editKey="tagValue"]').value;
+
+                  tagData.push({order, key, value});
+                }
+
+                return tagData;
+              }
+            </script>
+
+             <div>
+                <h2>Common (Mkv) Tags:</h2>
+                <% const commonMkvTags = {
+                    Titles: {
+                        TITLE: 'The title of this item. For example, for music you might label this “Canon in D”, or for video’s audio track you might use “English 5.1” This is akin to the “TIT2” tag in [@!ID3v2].',
+                        SUBTITLE: 'Sub Title of the entity.',
+                        ORIGINAL_MEDIA_TYPE: 'Describes the original type of the media, such as, “DVD”, “CD”, “computer image,” “drawing,” “lithograph,” and so forth. This is akin to the “TMED” tag in [@!ID3v2].',
+                    },
+
+                    'Search and Classification': {
+                        DESCRIPTION: 'A short description of the content, such as “Two birds flying.”',
+                        SYNOPSIS: 'A description of the story line of the item.',
+                        CONTENT_TYPE: 'The type of the item. e.g., Documentary, Feature Film, Cartoon, Music Video, Music, Sound FX, …',
+
+                        COUNTRY: 'The name of the country that is meant to have other tags inside (using nested tags) to country specific information about the item, in the Matroska countries form, i.e. [@!BCP47] two-letter region subtag, without the UK exception. All tags in this list can be used “under” the COUNTRY_SPECIFIC tag like LABEL, PUBLISH_RATING, etc.',
+                        LAW_RATING: 'Depending on the COUNTRY it’s the format of the rating of a movie (P, R, X in the USA, an age in other countries or a URI defining a logo).',
+                    },
+
+                    'Organization Information': {
+                        TOTAL_PARTS: 'Total number of parts defined at the first lower level. (e.g., if TargetType is ALBUM, the total number of tracks of an audio CD)',
+                        PART_NUMBER: 'Number of the current part of the current level. (e.g., if TargetType is TRACK, the track number of an audio CD)',
+                        PART_OFFSET: 'A number to add to PART_NUMBER, when the parts at that level don’t start at 1. (e.g., if TargetType is TRACK, the track number of the second audio CD)',
+                    },
+
+                    'Temporal Information': {
+                        DATE_RELEASED: 'The time that the item was originally released. This is akin to the “TDRL” tag in [@!ID3v2].',
+                        DATE_ENCODED: 'The time that the encoding of this item was completed began. This is akin to the “TDEN” tag in [@!ID3v2].',
+                        DATE_TAGGED: 'The time that the tags were done for this item. This is akin to the “TDTG” tag in [@!ID3v2].',
+                        DATE_DIGITIZED: 'The time that the item was transferred to a digital medium. This is akin to the “IDIT” tag in [@?RIFF.tags].',
+                    },
+
+                    Identifiers: {
+                        IMDB: 'Internet Movie Database [@!IMDb] identifier. “tt” followed by at least 7 digits for Movies, TV Shows, and Episodes.',
+                        TMDB: 'The Movie DB “movie_id” or “tv_id” identifier for movies/TV shows [@!MovieDB]. The variable length digits string MUST be prefixed with either “movie/” or “tv/”.',
+                        TVDB2: 'The TV Database [@!TheTVDB] tag which can include movies. The variable length digits string representing a “Series ID”, “Episode ID” or “Movie ID” identifier MUST be prefixed with “series/”, “episodes/” or “movies/” respectively.',
+                    },
+
+                    'Personal & Technical Information': {
+                        COMMENT: 'Any comment related to the content.',
+                        ENCODER_SETTINGS: 'A list of the settings used for encoding this item. No specific format.',
+                    },
+
+                    Legal: {
+                        COPYRIGHT: 'The copyright information as per the copyright holder. This is akin to the “TCOP” tag in [@!ID3v2].',
+                        LICENSE: 'The license applied to the content (like Creative Commons variants).',
+                        TERMS_OF_USE: 'The terms of use for this item. This is akin to the “USER” tag in [@!ID3v2].',
+                    },
+                }; %>
+                <% const renderCommonTags = (tags) => { %>
+                    <% for (const tagCategory in tags) { %>
+                        <h4><%= tagCategory %></h4>
+                        <% let i = 0; %>
+                        <% for (const tagKey in tags[tagCategory]) { %>
+                            <%= i > 0 ? ', ' : '' %>
+                            <pre class="d-inline" title="<%= tags[tagCategory][tagKey] %>"><%= tagKey %></pre>
+                            <% ++i; %>
+                        <% } %>
+                    <% } %>
+                <% }; %>
+                <% renderCommonTags(commonMkvTags); %>
+            </div>
+
+            <div class="pb-3"></div>
+
+            <div class="row" id="fileTagRow">
+                <h2>File-Tags <span class="btn btn-sm btn-primary material-icons" onclick="addEmptyFileTagRow()">add</span></h2>
+
+                <% let fileTagIndex = 0; %>
+                <% const orderedFileTags = Object.keys(locals.videoAnalysis.tags).sort(); %>
+                <% for (const tagKey of orderedFileTags) { %>
+                <% const tagValue = locals.videoAnalysis.tags[tagKey]; %>
+                <div class="input-group">
+                    <div class="col-1">
+                        <input type="text" data-editKey="tagOrder" pattern="[0-9]+" style="display: none"
+                               aria-label="Order index used for sorting" class="form-control"
+                               value="<%= fileTagIndex += 10; %>" placeholder="Order">
+                    </div>
+
+                    <input type="text" data-editKey="tagKey" aria-label="Tag identifier/key" class="form-control"
+                           placeholder="Key" value="<%= tagKey %>" pattern="[a-zA-Z0-9_]+">
+                    <input type="text" data-editKey="tagValue" aria-label="Tag value for given identifier/key"
+                           class="form-control" placeholder="Value" value="<%= tagValue %>" required>
+
+                    <span class="btn btn-danger material-icons" onclick="deleteFileTagRow(event)">delete</span>
+                </div>
+                <% } %>
+            </div>
+
+            <hr>
+
+            <script>
+              function addEmptyStreamTagRow(streamIndex) {
+                const tagInputs = document.createElement('div');
+                tagInputs.classList.add('input-group');
+                tagInputs.innerHTML = `
+                            <input type="hidden" data-editKey="tagStreamIndex"
+                                   class="form-control" value="${streamIndex}">
+
+                            <div class="col-1">
+                                <input type="text" data-editKey="tagOrder" pattern="[0-9]+"
+                                       aria-label="Order index used for sorting" class="form-control"
+                                       placeholder="Order" style="display: none">
+                            </div>
+
+                            <input type="text" data-editKey="tagKey" aria-label="Tag identifier/key" class="form-control"
+                                   placeholder="Key" pattern="[a-zA-Z0-9_]+">
+                            <input type="text" data-editKey="tagValue" aria-label="Tag value for given identifier/key"
+                                   class="form-control" placeholder="Value" required>
+
+                            <span class="btn btn-danger material-icons" onclick="deleteStreamTagRow(event)">delete</span>`;
+
+                document.querySelector(`#streamTagRow [data-streamIndex="${streamIndex}"]`).appendChild(tagInputs);
+              }
+
+              function deleteStreamTagRow(event) {
+                event.target.parentElement.remove();
+
+                if (collectStreamTagData().length === 0) {
+                  addEmptyStreamTagRow();
+                }
+              }
+
+              /** @return {Array<{streamIndex: number, order: number, key: string, value: string}>} */
+              function collectStreamTagData() {
+                const tagData = [];
+
+                document.querySelectorAll('#streamTagRow .input-group').forEach((tagInputs) => {
+                  const streamIndex = parseInt(tagInputs.querySelector('[data-editKey="tagStreamIndex"]').value);
+                  const order = parseInt(tagInputs.querySelector('[data-editKey="tagOrder"]').value);
+                  const key = tagInputs.querySelector('[data-editKey="tagKey"]').value;
+                  const value = tagInputs.querySelector('[data-editKey="tagValue"]').value;
+
+                  tagData.push({streamIndex, order, key, value});
+                });
+
+                return tagData;
+              }
+            </script>
+
+            <div>
+                <h2>Common (Mkv-Stream) Tags:</h2>
+                <% const commonStreamTags = {
+                    Titles: {
+                        TITLE: 'The title of this item. For example, for music you might label this “Canon in D”, or for video’s audio track you might use “English 5.1” This is akin to the “TIT2” tag in [@!ID3v2].',
+                    },
+
+                    Language: {
+                        Language: 'ISO639-2 (z.B. eng, deu, jpn=Japanisch, und=undefined); Muss ignoriert werden, wenn LanguageBCP47-Tag vorhanden',
+                        LanguageBCP47: 'BCP47 (z.B. en, en-US, de, de-DE, ja); Wenn vorhanden muss ein Language-Tag ignoriert werden',
+                    }
+                }; %>
+                <% renderCommonTags(commonStreamTags); %>
+            </div>
+
+            <div class="pb-3"></div>
+
+            <div class="row" id="streamTagRow">
+                <h2>Streams</h2>
+
+                <% for (const stream of locals.videoAnalysis.streams) { %>
+                    <h3><%= stream.index %> <%= stream.codecType %> <small>(<%= stream.codecNameLong %>)</small> <span class="btn btn-sm btn-primary material-icons" onclick="addEmptyStreamTagRow('<%= stream.index %>')">add</span></h3>
+
+                    <div class="row" data-streamIndex="<%= stream.index %>">
+                        <% let streamTagIndex = 0; %>
+                        <% const orderedStreamTagKeys = Object.keys(stream.tags).sort(); %>
+                        <% for (const tagKey of orderedStreamTagKeys) { %>
+                            <% const tagValue = stream.tags[tagKey]; %>
+                            <div class="input-group">
+                                <input type="hidden" data-editKey="tagStreamIndex"
+                                       class="form-control" value="<%= stream.index %>">
+
+                                <div class="col-1">
+                                    <input type="text" data-editKey="tagOrder" pattern="[0-9]+"
+                                           aria-label="Order index used for sorting" class="form-control"
+                                           value="<%= streamTagIndex += 10; %>" placeholder="Order" style="display: none">
+                                </div>
+
+                                <input type="text" data-editKey="tagKey" aria-label="Tag identifier/key" class="form-control"
+                                       placeholder="Key" value="<%= tagKey %>" pattern="[a-zA-Z0-9_]+">
+                                <input type="text" data-editKey="tagValue" aria-label="Tag value for given identifier/key"
+                                       class="form-control" placeholder="Value" value="<%= tagValue %>" required>
+
+                                <span class="btn btn-danger material-icons" onclick="deleteStreamTagRow(event)">delete</span>
+                            </div>
+                        <% } %>
+                    </div>
+                <% } %>
+            </div>
+
+            <hr>
+
+            <div class="row">
+                <h2>Chapters</h2>
+            </div>
+
+            <!-- save button -->
+            <div class="row justify-content-center">
+                <div class="col-1">
+                    <button class="btn btn-primary" onclick="submitForm()">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"
+        integrity="sha512-VK2zcvntEufaimc+efOYi622VN5ZacdnufnmX7zIhCPmjhKnOi9ZDMtg1/ug5l183f19gG1/cBstPO4D8N/Img=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</body>
+</html>

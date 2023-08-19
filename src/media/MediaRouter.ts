@@ -112,6 +112,292 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
     });
   });
 
+  router.use('/library/:libraryId/:titleId/:requestedMediaFilePathBase64/edit', (req, res, next) => {
+    handleRequestRestfully(req, res, next, {
+      get: async () => {
+        const requestedLibraryId = req.params.libraryId;
+        const requestedTitleId = req.params.titleId;
+        const requestedMediaFilePathBase64 = req.params.requestedMediaFilePathBase64;
+
+        // TODO: early escapes if 'requestedLibraryId', 'requestedTitleId' or 'requestedMediaId' are not numeric
+
+        const user = WebServer.getUser(req);
+        const library = await new LibraryManager(user).getLibrary(requestedLibraryId);
+        if (library == null) {
+          res
+            .status(404)
+            .type('text/plain')
+            .send(`Library with id '${requestedLibraryId}' not found!`);
+          return;
+        }
+
+        const requestedMediaFilePath = Buffer.from(requestedMediaFilePathBase64, 'base64').toString('utf8');
+        const libraryTitleMedia = await library.fetchMedia(requestedTitleId, requestedMediaFilePath);
+        if (libraryTitleMedia == null) {
+          res
+            .status(404)
+            .type('text/plain')
+            .send(`Media with path '${requestedMediaFilePath}' for title '${requestedTitleId}' not found in library '${library.id}'!`);
+          return;
+        }
+
+        const mediaFile = user.getDefaultFileSystem().getFile(libraryTitleMedia.filePath);
+        if (mediaFile.getOwner().getId() !== user.getId()) {
+          res
+            .status(403)
+            .type('text/plain')
+            .send();
+          return;
+        }
+
+        const mediaFileStat = await mediaFile.stat();
+        if (!mediaFileStat.isFile()) {
+          res
+            .status(404)
+            .type('text/plain')
+            .send(`File '${requestedMediaFilePath}' is not a file!`);
+          return;
+        }
+
+        const absolutePathOnHost = mediaFile.getAbsolutePathOnHost();
+        if (absolutePathOnHost == null) {
+          res
+            .status(404)
+            .type('text/plain')
+            .send(`File '${requestedMediaFilePath}' does not have an absolute path on the host!`);
+          return;
+        }
+
+        const videoAnalysis = await VideoAnalyser.analyze(absolutePathOnHost, true);
+        const chapters = videoAnalysis.chapters.map(chapter => ({
+          start: chapter.start,
+          end: chapter.end,
+          tags: chapter.tags
+        }));
+        const streams = videoAnalysis.streams.map(stream => ({
+          index: stream.index,
+          codecType: stream.codecType,
+          codecNameLong: stream.codecNameLong,
+          tags: stream.tags
+        }));
+
+        res.send(new MediaLibraryEditMediaTemplate().render(req, {
+          videoAnalysis: {
+            fileName: mediaFile.getName(),
+            formatNameLong: videoAnalysis.file.formatNameLong,
+            probeScore: videoAnalysis.file.probeScore,
+            duration: videoAnalysis.file.duration,
+
+            tags: videoAnalysis.file.tags,
+            chapters,
+            streams
+          }
+        }));
+      },
+
+      post: async () => {
+        const requestedLibraryId = req.params.libraryId;
+        const requestedTitleId = req.params.titleId;
+        const requestedMediaFilePathBase64 = req.params.requestedMediaFilePathBase64;
+
+        const user = WebServer.getUser(req);
+        const library = await new LibraryManager(user).getLibrary(requestedLibraryId);
+        if (library == null) {
+          res
+            .status(404)
+            .type('text/plain')
+            .send(`Library with id '${requestedLibraryId}' not found!`);
+          return;
+        }
+
+        const requestedMediaFilePath = Buffer.from(requestedMediaFilePathBase64, 'base64').toString('utf8');
+        const libraryTitleMedia = await library.fetchMedia(requestedTitleId, requestedMediaFilePath);
+        if (libraryTitleMedia == null) {
+          res
+            .status(404)
+            .type('text/plain')
+            .send(`Media with path '${requestedMediaFilePath}' for title '${requestedTitleId}' not found in library '${library.id}'!`);
+          return;
+        }
+
+        const mediaFile = user.getDefaultFileSystem().getFile(libraryTitleMedia.filePath);
+        const mediaFileStat = await mediaFile.stat();
+        if (!mediaFileStat.isFile()) {
+          res
+            .status(404)
+            .type('text/plain')
+            .send(`File '${requestedMediaFilePath}' is not a file!`);
+          return;
+        }
+
+        const absolutePathOnHost = mediaFile.getAbsolutePathOnHost();
+        if (absolutePathOnHost == null) {
+          res
+            .status(404)
+            .type('text/plain')
+            .send(`File '${requestedMediaFilePath}' does not have an absolute path on the host!`);
+          return;
+        }
+
+        await WebServer.runMiddleware(req, res, express.json());
+
+        const reqBodyFileTags = req.body?.fileTags;
+        if (!Array.isArray(reqBodyFileTags)) {
+          res
+            .status(400)
+            .send('Invalid request body (fileTags not an array)!');
+          return;
+        }
+
+        const reqBodyStreamTags = req.body?.streamTags;
+        if (!Array.isArray(reqBodyStreamTags)) {
+          res
+            .status(400)
+            .send('Invalid request body (streamTags not an array)!');
+          return;
+        }
+
+        const fileTagsToWrite: { key: string, value: string }[] = [];
+
+        reqBodyFileTags.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        for (const tag of reqBodyFileTags) {
+          if (tag.key == null || tag.value == null) {
+            throw new Error(`Invalid fileTag (key or value null): ${JSON.stringify(tag)}`);
+          }
+
+          if (tag.key.trim() == '') {
+            if (tag.value.trim() != '') {
+              res
+                .status(400)
+                .send(`Invalid fileTag (empty key but non-empty value): ${JSON.stringify(tag)}`);
+              return;
+            }
+            continue;
+          }
+
+          if (!/^[a-z0-9_]+$/i.test(tag.key.trim())) {
+            res
+              .status(400)
+              .send(`Invalid fileTag (key contains invalid characters): ${JSON.stringify(tag)}`);
+            return;
+          }
+          if (fileTagsToWrite.find(t => t.key == tag.key.trim()) != null) {
+            res
+              .status(400)
+              .send(`Invalid fileTag (duplicate key): ${JSON.stringify(tag)}`);
+            return;
+          }
+
+          fileTagsToWrite.push({
+            key: tag.key.trim(),
+            value: tag.value.trim()
+          });
+        }
+
+        const streamTagsToWrite: { [streamIndex: number]: ({ key: string, value: string }[]) } = {};
+
+        reqBodyStreamTags.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        for (const tag of reqBodyStreamTags) {
+          const streamIndex = tag.streamIndex;
+          if (!StringUtils.isNumeric(streamIndex)) {
+            throw new Error(`Invalid streamTag (streamIndex not numeric): ${JSON.stringify(tag)}`);
+          }
+
+          const streamIndexNumber = parseInt(streamIndex);
+          if (streamTagsToWrite[streamIndexNumber] == null) {
+            streamTagsToWrite[streamIndexNumber] = [];
+          }
+          const streamTags = streamTagsToWrite[streamIndexNumber];
+
+          if (tag.key == null || tag.value == null) {
+            throw new Error(`Invalid streamTag (key or value null): ${JSON.stringify(tag)}`);
+          }
+
+          if (tag.key.trim() == '') {
+            if (tag.value.trim() != '') {
+              res
+                .status(400)
+                .send(`Invalid streamTag (empty key but non-empty value): ${JSON.stringify(tag)}`);
+              return;
+            }
+            continue;
+          }
+
+          if (!/^[a-z0-9_-]+$/i.test(tag.key.trim())) {
+            res
+              .status(400)
+              .send(`Invalid streamTag (key contains invalid characters): ${JSON.stringify(tag)}`);
+            return;
+          }
+          if (streamTags.find(t => t.key == tag.key.trim()) != null) {
+            res
+              .status(400)
+              .send(`Invalid streamTag (duplicate key): ${JSON.stringify(tag)}`);
+            return;
+          }
+
+          streamTags.push({
+            key: tag.key.trim(),
+            value: tag.value.trim()
+          });
+        }
+
+        const args = [
+          '-bitexact',
+          '-n',
+
+          '-i', absolutePathOnHost,
+          '-map', '0',
+          '-c', 'copy',
+
+          '-map_metadata:g', '-1'
+        ];
+
+        for (const streamIndex of Object.keys(streamTagsToWrite)) {
+          args.push(`-map_metadata:s:${streamIndex}`, '-1');
+        }
+
+        for (const tag of fileTagsToWrite) {
+          args.push('-metadata', `${tag.key}=${tag.value}`);
+        }
+
+        for (const streamIndex of Object.keys(streamTagsToWrite)) {
+          const streamTags = streamTagsToWrite[parseInt(streamIndex)];
+          for (const tag of streamTags) {
+            args.push(`-metadata:s:${streamIndex}`, `${tag.key}=${tag.value}`);
+          }
+        }
+
+        const temporaryFileName = `${mediaFile.getName()}.${Crypto.randomUUID()}.${Path.extname(mediaFile.getName())}`;
+        const temporaryFile = user.getDefaultFileSystem().getFile(Path.join(mediaFile.getPath(), '..', temporaryFileName));
+        const temporaryFileAbsolutePath = temporaryFile.getAbsolutePathOnHost();
+        if (temporaryFileAbsolutePath == null) {
+          throw new Error(`Temporary file '${temporaryFileName}' does not have an absolute path on the host!`);
+        }
+        args.push(temporaryFileAbsolutePath);
+
+        await user.getDefaultFileSystem().acquireLock(req, temporaryFile, async (temporaryFileWriteable) => {
+          const childProcess = await new ProcessBuilder('ffmpeg', args)
+            .errorOnNonZeroExit()
+            .runPromised();
+
+          if (childProcess.err) {
+            await temporaryFileWriteable.deleteIgnoringTrashBin({force: true});
+            throw childProcess.err;
+          }
+
+          await user.getDefaultFileSystem().acquireLock(req, mediaFile, async (mediaFileWriteable) => {
+            await temporaryFileWriteable.move(mediaFileWriteable);
+          });
+
+          res
+            .status(200)
+            .send({success: true});
+        });
+      }
+    });
+  });
+
   router.use('/library/:libraryId/:titleId/:requestedMediaFilePathBase64/assets/:fileName?', (req, res, next) => {
     handleRequestRestfully(req, res, next, {
       get: async () => {
