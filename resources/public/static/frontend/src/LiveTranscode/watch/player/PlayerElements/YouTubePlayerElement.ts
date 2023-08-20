@@ -1,4 +1,7 @@
-import PlayerElement, { PlayerEvents } from './PlayerElement';
+import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import {Media} from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import SubtitleTrack from '../subtitles/SubtitleTrack';
+import PlayerElement, {PlayerEvents} from './PlayerElement';
 
 export default class YouTubePlayerElement extends PlayerElement {
   private static youTubeIframeApiLoaded = false;
@@ -60,11 +63,18 @@ export default class YouTubePlayerElement extends PlayerElement {
     return this.ytPlayer.getPlayerState() === pausedState;
   }
 
-  async loadMedia(src?: string, poster?: string): Promise<void> {
+  async loadMedia(media: CommunicationProtocol.Media): Promise<void> {
     this.destroyPlayer();
 
     await YouTubePlayerElement.loadYouTubeIframeApi();
-    this.ytPlayer = await YouTubePlayerElement.createYouTubePlayer(this.container, src ?? null, true, 'en');
+    this.ytPlayer = await YouTubePlayerElement.createYouTubePlayer(this.container, media.uri ?? null, true, 'en');
+  }
+
+  loadSubtitles(media: Media): void {
+    if (media.metadata?.subtitles) {
+      // no-op
+      console.warn('Unable to load custom subtitles for YouTube player.');
+    }
   }
 
   destroyPlayer(): void {
@@ -80,8 +90,17 @@ export default class YouTubePlayerElement extends PlayerElement {
     this.ytPlayer.pauseVideo();
   }
 
-  getTextTracks(): TextTrack[] {
+  getSubtitleTracks(): SubtitleTrack[] {
     return [];
+  }
+
+  addSubtitleTrack(track: SubtitleTrack): void {
+    // no-op
+    console.warn('Adding custom subtitles is not supported when using the YouTube player.');
+  }
+
+  clearSubtitleTracks(): void {
+    // no-op
   }
 
   getBufferedRanges(): { start: number; end: number }[] {

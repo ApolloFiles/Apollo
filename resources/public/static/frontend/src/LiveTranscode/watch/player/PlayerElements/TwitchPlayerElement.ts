@@ -1,4 +1,7 @@
-import PlayerElement, { PlayerEvents } from './PlayerElement';
+import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import {Media} from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import SubtitleTrack from '../subtitles/SubtitleTrack';
+import PlayerElement, {PlayerEvents} from './PlayerElement';
 
 export default class TwitchPlayerElement extends PlayerElement {
   private static loadedTwitchEmbedApi = false;
@@ -49,7 +52,7 @@ export default class TwitchPlayerElement extends PlayerElement {
     return this.twitchPlayer?.isPaused() ?? true;
   }
 
-  async loadMedia(src?: string, poster?: string): Promise<void> {
+  async loadMedia(media: CommunicationProtocol.Media): Promise<void> {
     this.destroyPlayer();
 
     await TwitchPlayerElement.loadTwitchEmbedApi();
@@ -59,10 +62,17 @@ export default class TwitchPlayerElement extends PlayerElement {
     this.twitchPlayer = new TwitchPlayerClass(this.container, {
       width: '100%',
       height: '100%',
-      channel: src,
+      channel: media.uri,
       autoplay: true
     });
     (window as any).TWITCH_PLAYER = this.twitchPlayer;
+  }
+
+  loadSubtitles(media: Media): void {
+    if (media.metadata?.subtitles) {
+      // no-op
+      console.warn('Unable to load custom subtitles for YouTube player.');
+    }
   }
 
   destroyPlayer(): void {
@@ -78,8 +88,17 @@ export default class TwitchPlayerElement extends PlayerElement {
     this.twitchPlayer.pause();
   }
 
-  getTextTracks(): TextTrack[] {
+  getSubtitleTracks(): SubtitleTrack[] {
     return [];
+  }
+
+  addSubtitleTrack(track: SubtitleTrack): void {
+    // no-op
+    console.warn('Adding custom subtitles is not supported when using the Twitch player.');
+  }
+
+  clearSubtitleTracks(): void {
+    // no-op
   }
 
   getBufferedRanges(): { start: number, end: number }[] {

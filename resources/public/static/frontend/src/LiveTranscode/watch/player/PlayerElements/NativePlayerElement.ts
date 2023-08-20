@@ -1,7 +1,13 @@
-import PlayerElement, { PlayerEvents } from './PlayerElement';
+import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import ApolloVideoPlayer from '../ApolloVideoPlayer';
+import AssSubtitleTrack from '../subtitles/AssSubtitleTrack';
+import NativeSubtitleTrack from '../subtitles/NativeSubtitleTrack';
+import SubtitleTrack from '../subtitles/SubtitleTrack';
+import PlayerElement, {PlayerEvents} from './PlayerElement';
 
 export default class NativePlayerElement extends PlayerElement {
   protected readonly videoElement: HTMLVideoElement;
+  private readonly subtitleTracks: SubtitleTrack[] = [];
 
   constructor(container: HTMLElement) {
     super(container);
@@ -52,13 +58,33 @@ export default class NativePlayerElement extends PlayerElement {
     return this.videoElement.paused;
   }
 
-  async loadMedia(src?: string, poster?: string): Promise<void> {
-    this.videoElement.poster = poster ?? '';
-    this.videoElement.src = src ?? '';
+  async loadMedia(media: CommunicationProtocol.Media): Promise<void> {
+    this.videoElement.poster = media.metadata?.posterUri ?? '';
+    this.videoElement.src = media.uri ?? '';
+  }
+
+  loadSubtitles(media: CommunicationProtocol.Media, videoPlayer: ApolloVideoPlayer): void {
+    if (media.metadata?.subtitles == null) {
+      return;
+    }
+
+    for (const subtitle of media.metadata.subtitles) {
+      if (subtitle.codecName === 'webvtt') {
+        this.addSubtitleTrack(new NativeSubtitleTrack(subtitle, media.metadata, videoPlayer));
+      } else if (subtitle.codecName === 'ass' || subtitle.codecName === 'ssa') {
+        this.addSubtitleTrack(new AssSubtitleTrack(subtitle, media.metadata, videoPlayer));
+      } else {
+        console.error('Unable to load subtitle with codecName:', subtitle.codecName);
+      }
+    }
   }
 
   destroyPlayer(): void {
     this.videoElement.remove();
+
+    for (const subtitleTrack of this.getSubtitleTracks()) {
+      subtitleTrack.deactivate();
+    }
   }
 
   async play(): Promise<void> {
@@ -69,8 +95,20 @@ export default class NativePlayerElement extends PlayerElement {
     this.videoElement.pause();
   }
 
-  getTextTracks(): TextTrack[] {
-    return Array.from(this.videoElement.textTracks);
+  getSubtitleTracks(): SubtitleTrack[] {
+    // TODO: Take `this.videoElement.textTracks` into account
+    return this.subtitleTracks;
+  }
+
+  addSubtitleTrack(track: SubtitleTrack): void {
+    this.subtitleTracks.push(track);
+  }
+
+  clearSubtitleTracks(): void {
+    for (const subtitleTrack of this.subtitleTracks) {
+      subtitleTrack.deactivate();
+    }
+    this.subtitleTracks.length = 0;
   }
 
   getBufferedRanges(): { start: number, end: number }[] {

@@ -1,4 +1,5 @@
-import { PlayerMode } from '../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import * as CommunicationProtocol from '../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import {PlayerMode} from '../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import MediaSession from '../MediaSession';
 import GlobalPlayerShortcuts from './GlobalPlayerShortcuts';
 import PlayerController from './PlayerController';
@@ -6,6 +7,7 @@ import PlayerControls from './PlayerControls';
 import HlsPlayerElement from './PlayerElements/HlsPlayerElement';
 import LiveTranscodePlayerElement from './PlayerElements/LiveTranscodePlayerElement';
 import NativePlayerElement from './PlayerElements/NativePlayerElement';
+import PlayerElement from './PlayerElements/PlayerElement';
 import TwitchPlayerElement from './PlayerElements/TwitchPlayerElement';
 import YouTubePlayerElement from './PlayerElements/YouTubePlayerElement';
 import PlayerState from './PlayerState';
@@ -17,14 +19,14 @@ export default class ApolloVideoPlayer {
   private readonly playerShortcut: GlobalPlayerShortcuts;
   private readonly mediaSession: MediaSession;
 
-  private readonly videoPlayerWrapper: HTMLDivElement;
+  readonly _videoPlayerWrapper: HTMLDivElement;
 
-  _currentMedia: { type: PlayerMode, src: string } | null = null;
+  _currentMedia: CommunicationProtocol.Media | null = null;
 
   constructor(mediaSessionId: string) {
     const rootContainer = document.getElementById('debug5374890')!;
     const playerWithControlsContainer = rootContainer.querySelector<HTMLElement>('.video-player-container')!;
-    this.videoPlayerWrapper = playerWithControlsContainer.querySelector<HTMLDivElement>('.video-player-wrapper')!;
+    this._videoPlayerWrapper = playerWithControlsContainer.querySelector<HTMLDivElement>('.video-player-wrapper')!;
 
     const playerControlsContainer = playerWithControlsContainer.querySelector<HTMLElement>('[data-video-player-element="player-controls"]')!;
     this._playerState = new PlayerState(playerWithControlsContainer);
@@ -32,7 +34,7 @@ export default class ApolloVideoPlayer {
     this.mediaSession = new MediaSession(mediaSessionId, this);
 
     this.playerController = new PlayerController(this._playerState, this.mediaSession);
-    this._controls = new PlayerControls(this.videoPlayerWrapper, playerControlsContainer, playerWithControlsContainer, this._playerState, this.playerController);
+    this._controls = new PlayerControls(this._videoPlayerWrapper, playerControlsContainer, playerWithControlsContainer, this._playerState, this.playerController);
     this.playerShortcut = new GlobalPlayerShortcuts(playerWithControlsContainer, this._controls, this.playerController, this._playerState);
 
     this._playerState.on('stateChanged', () => {
@@ -44,17 +46,20 @@ export default class ApolloVideoPlayer {
 
     const existingVideoElement = this.findVideoElement();
     if (existingVideoElement != null && (existingVideoElement.src ?? '').length > 0) {
-      const src = existingVideoElement.src;
-      const poster = existingVideoElement.poster || undefined;
-
-      this._changeMedia('native', src, poster).catch(console.error);
+      this._changeMedia({
+        mode: 'native',
+        uri: existingVideoElement.src,
+        metadata: {
+          posterUri: existingVideoElement.poster || undefined
+        }
+      }).catch(console.error);
     } else {
-      this._changeMedia(null, null).catch(console.error);
+      this._changeMedia(null).catch(console.error);
     }
   }
 
   private findVideoElement(): HTMLVideoElement | null {
-    return this.videoPlayerWrapper.querySelector<HTMLVideoElement>('video');
+    return this._videoPlayerWrapper.querySelector<HTMLVideoElement>('video');
   }
 
   async requestMediaChange(mode: PlayerMode | null, uri: string | null): Promise<void> {
@@ -67,49 +72,53 @@ export default class ApolloVideoPlayer {
     await this.mediaSession.changeMedia({mode, uri}, ownClientId);
   }
 
-  async _changeMedia(type: PlayerMode | null, src: string | null, poster?: string): Promise<void> {
+  async _changeMedia(media: CommunicationProtocol.Media | null): Promise<void> {
     this._playerState._prepareDestroyOfReferenceElement();
-    this.videoPlayerWrapper.innerHTML = '';
+    this._videoPlayerWrapper.innerHTML = '';
     this._controls.setEnabled(false);
 
-    if (type == null || src == null) {
+    if (media == null) {
       const placeholderElement = document.createElement('div');
       placeholderElement.classList.add('placeholder-text');
       placeholderElement.innerText = 'No media selected';
 
-      this.videoPlayerWrapper.appendChild(placeholderElement);
+      this._videoPlayerWrapper.appendChild(placeholderElement);
       this._controls.setEnabled(true);
-    } else if (type == 'native') {
-      const player = new NativePlayerElement(this.videoPlayerWrapper);
-      await player.loadMedia(src, poster);
+    } else if (media.mode == 'native') {
+      const player = new NativePlayerElement(this._videoPlayerWrapper);
+      await player.loadMedia(media);
       this._playerState._setReferenceElement(player);
 
       this._controls.setEnabled(true);
-    } else if (type == 'hls') {
-      const player = new HlsPlayerElement(this.videoPlayerWrapper);
-      await player.loadMedia(src, poster);
+    } else if (media.mode == 'hls') {
+      const player = new HlsPlayerElement(this._videoPlayerWrapper);
+      await player.loadMedia(media);
       this._playerState._setReferenceElement(player);
 
       this._controls.setEnabled(true);
-    } else if (type == 'live_transcode') {
-      const player = new LiveTranscodePlayerElement(this.videoPlayerWrapper);
-      await player.loadMedia(src, poster);
+    } else if (media.mode == 'live_transcode') {
+      const player = new LiveTranscodePlayerElement(this._videoPlayerWrapper);
+      await player.loadMedia(media);
       this._playerState._setReferenceElement(player);
 
       this._controls.setEnabled(true);
-    } else if (type == 'youtube') {
-      const player = new YouTubePlayerElement(this.videoPlayerWrapper);
-      await player.loadMedia(src, poster);
+    } else if (media.mode == 'youtube') {
+      const player = new YouTubePlayerElement(this._videoPlayerWrapper);
+      await player.loadMedia(media);
       this._playerState._setReferenceElement(player);
-    } else if (type == 'twitch') {
-      const player = new TwitchPlayerElement(this.videoPlayerWrapper);
-      await player.loadMedia(src, poster);
+    } else if (media.mode == 'twitch') {
+      const player = new TwitchPlayerElement(this._videoPlayerWrapper);
+      await player.loadMedia(media);
       this._playerState._setReferenceElement(player);
     } else {
-      throw new Error('Unknown media type: ' + type);
+      throw new Error('Unknown media mode: ' + media.mode);
     }
 
-    this._currentMedia = (type == null || src == null) ? null : {type, src};
+    if (media != null) {
+      this._playerState._getReferenceElement().loadSubtitles(media, this);
+    }
+
+    this._currentMedia = media;
 
     if (this._playerState.isNativeReferenceElement()) {
       this._controls.applyVideoPlayerStateFromLocalStorage();

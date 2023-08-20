@@ -9,6 +9,21 @@ export interface Media {
   readonly uri: string;
   readonly mode: PlayerMode;
   readonly duration?: number;
+
+  readonly metadata?: {
+    readonly title?: string;
+    readonly posterUri?: string;
+
+    readonly subtitles?: SubtitleMetadata[];
+    readonly fonts?: { uri: string }[];
+  };
+}
+
+export interface SubtitleMetadata {
+  readonly title: string;
+  readonly language: string;
+  readonly codecName: string;
+  readonly uri: string;
 }
 
 export interface PlaybackState {

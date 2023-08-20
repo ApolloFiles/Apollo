@@ -5,9 +5,9 @@
         "strict": true,
         "noImplicitReturns": true,
         "noImplicitAny": true,
-        "module": "es6",
-        "moduleResolution": "node",
-        "target": "es5",
+        "module": "ES6",
+        "moduleResolution": "Node",
+        "target": "ES6",
         "allowJs": true
     },
     "include": [

@@ -3,7 +3,7 @@ import Path from 'path';
 import WrappedGstAppProcess from '../../live_transcode/gst_app/GstAppProcessWrapper';
 import GstVideoLiveTranscode from '../../live_transcode/gst_app/GstVideoLiveTranscode';
 import LiveTranscodeManifestGenerator from '../../live_transcode/LiveTranscodeManifestGenerator';
-import { BackendDebugInfoMessage } from '../CommunicationProtocol';
+import {BackendDebugInfoMessage} from '../CommunicationProtocol';
 import WatchSession from '../WatchSession';
 import WatchSessionClient from '../WatchSessionClient';
 import ApolloFileMedia from './ApolloFileMedia';
@@ -27,8 +27,23 @@ export default class LiveTranscodeMedia extends ApolloFileMedia {
     const manifest = await manifestGenerator.generateManifest();
     this.data = {
       mode: 'live_transcode',
-      uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(transcodeDirName)}/${manifest.manifestFileName}`,
-      duration: manifest.duration
+      uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(transcodeDirName)}/${encodeURIComponent(manifest.manifestFileName)}`,
+      duration: manifest.duration,
+      metadata: {
+        subtitles: manifest.subtitleMetadata.map((subtitleMetadata) => {
+          return {
+            title: subtitleMetadata.title,
+            language: subtitleMetadata.language,
+            codecName: subtitleMetadata.codecName,
+            uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(transcodeDirName)}/${Path.join('./', subtitleMetadata.uri)}`
+          };
+        }),
+        fonts: manifest.fontMetadata.map((fontMetadata) => {
+          return {
+            uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(transcodeDirName)}/${Path.join('./', fontMetadata.uri)}`
+          };
+        })
+      }
     };
   }
 

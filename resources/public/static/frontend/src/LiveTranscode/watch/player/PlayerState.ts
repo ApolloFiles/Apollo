@@ -1,6 +1,7 @@
-import { EventEmitter } from 'events';
+import {EventEmitter} from 'events';
 import NativePlayerElement from './PlayerElements/NativePlayerElement';
-import PlayerElement, { PlayerEvents } from './PlayerElements/PlayerElement';
+import PlayerElement, {PlayerEvents} from './PlayerElements/PlayerElement';
+import SubtitleTrack from './subtitles/SubtitleTrack';
 
 export default class PlayerState extends EventEmitter {
   private readonly playerWithControlsContainer: HTMLElement;
@@ -97,8 +98,8 @@ export default class PlayerState extends EventEmitter {
     this._getReferenceElement().currentTime = time;
   }
 
-  getTextTracks(): TextTrack[] {
-    return this.referenceElement?.getTextTracks() ?? [];
+  getSubtitleTracks(): SubtitleTrack[] {
+    return this.referenceElement?.getSubtitleTracks() ?? [];
   }
 
   getBufferedRanges(): { start: number, end: number }[] {

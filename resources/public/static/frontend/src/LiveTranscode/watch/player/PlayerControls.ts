@@ -352,6 +352,7 @@ export default class PlayerControls {
       option.setAttribute('role', 'button');
       option.classList.add('d-block');
       option.innerText = label.replace(' ', '\u00A0');
+      option.title = label;
 
       if (passiveClickListener != null) {
         option.addEventListener('click', passiveClickListener, {passive: true});
@@ -391,29 +392,25 @@ export default class PlayerControls {
 
       this.hideVolumeSliderContainer();
 
-      const textTracks = this.playerState.getTextTracks();
+      const subtitleTracks = this.playerState.getSubtitleTracks();
       const disableAllTextTracks = () => {
-        for (const textTrack of textTracks) {
-          textTrack.mode = 'disabled';
+        for (const subtitleTrack of subtitleTracks) {
+          subtitleTrack.deactivate();
         }
       };
 
       const availableSubtitles: { [label: string]: () => void } = {};
-      for (const textTrack of textTracks) {
-        if (textTrack.kind !== 'subtitles' && textTrack.kind !== 'captions') {
-          continue;
-        }
-
-        let entryLabel = textTrack.label;
+      for (const subtitleTrack of subtitleTracks) {
+        let entryLabel = subtitleTrack.title ?? 'No title';
         let entryLabelCounter = 0;
         while (entryLabel === 'None' || availableSubtitles[entryLabel] != null) {
           ++entryLabelCounter;
-          entryLabel = `${textTrack.label} (${entryLabelCounter})`;
+          entryLabel = `${subtitleTrack.title} (${entryLabelCounter})`;
         }
 
         availableSubtitles[entryLabel] = () => {
           disableAllTextTracks();
-          textTrack.mode = 'showing';
+          subtitleTrack.activate();
         };
       }
 

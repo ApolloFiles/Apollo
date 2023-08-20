@@ -1,6 +1,12 @@
 const Path = require('node:path');
-// const CopyPlugin = require('copy-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+const jassubFiles = [
+  'jassub/dist/jassub-worker.js',
+  'jassub/dist/jassub-worker.wasm',
+  'jassub/dist/default.woff2'
+];
 
 module.exports = {
   entry: {
@@ -47,9 +53,14 @@ module.exports = {
   resolve: {extensions: ['.tsx', '.ts', '.js']},
 
   plugins: [
-    // new CopyPlugin({
-    //   patterns: [{ from: 'src/index.html' }],
-    // }),
+    new CopyPlugin({
+      patterns: jassubFiles.map(asset => {
+        return {
+          from: Path.resolve(__dirname, `./node_modules/${asset}`),
+          to: Path.resolve(__dirname, './dist/third-party/jassub/')
+        };
+      })
+    }),
     new MiniCssExtractPlugin()
   ],
 

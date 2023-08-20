@@ -1,17 +1,21 @@
+import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import ApolloVideoPlayer from '../ApolloVideoPlayer';
+import SubtitleTrack from '../subtitles/SubtitleTrack';
+
 export type PlayerEvents = 'loadedmetadata'
-    | 'play'
-    | 'pause'
-    | 'ended'
+  | 'play'
+  | 'pause'
+  | 'ended'
 
-    | 'volumechange'
+  | 'volumechange'
 
-    | 'timeupdate'
-    | 'durationchange'
-    | 'progress'
-    | 'ratechange'
+  | 'timeupdate'
+  | 'durationchange'
+  | 'progress'
+  | 'ratechange'
 
-    | 'seeking'
-    | 'seeked';
+  | 'seeking'
+  | 'seeked';
 
 export default abstract class PlayerElement {
   protected readonly container: HTMLElement;
@@ -36,7 +40,9 @@ export default abstract class PlayerElement {
 
   abstract get paused(): boolean;
 
-  abstract loadMedia(src?: string, poster?: string): Promise<void>;
+  abstract loadMedia(media: CommunicationProtocol.Media): Promise<void>;
+
+  abstract loadSubtitles(media: CommunicationProtocol.Media, videoPlayer: ApolloVideoPlayer): void;
 
   abstract destroyPlayer(): void;
 
@@ -44,7 +50,11 @@ export default abstract class PlayerElement {
 
   abstract pause(): void;
 
-  abstract getTextTracks(): TextTrack[];
+  abstract getSubtitleTracks(): SubtitleTrack[];
+
+  abstract addSubtitleTrack(track: SubtitleTrack): void;
+
+  abstract clearSubtitleTracks(): void;
 
   abstract getBufferedRanges(): { start: number, end: number }[];
 

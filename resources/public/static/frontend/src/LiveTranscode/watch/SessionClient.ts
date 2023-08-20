@@ -153,7 +153,7 @@ export default class SessionClient {
         }
 
         if (msg.data.media != null) {
-          await this.session._videoPlayer._changeMedia(msg.data.media.mode, msg.data.media.uri);
+          await this.session._videoPlayer._changeMedia(msg.data.media);
 
           const referenceElement = this.session._videoPlayer._playerState._getReferenceElement();
           if (referenceElement instanceof LiveTranscodePlayerElement) {
@@ -171,7 +171,7 @@ export default class SessionClient {
             this.session._videoPlayer._playerState.playbackRate = msg.data.playbackState.playbackRate;
           }
         } else {
-          await this.session._videoPlayer._changeMedia(null, null);
+          await this.session._videoPlayer._changeMedia(null);
         }
         break;
 
@@ -197,7 +197,7 @@ export default class SessionClient {
 
       case 'mediaChange':
         console.log('[DEBUG] Received mediaChange message:', msg.data);
-        await this.session._videoPlayer._changeMedia(msg.data.media?.mode ?? null, msg.data.media?.uri ?? null);
+        await this.session._videoPlayer._changeMedia(msg.data.media);
 
         const referenceElement = this.session._videoPlayer._playerState._getReferenceElement();
         if (referenceElement instanceof LiveTranscodePlayerElement) {
@@ -211,7 +211,9 @@ export default class SessionClient {
         }
 
         if ((this.session._videoPlayer._currentMedia == null && msg.data.media == null) ||
-            (this.session._videoPlayer._currentMedia?.type === msg.data.media?.mode && this.session._videoPlayer._currentMedia?.src === msg.data.media?.uri)) {
+          (this.session._videoPlayer._currentMedia?.mode === msg.data.media?.mode &&
+            this.session._videoPlayer._currentMedia?.uri === msg.data.media?.uri &&
+            this.session._videoPlayer._currentMedia?.duration === msg.data.media?.duration)) {
           console.warn(`Client '${msg.data.clientId}' requested media change to the same media we're already playing - ignoring`);
           break;
         }
@@ -270,7 +272,7 @@ export default class SessionClient {
 
     const jsonData = JSON.parse(event.data);
     if (jsonData == null || typeof jsonData !== 'object' ||
-        typeof jsonData.type !== 'string' || typeof jsonData.data !== 'object') {
+      typeof jsonData.type !== 'string' || typeof jsonData.data !== 'object') {
       throw new Error('Received invalid message from websocket: ' + event.data);
     }
 

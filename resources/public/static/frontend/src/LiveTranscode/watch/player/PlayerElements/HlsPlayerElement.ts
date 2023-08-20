@@ -1,4 +1,5 @@
-import Hls, { HlsConfig } from 'hls.js';
+import Hls, {HlsConfig} from 'hls.js';
+import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import NativePlayerElement from './NativePlayerElement';
 
 export default class HlsPlayerElement extends NativePlayerElement {
@@ -11,8 +12,8 @@ export default class HlsPlayerElement extends NativePlayerElement {
     this.hls.attachMedia(this.videoElement);
   }
 
-  async loadMedia(src: string, poster?: string): Promise<void> {
-    await this.hls.loadSource(src);
+  async loadMedia(media: CommunicationProtocol.Media): Promise<void> {
+    this.hls.loadSource(media.uri);
   }
 
   destroyPlayer(): void {
