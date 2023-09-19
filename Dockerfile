@@ -46,11 +46,6 @@ COPY --from=mwader/static-ffmpeg:6.0 /ffprobe /usr/local/bin/
 ##
 # App
 ##
-# FIXME: This is a hack to get the apollo_g_streamer binary into the container
-RUN mkdir -p /home/christian/Downloads/apollo-g-streamer/cmake-build-debug/
-COPY apollo_g_streamer /home/christian/Downloads/apollo-g-streamer/cmake-build-debug/apollo_g_streamer
-RUN chmod +x /home/christian/Downloads/apollo-g-streamer/cmake-build-debug/apollo_g_streamer
-
 USER node
 WORKDIR /app/
 
