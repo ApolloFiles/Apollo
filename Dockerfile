@@ -23,11 +23,16 @@ RUN npm ci && \
 COPY ./resources/public/static/frontend/src/ ./src/
 RUN npm run build
 
+##
+# Quick fix for ffmpeg nvenc support
+##
+FROM nvidia/cuda:12.2.0-base-ubuntu22.04 AS ffmpeg-cuda
+RUN apt-get update && apt-get install -y ffmpeg
 
 ##
 # Dev
 ##
-FROM ducksouplab/debian-gstreamer:debian11-gstreamer1.22.4 AS dev
+FROM ffmpeg-cuda AS dev
 RUN groupadd --gid 1000 node && \
     useradd --uid 1000 --gid 1000 --create-home --shell /bin/sh node
 
@@ -39,9 +44,6 @@ RUN apt-get update && \
     npm i -g npm --update-notifier false && \
     npm cache clean --force && \
     apt-get autoclean
-
-COPY --from=mwader/static-ffmpeg:6.0 /ffmpeg /usr/local/bin/
-COPY --from=mwader/static-ffmpeg:6.0 /ffprobe /usr/local/bin/
 
 ##
 # App
