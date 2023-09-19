@@ -23,7 +23,7 @@
   "dependencies": {
     "awesome-notifications": "^3.1.3",
     "hls.js": "^1.4.12",
-    "jassub": "^1.7.1"
+    "jassub": "^1.7.3"
   },
   "devDependencies": {
     "@types/awesome-notifications": "^3.1.1",
