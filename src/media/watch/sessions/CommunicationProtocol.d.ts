@@ -16,6 +16,7 @@ export interface Media {
 
     readonly subtitles?: SubtitleMetadata[];
     readonly fonts?: { uri: string }[];
+    readonly audioNames?: { [key: string]: string };
   };
 }
 

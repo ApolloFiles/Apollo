@@ -99,6 +99,11 @@ export default class YouTubePlayerElement extends PlayerElement {
     console.warn('Changing audio tracks is not supported when using the YouTube player.');
   }
 
+  setAudioTrackNameMapping(mapping: { [p: string]: string }): void {
+    // no-op
+    console.warn('Setting audio track name mapping is not supported when using the YouTube player.');
+  }
+
   getSubtitleTracks(): SubtitleTrack[] {
     return [];
   }

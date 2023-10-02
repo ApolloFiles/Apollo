@@ -61,6 +61,8 @@ export default abstract class PlayerElement {
 
   abstract setAudioTrack(track: AudioTrack): void;
 
+  abstract setAudioTrackNameMapping(mapping: { [key: string]: string }): void;
+
   abstract getSubtitleTracks(): SubtitleTrack[];
 
   abstract addSubtitleTrack(track: SubtitleTrack): void;

@@ -97,6 +97,11 @@ export default class TwitchPlayerElement extends PlayerElement {
     console.warn('Setting audio track is not supported when using the Twitch player.');
   }
 
+  setAudioTrackNameMapping(mapping: { [p: string]: string }): void {
+    // no-op
+    console.warn('Setting audio track name mapping is not supported when using the Twitch player.');
+  }
+
   getSubtitleTracks(): SubtitleTrack[] {
     return [];
   }

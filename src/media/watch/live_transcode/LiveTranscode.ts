@@ -27,6 +27,7 @@ export interface LiveTranscodeResult {
   readonly process: FfmpegProcess;
   readonly mediaDuration: number;
   readonly videoEncoder: string;
+  readonly audioNameMap: Map<string, string>;
 }
 
 export default class LiveTranscode {
@@ -83,7 +84,8 @@ export default class LiveTranscode {
         cwd: targetDir
       }),
       mediaDuration: parseFloat(videoStream.duration ?? videoAnalysis.file.duration),
-      videoEncoder
+      videoEncoder,
+      audioNameMap: streamArgs.audioNameMap
     };
   }
 

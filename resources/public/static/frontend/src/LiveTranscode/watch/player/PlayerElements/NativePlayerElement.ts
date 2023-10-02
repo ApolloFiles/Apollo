@@ -7,6 +7,7 @@ import PlayerElement, {AudioTrack, PlayerEvents} from './PlayerElement';
 
 export default class NativePlayerElement extends PlayerElement {
   protected readonly videoElement: HTMLVideoElement;
+  protected readonly audioTrackNameMapping = new Map<string, string>();
   private readonly subtitleTracks: SubtitleTrack[] = [];
 
   constructor(container: HTMLElement) {
@@ -77,6 +78,8 @@ export default class NativePlayerElement extends PlayerElement {
         console.error('Unable to load subtitle with codecName:', subtitle.codecName);
       }
     }
+
+    this.setAudioTrackNameMapping(media.metadata.audioNames ?? {});
   }
 
   destroyPlayer(): void {
@@ -101,6 +104,15 @@ export default class NativePlayerElement extends PlayerElement {
 
   setAudioTrack(track: AudioTrack): void {
     // no-op
+  }
+
+  setAudioTrackNameMapping(mapping: { [p: string]: string }): void {
+    this.audioTrackNameMapping.clear();
+    for (const mappingKey in mapping) {
+      if (mapping.hasOwnProperty(mappingKey)) {
+        this.audioTrackNameMapping.set(mappingKey, mapping[mappingKey]);
+      }
+    }
   }
 
   getSubtitleTracks(): SubtitleTrack[] {
