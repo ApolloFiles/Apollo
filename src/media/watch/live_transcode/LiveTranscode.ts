@@ -103,7 +103,7 @@ export default class LiveTranscode {
 
     const streamsToTranscode = [firstVideoStream];
     if (audioStreams.length > 0) {
-      streamsToTranscode.push(audioStreams[0]);
+      streamsToTranscode.push(...audioStreams);
 
       if (shouldTranscodeImageBasedSubtitles && (audioStreams[0].tags.language == 'jpn' || audioStreams[0].tags.language == 'und')) {
         streamsToTranscode.push(subtitleStreams[0]);

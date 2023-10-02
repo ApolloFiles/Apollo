@@ -17,6 +17,13 @@ export type PlayerEvents = 'loadedmetadata'
   | 'seeking'
   | 'seeked';
 
+export type AudioTrack = {
+  readonly id: number;
+  readonly active:boolean;
+  readonly title: string;
+  readonly lang?: string;
+}
+
 export default abstract class PlayerElement {
   protected readonly container: HTMLElement;
 
@@ -49,6 +56,10 @@ export default abstract class PlayerElement {
   abstract play(): Promise<void>;
 
   abstract pause(): void;
+
+  abstract getAudioTracks(): AudioTrack[];
+
+  abstract setAudioTrack(track: AudioTrack): void;
 
   abstract getSubtitleTracks(): SubtitleTrack[];
 

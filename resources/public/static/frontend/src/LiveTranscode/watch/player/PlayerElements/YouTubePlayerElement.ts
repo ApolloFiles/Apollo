@@ -1,7 +1,7 @@
 import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import {Media} from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import SubtitleTrack from '../subtitles/SubtitleTrack';
-import PlayerElement, {PlayerEvents} from './PlayerElement';
+import PlayerElement, {AudioTrack, PlayerEvents} from './PlayerElement';
 
 export default class YouTubePlayerElement extends PlayerElement {
   private static youTubeIframeApiLoaded = false;
@@ -88,6 +88,15 @@ export default class YouTubePlayerElement extends PlayerElement {
 
   pause(): void {
     this.ytPlayer.pauseVideo();
+  }
+
+  getAudioTracks(): AudioTrack[] {
+    return [{id: 1, active: true, title: 'Default'}];
+  }
+
+  setAudioTrack(track: AudioTrack): void {
+    // no-op
+    console.warn('Changing audio tracks is not supported when using the YouTube player.');
   }
 
   getSubtitleTracks(): SubtitleTrack[] {

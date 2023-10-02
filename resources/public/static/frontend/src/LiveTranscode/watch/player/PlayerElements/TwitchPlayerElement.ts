@@ -1,7 +1,7 @@
 import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import {Media} from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import SubtitleTrack from '../subtitles/SubtitleTrack';
-import PlayerElement, {PlayerEvents} from './PlayerElement';
+import PlayerElement, {AudioTrack, PlayerEvents} from './PlayerElement';
 
 export default class TwitchPlayerElement extends PlayerElement {
   private static loadedTwitchEmbedApi = false;
@@ -86,6 +86,15 @@ export default class TwitchPlayerElement extends PlayerElement {
 
   pause(): void {
     this.twitchPlayer.pause();
+  }
+
+  getAudioTracks(): AudioTrack[] {
+    return [{id: 1, active: true, title: 'Default'}];
+  }
+
+  setAudioTrack(track: AudioTrack): void {
+    // no-op
+    console.warn('Setting audio track is not supported when using the Twitch player.');
   }
 
   getSubtitleTracks(): SubtitleTrack[] {

@@ -3,7 +3,7 @@ import ApolloVideoPlayer from '../ApolloVideoPlayer';
 import AssSubtitleTrack from '../subtitles/AssSubtitleTrack';
 import NativeSubtitleTrack from '../subtitles/NativeSubtitleTrack';
 import SubtitleTrack from '../subtitles/SubtitleTrack';
-import PlayerElement, {PlayerEvents} from './PlayerElement';
+import PlayerElement, {AudioTrack, PlayerEvents} from './PlayerElement';
 
 export default class NativePlayerElement extends PlayerElement {
   protected readonly videoElement: HTMLVideoElement;
@@ -93,6 +93,14 @@ export default class NativePlayerElement extends PlayerElement {
 
   pause(): void {
     this.videoElement.pause();
+  }
+
+  getAudioTracks(): AudioTrack[] {
+    return [{id: 1, active: true, title: 'Default'}];
+  }
+
+  setAudioTrack(track: AudioTrack): void {
+    // no-op
   }
 
   getSubtitleTracks(): SubtitleTrack[] {

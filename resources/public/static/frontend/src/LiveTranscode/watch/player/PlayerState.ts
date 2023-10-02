@@ -1,6 +1,6 @@
 import {EventEmitter} from 'events';
 import NativePlayerElement from './PlayerElements/NativePlayerElement';
-import PlayerElement, {PlayerEvents} from './PlayerElements/PlayerElement';
+import PlayerElement, {AudioTrack, PlayerEvents} from './PlayerElements/PlayerElement';
 import SubtitleTrack from './subtitles/SubtitleTrack';
 
 export default class PlayerState extends EventEmitter {
@@ -96,6 +96,14 @@ export default class PlayerState extends EventEmitter {
 
   async seek(time: number): Promise<void> {
     this._getReferenceElement().currentTime = time;
+  }
+
+  getAudioTracks(): AudioTrack[] {
+    return this.referenceElement?.getAudioTracks() ?? [];
+  }
+
+  setAudioTrack(track: AudioTrack): void {
+    this.referenceElement?.setAudioTrack(track);
   }
 
   getSubtitleTracks(): SubtitleTrack[] {

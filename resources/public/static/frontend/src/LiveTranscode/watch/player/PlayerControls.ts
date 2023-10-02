@@ -405,7 +405,7 @@ export default class PlayerControls {
         let entryLabelCounter = 0;
         while (entryLabel === 'None' || availableSubtitles[entryLabel] != null) {
           ++entryLabelCounter;
-          entryLabel = `${subtitleTrack.title} (${entryLabelCounter})`;
+          entryLabel = `${subtitleTrack.title ?? 'No title'} (${entryLabelCounter})`;
         }
 
         availableSubtitles[entryLabel] = () => {
@@ -418,11 +418,25 @@ export default class PlayerControls {
         availableSubtitles['None'] = () => disableAllTextTracks();
       }
 
+      const audioTracks = this.playerState.getAudioTracks();
+
+      const availableAudioTracks: { [label: string]: () => void } = {};
+      for (const audioTrack of audioTracks) {
+        let entryLabel = audioTrack.title ?? 'No title';
+        let entryLabelCounter = 0;
+        while (entryLabel === 'None' || availableAudioTracks[entryLabel] != null) {
+          ++entryLabelCounter;
+          entryLabel = `${audioTrack.title ?? 'No title'} (${entryLabelCounter})`;
+        }
+
+        availableAudioTracks[entryLabel] = () => this.playerState.setAudioTrack(audioTrack);
+      }
+
       const availableOptions = {
         'Quality': {
           'Quelle': () => console.log('Quelle')
         },
-        'Audio': {},
+        'Audio': availableAudioTracks,
         'Subtitles': availableSubtitles,
         'Speed': {
           '0.5x': () => this.playerController.playbackRate = 0.5,
