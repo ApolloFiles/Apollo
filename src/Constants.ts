@@ -276,15 +276,12 @@ function determineAppTmpDir(): string {
 
   if (tmpDir == null || tmpDir.length === 0) {
     tmpDir = Path.join(getWorkingRoot(), 'tmp', 'app', Path.sep);
-    Fs.mkdirSync(tmpDir, {recursive: true});
     console.log(`Using ${JSON.stringify(tmpDir)} as app tmp dir (APOLLO_TMP_DIR not set)`);
   } else {
     tmpDir = Path.join(tmpDir, 'apollo_tmp');
     tmpDir = Path.resolve(tmpDir) + Path.sep;
-
-    Fs.mkdirSync(tmpDir, {recursive: true});
-    console.log(`Using ${JSON.stringify(tmpDir)} as app tmp dir`);
   }
 
+  Fs.mkdirSync(tmpDir, {recursive: true});
   return tmpDir;
 }
