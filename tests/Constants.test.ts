@@ -154,7 +154,7 @@ describe('HttpClient User-Agent', () => {
     [null],
     [{name: 'apollo-jest-test', version: '1.2.3-JEST'}]
   ])('For package.json %O', (packageJson) => {
-    const Fs = require('fs') as jest.Mocked<typeof import('fs')>;
+    const Fs = require('node:fs') as jest.Mocked<typeof import('fs')>;
     Fs.existsSync.mockImplementation((path: Fs.PathLike) => {
       if (typeof path != 'string' || !path.endsWith('/package.json')) {
         throw new Error('Unexpected path: ' + path);
