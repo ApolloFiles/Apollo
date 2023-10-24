@@ -85,8 +85,10 @@ describe('#getSize', () => {
   test('Size of empty directory', async () => {
     await expect(user.getDefaultFileSystem().getFiles('/')).resolves.toHaveLength(0);
 
+    // Actual size depends on file system etc.
     const emptyFileSystemSize = user.getDefaultFileSystem().getSize();
-    await expect(emptyFileSystemSize).resolves.toBeGreaterThan(0);
+    await expect(emptyFileSystemSize).resolves.toBeGreaterThanOrEqual(0);
+    await expect(emptyFileSystemSize).resolves.toBeLessThanOrEqual(8);
   });
 
   test('Size of directory with text file', async () => {
