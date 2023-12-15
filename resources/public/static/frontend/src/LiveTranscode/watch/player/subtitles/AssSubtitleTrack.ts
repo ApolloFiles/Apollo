@@ -11,7 +11,7 @@ export default class AssSubtitleTrack extends SubtitleTrack {
       fonts: this.mediaMetadata?.fonts?.map(a => new URL(a.uri, window.location.href).href),
       workerUrl: '/frontend/dist/third-party/jassub/jassub-worker.js',
       wasmUrl: '/frontend/dist/third-party/jassub/jassub-worker.wasm',
-      offscreenRender: false  // Inconsistent performance on some systems (e.g., occasional 1 second render times)
+      offscreenRender: false  // Inconsistent performance on some systems (e.g., occasional 1 second render times) (+ buggy on some Browsers and systems)
     });
   }
 
