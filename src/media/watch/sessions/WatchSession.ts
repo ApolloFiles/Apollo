@@ -1,5 +1,6 @@
 import Crypto from 'node:crypto';
 import {WebSocket} from 'ws';
+import {ApolloWebSocket} from '../../../global';
 import {
   ClientConnectMessage,
   ClientDisconnectMessage,
@@ -70,7 +71,7 @@ export default class WatchSession {
     });
   }
 
-  async welcomeClient(socket: WebSocket, displayName: string): Promise<void> {
+  async welcomeClient(socket: ApolloWebSocket, displayName: string): Promise<void> {
     const clientId = this.generateClientId();
     socket.on('close', () => this.disconnectClient(clientId));
 

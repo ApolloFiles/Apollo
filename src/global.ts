@@ -1,3 +1,4 @@
+import {WebSocket} from 'ws';
 import AbstractUser from './AbstractUser';
 import {ServerTiming} from './ServerTiming';
 
@@ -13,23 +14,21 @@ declare module 'express' {
   }
 }
 
+export interface ApolloWebSocket extends WebSocket {
+  apollo: {
+    user?: AbstractUser;
+    isAlive: boolean;
+
+    pingRtt: number;
+    lastPingTimestamp: number;
+  };
+}
+
 declare module 'express-session' {
   interface SessionData {
     userId?: AbstractUser['id'];
 
     oAuthReturnTo?: string;
-  }
-}
-
-declare module 'ws' {
-  interface WebSocket {
-    apollo: {
-      user?: AbstractUser;
-      isAlive: boolean;
-
-      pingRtt: number;
-      lastPingTimestamp: number;
-    };
   }
 }
 

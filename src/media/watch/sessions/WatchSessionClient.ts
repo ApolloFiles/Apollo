@@ -1,5 +1,6 @@
 import {RawData, WebSocket} from 'ws';
 import AbstractUser from '../../../AbstractUser';
+import {ApolloWebSocket} from '../../../global';
 import {
   Message,
   PlaybackStatePingMessage,
@@ -14,11 +15,11 @@ export const WS_CLOSE_PROTOCOL_ERROR = 1002;
 export default class WatchSessionClient {
   public readonly id: string;
   private readonly session: WatchSession;
-  private readonly socket: WebSocket;
+  private readonly socket: ApolloWebSocket;
 
   public displayName: string;
 
-  private constructor(id: string, displayName: string, session: WatchSession, socket: WebSocket) {
+  private constructor(id: string, displayName: string, session: WatchSession, socket: ApolloWebSocket) {
     this.id = id;
     this.displayName = displayName;
     this.session = session;
@@ -141,7 +142,7 @@ export default class WatchSessionClient {
     }
   }
 
-  static init(clientId: string, displayName: string, session: WatchSession, socket: WebSocket): WatchSessionClient {
+  static init(clientId: string, displayName: string, session: WatchSession, socket: ApolloWebSocket): WatchSessionClient {
     return new WatchSessionClient(clientId, displayName, session, socket);
   }
 

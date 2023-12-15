@@ -6,6 +6,7 @@ import AbstractUser from '../../AbstractUser';
 import { getFileNameCollator, getFileTypeUtils } from '../../Constants';
 import IUserFile from '../../files/IUserFile';
 import NEW_VideoLiveTranscodeTemplate from '../../frontend/NEW_VideoLiveTranscodeTemplate';
+import {ApolloWebSocket} from '../../global';
 import UserStorage from '../../UserStorage';
 import Utils from '../../Utils';
 import WebServer from '../../webserver/WebServer';
@@ -151,7 +152,7 @@ function attachWebSocketConnectionHandler(webserver: WebServer, sessionMiddlewar
       throw new Error('WebSocket server not initialized');
     }
 
-    websocketServer.on('connection', async (client, request): Promise<void> => {
+    websocketServer.on('connection', async (client: ApolloWebSocket, request): Promise<void> => {
       client.on('error', console.error);
 
       if (!request.url?.startsWith(mountRoot)) {

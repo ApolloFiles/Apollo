@@ -8,6 +8,7 @@ import SessionFileStore from 'session-file-store';
 import {WebSocketServer} from 'ws';
 import AbstractUser from '../AbstractUser';
 import {getAppConfigDir, getAppResourcesDir, getConfig} from '../Constants';
+import {ApolloWebSocket} from '../global';
 import {createMediaRouter} from '../media/MediaRouter';
 import {ServerTiming} from '../ServerTiming';
 import UserStorage from '../UserStorage';
@@ -96,9 +97,9 @@ export default class WebServer {
     await startListening();
 
     // TODO: Write WebSocket abstraction to handle everything including sessions, authentication, trust-proxy-setting, etc.
-    this.webSocketServer = new WebSocketServer({server: this.server, maxPayload: 5 * 1024 * 1024 /* 5 MiB */});
+    this.webSocketServer = new WebSocketServer({server: this.server, maxPayload: 5 * 1024 * 1024 /* 5 MiB */, allowSynchronousEvents: true} as any /* FIXME: types are outdated, any cast should be removed when possible */);
     this.webSocketServer.on('error', console.error);
-    this.webSocketServer.on('connection', (client, request) => {
+    this.webSocketServer.on('connection', (client:ApolloWebSocket, request) => {
       client.apollo = {isAlive: true, pingRtt: -1, lastPingTimestamp: -1};
 
       client.on('close', (code, reason) => {
@@ -113,7 +114,8 @@ export default class WebServer {
     });
 
     const intervalTask = setInterval(() => {
-      this.webSocketServer?.clients.forEach((client) => {
+      this.webSocketServer?.clients.forEach((_client) => {
+        const client: ApolloWebSocket = _client as any;
         if (client.apollo.isAlive === false) {
           console.error('[DEBUG] Would normally close connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
           // console.log('Closing WebSocket connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
