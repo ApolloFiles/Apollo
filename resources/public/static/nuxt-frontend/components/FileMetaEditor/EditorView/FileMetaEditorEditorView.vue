@@ -33,9 +33,19 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
     for (const fileTag of file.fileTags.values()) {
       fileTags[fileTag.key] = fileTag.value;
     }
+
+    const streamTags: { [streamIndex: number]: { [key: string]: string } } = {};
+    for (const [streamIndex, streamTagMap] of file.streamTags.entries()) {
+      streamTags[streamIndex] = {};
+      for (const streamTag of streamTagMap.values()) {
+        streamTags[streamIndex][streamTag.key] = streamTag.value;
+      }
+    }
+
     const reqBody = {
       filePath: file.meta.filePath,
-      fileTags
+      fileTags,
+      streamTags
     };
 
     await useFetch<WriteVideoTagsApiResponse>(
@@ -85,15 +95,20 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
   }
 }
 
-function createNewTagForSelectedFiles(): void {
+function createNewTagForSelectedFiles(streamIndex: number): void {
   let allFilesAlreadyHaveTag = true;
 
   for (const selectedFile of selectedFiles.value) {
-    if (selectedFile.hasFileTag('')) {
+    if ((streamIndex === -1 && selectedFile.hasFileTag('')) ||
+        (streamIndex !== -1 && selectedFile.hasStreamTag(streamIndex, ''))) {
       continue;
     }
 
-    selectedFile.createFileTag();
+    if (streamIndex === -1) {
+      selectedFile.createFileTag();
+    } else {
+      selectedFile.createStreamTag(streamIndex);
+    }
     allFilesAlreadyHaveTag = false;
   }
 
@@ -151,14 +166,15 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
         </UTooltip>
       </div>
 
-      <div class="flex gap-4 flex-col">
+      <div class="flex gap-4 flex-col"
+           v-if="selectedFiles.length >= 1">
         <h1>File-Tags&nbsp;<UButton
             icon="i-ic-outline-add"
             size="2xs"
             color="lime"
             variant="solid"
             square
-            @click="() => createNewTagForSelectedFiles()"
+            @click="() => createNewTagForSelectedFiles(-1)"
         />
         </h1>
 
@@ -167,7 +183,33 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
             :key="fileTagKey + JSON.stringify(selectedFiles)"
             :initialTagKey="fileTagKey"
             :selectedFiles="selectedFiles"
+            :stream-index="-1"
         />
+      </div>
+
+      <div class="flex gap-4 flex-col pt-8"
+           v-if="selectedFiles.length === 1"
+           v-for="streamIndex in selectedFiles[0].streamTags.keys()">
+        <h1>Stream-Tags&nbsp;(#{{ streamIndex }})&nbsp;<UButton
+            icon="i-ic-outline-add"
+            size="2xs"
+            color="lime"
+            variant="solid"
+            square
+            @click="() => createNewTagForSelectedFiles(streamIndex)"
+        />
+        </h1>
+
+        <FileMetaEditorEditorViewInputs
+            v-for="streamTag of selectedFiles[0].streamTags.get(streamIndex)!.values()"
+            :key="streamIndex.toString() + streamTag.key + JSON.stringify(selectedFiles)"
+            :initialTagKey="streamTag.key"
+            :selectedFiles="selectedFiles"
+            :stream-index="streamIndex"
+        />
+      </div>
+      <div v-else-if="selectedFiles.length > 1">
+        <strong><em>Cannot edit stream tags with multiple files selected.</em></strong>
       </div>
     </div>
   </div>

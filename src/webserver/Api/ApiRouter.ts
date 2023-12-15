@@ -1,4 +1,4 @@
-import {handleRequestRestfully} from '@spraxdev/node-commons';
+import {handleRequestRestfully, StringUtils} from '@spraxdev/node-commons';
 import express from 'express';
 import Fs from 'node:fs';
 import {getFileNameCollator} from '../../Constants';
@@ -269,6 +269,33 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         }
       }
 
+      const streamTags = req.body.streamTags;
+      if (typeof streamTags != 'object' || streamTags == null || Array.isArray(fileTags)) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({error: 'Invalid or missing streamTags.'});
+        return;
+      }
+      for (const streamIndex in streamTags) {
+        if (!streamTags.hasOwnProperty(streamIndex) || !StringUtils.isNumeric(streamIndex)) {
+          res
+            .status(400)
+            .type('application/json')
+            .send({error: `Invalid key type/value for streamIndex: ${streamIndex}`});
+          return;
+        }
+
+        const streamTagsForStream = streamTags[streamIndex];
+        if (typeof streamTagsForStream != 'object' || streamTagsForStream == null || Array.isArray(streamTagsForStream)) {
+          res
+            .status(400)
+            .type('application/json')
+            .send({error: `Invalid streamTags for streamIndex ${streamIndex}.`});
+          return;
+        }
+      }
+
       const videoFile = user.getDefaultFileSystem().getFile(requestedFilePath);
 
       const originalVideoAnalysis = await VideoAnalyser.analyze(videoFile.getAbsolutePathOnHost()!, true);
@@ -278,10 +305,15 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           tags: fileTags
         },
         chapters: originalVideoAnalysis.chapters,
-        streams: originalVideoAnalysis.streams
+        streams: originalVideoAnalysis.streams.map(stream => {
+          return {
+            ...stream,
+            tags: streamTags[stream.index] ?? stream.tags
+          };
+        })
       };
 
-      const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, fileTags);
+      const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, fileTags, streamTags);
       const actualResultVideoAnalysis = await VideoAnalyser.analyze(videoFilePathWithAppliedTags, true);
 
       function getNormalizedAnalysisForCompare(analysis: ExtendedVideoAnalysis): { [key: string]: any } {
