@@ -23,6 +23,12 @@ type VideoAnalysisResult = {
 
 export const apiRouter = express.Router();
 
+apiRouter.use((req, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Headers', 'Authorization');
+  next();
+});
+
 function requireAuthMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
   if (req.user == null) {
     res

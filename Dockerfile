@@ -23,6 +23,18 @@ RUN npm ci && \
 COPY ./resources/public/static/frontend/src/ ./src/
 RUN npm run build
 
+WORKDIR /app/resources/public/static/nuxt-frontend/
+
+COPY ./resources/public/static/nuxt-frontend/package.json ./resources/public/static/nuxt-frontend/package-lock.json ./resources/public/static/nuxt-frontend/tsconfig.json ./resources/public/static/nuxt-frontend/app.config.ts ./resources/public/static/nuxt-frontend/nuxt.config.ts ./
+RUN npm ci && \
+    npm cache clean --force
+
+COPY ./resources/public/static/nuxt-frontend/app.vue ./app.vue
+COPY ./resources/public/static/nuxt-frontend/components/ ./components/
+COPY ./resources/public/static/nuxt-frontend/public/ ./public/
+COPY ./resources/public/static/nuxt-frontend/types/ ./types/
+RUN npm run generate
+
 ##
 # Quick fix for ffmpeg nvenc support
 ##
@@ -62,6 +74,7 @@ RUN npm ci && \
 COPY resources/ ./resources/
 COPY --from=builder /app/dist/ ./dist/
 COPY --from=builder /app/resources/public/static/frontend/dist/ ./resources/public/static/frontend/dist/
+COPY --from=builder /app/resources/public/static/nuxt-frontend/.output/public/ ./resources/public/static/nuxt-frontend/
 
 # TODO: remove debug APOLLO_GST_TARGET_FPS env
 # ENV APOLLO_GST_TARGET_FPS=60
