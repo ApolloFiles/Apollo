@@ -1,8 +1,8 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
+  "extends": "@tsconfig/node20/tsconfig.json",
   "compilerOptions": {
     "sourceMap": true,
-    "outDir": "./dist"
+    "outDir": "./dist/"
   },
   "include": [
     "src/**/*.ts"
