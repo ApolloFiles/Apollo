@@ -139,6 +139,61 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
 <template>
   <div class="main">
     <div class="content">
+        <UAccordion
+            color="primary"
+            variant="soft"
+            size="sm"
+            :items="[{ label: 'Common (Mkv) Tags', slot: 'common-mkv-tags' }, { label: 'Common (Mkv-Stream) Tags', slot: 'common-mkv-stream-tags' }]"
+        >
+          <template #common-mkv-tags>
+            <h2 class="text-3xl">Titles</h2>
+            <pre class="inline" title="The title of this item. For example, for music you might label this “Canon in D”, or for video’s audio track you might use “English 5.1” This is akin to the “TIT2” tag in [@!ID3v2].">TITLE</pre>,
+            <pre class="inline" title="Sub Title of the entity.">SUBTITLE</pre>,
+            <pre class="inline" title="Describes the original type of the media, such as, “DVD”, “CD”, “computer image,” “drawing,” “lithograph,” and so forth. This is akin to the “TMED” tag in [@!ID3v2].">ORIGINAL_MEDIA_TYPE</pre>
+
+            <h2 class="text-3xl">Search and Classification</h2>
+            <pre class="inline" title="A short description of the content, such as “Two birds flying.”">DESCRIPTION</pre>,
+            <pre class="inline" title="A description of the story line of the item.">SYNOPSIS</pre>,
+            <pre class="inline" title="The type of the item. e.g., Documentary, Feature Film, Cartoon, Music Video, Music, Sound FX, …">CONTENT_TYPE</pre>,
+            <pre class="inline" title="The name of the country that is meant to have other tags inside (using nested tags) to country specific information about the item, in the Matroska countries form, i.e. [@!BCP47] two-letter region subtag, without the UK exception. All tags in this list can be used “under” the COUNTRY_SPECIFIC tag like LABEL, PUBLISH_RATING, etc.">COUNTRY</pre>,
+            <pre class="inline" title="Depending on the COUNTRY it’s the format of the rating of a movie (P, R, X in the USA, an age in other countries or a URI defining a logo).">LAW_RATING</pre>
+
+            <h2 class="text-3xl">Organization Information</h2>
+            <pre class="inline" title="Total number of parts defined at the first lower level. (e.g., if TargetType is ALBUM, the total number of tracks of an audio CD)">TOTAL_PARTS</pre>,
+            <pre class="inline" title="Number of the current part of the current level. (e.g., if TargetType is TRACK, the track number of an audio CD)">PART_NUMBER</pre>,
+            <pre class="inline" title="A number to add to PART_NUMBER, when the parts at that level don’t start at 1. (e.g., if TargetType is TRACK, the track number of the second audio CD)">PART_OFFSET</pre>
+
+            <h2 class="text-3xl">Temporal Information</h2>
+            <pre class="inline" title="The time that the item was originally released. This is akin to the “TDRL” tag in [@!ID3v2].">DATE_RELEASED</pre>,
+            <pre class="inline" title="The time that the encoding of this item was completed began. This is akin to the “TDEN” tag in [@!ID3v2].">DATE_ENCODED</pre>,
+            <pre class="inline" title="The time that the tags were done for this item. This is akin to the “TDTG” tag in [@!ID3v2].">DATE_TAGGED</pre>,
+            <pre class="inline" title="The time that the item was transferred to a digital medium. This is akin to the “IDIT” tag in [@?RIFF.tags].">DATE_DIGITIZED</pre>
+
+            <h2 class="text-3xl">Identifiers</h2>
+            <pre class="inline" title="Internet Movie Database [@!IMDb] identifier. “tt” followed by at least 7 digits for Movies, TV Shows, and Episodes.">IMDB</pre>,
+            <pre class="inline" title="The Movie DB “movie_id” or “tv_id” identifier for movies/TV shows [@!MovieDB]. The variable length digits string MUST be prefixed with either “movie/” or “tv/”.">TMDB</pre>,
+            <pre class="inline" title="The TV Database [@!TheTVDB] tag which can include movies. The variable length digits string representing a “Series ID”, “Episode ID” or “Movie ID” identifier MUST be prefixed with “series/”, “episodes/” or “movies/” respectively.">TVDB2</pre>
+
+            <h2 class="text-3xl">Personal &amp; Technical Information</h2>
+            <pre class="inline" title="Any comment related to the content.">COMMENT</pre>,
+            <pre class="inline" title="A list of the settings used for encoding this item. No specific format.">ENCODER_SETTINGS</pre>
+
+            <h2 class="text-3xl">Legal</h2>
+            <pre class="inline" title="The copyright information as per the copyright holder. This is akin to the “TCOP” tag in [@!ID3v2].">COPYRIGHT</pre>,
+            <pre class="inline" title="The license applied to the content (like Creative Commons variants).">LICENSE</pre>,
+            <pre class="inline" title="The terms of use for this item. This is akin to the “USER” tag in [@!ID3v2].">TERMS_OF_USE</pre>
+          </template>
+
+          <template #common-mkv-stream-tags>
+            <h2 class="text-3xl">Titles</h2>
+            <pre class="inline" title="The title of this item. For example, for music you might label this “Canon in D”, or for video’s audio track you might use “English 5.1” This is akin to the “TIT2” tag in [@!ID3v2].">TITLE</pre>
+
+            <h2 class="text-3xl">Language</h2>
+            <pre class="inline" title="ISO639-2 (z.B. eng, deu, jpn=Japanisch, und=undefined); Muss ignoriert werden, wenn LanguageBCP47-Tag vorhanden">Language</pre>,
+            <pre class="inline" title="BCP47 (z.B. en, en-US, de, de-DE, ja); Wenn vorhanden muss ein Language-Tag ignoriert werden">LanguageBCP47</pre>
+          </template>
+        </UAccordion>
+
       <div class="toolbar">
         <!--        <UTooltip text="Discard changes in this file">-->
         <!--          <UButton-->
