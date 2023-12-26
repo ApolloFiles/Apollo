@@ -1,4 +1,12 @@
 <script lang="ts" setup>
+onMounted(() => {
+  const urlSearchParams = new URLSearchParams(window.location.search);
+  const initPath = urlSearchParams.get('initPath');
+  if (initPath != null && initPath !== '') {
+    setSelectedDirectory(initPath);
+  }
+});
+
 function selectDirectory(): void {
   const pathInput = window.prompt('Enter a path from Apollo to open');
   if (pathInput == null || pathInput === '') {
