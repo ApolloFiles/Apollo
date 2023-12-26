@@ -7,7 +7,7 @@ import Path from 'node:path';
 import SessionFileStore from 'session-file-store';
 import {WebSocketServer} from 'ws';
 import AbstractUser from '../AbstractUser';
-import {getAppConfigDir, getAppResourcesDir, getConfig} from '../Constants';
+import {getAppConfigDir, getAppResourcesDir, getConfig, isProduction} from '../Constants';
 import {ApolloWebSocket} from '../global';
 import {createMediaRouter} from '../media/MediaRouter';
 import {ServerTiming} from '../ServerTiming';
@@ -39,6 +39,9 @@ export default class WebServer {
     this.app.use('/', express.static(Path.join(getAppResourcesDir(), 'public', 'static'), staticRouteOptions));
     this.app.use('/favicon.ico', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'favicon', 'favicon.ico'), staticRouteOptions));
     this.app.use('/node_modules', express.static(Path.join(getAppResourcesDir(), '..', 'node_modules'), staticRouteOptions));
+    if (!isProduction()) {
+      this.app.use('/nuxt-frontend', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'nuxt-frontend', '.output', 'public'), staticRouteOptions));
+    }
 
     this.setupAuthenticationMiddlewares();
 
