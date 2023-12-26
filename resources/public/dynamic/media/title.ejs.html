@@ -99,7 +99,7 @@
                                                 <a href="/media/watch/new?libraryId=<%= locals.library.id %>&titleId=<%= locals.title.id %>&filePath=<%= encodeURIComponent(media.filePath) %>"><span class="material-icons" style="font-size: 36px">play_circle</span></a>
                                                 <span class="material-icons" style="font-size: 36px">group</span>
                                                 <span class="material-icons" style="font-size: 36px">playlist_add</span>
-                                                <a href="/media/library/<%= locals.library.id %>/<%= locals.title.id %>/<%= Buffer.from(media.filePath).toString('base64') %>/edit" target="_blank"><span class="material-icons" style="font-size: 36px">edit</span></a>
+                                                <a href="/nuxt-frontend/index.html?initPath=<%= encodeURIComponent(media.filePath) %>" target="_blank"><span class="material-icons" style="font-size: 36px">edit</span></a>
                                             </div>
                                             <div class="col-auto text-end">
                                                 <%= media.durationInSeconds <= 60 ? `${media.durationInSeconds} Sek.` : `${(media.durationInSeconds / 60).toFixed(0)} Min` %>
