@@ -1,5 +1,5 @@
 import * as CommunicationProtocol from '../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
-import {PlayerMode} from '../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import { PlayerMode } from '../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import MediaSession from '../MediaSession';
 import GlobalPlayerShortcuts from './GlobalPlayerShortcuts';
 import PlayerController from './PlayerController';
@@ -7,7 +7,6 @@ import PlayerControls from './PlayerControls';
 import HlsPlayerElement from './PlayerElements/HlsPlayerElement';
 import LiveTranscodePlayerElement from './PlayerElements/LiveTranscodePlayerElement';
 import NativePlayerElement from './PlayerElements/NativePlayerElement';
-import PlayerElement from './PlayerElements/PlayerElement';
 import TwitchPlayerElement from './PlayerElements/TwitchPlayerElement';
 import YouTubePlayerElement from './PlayerElements/YouTubePlayerElement';
 import PlayerState from './PlayerState';
@@ -69,7 +68,7 @@ export default class ApolloVideoPlayer {
       return;
     }
 
-    await this.mediaSession.changeMedia({mode, uri}, ownClientId);
+    await this.mediaSession.changeMedia({ mode, uri }, ownClientId);
   }
 
   async _changeMedia(media: CommunicationProtocol.Media | null): Promise<void> {

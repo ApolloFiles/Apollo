@@ -152,7 +152,7 @@ describe('HttpClient User-Agent', () => {
 
   test.each([
     [null],
-    [{name: 'apollo-jest-test', version: '1.2.3-JEST'}]
+    [{ name: 'apollo-jest-test', version: '1.2.3-JEST' }]
   ])('For package.json %O', (packageJson) => {
     const Fs = require('node:fs') as jest.Mocked<typeof import('fs')>;
     Fs.existsSync.mockImplementation((path: Fs.PathLike) => {

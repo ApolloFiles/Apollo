@@ -12,7 +12,7 @@ export default class PlayerController {
 
   set playbackRate(playbackRate: number) {
     if (this.shouldRequestStateChange()) {
-      this.session.getOwnClient()?.sendRequestPlaybackStateChange({playbackRate});
+      this.session.getOwnClient()?.sendRequestPlaybackStateChange({ playbackRate });
       return;
     }
 
@@ -21,7 +21,7 @@ export default class PlayerController {
 
   async togglePlay(): Promise<void> {
     if (this.shouldRequestStateChange()) {
-      this.session.getOwnClient()?.sendRequestPlaybackStateChange({paused: !this.playerState.paused});
+      this.session.getOwnClient()?.sendRequestPlaybackStateChange({ paused: !this.playerState.paused });
       return;
     }
 
@@ -30,7 +30,7 @@ export default class PlayerController {
 
   async seek(time: number): Promise<void> {
     if (this.shouldRequestStateChange()) {
-      this.session.getOwnClient()!.sendRequestPlaybackStateChange({currentTime: time});
+      this.session.getOwnClient()!.sendRequestPlaybackStateChange({ currentTime: time });
       return;
     }
 

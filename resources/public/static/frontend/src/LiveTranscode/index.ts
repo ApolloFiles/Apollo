@@ -82,11 +82,11 @@ function doDebugMediaInputs(player: ApolloVideoPlayer): void {
     }
   }
 
-  debugPlayerModeSelect.addEventListener('change', () => updateUrlInput(debugPlayerModeSelect, debugVideoUrlInput), {passive: true});
+  debugPlayerModeSelect.addEventListener('change', () => updateUrlInput(debugPlayerModeSelect, debugVideoUrlInput), { passive: true });
 
   debugChangeMediaButton.addEventListener('click', () => {
     player.requestMediaChange(debugPlayerModeSelect.value as PlayerMode, debugVideoUrlInput.value)
-        .catch(console.error);
+      .catch(console.error);
   });
 
   updateUrlInput(debugPlayerModeSelect, debugVideoUrlInput);

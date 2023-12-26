@@ -156,14 +156,14 @@ export default class PlayerControls {
 
     this.videoPlayerWrapper.addEventListener('click', () => {
       this.playerController.togglePlay().catch(console.error);
-    }, {passive: true});
+    }, { passive: true });
     this.playPauseButton.addEventListener('click', () => {
       this.playerController.togglePlay().catch(console.error);
-    }, {passive: true});
+    }, { passive: true });
 
     this.volumeButton.addEventListener('click', () => {
       this.playerState.muted = !this.playerState.muted;
-    }, {passive: true});
+    }, { passive: true });
   }
 
   private registerFullscreenEventListeners(): void {
@@ -180,11 +180,11 @@ export default class PlayerControls {
       }
 
       document.exitFullscreen().catch(console.error);
-    }, {passive: true});
+    }, { passive: true });
 
     document.addEventListener('fullscreenchange', () => {
       this.fullscreenButton.innerText = iconMapping.fullscreen(!!document.fullscreenElement);
-    }, {passive: true});
+    }, { passive: true });
   }
 
   private registerSeekEventListeners(): void {
@@ -196,15 +196,15 @@ export default class PlayerControls {
       const pos = (event.clientX - rect.left) / this.progressBarContainer.offsetWidth;
 
       this.playerController.seek(pos * this.playerState.duration).catch(console.error);
-    }, {passive: true});
+    }, { passive: true });
 
 
-    document.addEventListener('mouseup', () => draggingProgress = false, {passive: true});
+    document.addEventListener('mouseup', () => draggingProgress = false, { passive: true });
 
     progressBarContainer.addEventListener('mousedown', () => {
       // this.hideAdditionalControlContainers();
       draggingProgress = true;
-    }, {passive: true});
+    }, { passive: true });
 
     document.addEventListener('mousemove', (e) => {
       if (!draggingProgress) {
@@ -214,7 +214,7 @@ export default class PlayerControls {
       const rect = progressBarContainer.getBoundingClientRect();
       const pos = (e.clientX - rect.left) / progressBarContainer.offsetWidth;
       this.playerController.seek(pos * this.playerState.duration).catch(console.error);
-    }, {passive: true});
+    }, { passive: true });
   }
 
   private registerVolumeSliderEventListeners(): void {
@@ -224,24 +224,24 @@ export default class PlayerControls {
     this.volumeButton.addEventListener('mouseover', () => {
       this.hideSettingsContainer();
       this.volumeSliderContainer.classList.remove('d-none');
-    }, {passive: true});
+    }, { passive: true });
     this.controlsContainer.addEventListener('mouseleave', () => {
       this.hideVolumeSliderContainer();
-    }, {passive: true});
+    }, { passive: true });
 
     volumeSlider.addEventListener('click', (event) => {
       this.hideSettingsContainer();
 
       const rect = volumeSlider.getBoundingClientRect();
       this.playerState.volume = (rect.bottom - event.clientY) / volumeSlider.offsetHeight;
-    }, {passive: true});
+    }, { passive: true });
 
-    document.addEventListener('mouseup', () => draggingVolume = false, {passive: true});
+    document.addEventListener('mouseup', () => draggingVolume = false, { passive: true });
 
     volumeSlider.addEventListener('mousedown', () => {
       this.hideSettingsContainer();
       draggingVolume = true;
-    }, {passive: true});
+    }, { passive: true });
 
     document.addEventListener('mousemove', (event) => {
       if (!draggingVolume) {
@@ -253,7 +253,7 @@ export default class PlayerControls {
       if (newVolume >= 0 && newVolume <= 1) {
         this.playerState.volume = newVolume;
       }
-    }, {passive: true});
+    }, { passive: true });
   }
 
   private registerEventsForControlsVisibility(): void {
@@ -294,9 +294,9 @@ export default class PlayerControls {
       const clientY = mousePosition.y;
 
       const isMouseInsideControlsContainer = clientX >= controlsContainerRect.left &&
-          clientX <= controlsContainerRect.right &&
-          clientY >= controlsContainerRect.top &&
-          clientY <= controlsContainerRect.bottom;
+        clientX <= controlsContainerRect.right &&
+        clientY >= controlsContainerRect.top &&
+        clientY <= controlsContainerRect.bottom;
       if (isMouseInsideControlsContainer) {
         return;
       }
@@ -316,25 +316,25 @@ export default class PlayerControls {
 
     this.videoPlayerContainer.addEventListener('mousemove', (event) => {
       showControls();
-      resetControlsTimeout({x: event.clientX, y: event.clientY});
+      resetControlsTimeout({ x: event.clientX, y: event.clientY });
     });
 
     this.videoPlayerContainer.addEventListener('mouseleave', (event) => {
-      hideControls({x: event.clientX, y: event.clientY});
+      hideControls({ x: event.clientX, y: event.clientY });
     });
 
     this.videoPlayerContainer.addEventListener('click', (event) => {
       showControls();
-      resetControlsTimeout({x: event.clientX, y: event.clientY});
+      resetControlsTimeout({ x: event.clientX, y: event.clientY });
     });
 
     this.playerState.on('pauseChanged', () => {
       showControls();
-      resetControlsTimeout({x: 0, y: 0});
+      resetControlsTimeout({ x: 0, y: 0 });
     });
     this.playerState.on('seek', () => {
       showControls();
-      resetControlsTimeout({x: 0, y: 0});
+      resetControlsTimeout({ x: 0, y: 0 });
     });
   }
 
@@ -355,7 +355,7 @@ export default class PlayerControls {
       option.title = label;
 
       if (passiveClickListener != null) {
-        option.addEventListener('click', passiveClickListener, {passive: true});
+        option.addEventListener('click', passiveClickListener, { passive: true });
       }
 
       return option;
@@ -469,9 +469,9 @@ export default class PlayerControls {
     const currentTime = this.playerState.currentTime;
     const bufferedRanges = this.playerState.getBufferedRanges();
 
-    for (const {start, end} of bufferedRanges) {
+    for (const { start, end } of bufferedRanges) {
       if (currentTime >= start && currentTime <= end) {
-        return {start, end};
+        return { start, end };
       }
     }
     return null;

@@ -1,4 +1,4 @@
-import {AudioStream} from '../../../video/analyser/VideoAnalyser.Types';
+import { AudioStream } from '../../../video/analyser/VideoAnalyser.Types';
 
 export default class AudioEncoderArgsBuilder {
   static buildArgs(audioStream: AudioStream): string[] {

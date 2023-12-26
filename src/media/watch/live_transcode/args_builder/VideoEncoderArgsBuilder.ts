@@ -1,4 +1,4 @@
-import {Stream, VideoStream} from '../../../video/analyser/VideoAnalyser.Types';
+import { Stream, VideoStream } from '../../../video/analyser/VideoAnalyser.Types';
 
 export interface TargetOptions {
   readonly fps: number;

@@ -34,26 +34,26 @@ export interface PlaybackState {
 }
 
 export type Message =
-    WelcomeMessage
-    | ClientConnectMessage
-    | ClientDisconnectMessage
-    | SuperMasterChangeMessage
-    | PlaybackStatePingMessage
-    | MediaChangeMessage
-    | RequestMediaChangeMessage
-    | RequestPlaybackStateChangeMessage
-    | BackendDebugInfoMessage;
+  WelcomeMessage
+  | ClientConnectMessage
+  | ClientDisconnectMessage
+  | SuperMasterChangeMessage
+  | PlaybackStatePingMessage
+  | MediaChangeMessage
+  | RequestMediaChangeMessage
+  | RequestPlaybackStateChangeMessage
+  | BackendDebugInfoMessage;
 
 export type MessageType =
-    'welcome'
-    | 'clientConnect'
-    | 'clientDisconnect'
-    | 'superMasterChange'
-    | 'playbackStatePing'
-    | 'mediaChange'
-    | 'requestMediaChange'
-    | 'requestPlaybackStateChange'
-    | 'backendDebugInfo';
+  'welcome'
+  | 'clientConnect'
+  | 'clientDisconnect'
+  | 'superMasterChange'
+  | 'playbackStatePing'
+  | 'mediaChange'
+  | 'requestMediaChange'
+  | 'requestPlaybackStateChange'
+  | 'backendDebugInfo';
 
 interface BaseMessage {
   readonly type: MessageType;

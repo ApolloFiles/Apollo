@@ -83,7 +83,7 @@ export default class ThumbnailGenerator {
       if (thumbnail != null) {
         return {
           mime: 'image/png',
-          data: await thumbnail.png().toBuffer({resolveWithObject: false})
+          data: await thumbnail.png().toBuffer({ resolveWithObject: false })
         };
       }
 
@@ -95,12 +95,12 @@ export default class ThumbnailGenerator {
       sequentialRead: true,
       density: 300
     })
-        .resize(256, 256, {
-          fit: 'inside',
-          fastShrinkOnLoad: true,
-          withoutEnlargement: true
-        })
-        .png();
+      .resize(256, 256, {
+        fit: 'inside',
+        fastShrinkOnLoad: true,
+        withoutEnlargement: true
+      })
+      .png();
 
     file.getReadStream().pipe(sharpInstance);
 
@@ -120,8 +120,8 @@ export default class ThumbnailGenerator {
     let coverStream: { fileName: string, streamSpecifier: string } | null = null;
     for (const stream of potentialCoverStreams) {
       if (coverStream == null ||
-          (stream.tags.mimetype != null && this.sharpMimeTypes.includes(stream.tags.mimetype.toLowerCase()))) {
-        coverStream = {fileName: stream.tags.filename ?? 'extracted_cover.png', streamSpecifier: `0:${stream.index}`};
+        (stream.tags.mimetype != null && this.sharpMimeTypes.includes(stream.tags.mimetype.toLowerCase()))) {
+        coverStream = { fileName: stream.tags.filename ?? 'extracted_cover.png', streamSpecifier: `0:${stream.index}` };
       }
 
       if (stream.tags.filename?.toLowerCase().startsWith('cover.')) {
@@ -144,9 +144,9 @@ export default class ThumbnailGenerator {
     const args = ['-i', filePath, '-map', coverStream.streamSpecifier, '-frames', '1', '-f', 'image2', coverStream.fileName];
 
     const childProcess = await new ProcessBuilder('ffmpeg', args)
-        .errorOnNonZeroExit()
-        .withCwd(cwd)
-        .runPromised();
+      .errorOnNonZeroExit()
+      .withCwd(cwd)
+      .runPromised();
 
     if (childProcess.err) {
       throw childProcess.err;
@@ -166,8 +166,8 @@ export default class ThumbnailGenerator {
 
     // TODO: Create hardlink of file to cwd or ensure that process cannot modify the file
     const probeChildProcess = await new ProcessBuilder('ffprobe', ['-select_streams', 'v:0', '-show_entries', 'format=duration', '-print_format', 'json=c=1', filePath])
-        .bufferStdOut()
-        .runPromised();
+      .bufferStdOut()
+      .runPromised();
 
     if (probeChildProcess.err != null) {
       console.error(probeChildProcess.err);
@@ -195,9 +195,9 @@ export default class ThumbnailGenerator {
     args.push('-vframes', sampleSize.toString(), 'frame%01d.png');
 
     const childProcess = await new ProcessBuilder('ffmpeg', args)
-        .errorOnNonZeroExit()
-        .withCwd(cwd)
-        .runPromised();
+      .errorOnNonZeroExit()
+      .withCwd(cwd)
+      .runPromised();
 
     if (childProcess.err) {
       throw childProcess.err;
@@ -209,8 +209,8 @@ export default class ThumbnailGenerator {
       const pic = sharp(Path.join(cwd, `frame${i + 1}.png`));
       const picTrimmedStats = await pic.clone().trim().stats();
 
-      const delta = Color.deltaESquared({r: 0, g: 0, b: 0}, picTrimmedStats.dominant) *
-          Color.deltaESquared({r: 255, g: 255, b: 255}, picTrimmedStats.dominant) * (await pic.stats()).entropy;
+      const delta = Color.deltaESquared({ r: 0, g: 0, b: 0 }, picTrimmedStats.dominant) *
+        Color.deltaESquared({ r: 255, g: 255, b: 255 }, picTrimmedStats.dominant) * (await pic.stats()).entropy;
 
       if (highestDelta == -1 || delta > highestDelta) {
         highestDelta = delta;
@@ -218,7 +218,7 @@ export default class ThumbnailGenerator {
       }
     }
 
-    return {img: result as Sharp};
+    return { img: result as Sharp };
   }
 }
 

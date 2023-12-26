@@ -32,7 +32,7 @@ export default class UserFileSystem implements IUserFileSystem {
       throw new Error(`The given 'rootOnHost' already exists and is not a directory`);
     }
     if (!rootOnHostExists) {
-      Fs.mkdirSync(rootOnHost, {recursive: true});
+      Fs.mkdirSync(rootOnHost, { recursive: true });
     }
 
     this.owner = owner;

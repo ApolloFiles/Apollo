@@ -20,7 +20,7 @@ Usage example:
 
 .hr-section-break > span:before,
 .hr-section-break > span:after {
-    content:    "";
+    content:    '';
     position:   absolute;
     top:        50%;
     width:      9999px;

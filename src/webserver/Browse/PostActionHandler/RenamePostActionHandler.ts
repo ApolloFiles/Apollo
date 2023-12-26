@@ -12,8 +12,8 @@ export default class RenamePostActionHandler implements IPostActionHandler {
   async handle(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, frontendType: 'browse' | 'trash', postValue: string, newPostValue: string): Promise<void> {
     if (file == null) {
       res.status(400)
-          .type('text/plain')
-          .send('Invalid value provided');
+        .type('text/plain')
+        .send('Invalid value provided');
       return;
     }
 
@@ -21,8 +21,8 @@ export default class RenamePostActionHandler implements IPostActionHandler {
 
     if (file.getPath() == destFile.getPath()) {
       res.status(400)
-          .type('text/plain')
-          .send('Invalid value provided');
+        .type('text/plain')
+        .send('Invalid value provided');
       return;
     }
 
@@ -30,16 +30,16 @@ export default class RenamePostActionHandler implements IPostActionHandler {
       await file.getFileSystem().acquireLock(req, destFile, async (writeableDestFile) => {
         if (await destFile.exists()) {
           res.status(409)
-              .type('text/plain')
-              .send('File with that name already exists');
+            .type('text/plain')
+            .send('File with that name already exists');
           return;
         }
 
         await writeableSrcFile.move(writeableDestFile);
 
         res.status(200)
-            .type('text/plain')
-            .send('OK');
+          .type('text/plain')
+          .send('OK');
       });
     });
   }

@@ -1,6 +1,6 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
-import {ExtendedVideoAnalysis} from '../../../video/analyser/VideoAnalyser.Types';
+import { ExtendedVideoAnalysis } from '../../../video/analyser/VideoAnalyser.Types';
 import FfmpegProcess from '../FfmpegProcess';
 
 export interface ExtractedFont {
@@ -35,12 +35,12 @@ export default class FontExtractor {
         '-i', videoFile
       ];
 
-      await Fs.promises.mkdir(targetDir, {recursive: true});
+      await Fs.promises.mkdir(targetDir, { recursive: true });
 
-      const ffmpegProcess = new FfmpegProcess(ffmpegArgs, {cwd: targetDir, stdio: 'ignore'});
+      const ffmpegProcess = new FfmpegProcess(ffmpegArgs, { cwd: targetDir, stdio: 'ignore' });
       await ffmpegProcess.waitForExit();
 
-      extractedFontFiles.push({fileName});
+      extractedFontFiles.push({ fileName });
     }
 
     return extractedFontFiles;

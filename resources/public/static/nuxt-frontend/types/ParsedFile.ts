@@ -1,4 +1,4 @@
-import type {VideoAnalysisResult, WriteVideoTagsApiResponse} from '~/types/FileMetaEditor';
+import type { VideoAnalysisResult, WriteVideoTagsApiResponse } from '~/types/FileMetaEditor';
 
 export type ParsedFileMeta = {
   readonly filePath: string;
@@ -23,7 +23,7 @@ export default class ParsedFile {
   private static TAG_COUNTER = 0;
 
   public readonly meta: ParsedFileMeta;
-  public readonly appState: ParsedFileAppState = {selected: false, unsavedChanges: false};
+  public readonly appState: ParsedFileAppState = { selected: false, unsavedChanges: false };
 
   public readonly fileTags: Map<number, ParsedTag>;
   public readonly streamTags: Map<number, Map<number, ParsedTag>>;
@@ -54,7 +54,7 @@ export default class ParsedFile {
       }
     }
 
-    this.fileTags.set(++ParsedFile.TAG_COUNTER, {key: tagKey, value: tagValue});
+    this.fileTags.set(++ParsedFile.TAG_COUNTER, { key: tagKey, value: tagValue });
   }
 
   removeFileTag(tagKey: string): void {
@@ -87,7 +87,7 @@ export default class ParsedFile {
   }
 
   createFileTag(): void {
-    this.fileTags.set(++ParsedFile.TAG_COUNTER, {key: '', value: ''});
+    this.fileTags.set(++ParsedFile.TAG_COUNTER, { key: '', value: '' });
   }
 
   hasFileTag(tagKey: string): boolean {
@@ -116,7 +116,7 @@ export default class ParsedFile {
       }
     }
 
-    this.streamTags.get(streamIndex)!.set(++ParsedFile.TAG_COUNTER, {key: tagKey, value: tagValue});
+    this.streamTags.get(streamIndex)!.set(++ParsedFile.TAG_COUNTER, { key: tagKey, value: tagValue });
   }
 
   removeStreamTag(streamIndex: number, tagKey: string): void {
@@ -149,7 +149,7 @@ export default class ParsedFile {
   }
 
   createStreamTag(streamIndex: number): void {
-    this.streamTags.get(streamIndex)!.set(++ParsedFile.TAG_COUNTER, {key: '', value: ''});
+    this.streamTags.get(streamIndex)!.set(++ParsedFile.TAG_COUNTER, { key: '', value: '' });
   }
 
   hasStreamTag(streamIndex: number, tagKey: string): boolean {
@@ -174,7 +174,7 @@ export default class ParsedFile {
       if (!apiResponse.newVideoAnalysis.tags.hasOwnProperty(tagKey)) {
         continue;
       }
-      this.fileTags.set(++ParsedFile.TAG_COUNTER, {key: tagKey, value: apiResponse.newVideoAnalysis.tags[tagKey]});
+      this.fileTags.set(++ParsedFile.TAG_COUNTER, { key: tagKey, value: apiResponse.newVideoAnalysis.tags[tagKey] });
     }
 
     this.streamTags.clear();
@@ -184,7 +184,7 @@ export default class ParsedFile {
         if (!stream.tags.hasOwnProperty(tagKey)) {
           continue;
         }
-        streamTagsForStream.set(++ParsedFile.TAG_COUNTER, {key: tagKey, value: stream.tags[tagKey]});
+        streamTagsForStream.set(++ParsedFile.TAG_COUNTER, { key: tagKey, value: stream.tags[tagKey] });
       }
       this.streamTags.set(stream.index, streamTagsForStream);
     }
@@ -200,7 +200,7 @@ export default class ParsedFile {
       }
 
       const tagValue = apiResponse.tags[tagKey] as string;
-      fileTags.set(++this.TAG_COUNTER, {key: tagKey, value: tagValue});
+      fileTags.set(++this.TAG_COUNTER, { key: tagKey, value: tagValue });
     }
 
     const streamTags = new Map<number, Map<number, ParsedTag>>();
@@ -212,7 +212,7 @@ export default class ParsedFile {
         }
 
         const tagValue = stream.tags[tagKey] as string;
-        streamTagsForStream.set(++this.TAG_COUNTER, {key: tagKey, value: tagValue});
+        streamTagsForStream.set(++this.TAG_COUNTER, { key: tagKey, value: tagValue });
       }
       streamTags.set(stream.index, streamTagsForStream);
     }

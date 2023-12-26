@@ -6,7 +6,7 @@ import AbstractUser from '../../AbstractUser';
 import { getFileNameCollator, getFileTypeUtils } from '../../Constants';
 import IUserFile from '../../files/IUserFile';
 import NEW_VideoLiveTranscodeTemplate from '../../frontend/NEW_VideoLiveTranscodeTemplate';
-import {ApolloWebSocket} from '../../global';
+import { ApolloWebSocket } from '../../global';
 import UserStorage from '../../UserStorage';
 import Utils from '../../Utils';
 import WebServer from '../../webserver/WebServer';
@@ -71,7 +71,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
 
         if (session == null) {
           res.status(404)
-              .send('<h1>404 Session not found</h1><a href="../new">Create a new one</a>');
+            .send('<h1>404 Session not found</h1><a href="../new">Create a new one</a>');
           return;
         }
 
@@ -129,7 +129,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
         }
 
         if (startPath !== '/') {
-          result.unshift({path: Path.dirname(startPath), name: '..', isDir: true});
+          result.unshift({ path: Path.dirname(startPath), name: '..', isDir: true });
         }
         res.json(result);
       }
@@ -187,7 +187,7 @@ function attachWebSocketConnectionHandler(webserver: WebServer, sessionMiddlewar
       // TODO: Check file/session access
 
       session.welcomeClient(client, client.apollo.user.getDisplayName())
-          .catch(console.error);
+        .catch(console.error);
     });
   });
 }

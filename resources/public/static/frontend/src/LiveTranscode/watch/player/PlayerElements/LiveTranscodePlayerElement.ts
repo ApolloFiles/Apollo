@@ -1,4 +1,4 @@
-import Hls, {HlsConfig} from 'hls.js';
+import Hls, { HlsConfig } from 'hls.js';
 import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import HlsPlayerElement from './HlsPlayerElement';
 
@@ -6,7 +6,7 @@ export default class LiveTranscodePlayerElement extends HlsPlayerElement {
   private liveTranscodeDuration?: number;
 
   constructor(container: HTMLElement, hlsOptions: Partial<HlsConfig> = {}) {
-    super(container, {...hlsOptions, autoStartLoad: false});
+    super(container, { ...hlsOptions, autoStartLoad: false });
   }
 
   set duration(duration: number) {

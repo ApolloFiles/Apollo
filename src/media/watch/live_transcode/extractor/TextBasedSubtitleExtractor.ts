@@ -1,8 +1,8 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
-import {ExtendedVideoAnalysis, Stream, SubtitleStream} from '../../../video/analyser/VideoAnalyser.Types';
-import {ISO639_2ToISO639_1Mapping} from './language/ISO639_2ToISO639_1Mapping';
+import { ExtendedVideoAnalysis, Stream, SubtitleStream } from '../../../video/analyser/VideoAnalyser.Types';
 import FfmpegProcess from '../FfmpegProcess';
+import { ISO639_2ToISO639_1Mapping } from './language/ISO639_2ToISO639_1Mapping';
 
 export interface ExtractedSubtitle {
   readonly fileName: string;
@@ -50,9 +50,9 @@ export default class TextBasedSubtitleExtractor {
         subtitleTargetPath
       ];
 
-      await Fs.promises.mkdir(targetDir, {recursive: true});
+      await Fs.promises.mkdir(targetDir, { recursive: true });
 
-      const ffmpegProcess = new FfmpegProcess(ffmpegArgs, {cwd: targetDir, stdio: 'ignore'});
+      const ffmpegProcess = new FfmpegProcess(ffmpegArgs, { cwd: targetDir, stdio: 'ignore' });
       await ffmpegProcess.waitForSuccessExit();
 
       extractedSubtitles.push({

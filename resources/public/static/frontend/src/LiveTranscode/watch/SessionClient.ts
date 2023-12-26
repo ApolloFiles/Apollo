@@ -122,7 +122,7 @@ export default class SessionClient {
       }
 
       this.handleIncomingMessage(msg).catch(console.error);
-    }, {passive: true});
+    }, { passive: true });
   }
 
   private disconnect(code?: number, reason?: string): void {

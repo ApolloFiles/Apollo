@@ -1,5 +1,5 @@
 import Path from 'node:path';
-import {getUserStorageRoot} from './Constants';
+import { getUserStorageRoot } from './Constants';
 import IUserFileSystem from './files/filesystems/IUserFileSystem';
 import IUserTmpFileSystem from './files/filesystems/IUserTmpFileSystem';
 import UserFileSystem from './files/filesystems/UserFileSystem';

@@ -23,15 +23,15 @@ export function filesHandlePost(req: express.Request, res: express.Response, fro
     const fileSystem = frontendType == 'browse' ? user.getDefaultFileSystem() : user.getTrashBinFileSystem();
 
     if (req.header('Content-Type') != 'multipart/form-data' &&
-        !req.header('Content-Type')?.startsWith('multipart/form-data;') &&
-        req.header('Content-Type') != 'application/x-www-form-urlencoded') {
+      !req.header('Content-Type')?.startsWith('multipart/form-data;') &&
+      req.header('Content-Type') != 'application/x-www-form-urlencoded') {
       res.status(400)
-          .type('text/plain')
-          .send('Invalid Content-Type');
+        .type('text/plain')
+        .send('Invalid Content-Type');
       return;
     }
 
-    await WebServer.runMiddleware(req, res, express.urlencoded({parameterLimit: 3, extended: false}));
+    await WebServer.runMiddleware(req, res, express.urlencoded({ parameterLimit: 3, extended: false }));
     if (req.header('Content-Type')?.indexOf('multipart/form-data') != -1) {
       await WebServer.runMiddleware(req, res, expressFileUpload({
         abortOnLimit: true,
@@ -57,7 +57,7 @@ export function filesHandlePost(req: express.Request, res: express.Response, fro
     }
 
     res.status(400)
-        .type('text/plain')
-        .send(`Action '${postAction}' is not supported`);
+      .type('text/plain')
+      .send(`Action '${postAction}' is not supported`);
   };
 }

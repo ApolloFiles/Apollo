@@ -1,6 +1,6 @@
 import express from 'express';
 import Library from '../media/libraries/Library';
-import {SimpleTemplate} from './SimpleTemplate';
+import { SimpleTemplate } from './SimpleTemplate';
 
 export type MediaTemplateData = {
   libraries: Library[];

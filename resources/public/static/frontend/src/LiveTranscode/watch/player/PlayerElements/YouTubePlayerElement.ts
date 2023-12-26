@@ -1,7 +1,7 @@
 import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
-import {Media} from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import { Media } from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import SubtitleTrack from '../subtitles/SubtitleTrack';
-import PlayerElement, {AudioTrack, PlayerEvents} from './PlayerElement';
+import PlayerElement, { AudioTrack, PlayerEvents } from './PlayerElement';
 
 export default class YouTubePlayerElement extends PlayerElement {
   private static youTubeIframeApiLoaded = false;
@@ -91,7 +91,7 @@ export default class YouTubePlayerElement extends PlayerElement {
   }
 
   getAudioTracks(): AudioTrack[] {
-    return [{id: 1, active: true, title: 'Default'}];
+    return [{ id: 1, active: true, title: 'Default' }];
   }
 
   setAudioTrack(track: AudioTrack): void {

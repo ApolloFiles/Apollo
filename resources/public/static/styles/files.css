@@ -1,5 +1,5 @@
-@import "sidebar.css";
-@import "contextMenu.css";
+@import 'sidebar.css';
+@import 'contextMenu.css';
 
 .file-list-item.selected {
     background-color: rgba(0, 0, 0, 0.125);

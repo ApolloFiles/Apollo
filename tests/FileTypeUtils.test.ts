@@ -11,7 +11,7 @@ describe('FileTypeUtils with and without file executable', () => {
   });
 
   afterEach(() => {
-    Fs.rmSync(tmpDir, {recursive: true, force: true});
+    Fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
   test('Check if file executable is available on this system', () => {

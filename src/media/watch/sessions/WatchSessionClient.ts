@@ -1,6 +1,6 @@
-import {RawData, WebSocket} from 'ws';
+import { RawData, WebSocket } from 'ws';
 import AbstractUser from '../../../AbstractUser';
-import {ApolloWebSocket} from '../../../global';
+import { ApolloWebSocket } from '../../../global';
 import {
   Message,
   PlaybackStatePingMessage,
@@ -27,10 +27,10 @@ export default class WatchSessionClient {
 
     socket.on('message', (data) => {
       this.onMessage(data)
-          .catch((err) => {
-            console.error(err);
-            socket.close(WS_CLOSE_PROTOCOL_ERROR, 'Error while handling message (invalid message format?)');
-          });
+        .catch((err) => {
+          console.error(err);
+          socket.close(WS_CLOSE_PROTOCOL_ERROR, 'Error while handling message (invalid message format?)');
+        });
     });
   }
 

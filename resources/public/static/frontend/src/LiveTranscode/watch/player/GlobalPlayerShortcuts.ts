@@ -50,7 +50,7 @@ export default class GlobalPlayerShortcuts {
           this.playerState.toggleFullscreen().catch(console.error);
           break;
       }
-    }, {passive: true});
+    }, { passive: true });
   }
 
   private shouldHandleEvent(event: KeyboardEvent): boolean {

@@ -14,15 +14,15 @@ export default class FileUploadPostActionHandler implements IPostActionHandler {
   async handle(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, frontendType: 'browse' | 'trash', postValue: string): Promise<void> {
     if (frontendType != 'browse') {
       res.status(400)
-          .type('text/plain')
-          .send('File upload is only allowed in browse mode.');
+        .type('text/plain')
+        .send('File upload is only allowed in browse mode.');
       return;
     }
 
     if (req.files == null || req.files['value'] == null) {
       res.status(400)
-          .type('text/plain')
-          .send('No file uploaded');
+        .type('text/plain')
+        .send('No file uploaded');
       return;
     }
 
@@ -50,8 +50,8 @@ export default class FileUploadPostActionHandler implements IPostActionHandler {
           await Fs.promises.rm(uploadedFile.tempFilePath);
 
           res.status(500)
-              .type('text/plain')
-              .send('The destination cannot be resolved on the host, this is currently not supported');
+            .type('text/plain')
+            .send('The destination cannot be resolved on the host, this is currently not supported');
           return;
         }
 
@@ -65,13 +65,13 @@ export default class FileUploadPostActionHandler implements IPostActionHandler {
 
     if (errored.length > 0) {
       res.status(400)
-          .type('text/plain')
-          .send('Upload of some/all files failed:\n' + errored.join('\n'));
+        .type('text/plain')
+        .send('Upload of some/all files failed:\n' + errored.join('\n'));
       return;
     }
 
     res.status(201)
-        .type('text/plain')
-        .send('Files have been uploaded:\n' + uploadedFiles.map(f => f.name).join('\n'));
+      .type('text/plain')
+      .send('Files have been uploaded:\n' + uploadedFiles.map(f => f.name).join('\n'));
   }
 }

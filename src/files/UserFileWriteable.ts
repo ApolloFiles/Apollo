@@ -28,7 +28,7 @@ export default class UserFileWriteable implements IUserFileWriteable {
       throw new Error('File path is null');
     }
 
-    const firstDirCreated = await Fs.promises.mkdir(Path.dirname(filePath), {recursive: true});
+    const firstDirCreated = await Fs.promises.mkdir(Path.dirname(filePath), { recursive: true });
     await Fs.promises.writeFile(filePath, data, options);
 
     await getFileStatCache().clearFile(this.userFile);
@@ -84,9 +84,9 @@ export default class UserFileWriteable implements IUserFileWriteable {
 
     await targetFileSystem.acquireLock(this.req, targetFile, async (writeableFile) => {
       await targetFileSystem.acquireLock(
-          this.req,
-          targetFileSystem.getFile(Path.dirname(targetFile.getPath())),
-          (writeableParentFile) => writeableParentFile.mkdir({recursive: true})
+        this.req,
+        targetFileSystem.getFile(Path.dirname(targetFile.getPath())),
+        (writeableParentFile) => writeableParentFile.mkdir({ recursive: true })
       );
 
       if (!(await targetFile.exists())) {
@@ -165,11 +165,11 @@ export default class UserFileWriteable implements IUserFileWriteable {
     }
 
     new BackgroundProcess<void>(async (ctx) => {
-          ctx.log(`Renames file indices from '${src.getPath()}' in '${src.getFileSystem().getUniqueId()}' to '${dest.getUserFile().getPath()}' in '${dest.getUserFile().getFileSystem().getUniqueId()}'`);
+        ctx.log(`Renames file indices from '${src.getPath()}' in '${src.getFileSystem().getUniqueId()}' to '${dest.getUserFile().getPath()}' in '${dest.getUserFile().getFileSystem().getUniqueId()}'`);
 
-          await fileIndex.renameIndex(src, dest.getUserFile());
-        },
-        undefined, src.getOwner());
+        await fileIndex.renameIndex(src, dest.getUserFile());
+      },
+      undefined, src.getOwner());
   }
 
   protected static updateFileIndexMkDir(userFile: IUserFile, recursive: boolean): void {

@@ -1,7 +1,7 @@
 import express from 'express';
-import {LibraryMedia, LibraryTitle} from '../database/postgres/MediaLibraryTable';
+import { LibraryMedia, LibraryTitle } from '../database/postgres/MediaLibraryTable';
 import Library from '../media/libraries/Library';
-import {SimpleTemplate} from './SimpleTemplate';
+import { SimpleTemplate } from './SimpleTemplate';
 
 export type MediaLibraryTitleData = {
   library: Library;

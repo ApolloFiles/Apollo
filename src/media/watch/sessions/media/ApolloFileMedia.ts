@@ -23,7 +23,7 @@ export default class ApolloFileMedia extends BaseSessionMedia {
     const hardLinkFileName = this.generateRandomFileName(this.data.uri);
     this.hardLinkedFilePath = Path.join(hardLinkTargetDir, hardLinkFileName);
 
-    await Fs.mkdir(hardLinkTargetDir, {recursive: true});
+    await Fs.mkdir(hardLinkTargetDir, { recursive: true });
     await Utils.createHardLinkAndFallbackToSymbolicLinkIfCrossDevice(srcPathOnHost, this.hardLinkedFilePath);
 
     this.data = {
@@ -35,7 +35,7 @@ export default class ApolloFileMedia extends BaseSessionMedia {
 
   async cleanup(session: WatchSession): Promise<void> {
     try {
-      await Fs.rm(session.workingDir.workingPath, {recursive: true, force: true});
+      await Fs.rm(session.workingDir.workingPath, { recursive: true, force: true });
     } catch (err) {
       if ((err as any).code !== 'ENOTEMPTY') {
         throw err;

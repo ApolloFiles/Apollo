@@ -5,20 +5,20 @@ export class ServerTiming {
   private currTiming: TimingEntry | null;
 
   constructor() {
-    this.currTiming = {name: 'init', nanos: process.hrtime.bigint()};
+    this.currTiming = { name: 'init', nanos: process.hrtime.bigint() };
   }
 
   startNext(name: TimingEntry['name'], description?: TimingEntry['description']): void {
     this.stopCurrent();
 
-    this.currTiming = {name, description, nanos: process.hrtime.bigint()};
+    this.currTiming = { name, description, nanos: process.hrtime.bigint() };
   }
 
   stopCurrent(): void {
     if (this.currTiming) {
       const elapsedNanos = process.hrtime.bigint() - this.currTiming.nanos;
 
-      this.timings.push({name: this.currTiming.name, description: this.currTiming.description, nanos: elapsedNanos});
+      this.timings.push({ name: this.currTiming.name, description: this.currTiming.description, nanos: elapsedNanos });
       this.currTiming = null;
     }
   }

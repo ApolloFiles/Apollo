@@ -1,5 +1,5 @@
 import express from 'express';
-import {SimpleTemplate} from './SimpleTemplate';
+import { SimpleTemplate } from './SimpleTemplate';
 
 export type MediaLibraryEditMediaData = {
   videoAnalysis: {

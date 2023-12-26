@@ -22,7 +22,7 @@ const virtualTagKey = computed({
   set(value: string) {
     for (const selectedFile of props.selectedFiles) {
       if ((props.streamIndex === -1 && selectedFile.hasFileTag(value)) ||
-          (props.streamIndex !== -1 && selectedFile.hasStreamTag(props.streamIndex, value))) {
+        (props.streamIndex !== -1 && selectedFile.hasStreamTag(props.streamIndex, value))) {
         // TODO: Notify user and fix buggy feel because of view and data getting out-of-sync
         console.warn(`Tag already exists on {file=${selectedFile.meta.name},streamIndex=${props.streamIndex},tagKey=${value}`);
         return;
@@ -93,12 +93,12 @@ const virtualTagValue = computed({
             :ui="{ wrapper: 'relative grow' }"/>
 
     <UButton
-        icon="i-ic-outline-delete"
-        size="sm"
-        color="red"
-        variant="solid"
-        square
-        @click="() => deleteTag()"
+      icon="i-ic-outline-delete"
+      size="sm"
+      color="red"
+      variant="solid"
+      square
+      @click="() => deleteTag()"
     />
   </div>
 </template>

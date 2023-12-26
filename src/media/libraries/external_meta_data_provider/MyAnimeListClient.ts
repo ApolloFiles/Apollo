@@ -1,5 +1,5 @@
-import {HttpResponse} from '@spraxdev/node-commons';
-import {getHttpClient} from '../../../Constants';
+import { HttpResponse } from '@spraxdev/node-commons';
+import { getHttpClient } from '../../../Constants';
 
 export interface MyAnimeListAnime {
   readonly id: number;

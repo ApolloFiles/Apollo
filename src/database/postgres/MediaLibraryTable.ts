@@ -1,6 +1,6 @@
 import Path from 'node:path';
 import AbstractUser from '../../AbstractUser';
-import {getSqlDatabase} from '../../Constants';
+import { getSqlDatabase } from '../../Constants';
 import IUserFile from '../../files/IUserFile';
 import Library from '../../media/libraries/Library';
 import SqlDatabase from '../SqlDatabase';

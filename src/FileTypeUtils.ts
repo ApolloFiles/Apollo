@@ -25,8 +25,8 @@ export default class FileTypeUtils {
     }
 
     if (fileMimeType == null ||
-        fileMimeType == 'inode/x-empty' ||
-        (fileMimeType == 'application/octet-stream' && path.toLowerCase().endsWith('.mp3'))) {
+      fileMimeType == 'inode/x-empty' ||
+      (fileMimeType == 'application/octet-stream' && path.toLowerCase().endsWith('.mp3'))) {
       const lookUpByExtension = MimeType.lookup(path);
 
       if (lookUpByExtension) {
@@ -45,10 +45,10 @@ export default class FileTypeUtils {
   private static async getMimeTypeFromFileApp(path: string): Promise<string | null> {
     const childProcessArgs = ['--mime-type', '--preserve-date', '--separator=', '-E', '--raw', '--print0', path];
     const childProcessResult = await new ProcessBuilder('file', childProcessArgs)
-        .errorOnNonZeroExit()
-        .bufferStdOut()
-        .bufferStdErr()
-        .runPromised();
+      .errorOnNonZeroExit()
+      .bufferStdOut()
+      .bufferStdErr()
+      .runPromised();
 
     if (childProcessResult.err) {
       if (childProcessResult.process.bufferedStdOut.includes('No such file or directory')) {

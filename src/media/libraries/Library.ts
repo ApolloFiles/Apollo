@@ -1,5 +1,5 @@
 import AbstractUser from '../../AbstractUser';
-import MediaLibraryTable, {LibraryMedia, LibraryTitle} from '../../database/postgres/MediaLibraryTable';
+import MediaLibraryTable, { LibraryMedia, LibraryTitle } from '../../database/postgres/MediaLibraryTable';
 import IUserFile from '../../files/IUserFile';
 
 export default class Library {

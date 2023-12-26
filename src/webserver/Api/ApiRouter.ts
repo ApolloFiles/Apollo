@@ -1,10 +1,10 @@
-import {handleRequestRestfully, StringUtils} from '@spraxdev/node-commons';
+import { handleRequestRestfully, StringUtils } from '@spraxdev/node-commons';
 import express from 'express';
 import Fs from 'node:fs';
-import {getFileNameCollator} from '../../Constants';
+import { getFileNameCollator } from '../../Constants';
 import IUserFile from '../../files/IUserFile';
 import VideoAnalyser from '../../media/video/analyser/VideoAnalyser';
-import {ExtendedVideoAnalysis} from '../../media/video/analyser/VideoAnalyser.Types';
+import { ExtendedVideoAnalysis } from '../../media/video/analyser/VideoAnalyser.Types';
 import VideoTagWriter from '../../media/video/tag-writer/VideoTagWriter';
 import Utils from '../../Utils';
 import WebServer from '../WebServer';
@@ -71,7 +71,7 @@ apiRouter.use('/v1/file/list', requireAuthMiddleware, (req, res, next) => {
         res
           .status(204)
           .type('application/json')
-          .send({error: 'Requested path does not exist.'});
+          .send({ error: 'Requested path does not exist.' });
         return;
       }
 
@@ -79,7 +79,7 @@ apiRouter.use('/v1/file/list', requireAuthMiddleware, (req, res, next) => {
         res
           .status(400)
           .type('application/json')
-          .send({error: 'Requested path is not a directory.'});
+          .send({ error: 'Requested path is not a directory.' });
         return;
       }
 
@@ -143,7 +143,7 @@ apiRouter.use('/v1/file/get', requireAuthMiddleware, (req, res, next) => {
         res
           .status(400)
           .type('application/json')
-          .send({error: 'Requested path is a directory.'});
+          .send({ error: 'Requested path is a directory.' });
         return;
       }
 
@@ -162,14 +162,14 @@ apiRouter.use('/v1/video-analysis', requireAuthMiddleware, (req, res, next) => {
         res
           .status(400)
           .type('application/json')
-          .send({error: 'Invalid path parameter.'});
+          .send({ error: 'Invalid path parameter.' });
         return;
       }
       if (!requestedPath.startsWith('/')) {
         res
           .status(400)
           .type('application/json')
-          .send({error: 'Requested path must be absolute.'});
+          .send({ error: 'Requested path must be absolute.' });
         return;
       }
 
@@ -205,11 +205,11 @@ apiRouter.use('/v1/video-analysis', requireAuthMiddleware, (req, res, next) => {
         res
           .status(404)
           .type('application/json')
-          .send({error: 'Requested file does not exist.'});
+          .send({ error: 'Requested file does not exist.' });
         return;
       }
 
-      const result: { files: VideoAnalysisResult[] } = {files: []};
+      const result: { files: VideoAnalysisResult[] } = { files: [] };
       if (await requestedFile.isDirectory()) {
         for (const file of (await requestedFile.getFiles())) {
           if ((await file.getMimeType())?.startsWith('video/') ?? false) {
@@ -240,14 +240,14 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         res
           .status(400)
           .type('application/json')
-          .send({error: 'Invalid or missing filePath.'});
+          .send({ error: 'Invalid or missing filePath.' });
         return;
       }
       if (!requestedFilePath.startsWith('/')) {
         res
           .status(400)
           .type('application/json')
-          .send({error: 'Requested path must be absolute.'});
+          .send({ error: 'Requested path must be absolute.' });
         return;
       }
 
@@ -256,7 +256,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         res
           .status(400)
           .type('application/json')
-          .send({error: 'Invalid or missing fileTags.'});
+          .send({ error: 'Invalid or missing fileTags.' });
         return;
       }
       for (const fileTagsKey in fileTags) {
@@ -264,7 +264,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           res
             .status(400)
             .type('application/json')
-            .send({error: `Invalid fileTagValue for key ${fileTagsKey}.`});
+            .send({ error: `Invalid fileTagValue for key ${fileTagsKey}.` });
           return;
         }
       }
@@ -274,7 +274,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         res
           .status(400)
           .type('application/json')
-          .send({error: 'Invalid or missing streamTags.'});
+          .send({ error: 'Invalid or missing streamTags.' });
         return;
       }
       for (const streamIndex in streamTags) {
@@ -282,7 +282,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           res
             .status(400)
             .type('application/json')
-            .send({error: `Invalid key type/value for streamIndex: ${streamIndex}`});
+            .send({ error: `Invalid key type/value for streamIndex: ${streamIndex}` });
           return;
         }
 
@@ -291,7 +291,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           res
             .status(400)
             .type('application/json')
-            .send({error: `Invalid streamTags for streamIndex ${streamIndex}.`});
+            .send({ error: `Invalid streamTags for streamIndex ${streamIndex}.` });
           return;
         }
       }
@@ -422,7 +422,7 @@ apiRouter.use('/', (req, res, next) => {
       res
         .status(404)
         .type('application/json')
-        .send({error: 'Unknown API endpoint'});
+        .send({ error: 'Unknown API endpoint' });
     }
   });
 });

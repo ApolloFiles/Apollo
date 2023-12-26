@@ -1,4 +1,4 @@
-import {ConfigFile, HttpClient} from '@spraxdev/node-commons';
+import { ConfigFile, HttpClient } from '@spraxdev/node-commons';
 import Crypto from 'node:crypto';
 import Fs from 'node:fs';
 import Os from 'node:os';
@@ -7,7 +7,7 @@ import FileStatCache from './cache/FileStatCache';
 import PostgresDatabase from './database/postgres/PostgresDatabase';
 import SqlDatabase from './database/SqlDatabase';
 import FileTypeUtils from './FileTypeUtils';
-import {ApolloConfig} from './global';
+import { ApolloConfig } from './global';
 import ProcessManager from './process_manager/ProcessManager';
 
 const IS_PRODUCTION = process.env.NODE_ENV?.toLowerCase() === 'production';
@@ -208,7 +208,7 @@ export function getFileTypeUtils(): FileTypeUtils {
 
 export function getFileNameCollator(): Intl.Collator {
   if (fileNameCollator == null) {
-    fileNameCollator = new Intl.Collator('en', {numeric: true, sensitivity: 'accent'});
+    fileNameCollator = new Intl.Collator('en', { numeric: true, sensitivity: 'accent' });
   }
 
   return fileNameCollator;
@@ -266,7 +266,7 @@ function determineDefaultWorkingRoot(): string {
 
   workingRoot = Path.resolve(workingRoot) + Path.sep;
 
-  Fs.mkdirSync(workingRoot, {recursive: true});
+  Fs.mkdirSync(workingRoot, { recursive: true });
 
   return workingRoot;
 }
@@ -282,6 +282,6 @@ function determineAppTmpDir(): string {
     tmpDir = Path.resolve(tmpDir) + Path.sep;
   }
 
-  Fs.mkdirSync(tmpDir, {recursive: true});
+  Fs.mkdirSync(tmpDir, { recursive: true });
   return tmpDir;
 }

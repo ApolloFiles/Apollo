@@ -18,7 +18,7 @@ export default class PostgresDatabase implements SqlDatabase {
       password: cfg.password,
       database: cfg.database,
 
-      ssl: cfg.ssl ? {rejectUnauthorized: false} : false,
+      ssl: cfg.ssl ? { rejectUnauthorized: false } : false,
       max: cfg.poolSize
     });
 
@@ -37,8 +37,8 @@ export default class PostgresDatabase implements SqlDatabase {
 
   isAvailable(): Promise<boolean> {
     return this.pool.query('SELECT 1;')
-        .then(() => true)
-        .catch(() => false);
+      .then(() => true)
+      .catch(() => false);
   }
 
   async shutdown(): Promise<void> {
@@ -47,7 +47,7 @@ export default class PostgresDatabase implements SqlDatabase {
 
   static escapeForLikePattern(input: string): string {
     return input.replace(/#/g, '##')
-        .replace(/_/g, '#_')
-        .replace(/%/g, '#%');
+      .replace(/_/g, '#_')
+      .replace(/%/g, '#%');
   }
 }

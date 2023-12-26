@@ -3,7 +3,7 @@
     color:       #6c6c6c;
     transition:  all .4s, width 1s;
 
-    width:   min-content;
+    width:       min-content;
     white-space: nowrap;
 }
 

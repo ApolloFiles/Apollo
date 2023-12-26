@@ -7,6 +7,6 @@ process.env.APOLLO_TMP_DIR = Path.join(process.env.APOLLO_WORKING_ROOT, 'tmp', '
 
 afterAll(async () => {
   if (process.env.APOLLO_WORKING_ROOT) {
-    await Fs.promises.rm(process.env.APOLLO_WORKING_ROOT, {recursive: true, force: true});
+    await Fs.promises.rm(process.env.APOLLO_WORKING_ROOT, { recursive: true, force: true });
   }
 });

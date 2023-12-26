@@ -6,14 +6,14 @@ import ParsedFile from '~/types/ParsedFile';
 const props = defineProps<{ apolloDirectoryPath: string }>();
 
 const {pending, error, data: fetchedData} = await useLazyFetch<VideoAnalysisApiResponse>(
-    'http://localhost:8080/api/v1/video-analysis',
-    {
-      server: false,
-      cache: 'no-store',
-      method: 'GET',
-      query: {path: computed(() => props.apolloDirectoryPath)},
-      headers: {'Authorization': 'Bearer superSecretTokenForSpraxDev'}
-    }
+  'http://localhost:8080/api/v1/video-analysis',
+  {
+    server: false,
+    cache: 'no-store',
+    method: 'GET',
+    query: {path: computed(() => props.apolloDirectoryPath)},
+    headers: {'Authorization': 'Bearer superSecretTokenForSpraxDev'}
+  }
 );
 
 const parsedFiles: Ref<ParsedFile[]> = ref([]);

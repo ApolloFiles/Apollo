@@ -1,8 +1,8 @@
 import express from 'express';
 import Path from 'path';
-import {getAppResourcesDir, getConfig} from '../Constants';
+import { getAppResourcesDir, getConfig } from '../Constants';
 import Utils from '../Utils';
-import {AbstractTemplate} from './AbstractTemplate';
+import { AbstractTemplate } from './AbstractTemplate';
 
 export class SimpleTemplate extends AbstractTemplate {
   constructor(templateIdSuffix: string, relativeTemplateFilePath: string) {
@@ -15,7 +15,7 @@ export class SimpleTemplate extends AbstractTemplate {
 
       global: {
         templateId: this.templateId,
-        req: {body: req.method === 'GET' ? req.query : req.body ?? {}},
+        req: { body: req.method === 'GET' ? req.query : req.body ?? {} },
         apolloConfig: getConfig().data,
         HELPERS: {
           escapeHtml: Utils.escapeHtml

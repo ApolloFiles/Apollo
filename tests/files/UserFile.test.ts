@@ -88,10 +88,10 @@ describe('#generateCacheId', () => {
     expect(firstCacheId).toBe(await fileSystemFile.generateCacheId(true));
 
     if (filePath.endsWith('.txt')) {
-      await Fs.promises.mkdir(Path.dirname(fileSystemFile.getAbsolutePathOnHost() as string), {recursive: true});
+      await Fs.promises.mkdir(Path.dirname(fileSystemFile.getAbsolutePathOnHost() as string), { recursive: true });
       await Fs.promises.writeFile(fileSystemFile.getAbsolutePathOnHost() as string, 'test');
     } else {
-      await Fs.promises.mkdir(fileSystemFile.getAbsolutePathOnHost() as string, {recursive: true});
+      await Fs.promises.mkdir(fileSystemFile.getAbsolutePathOnHost() as string, { recursive: true });
       await Fs.promises.utimes(fileSystemFile.getAbsolutePathOnHost() as string, 100, 100);
     }
 

@@ -1,6 +1,6 @@
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import NativePlayerElement from './PlayerElements/NativePlayerElement';
-import PlayerElement, {AudioTrack, PlayerEvents} from './PlayerElements/PlayerElement';
+import PlayerElement, { AudioTrack, PlayerEvents } from './PlayerElements/PlayerElement';
 import SubtitleTrack from './subtitles/SubtitleTrack';
 
 export default class PlayerState extends EventEmitter {

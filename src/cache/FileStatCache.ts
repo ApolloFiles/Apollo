@@ -1,5 +1,5 @@
-import Fs from 'node:fs';
 import NodeCache from 'node-cache';
+import Fs from 'node:fs';
 import IUserFile from '../files/IUserFile';
 
 export default class FileStatCache {
@@ -24,15 +24,15 @@ export default class FileStatCache {
 
     if (file.getPath().lastIndexOf('/') === 0) {
       this.cache.keys()
-          .filter(key => key.endsWith(`:directorySize`))
-          .forEach(key => this.cache.del(key));
+        .filter(key => key.endsWith(`:directorySize`))
+        .forEach(key => this.cache.del(key));
     } else {
       const subdirPath = file.getFileSystem().getFile(file.getPath().substring(0, file.getPath().indexOf('/', 1) + 1)).getAbsolutePathOnHost();
 
       if (subdirPath != null) {
         this.cache.keys()
-            .filter(key => key.startsWith(subdirPath))
-            .forEach(key => this.cache.del(key));
+          .filter(key => key.startsWith(subdirPath))
+          .forEach(key => this.cache.del(key));
       }
     }
 

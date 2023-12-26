@@ -1,7 +1,7 @@
 import * as FastDirectorySize from 'fast-directory-size';
 import Fs from 'node:fs';
-import * as NodeStream from 'node:stream';
 import Path from 'node:path';
+import * as NodeStream from 'node:stream';
 import AbstractUser from '../AbstractUser';
 import { getFileStatCache, getFileTypeUtils } from '../Constants';
 import IUserFileSystem from './filesystems/IUserFileSystem';
@@ -150,14 +150,14 @@ export default class UserFile implements IUserFile {
 
   async generateCacheId(forceRefresh: boolean = false): Promise<string> {
     if (forceRefresh || this.cachedGeneratedCacheId == null) {
-      let fileStat = {mtimeMs: -1, size: -1};
+      let fileStat = { mtimeMs: -1, size: -1 };
       try {
         fileStat = await Fs.promises.stat(this.getAbsolutePathOnHost());
       } catch (fileNotExists) {
       }
 
       this.cachedGeneratedCacheId = Buffer.from(this.getAbsolutePathOnHost() + ';' + fileStat.mtimeMs + ';' + fileStat.size)
-          .toString('base64');
+        .toString('base64');
     }
 
     return this.cachedGeneratedCacheId;

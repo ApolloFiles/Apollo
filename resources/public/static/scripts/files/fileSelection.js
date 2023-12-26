@@ -4,30 +4,30 @@
 const currentFileSelection = [];
 
 document.getElementById('file-list')
-    .addEventListener('click', (event) => {
-      const fileInfoElement = findFileInfoElement(event);
-      if (fileInfoElement == null) {
-        return;
-      }
+  .addEventListener('click', (event) => {
+    const fileInfoElement = findFileInfoElement(event);
+    if (fileInfoElement == null) {
+      return;
+    }
 
-      event.preventDefault();
+    event.preventDefault();
 
-      const fileInfo = parseFileInfo(fileInfoElement);
-      const ctrlPressed = event.ctrlKey || event.metaKey;
+    const fileInfo = parseFileInfo(fileInfoElement);
+    const ctrlPressed = event.ctrlKey || event.metaKey;
 
-      if (ctrlPressed) {
-        toggleFileSelection(fileInfo, fileInfoElement);
-      } else if (isFileSelectedExclusively(fileInfo)) {
-        location.href = fileInfo.frontendUrl; // TODO: Check for double click
-      } else {
-        clearFileSelection();
-        toggleFileSelection(fileInfo, fileInfoElement);
-      }
+    if (ctrlPressed) {
+      toggleFileSelection(fileInfo, fileInfoElement);
+    } else if (isFileSelectedExclusively(fileInfo)) {
+      location.href = fileInfo.frontendUrl; // TODO: Check for double click
+    } else {
+      clearFileSelection();
+      toggleFileSelection(fileInfo, fileInfoElement);
+    }
 
-      updateMultiFileSelectionStatusCard();
+    updateMultiFileSelectionStatusCard();
 
-      console.log('fileInfo:', fileInfo);
-    });
+    console.log('fileInfo:', fileInfo);
+  });
 
 function updateMultiFileSelectionStatusCard() {
   const statusCardElement = document.getElementById('multi-file-selection-status');

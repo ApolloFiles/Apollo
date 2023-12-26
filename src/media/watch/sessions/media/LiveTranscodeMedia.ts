@@ -1,11 +1,11 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import VideoAnalyser from '../../../video/analyser/VideoAnalyser';
-import FontExtractor, {ExtractedFont} from '../../live_transcode/extractor/FontExtractor';
+import FontExtractor, { ExtractedFont } from '../../live_transcode/extractor/FontExtractor';
 import TextBasedSubtitleExtractor from '../../live_transcode/extractor/TextBasedSubtitleExtractor';
 import FfmpegProcess from '../../live_transcode/FfmpegProcess';
 import LiveTranscode from '../../live_transcode/LiveTranscode';
-import {BackendDebugInfoMessage} from '../CommunicationProtocol';
+import { BackendDebugInfoMessage } from '../CommunicationProtocol';
 import WatchSession from '../WatchSession';
 import WatchSessionClient from '../WatchSessionClient';
 import ApolloFileMedia from './ApolloFileMedia';
@@ -21,7 +21,7 @@ export default class LiveTranscodeMedia extends ApolloFileMedia {
 
     const transcodeDirName = this.generateRandomFileName();
     const transcodeTargetDir = Path.join(session.workingDir.publicPath, transcodeDirName);
-    await Fs.promises.mkdir(transcodeTargetDir, {recursive: true});
+    await Fs.promises.mkdir(transcodeTargetDir, { recursive: true });
 
     const videoAnalysis = await VideoAnalyser.analyze(this.hardLinkedFilePath, true);
 

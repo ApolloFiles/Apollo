@@ -19,7 +19,7 @@ export default class VideoTagWriter {
       '-i', filePath,
 
       '-map_metadata:g', '-1',
-      ...Object.entries(fileTags).flatMap(([key, value]) => ['-metadata:g', `${key}=${value}`]),
+      ...Object.entries(fileTags).flatMap(([key, value]) => ['-metadata:g', `${key}=${value}`])
     ];
 
     for (const streamIndex in streamTags) {
@@ -37,7 +37,7 @@ export default class VideoTagWriter {
       tmpFilePath
     );
 
-    const ffmpegProcess = new FfmpegProcess(ffmpegArgs, {stdio: 'inherit'});
+    const ffmpegProcess = new FfmpegProcess(ffmpegArgs, { stdio: 'inherit' });
     await ffmpegProcess.waitForSuccessExit();
     return tmpFilePath;
   }

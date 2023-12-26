@@ -1,6 +1,6 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
-import {getHttpClient} from '../../../Constants';
+import { getHttpClient } from '../../../Constants';
 import MediaLibraryTable from '../../../database/postgres/MediaLibraryTable';
 import IUserFile from '../../../files/IUserFile';
 import UserFileHelper from '../../../UserFileHelper';

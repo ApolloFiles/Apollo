@@ -84,8 +84,8 @@ export default class PostgresFileIndex implements FileIndex {
         }
 
         FileIndexTable.getInstance().setFileIndex(file, stat, sha256)
-            .then(resolve)
-            .catch(reject);
+          .then(resolve)
+          .catch(reject);
       });
 
       fileReadStream.pipe(hash);

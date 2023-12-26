@@ -61,7 +61,7 @@ export default class ProcessBuilder {
   runPromised(): Promise<{ process: IChildProcess, code: ChildProcessExitCode, signal: ChildProcessExitSignal, err?: Error }> {
     return new Promise((resolve) => {
       const process = this.run();
-      process.on('exit', (code, signal, err) => resolve({process, code, signal, err}));
+      process.on('exit', (code, signal, err) => resolve({ process, code, signal, err }));
     });
   }
 

@@ -1,7 +1,7 @@
-import Hls, {HlsConfig} from 'hls.js';
+import Hls, { HlsConfig } from 'hls.js';
 import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import NativePlayerElement from './NativePlayerElement';
-import {AudioTrack} from './PlayerElement';
+import { AudioTrack } from './PlayerElement';
 
 export default class HlsPlayerElement extends NativePlayerElement {
   protected readonly hls: Hls;

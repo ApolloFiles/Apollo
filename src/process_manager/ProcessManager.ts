@@ -52,7 +52,7 @@ export default class ProcessManager {
   }
 
   private static initProcessLog(process: IProcess): void {
-    Fs.mkdirSync(getProcessLogDir(), {recursive: true});
+    Fs.mkdirSync(getProcessLogDir(), { recursive: true });
     const logWriteStream = Fs.createWriteStream(Path.join(getProcessLogDir(), `${process.uniqueId}.log`));
 
     let additionalInitValues: { [key: string]: any } = {};
@@ -77,11 +77,11 @@ export default class ProcessManager {
 
     // TODO: put exit-event into IProcess interface and put provided arguments into additionalData
     if (process instanceof ApolloChildProcess) {
-      process.once('exit', (code, signal, err) => this.logProcessDone(process, logWriteStream, err, {code, signal}));
+      process.once('exit', (code, signal, err) => this.logProcessDone(process, logWriteStream, err, { code, signal }));
     } else if (process instanceof BackgroundProcess) {
       process.result
-          .then(() => this.logProcessDone(process, logWriteStream))
-          .catch(err => this.logProcessDone(err, logWriteStream));
+        .then(() => this.logProcessDone(process, logWriteStream))
+        .catch(err => this.logProcessDone(err, logWriteStream));
     } else {
       console.error(`Cannot init process log for unknown process type '${process.constructor.name}'`);
     }

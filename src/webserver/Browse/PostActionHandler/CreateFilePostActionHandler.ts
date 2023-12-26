@@ -17,8 +17,8 @@ export default class CreateFilePostActionHandler implements IPostActionHandler {
   async handle(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, frontendType: 'browse' | 'trash', postValue: string): Promise<void> {
     if (file == null) {
       res.status(400)
-          .type('text/plain')
-          .send('Invalid value provided');
+        .type('text/plain')
+        .send('Invalid value provided');
       return;
     }
 
@@ -31,14 +31,14 @@ export default class CreateFilePostActionHandler implements IPostActionHandler {
         }
 
         res.status(201)
-            .type('text/plain')
-            .send((this.createDirectory ? 'Directory' : 'File') + ' created');
+          .type('text/plain')
+          .send((this.createDirectory ? 'Directory' : 'File') + ' created');
         return;
       }
 
       res.status(409)
-          .type('text/plain')
-          .send('File already exists');
+        .type('text/plain')
+        .send('File already exists');
     });
   }
 }

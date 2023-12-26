@@ -3,23 +3,23 @@ import ApolloVideoPlayer from '../ApolloVideoPlayer';
 import SubtitleTrack from '../subtitles/SubtitleTrack';
 
 export type PlayerEvents = 'loadedmetadata'
-  | 'play'
-  | 'pause'
-  | 'ended'
+                           | 'play'
+                           | 'pause'
+                           | 'ended'
 
-  | 'volumechange'
+                           | 'volumechange'
 
-  | 'timeupdate'
-  | 'durationchange'
-  | 'progress'
-  | 'ratechange'
+                           | 'timeupdate'
+                           | 'durationchange'
+                           | 'progress'
+                           | 'ratechange'
 
-  | 'seeking'
-  | 'seeked';
+                           | 'seeking'
+                           | 'seeked';
 
 export type AudioTrack = {
   readonly id: number;
-  readonly active:boolean;
+  readonly active: boolean;
   readonly title: string;
   readonly lang?: string;
 }

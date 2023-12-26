@@ -1,10 +1,10 @@
-import {StringUtils} from '@spraxdev/node-commons';
+import { StringUtils } from '@spraxdev/node-commons';
 import Fs from 'node:fs';
 import Os from 'node:os';
 import VideoAnalyser from '../../video/analyser/VideoAnalyser';
-import {ExtendedVideoAnalysis, Stream, VideoStream} from '../../video/analyser/VideoAnalyser.Types';
+import { ExtendedVideoAnalysis, Stream, VideoStream } from '../../video/analyser/VideoAnalyser.Types';
 import StreamArgsBuilder from './args_builder/StreamArgsBuilder';
-import VideoEncoderArgsBuilder, {TargetOptions} from './args_builder/VideoEncoderArgsBuilder';
+import VideoEncoderArgsBuilder, { TargetOptions } from './args_builder/VideoEncoderArgsBuilder';
 import TextBasedSubtitleExtractor from './extractor/TextBasedSubtitleExtractor';
 import FfmpegProcess from './FfmpegProcess';
 
@@ -32,7 +32,7 @@ export interface LiveTranscodeResult {
 
 export default class LiveTranscode {
   static async startLiveTranscode(videoFile: string, targetDir: string): Promise<LiveTranscodeResult> {
-    await Fs.promises.mkdir(targetDir, {recursive: true});
+    await Fs.promises.mkdir(targetDir, { recursive: true });
 
     const videoAnalysis = await VideoAnalyser.analyze(videoFile, true);
     const streamsToTranscode = this.autoDetectStreamsToTranscode(videoAnalysis);

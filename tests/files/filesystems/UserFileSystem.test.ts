@@ -30,7 +30,7 @@ describe('Constructor input validation', () => {
     await expect(testFile.exists()).resolves.toBe(true);
 
     expect(() => new UserFileSystem(user, testFileAbsolutePathOnHost))
-        .toThrowError(`The given 'rootOnHost' already exists and is not a directory`);
+      .toThrowError(`The given 'rootOnHost' already exists and is not a directory`);
   });
 });
 

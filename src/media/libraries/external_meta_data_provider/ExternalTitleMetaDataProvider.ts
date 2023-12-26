@@ -1,5 +1,5 @@
-import {getConfig} from '../../../Constants';
-import MyAnimeListClient, {MyAnimeListAnime} from './MyAnimeListClient';
+import { getConfig } from '../../../Constants';
+import MyAnimeListClient, { MyAnimeListAnime } from './MyAnimeListClient';
 
 export default class ExternalTitleMetaDataProvider {
   private static readonly KNOWN_PROVIDERS: { [identifier: string]: MyAnimeListClient } = {

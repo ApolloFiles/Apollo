@@ -22,7 +22,7 @@ loginRouter.all('/', (req: express.Request, res, next) => {
         }
 
         res.status(401)
-            .send('You are already logged in.');
+          .send('You are already logged in.');
         return;
       }
 
@@ -43,8 +43,8 @@ loginRouter.all('/', (req: express.Request, res, next) => {
       }
 
       res.status(401)
-          .type('text/html')
-          .send(new LoginTemplate().render(req, {oAuthProvider}));
+        .type('text/html')
+        .send(new LoginTemplate().render(req, { oAuthProvider }));
     }
   });
 });
@@ -59,7 +59,7 @@ loginRouter.all('/third-party/:thirdPartyProviderKey?', (req: express.Request, r
         }
 
         res.status(401)
-            .send('You are already logged in.');
+          .send('You are already logged in.');
         return;
       }
 
@@ -68,12 +68,12 @@ loginRouter.all('/third-party/:thirdPartyProviderKey?', (req: express.Request, r
 
       if (thirdPartyProviderKey == null || thirdPartyProvider == null) {
         res.status(404)
-            .send('Unable to find the requested third party provider.');
+          .send('Unable to find the requested third party provider.');
         return;
       }
       if (!thirdPartyProvider.enabled) {
         res.status(409)
-            .send('The requested third party provider is not enabled.');
+          .send('The requested third party provider is not enabled.');
         return;
       }
 
@@ -83,7 +83,7 @@ loginRouter.all('/third-party/:thirdPartyProviderKey?', (req: express.Request, r
           return;
         default:
           res.status(500)
-              .send(`Found the requested third party provider, but its type is not supported (broken configuration?).`);
+            .send(`Found the requested third party provider, but its type is not supported (broken configuration?).`);
           return;
       }
     }
@@ -152,7 +152,7 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
     const errorDescription = typeof req.query.error_description == 'string' ? req.query.error_description : '–';
 
     res.status(400)
-        .send(`<b>Error-Type:</b> ${Utils.escapeHtml(errorType)}\n<br><b>Error-Description:</b> ${Utils.escapeHtml(errorDescription).replace(/\r?\n/g, '<br>\n')}`);
+      .send(`<b>Error-Type:</b> ${Utils.escapeHtml(errorType)}\n<br><b>Error-Description:</b> ${Utils.escapeHtml(errorDescription).replace(/\r?\n/g, '<br>\n')}`);
     return;
   }
 
@@ -191,21 +191,21 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
 
     default:
       res.status(500)
-          .send(`The configured request body content type is not supported (broken configuration?).`);
+        .send(`The configured request body content type is not supported (broken configuration?).`);
       return;
   }
 
   const tokenResponse = await getHttpClient().post(thirdPartyProvider.tokenUrl,
-      {
-        Accept: 'application/json',
-        'Content-Type': `application/${thirdPartyProvider.requestBodyContentType}`
-      }, tokenRequestBody);
+    {
+      Accept: 'application/json',
+      'Content-Type': `application/${thirdPartyProvider.requestBodyContentType}`
+    }, tokenRequestBody);
 
   const tokenResponseBody = JSON.parse(tokenResponse.body.toString('utf-8'));
 
   if (tokenResponseBody.error) {
     res.status(400)
-        .send(`<b>Error-Type:</b> ${Utils.escapeHtml(tokenResponseBody.error)}\n<br><b>Error-Description:</b> ${Utils.escapeHtml(tokenResponseBody.error_description || '–').replace(/\r?\n/g, '<br>\n')}`);
+      .send(`<b>Error-Type:</b> ${Utils.escapeHtml(tokenResponseBody.error)}\n<br><b>Error-Description:</b> ${Utils.escapeHtml(tokenResponseBody.error_description || '–').replace(/\r?\n/g, '<br>\n')}`);
     return;
   }
 
@@ -216,13 +216,13 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
 
   if (!accountInfoRes.ok) {
     res.status(500)
-        .send('Unable to fetch account info from the third party provider.');
+      .send('Unable to fetch account info from the third party provider.');
     return;
   }
 
   if (accountInfoRes.type != 'application/json') {
     res.status(500)
-        .send('The third party provider returned a non-JSON response for the account info request.');
+      .send('The third party provider returned a non-JSON response for the account info request.');
     return;
   }
 
@@ -232,7 +232,7 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
 
   if (typeof accountId != 'string' || accountId.trim().length <= 0) {
     res.status(500)
-        .send('The third party provider returned a non-string or empty ID for the account info request.');
+      .send('The third party provider returned a non-string or empty ID for the account info request.');
     return;
   }
 
@@ -240,8 +240,8 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
 
   if (apolloUser == null) {
     res.status(401)
-        .send('There is no user account linked to this third party provider.<br>' +
-            `<pre>thirdPartyProviderKey='${thirdPartyProviderKey}'\naccountName='${accountName}'\naccountId='${accountId}'</pre>`);
+      .send('There is no user account linked to this third party provider.<br>' +
+        `<pre>thirdPartyProviderKey='${thirdPartyProviderKey}'\naccountName='${accountName}'\naccountId='${accountId}'</pre>`);
     return;
   }
 

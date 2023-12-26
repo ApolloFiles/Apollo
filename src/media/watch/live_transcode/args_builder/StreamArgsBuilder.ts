@@ -1,6 +1,6 @@
-import {AudioStream, Stream, VideoStream} from '../../../video/analyser/VideoAnalyser.Types';
+import { AudioStream, Stream, VideoStream } from '../../../video/analyser/VideoAnalyser.Types';
 import AudioEncoderArgsBuilder from './AudioEncoderArgsBuilder';
-import VideoEncoderArgsBuilder, {TargetOptions} from './VideoEncoderArgsBuilder';
+import VideoEncoderArgsBuilder, { TargetOptions } from './VideoEncoderArgsBuilder';
 
 export default class StreamArgsBuilder {
   static async buildArgsForStreams(streamsToTranscode: Stream[], videoEncoder: string, targetOptions: TargetOptions): Promise<{
@@ -11,7 +11,7 @@ export default class StreamArgsBuilder {
     const audioGroupName = 'audio';
     const varStreamMap: string[] = [];
     const audioNameMap = new Map<string, string>();
-    const outputStreamCounter = {video: 0, audio: 0};
+    const outputStreamCounter = { video: 0, audio: 0 };
 
     const result: string[] = [];
     for (const stream of streamsToTranscode) {

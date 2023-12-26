@@ -12,9 +12,9 @@ export default class VideoAnalyser {
     processArgs.push(absolutePath);
 
     const childProcess = await new ProcessBuilder('ffprobe', processArgs)
-        .errorOnNonZeroExit()
-        .bufferStdOut()
-        .runPromised();
+      .errorOnNonZeroExit()
+      .bufferStdOut()
+      .runPromised();
 
     if (childProcess.err) {
       throw childProcess.err;
@@ -73,7 +73,7 @@ export default class VideoAnalyser {
       }
     }
 
-    return {...fileAnalysis, chapters, streams: analyzedStreams};
+    return { ...fileAnalysis, chapters, streams: analyzedStreams };
   }
 
   private static extractFileAnalysis(rawProbeResult: any): type.VideoFileAnalysis {

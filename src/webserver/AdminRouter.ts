@@ -6,8 +6,8 @@ export const adminRouter = express.Router();
 
 adminRouter.use(async (req, res, next): Promise<void> => {
   const childProcess = await new ProcessBuilder('pgrep', ['--parent', process.pid.toString()])
-      .bufferStdOut()
-      .runPromised();
+    .bufferStdOut()
+    .runPromised();
 
   if (childProcess.err) {
     return next(childProcess.err);
@@ -15,7 +15,7 @@ adminRouter.use(async (req, res, next): Promise<void> => {
 
   if (childProcess.code != 0 && childProcess.code != 1) {
     res.status(500)
-        .send('Could not find child processes using pgrep');
+      .send('Could not find child processes using pgrep');
     return;
   }
 
@@ -30,7 +30,7 @@ adminRouter.use(async (req, res, next): Promise<void> => {
       for (const fd of Fs.readdirSync(`/proc/${pid}/fd`)) {
         const linkTarget = Fs.readlinkSync(`/proc/${pid}/fd/${fd}`);
 
-        fileDescriptors.push({pid: parseInt(pid.toString(), 10), fd: parseInt(fd, 10), linkTarget});
+        fileDescriptors.push({ pid: parseInt(pid.toString(), 10), fd: parseInt(fd, 10), linkTarget });
       }
     } catch (err) {
     }
@@ -60,12 +60,12 @@ adminRouter.use(async (req, res, next): Promise<void> => {
     const isChildProcess = fileDescriptor.pid !== process.pid;
 
     if (
-        (linkTarget.startsWith('socket:[') && linkTarget.endsWith(']')) ||
-        (linkTarget.startsWith('pipe:[') && linkTarget.endsWith(']')) ||
-        (linkTarget.startsWith('anon_inode:[') && linkTarget.endsWith(']')) ||
-        linkTarget.startsWith('/dev/pts/') ||
-        linkTarget == '/dev/null' ||
-        linkTarget.startsWith('/dev/nvidia')) {
+      (linkTarget.startsWith('socket:[') && linkTarget.endsWith(']')) ||
+      (linkTarget.startsWith('pipe:[') && linkTarget.endsWith(']')) ||
+      (linkTarget.startsWith('anon_inode:[') && linkTarget.endsWith(']')) ||
+      linkTarget.startsWith('/dev/pts/') ||
+      linkTarget == '/dev/null' ||
+      linkTarget.startsWith('/dev/nvidia')) {
       continue;
     }
 
@@ -89,5 +89,5 @@ adminRouter.use(async (req, res, next): Promise<void> => {
   }
 
   res.type('text/html')
-      .send(responseStr);
+    .send(responseStr);
 });

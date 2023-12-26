@@ -1,22 +1,22 @@
-import {handleRequestRestfully, StringUtils} from '@spraxdev/node-commons';
+import { handleRequestRestfully, StringUtils } from '@spraxdev/node-commons';
 import express from 'express';
 import expressSession from 'express-session';
 import Fs from 'node:fs';
 import Http from 'node:http';
 import Path from 'node:path';
 import SessionFileStore from 'session-file-store';
-import {WebSocketServer} from 'ws';
+import { WebSocketServer } from 'ws';
 import AbstractUser from '../AbstractUser';
-import {getAppConfigDir, getAppResourcesDir, getConfig, isProduction} from '../Constants';
-import {ApolloWebSocket} from '../global';
-import {createMediaRouter} from '../media/MediaRouter';
-import {ServerTiming} from '../ServerTiming';
+import { getAppConfigDir, getAppResourcesDir, getConfig, isProduction } from '../Constants';
+import { ApolloWebSocket } from '../global';
+import { createMediaRouter } from '../media/MediaRouter';
+import { ServerTiming } from '../ServerTiming';
 import UserStorage from '../UserStorage';
-import {adminRouter} from './AdminRouter';
-import {createAliasRouter} from './AliasRouter';
-import {apiRouter} from './Api/ApiRouter';
-import {createFilesRouter} from './Browse/FilesRouter';
-import {generateLoginRedirectUri, loginRouter} from './LoginRouter';
+import { adminRouter } from './AdminRouter';
+import { createAliasRouter } from './AliasRouter';
+import { apiRouter } from './Api/ApiRouter';
+import { createFilesRouter } from './Browse/FilesRouter';
+import { generateLoginRedirectUri, loginRouter } from './LoginRouter';
 
 export default class WebServer {
   protected app: express.Application;
@@ -35,7 +35,7 @@ export default class WebServer {
 
     this.app.use(ServerTiming.getExpressMiddleware(true /*!isProduction()*/));  // TODO: remove debug
 
-    const staticRouteOptions = {index: false, etag: false, redirect: false};
+    const staticRouteOptions = { index: false, etag: false, redirect: false };
     this.app.use('/', express.static(Path.join(getAppResourcesDir(), 'public', 'static'), staticRouteOptions));
     this.app.use('/favicon.ico', express.static(Path.join(getAppResourcesDir(), 'public', 'static', 'favicon', 'favicon.ico'), staticRouteOptions));
     this.app.use('/node_modules', express.static(Path.join(getAppResourcesDir(), '..', 'node_modules'), staticRouteOptions));
@@ -102,8 +102,8 @@ export default class WebServer {
     // TODO: Write WebSocket abstraction to handle everything including sessions, authentication, trust-proxy-setting, etc.
     this.webSocketServer = new WebSocketServer({server: this.server, maxPayload: 5 * 1024 * 1024 /* 5 MiB */, allowSynchronousEvents: true} as any /* FIXME: types are outdated, any cast should be removed when possible */);
     this.webSocketServer.on('error', console.error);
-    this.webSocketServer.on('connection', (client:ApolloWebSocket, request) => {
-      client.apollo = {isAlive: true, pingRtt: -1, lastPingTimestamp: -1};
+    this.webSocketServer.on('connection', (client: ApolloWebSocket, request) => {
+      client.apollo = { isAlive: true, pingRtt: -1, lastPingTimestamp: -1 };
 
       client.on('close', (code, reason) => {
         console.log(`WebSocket from ${request.socket.remoteAddress} closed: ${code} ${reason}`);
@@ -176,7 +176,7 @@ export default class WebServer {
 
   private setupAuthenticationMiddlewares(): void {
     const sessionDirectory = Path.join(getAppConfigDir(), 'sessions');
-    Fs.mkdirSync(sessionDirectory, {recursive: true});
+    Fs.mkdirSync(sessionDirectory, { recursive: true });
 
     this.app.use((req, res: express.Response, next) => {
       res.locals.timings?.startNext('session');
@@ -244,7 +244,7 @@ export default class WebServer {
       res
         .status(404)
         .type('text/html')
-        .send(StringUtils.format(htmlTemplate, {'currentUserName': req.user?.getDisplayName() ?? '<em>-</em>'}));
+        .send(StringUtils.format(htmlTemplate, { 'currentUserName': req.user?.getDisplayName() ?? '<em>-</em>' }));
     });
 
     this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

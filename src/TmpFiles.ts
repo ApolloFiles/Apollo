@@ -9,7 +9,7 @@ export default class TmpFiles {
   static createTmpDir(ttlSeconds: number | null = 14_400 /* 4h */, uniqueIdentifier?: string): string {
     const tmpDir = Path.join(getAppTmpDir(), `${uniqueIdentifier ?? Crypto.randomUUID()}`);
 
-    Fs.mkdirSync(tmpDir, {recursive: true});
+    Fs.mkdirSync(tmpDir, { recursive: true });
     return tmpDir;
   }
 }

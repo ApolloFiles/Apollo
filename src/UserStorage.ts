@@ -1,7 +1,7 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import AbstractUser from './AbstractUser';
-import {getAppConfigDir} from './Constants';
+import { getAppConfigDir } from './Constants';
 import IUserStorage from './IUserStorage';
 
 type UsersFile = { id: number, displayName: string, oauth: { [provider: string]: string }, apiTokens: string[] }[];
@@ -52,7 +52,7 @@ export default class UserStorage implements IUserStorage {
       oauth: {},
       apiTokens: []
     });
-    Fs.mkdirSync(getAppConfigDir(), {recursive: true});
+    Fs.mkdirSync(getAppConfigDir(), { recursive: true });
     Fs.writeFileSync(Path.join(getAppConfigDir(), 'users.json'), JSON.stringify(currentUsers));
 
     return new AbstractUser(userId, displayName);

@@ -5,16 +5,16 @@ import Utils from '../Utils';
 import { AbstractTemplate } from './AbstractTemplate';
 
 export type FileIcon =
-    'audio_file'
-    | 'code'
-    | 'data_object'
-    | 'description'
-    | 'folder'
-    | 'folder_zip'
-    | 'image'
-    | 'insert_drive_file'
-    | 'picture_as_pdf'
-    | 'video_file';
+  'audio_file'
+  | 'code'
+  | 'data_object'
+  | 'description'
+  | 'folder'
+  | 'folder_zip'
+  | 'image'
+  | 'insert_drive_file'
+  | 'picture_as_pdf'
+  | 'video_file';
 
 export type BreadcrumbItem = { name: string, frontendUrl: string };
 
@@ -37,7 +37,7 @@ export class FilesTemplate extends AbstractTemplate {
 
       global: {
         templateId: this.templateId,
-        req: {body: req.method === 'GET' ? req.query : req.body ?? {}},
+        req: { body: req.method === 'GET' ? req.query : req.body ?? {} },
         apolloConfig: getConfig().data,
 
         HELPERS: {

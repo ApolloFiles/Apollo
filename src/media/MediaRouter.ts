@@ -1,10 +1,10 @@
-import {handleRequestRestfully, StringUtils} from '@spraxdev/node-commons';
+import { handleRequestRestfully, StringUtils } from '@spraxdev/node-commons';
 import express from 'express';
 import Crypto from 'node:crypto';
 import Path from 'node:path';
 import sharp from 'sharp';
 import FileSystemBasedCache from '../cache/FileSystemBasedCache';
-import MediaLibraryTable, {LibraryMedia} from '../database/postgres/MediaLibraryTable';
+import MediaLibraryTable, { LibraryMedia } from '../database/postgres/MediaLibraryTable';
 import MediaLibraryEditMediaTemplate from '../frontend/MediaLibraryEditMediaTemplate';
 import MediaLibraryTemplate from '../frontend/MediaLibraryTemplate';
 import MediaLibraryTitleTemplate from '../frontend/MediaLibraryTitleTemplate';
@@ -15,7 +15,7 @@ import UserFileHelper from '../UserFileHelper';
 import WebServer from '../webserver/WebServer';
 import LibraryManager from './libraries/LibraryManager';
 import VideoAnalyser from './video/analyser/VideoAnalyser';
-import {createWatchRouter} from './watch/WatchRouter';
+import { createWatchRouter } from './watch/WatchRouter';
 
 export function createMediaRouter(webserver: WebServer, sessionMiddleware: express.RequestHandler): express.Router {
   const router = express.Router();
@@ -86,7 +86,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
               width: 400,
               height: 600,
               channels: 3,
-              background: {r: 125, g: 125, b: 125}
+              background: { r: 125, g: 125, b: 125 }
             }
           })
             .composite([{
@@ -408,7 +408,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
             .runPromised();
 
           if (childProcess.err) {
-            await temporaryFileWriteable.deleteIgnoringTrashBin({force: true});
+            await temporaryFileWriteable.deleteIgnoringTrashBin({ force: true });
             throw childProcess.err;
           }
 
@@ -418,7 +418,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
 
           res
             .status(200)
-            .send({success: true});
+            .send({ success: true });
         });
       }
     });

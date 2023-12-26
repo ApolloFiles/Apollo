@@ -30,20 +30,20 @@ const apolloDirectoryPathLastUpdate = ref(0);
   <div class="h-screen">
     <!-- TODO: Button schöner platzieren -->
     <UButton
-        icon="i-ic-baseline-folder"
-        size="xl"
-        color="primary"
-        label="Open directory"
-        @click="selectDirectory"
+      icon="i-ic-baseline-folder"
+      size="xl"
+      color="primary"
+      label="Open directory"
+      @click="selectDirectory"
     />
 
     <DevOnly>
       <UButton
-          label="open dev"
-          size="2xs"
-          color="orange"
-          class="m-2 align-top"
-          @click="setSelectedDirectory('/_media_lib_anime_serien/editor-test/Season 01/')"
+        label="open dev"
+        size="2xs"
+        color="orange"
+        class="m-2 align-top"
+        @click="setSelectedDirectory('/_media_lib_anime_serien/editor-test/Season 01/')"
       />
     </DevOnly>
 
@@ -54,8 +54,8 @@ const apolloDirectoryPathLastUpdate = ref(0);
     </div>
     <div v-else>
       <LazyFileMetaEditor
-          :key="apolloDirectoryPathLastUpdate"
-          :apolloDirectoryPath="apolloDirectoryPath"/>
+        :key="apolloDirectoryPathLastUpdate"
+        :apolloDirectoryPath="apolloDirectoryPath"/>
     </div>
 
     <UNotifications/>

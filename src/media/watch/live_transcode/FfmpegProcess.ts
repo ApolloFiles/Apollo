@@ -13,7 +13,7 @@ export default class FfmpegProcess extends EventEmitter {
 
   private readonly childProcess: ChildProcess.ChildProcess;
 
-  constructor(args: string[], options: ChildProcess.SpawnOptions = {stdio: 'ignore'}) {
+  constructor(args: string[], options: ChildProcess.SpawnOptions = { stdio: 'ignore' }) {
     super();
     this.childProcess = ChildProcess.spawn(FfmpegProcess.EXECUTABLE, args, options);
 

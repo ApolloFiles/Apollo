@@ -28,15 +28,15 @@ export default class Utils {
 
       if (bytesEnd > fileSize) {
         res.status(416)
-            .send(`Requested range not satisfiable (file has ${fileSize} bytes)`);
+          .send(`Requested range not satisfiable (file has ${fileSize} bytes)`);
         return;
       }
     }
 
-    const readStreamOptions = {start: bytesStart, end: bytesEnd};
+    const readStreamOptions = { start: bytesStart, end: bytesEnd };
     const fileReadStream = typeof file == 'string' ?
-        Fs.createReadStream(file, readStreamOptions) :
-        file.getReadStream(readStreamOptions);
+      Fs.createReadStream(file, readStreamOptions) :
+      file.getReadStream(readStreamOptions);
 
     fileReadStream.on('error', (err) => {
       console.error(err);
@@ -73,8 +73,8 @@ export default class Utils {
 
     const base = si ? 1000 : 1024;
     const units = si ?
-        ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] :
-        ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+      ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] :
+      ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
 
     let i = Math.floor(Math.log(bytes) / Math.log(base));
     if (i < 0) {
@@ -109,29 +109,29 @@ export default class Utils {
 
   static escapeHtml(text: string): string {
     return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   static decodeUriProperly(uri: string): string {
     return uri.split('/')
-        .map(decodeURIComponent)
-        .join('/');
+      .map(decodeURIComponent)
+      .join('/');
   }
 
   static encodeUriProperly(uri: string): string {
     return uri.split('/')
-        .map(encodeURIComponent)
-        .join('/');
+      .map(encodeURIComponent)
+      .join('/');
   }
 
   static decodeUriIntoItsComponents(uri: string): string[] {
     return uri.split('/')
-        .map(decodeURIComponent)
-        .filter((value) => value.length > 0);
+      .map(decodeURIComponent)
+      .filter((value) => value.length > 0);
   }
 
   /*

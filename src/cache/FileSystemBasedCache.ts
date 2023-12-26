@@ -2,7 +2,7 @@ import Crypto from 'node:crypto';
 import Fs from 'node:fs';
 import Path from 'node:path';
 import AbstractUser from '../AbstractUser';
-import {getAppTmpDir} from '../Constants';
+import { getAppTmpDir } from '../Constants';
 
 export default class FileSystemBasedCache {
   private static INSTANCE: FileSystemBasedCache;
@@ -13,7 +13,7 @@ export default class FileSystemBasedCache {
   async setUserAssociatedCachedFile(user: AbstractUser, cacheSubKey: string, data: Buffer): Promise<void> {
     const cacheFilePath = this.generateUserAssociatedCacheFilePath(user, cacheSubKey);
 
-    await Fs.promises.mkdir(Path.dirname(cacheFilePath), {recursive: true});
+    await Fs.promises.mkdir(Path.dirname(cacheFilePath), { recursive: true });
     await Fs.promises.writeFile(cacheFilePath, data);
   }
 

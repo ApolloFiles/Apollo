@@ -1,6 +1,5 @@
-import Fs from 'node:fs';
 import { Abortable } from 'node:events';
-import { Mode, ObjectEncodingOptions, OpenMode } from 'node:fs';
+import Fs, { Mode, ObjectEncodingOptions, OpenMode } from 'node:fs';
 import Stream from 'node:stream';
 import IUserFile from './IUserFile';
 

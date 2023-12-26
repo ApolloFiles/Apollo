@@ -1,6 +1,5 @@
 import Crypto from 'node:crypto';
-import {WebSocket} from 'ws';
-import {ApolloWebSocket} from '../../../global';
+import { ApolloWebSocket } from '../../../global';
 import {
   ClientConnectMessage,
   ClientDisconnectMessage,
@@ -21,7 +20,7 @@ export default class WatchSession {
   public readonly workingDir: TemporaryDirectory;
 
   private currentMedia: BaseSessionMedia | null = null;
-  private playbackState: PlaybackState = {paused: true, currentTime: 0, playbackRate: 1};
+  private playbackState: PlaybackState = { paused: true, currentTime: 0, playbackRate: 1 };
 
   private readonly connectedClients: Map<string, WatchSessionClient> = new Map();
   private superMasterId: string | null = null;

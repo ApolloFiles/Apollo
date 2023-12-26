@@ -18,7 +18,7 @@ export default class FileIndexTable {
     const userQueryPattern = '%' + PostgresDatabase.escapeForLikePattern(userQuery) + '%';
 
     const dbRes = await FileIndexTable.getClient().query(
-        `SELECT file_path
+      `SELECT file_path
          FROM user_file_index
          WHERE owner_id = $1
            AND filesystem = $2
@@ -27,7 +27,7 @@ export default class FileIndexTable {
              ILIKE $4 ESCAPE '#'
          ORDER BY is_directory ASC, file_path ASC
          OFFSET $5 LIMIT $6;`,
-        [startDir.getOwner().getId(), startDir.getFileSystem().getUniqueId(), startDirPattern, userQueryPattern, offset, limit]
+      [startDir.getOwner().getId(), startDir.getFileSystem().getUniqueId(), startDirPattern, userQueryPattern, offset, limit]
     );
 
     const files: IUserFile[] = [];
@@ -39,7 +39,7 @@ export default class FileIndexTable {
 
   async isFileUpToDate(file: IUserFile, fileStats: Fs.Stats): Promise<boolean> {
     const dbRes = await FileIndexTable.getClient().query(
-        `SELECT EXISTS(
+      `SELECT EXISTS(
                         SELECT
                         FROM user_file_index
                         WHERE owner_id = $1
@@ -47,13 +47,13 @@ export default class FileIndexTable {
                           AND file_path = $3
                           AND is_directory = $4
                           AND size_bytes = $5);`,
-        [
-          file.getOwner().getId(),
-          file.getFileSystem().getUniqueId(),
-          file.getPath(),
-          fileStats.isDirectory(),
-          fileStats.size
-        ]
+      [
+        file.getOwner().getId(),
+        file.getFileSystem().getUniqueId(),
+        file.getPath(),
+        fileStats.isDirectory(),
+        fileStats.size
+      ]
     );
 
     return dbRes.rows[0].exists;
@@ -65,9 +65,9 @@ export default class FileIndexTable {
     }
 
     const dbRes = await FileIndexTable.getClient().query(
-        `
+      `
           INSERT INTO user_file_index
-            (owner_id, filesystem, file_path, is_directory, size_bytes, sha256, last_modification) 
+            (owner_id, filesystem, file_path, is_directory, size_bytes, sha256, last_modification)
           VALUES
             ($1, $2, $3, $4, $5, $6, $7)
           ON CONFLICT
@@ -78,14 +78,14 @@ export default class FileIndexTable {
             sha256 = $6,
             last_modification = $7,
             last_validation = CURRENT_TIMESTAMP;`,
-        [file.getOwner().getId(),
-          file.getFileSystem().getUniqueId(),
-          file.getPath(),
-          fileStats.isDirectory(),
-          fileStats.isDirectory() ? null : fileStats.size,
-          sha256 ?? null,
-          fileStats.mtime
-        ]
+      [file.getOwner().getId(),
+        file.getFileSystem().getUniqueId(),
+        file.getPath(),
+        fileStats.isDirectory(),
+        fileStats.isDirectory() ? null : fileStats.size,
+        sha256 ?? null,
+        fileStats.mtime
+      ]
     );
 
     if (dbRes.rowCount !== 1) {
@@ -104,22 +104,22 @@ export default class FileIndexTable {
 
       // Delete the entry itself
       await client.query(
-          `DELETE
+        `DELETE
            FROM user_file_index
            WHERE owner_id = $1
              AND filesystem = $2
              AND file_path = $3;`,
-          [ownerId, fileSystemId, file.getPath()]
+        [ownerId, fileSystemId, file.getPath()]
       );
 
       // Delete all the entries inside itself (for directories)
       await client.query(
-          `DELETE
+        `DELETE
            FROM user_file_index
            WHERE owner_id = $1
              AND filesystem = $2
              AND file_path LIKE $3 ESCAPE '#';`,
-          [ownerId, fileSystemId, PostgresDatabase.escapeForLikePattern(Path.join(file.getPath(), '/')) + '%']
+        [ownerId, fileSystemId, PostgresDatabase.escapeForLikePattern(Path.join(file.getPath(), '/')) + '%']
       );
 
       await client.query('COMMIT;');
@@ -139,7 +139,7 @@ export default class FileIndexTable {
 
       // Update the entry itself
       await client.query(
-          `
+        `
               UPDATE user_file_index
               SET owner_id   = $4,
                   filesystem = $5,
@@ -147,25 +147,25 @@ export default class FileIndexTable {
               WHERE owner_id = $1
                 AND filesystem = $2
                 AND file_path = $3;`,
-          [
-            src.getOwner().getId(), src.getFileSystem().getUniqueId(), src.getPath(),
-            dest.getOwner().getId(), dest.getFileSystem().getUniqueId(), dest.getPath()
-          ]
+        [
+          src.getOwner().getId(), src.getFileSystem().getUniqueId(), src.getPath(),
+          dest.getOwner().getId(), dest.getFileSystem().getUniqueId(), dest.getPath()
+        ]
       );
 
       // Update all the entries inside itself (for directories)
       await client.query(
-          `UPDATE user_file_index
+        `UPDATE user_file_index
            SET owner_id   = $5,
                filesystem = $6,
                file_path  = $7 || substr(file_path, length($3) + 1)
            WHERE owner_id = $1
              AND filesystem = $2
              AND file_path LIKE $4;`,
-          [
-            src.getOwner().getId(), src.getFileSystem().getUniqueId(), Path.join(src.getPath(), '/'), PostgresDatabase.escapeForLikePattern(Path.join(src.getPath(), '/')) + '%',
-            dest.getOwner().getId(), dest.getFileSystem().getUniqueId(), Path.join(dest.getPath(), '/')
-          ]
+        [
+          src.getOwner().getId(), src.getFileSystem().getUniqueId(), Path.join(src.getPath(), '/'), PostgresDatabase.escapeForLikePattern(Path.join(src.getPath(), '/')) + '%',
+          dest.getOwner().getId(), dest.getFileSystem().getUniqueId(), Path.join(dest.getPath(), '/')
+        ]
       );
 
       await client.query('COMMIT;');
@@ -195,8 +195,8 @@ export default class FileIndexTable {
                         WHERE owner_id = $1 ${fileSystem ? 'AND file_system = $2' : ''};`;
 
     const dbRes = await FileIndexTable.getClient().query(
-        `SELECT count_estimate(${countQuery}) as estimate`,
-        [user.getId(), fileSystem ? fileSystem.getUniqueId() : '']
+      `SELECT count_estimate(${countQuery}) as estimate`,
+      [user.getId(), fileSystem ? fileSystem.getUniqueId() : '']
     );
 
     return dbRes.rows[0].estimate;

@@ -53,7 +53,7 @@ export default class BackgroundProcess<T> extends EventEmitter implements IProce
 
         if (taskResult instanceof Promise) {
           taskResult.then(resolve)
-              .catch(reject);
+            .catch(reject);
           return;
         }
 

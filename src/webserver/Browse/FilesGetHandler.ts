@@ -25,7 +25,7 @@ export function filesHandleGet(req: express.Request, res: express.Response, next
 
     if (req.query.type != null && (typeof req.query.type != 'string' || !allowedFileRequestTypes.includes(req.query.type))) {
       res.status(400)
-          .send('Invalid type requested');
+        .send('Invalid type requested');
       return;
     }
 
@@ -41,12 +41,12 @@ export function filesHandleGet(req: express.Request, res: express.Response, next
       if (file.getPath() != '/') {
         console.debug(`User '${user.getDisplayName()}' requested non-existent file '${requestedFilePath}'`);
         res.status(404)
-            .send('File not found');
+          .send('File not found');
         return;
       }
 
       res.locals.timings?.startNext('createUserRootDirectory');
-      await fileSystem.acquireLock(req, file, (writeableFile) => writeableFile.mkdir({recursive: true}));
+      await fileSystem.acquireLock(req, file, (writeableFile) => writeableFile.mkdir({ recursive: true }));
     }
 
     if (await file.isDirectory()) {
@@ -63,21 +63,21 @@ export function filesHandleGet(req: express.Request, res: express.Response, next
 
     console.debug(`User '${user.getDisplayName()}' requested unknown file '${requestedFilePath}'`);
     res.status(500)
-        .type('text/plain')
-        .send('Unknown file type\n\n' + JSON.stringify(file, null, 2));
+      .type('text/plain')
+      .send('Unknown file type\n\n' + JSON.stringify(file, null, 2));
   };
 }
 
 async function handleDirectoryRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile, type: 'browse' | 'trash', fileRequestType?: FileRequestType): Promise<void> {
   if (fileRequestType === 'thumbnail') {
     res.status(400)
-        .send('Cannot generate thumbnail for directory');
+      .send('Cannot generate thumbnail for directory');
     return;
   }
 
   if (fileRequestType === 'live_transcode') {
     res.status(400)
-        .send('Cannot start live transcoding for directory');
+      .send('Cannot start live transcoding for directory');
     return;
   }
 
@@ -89,7 +89,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
   if (fileRequestType === 'search') {
     if (typeof req.query.search != 'string' || req.query.search.length == 0) {
       res.status(400)
-          .send('Invalid search query');
+        .send('Invalid search query');
       return;
     }
 
@@ -97,7 +97,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
     const fileIndex = FileIndex.getInstance();
     if (fileIndex == null) {
       res.status(500)
-          .send('Search is not available without an file index');
+        .send('Search is not available without an file index');
       return;
     }
     res.locals.timings?.startNext('searchFiles:start');
@@ -113,7 +113,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(file.getName())}.zip"`);
 
-    const zip = Archiver.create('zip', {store: true, forceZip64: true});
+    const zip = Archiver.create('zip', { store: true, forceZip64: true });
     zip.pipe(res);
 
     res.on('close', () => {
@@ -127,7 +127,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
     const absolutePathOnHost = file.getAbsolutePathOnHost();
     if (absolutePathOnHost == null) {
       res.status(500)
-          .send('Cannot download the given directory as it does not exist on the host');
+        .send('Cannot download the given directory as it does not exist on the host');
       return;
     }
 
@@ -230,141 +230,141 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
 
   res.locals.timings?.startNext('#sendDirectoryView_render');
   res.type('text/html')
-      .send(new FilesTemplate(type).render(req,
-          {
-            // lastFavoriteFiles: [
-            //   {
-            //     favorite: true,
-            //     icon: 'folder',
-            //     title: 'Rule34Lol',
-            //     subtitle: 'Shared by Dad',
-            //     previewImg: {
-            //       src: 'https://image.gala.de/22471682/t/IM/v2/w960/r1.5/-/07--reichster-mann-der-welt-jetzt-noch-reicher---3-2---spoton-article-1001549.jpg',
-            //       alt: 'Daddy Bezos'
-            //     }
-            //   },
-            //   {
-            //     favorite: true,
-            //     icon: 'music_note',
-            //     title: 'Last Cup of Coffee',
-            //     subtitle: 'Lilypichu',
-            //     previewImg: {
-            //       src: 'https://i.ytimg.com/vi/hF0I9h7C4A4/maxresdefault.jpg',
-            //       alt: 'Lilypichu'
-            //     }
-            //   },
-            //   {
-            //     favorite: true,
-            //     icon: 'music_note',
-            //     title: 'Getting Naked, a...',
-            //     subtitle: 'AJJ',
-            //     previewImg: {
-            //       src: 'https://emby.media/community/uploads/inline/355992/5c1cc71abf1ee_genericcoverart.jpg',
-            //       alt: 'Generic music cover'
-            //     }
-            //   },
-            //   {
-            //     favorite: true,
-            //     icon: 'picture_as_pdf',
-            //     title: 'The microarchit...',
-            //     subtitle: 'Shared by Florian',
-            //     previewImg: {
-            //       src: 'https://media.idownloadblog.com/wp-content/uploads/2016/07/Split-PDF-Document-PDF-splitting-guide-6.png',
-            //       alt: 'PDF file preview image'
-            //     }
-            //   },
-            //   {
-            //     favorite: true,
-            //     icon: 'image',
-            //     title: 'Screenshot 202...',
-            //     subtitle: null,
-            //     previewImg: {
-            //       src: 'https://images.ctfassets.net/lzny33ho1g45/70nrt3lSU8Tcq3lEZX0vz6/3412e1ca73b3834866a640757ea8620f/How_to_edit_a_screenshot',
-            //       alt: 'Preview image for \'Screenshot 2020.png\''
-            //     }
-            //   },
-            //   {
-            //     favorite: true,
-            //     icon: 'insert_drive_file',
-            //     title: 'main.cpp',
-            //     subtitle: null,
-            //     previewImg: {
-            //       src: '/tmp/cpp_file_thumbnail_tmp.png',
-            //       alt: 'Generic file template for file extension \'cpp\''
-            //     }
-            //   }
-            // ],
-            // recentFiles: [
-            //   {
-            //     favorite: false,
-            //     icon: 'music_note',
-            //     title: 'Looser',
-            //     subtitle: 'Neoni',
-            //     previewImg: {
-            //       src: 'https://i.scdn.co/image/ab67616d0000b273c25d98640e08bddc0c90d229',
-            //       alt: 'Neoni'
-            //     }
-            //   },
-            //   {
-            //     favorite: true,
-            //     icon: 'folder',
-            //     title: 'Rule34Lol',
-            //     subtitle: 'Shared by Dad',
-            //     previewImg: {
-            //       src: 'https://image.gala.de/22471682/t/IM/v2/w960/r1.5/-/07--reichster-mann-der-welt-jetzt-noch-reicher---3-2---spoton-article-1001549.jpg',
-            //       alt: 'Daddy Bezos'
-            //     }
-            //   },
-            //   {
-            //     favorite: false,
-            //     icon: 'insert_drive_file',
-            //     title: 'executable.jar',
-            //     subtitle: null,
-            //     previewImg: {
-            //       src: '/tmp/java_file_thumbnail_tmp.png',
-            //       alt: 'Generic file template for file extension \'jar\''
-            //     }
-            //   },
-            //   {
-            //     favorite: true,
-            //     icon: 'music_note',
-            //     title: 'Last Cup of Coffee',
-            //     subtitle: 'Lilypichu',
-            //     previewImg: {
-            //       src: 'https://i.ytimg.com/vi/hF0I9h7C4A4/maxresdefault.jpg',
-            //       alt: 'Lilypichu'
-            //     }
-            //   },
-            //   {
-            //     favorite: false,
-            //     icon: 'picture_as_pdf',
-            //     title: 'Ausbildungsve...',
-            //     subtitle: null,
-            //     previewImg: {
-            //       src: 'https://acrobatusers.com/assets/uploads/actions/pdf_accessibility1_0.jpeg',
-            //       alt: 'PDF file preview image'
-            //     }
-            //   },
-            //   {
-            //     favorite: false,
-            //     icon: 'folder',
-            //     title: 'Ausbildungsna...',
-            //     subtitle: null,
-            //     previewImg: {
-            //       src: 'https://confluence.atlassian.com/doc/files/375849180/1005333668/1/1589961913264/pdf-view.png',
-            //       alt: 'Directory preview for \'Ausbildungsnachweise\''
-            //     }
-            //   }],
+    .send(new FilesTemplate(type).render(req,
+      {
+        // lastFavoriteFiles: [
+        //   {
+        //     favorite: true,
+        //     icon: 'folder',
+        //     title: 'Rule34Lol',
+        //     subtitle: 'Shared by Dad',
+        //     previewImg: {
+        //       src: 'https://image.gala.de/22471682/t/IM/v2/w960/r1.5/-/07--reichster-mann-der-welt-jetzt-noch-reicher---3-2---spoton-article-1001549.jpg',
+        //       alt: 'Daddy Bezos'
+        //     }
+        //   },
+        //   {
+        //     favorite: true,
+        //     icon: 'music_note',
+        //     title: 'Last Cup of Coffee',
+        //     subtitle: 'Lilypichu',
+        //     previewImg: {
+        //       src: 'https://i.ytimg.com/vi/hF0I9h7C4A4/maxresdefault.jpg',
+        //       alt: 'Lilypichu'
+        //     }
+        //   },
+        //   {
+        //     favorite: true,
+        //     icon: 'music_note',
+        //     title: 'Getting Naked, a...',
+        //     subtitle: 'AJJ',
+        //     previewImg: {
+        //       src: 'https://emby.media/community/uploads/inline/355992/5c1cc71abf1ee_genericcoverart.jpg',
+        //       alt: 'Generic music cover'
+        //     }
+        //   },
+        //   {
+        //     favorite: true,
+        //     icon: 'picture_as_pdf',
+        //     title: 'The microarchit...',
+        //     subtitle: 'Shared by Florian',
+        //     previewImg: {
+        //       src: 'https://media.idownloadblog.com/wp-content/uploads/2016/07/Split-PDF-Document-PDF-splitting-guide-6.png',
+        //       alt: 'PDF file preview image'
+        //     }
+        //   },
+        //   {
+        //     favorite: true,
+        //     icon: 'image',
+        //     title: 'Screenshot 202...',
+        //     subtitle: null,
+        //     previewImg: {
+        //       src: 'https://images.ctfassets.net/lzny33ho1g45/70nrt3lSU8Tcq3lEZX0vz6/3412e1ca73b3834866a640757ea8620f/How_to_edit_a_screenshot',
+        //       alt: 'Preview image for \'Screenshot 2020.png\''
+        //     }
+        //   },
+        //   {
+        //     favorite: true,
+        //     icon: 'insert_drive_file',
+        //     title: 'main.cpp',
+        //     subtitle: null,
+        //     previewImg: {
+        //       src: '/tmp/cpp_file_thumbnail_tmp.png',
+        //       alt: 'Generic file template for file extension \'cpp\''
+        //     }
+        //   }
+        // ],
+        // recentFiles: [
+        //   {
+        //     favorite: false,
+        //     icon: 'music_note',
+        //     title: 'Looser',
+        //     subtitle: 'Neoni',
+        //     previewImg: {
+        //       src: 'https://i.scdn.co/image/ab67616d0000b273c25d98640e08bddc0c90d229',
+        //       alt: 'Neoni'
+        //     }
+        //   },
+        //   {
+        //     favorite: true,
+        //     icon: 'folder',
+        //     title: 'Rule34Lol',
+        //     subtitle: 'Shared by Dad',
+        //     previewImg: {
+        //       src: 'https://image.gala.de/22471682/t/IM/v2/w960/r1.5/-/07--reichster-mann-der-welt-jetzt-noch-reicher---3-2---spoton-article-1001549.jpg',
+        //       alt: 'Daddy Bezos'
+        //     }
+        //   },
+        //   {
+        //     favorite: false,
+        //     icon: 'insert_drive_file',
+        //     title: 'executable.jar',
+        //     subtitle: null,
+        //     previewImg: {
+        //       src: '/tmp/java_file_thumbnail_tmp.png',
+        //       alt: 'Generic file template for file extension \'jar\''
+        //     }
+        //   },
+        //   {
+        //     favorite: true,
+        //     icon: 'music_note',
+        //     title: 'Last Cup of Coffee',
+        //     subtitle: 'Lilypichu',
+        //     previewImg: {
+        //       src: 'https://i.ytimg.com/vi/hF0I9h7C4A4/maxresdefault.jpg',
+        //       alt: 'Lilypichu'
+        //     }
+        //   },
+        //   {
+        //     favorite: false,
+        //     icon: 'picture_as_pdf',
+        //     title: 'Ausbildungsve...',
+        //     subtitle: null,
+        //     previewImg: {
+        //       src: 'https://acrobatusers.com/assets/uploads/actions/pdf_accessibility1_0.jpeg',
+        //       alt: 'PDF file preview image'
+        //     }
+        //   },
+        //   {
+        //     favorite: false,
+        //     icon: 'folder',
+        //     title: 'Ausbildungsna...',
+        //     subtitle: null,
+        //     previewImg: {
+        //       src: 'https://confluence.atlassian.com/doc/files/375849180/1005333668/1/1589961913264/pdf-view.png',
+        //       alt: 'Directory preview for \'Ausbildungsnachweise\''
+        //     }
+        //   }],
 
-            lastFavoriteFiles: [],
-            recentFiles: [],
-            banners: totalStorageUsage >= 0 ? [
-              {type: 'info', msg: `Aktueller Gesamtverbrauch: ${totalStorageUsage}`, dismissible: false}
-            ] : [],
-            files: filesToRender,
-            breadcrumbs: requestedFile ? await generateBreadcrumbs(requestedFile) : []
-          }
-      ));
+        lastFavoriteFiles: [],
+        recentFiles: [],
+        banners: totalStorageUsage >= 0 ? [
+          { type: 'info', msg: `Aktueller Gesamtverbrauch: ${totalStorageUsage}`, dismissible: false }
+        ] : [],
+        files: filesToRender,
+        breadcrumbs: requestedFile ? await generateBreadcrumbs(requestedFile) : []
+      }
+    ));
 
   // let responseStr = `${file.getPath() == '/' ? '' : `<a href="${Utils.encodeUriProperly(Path.dirname(Utils.decodeUriProperly(req.originalUrl)))}">Go up to ${Path.dirname(file.getPath())}</a>`}` +
   //     `` +
@@ -377,8 +377,8 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
 async function handleFileRequest(req: express.Request, res: express.Response, next: express.NextFunction, user: AbstractUser, file: IUserFile, fileRequestType?: FileRequestType): Promise<void> {
   if (fileRequestType == 'search') {
     res.status(400)
-        .type('text/plain')
-        .send('Search not available when requesting a file');
+      .type('text/plain')
+      .send('Search not available when requesting a file');
     return;
   }
 
@@ -390,19 +390,19 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
     if (thumbnail != null) {
       console.log(`User '${user.getDisplayName()}' successfully requested thumbnail for file '${file.getPath()}' in ${tookMs}ms`);
       res.type(thumbnail.mime)
-          .send(thumbnail.data);
+        .send(thumbnail.data);
       return;
     }
 
     console.log(`User '${user.getDisplayName()}' failed to generate thumbnail for file '${file.getPath()}' in ${tookMs}ms`);
     res.status(501)
-        .send(`Cannot generate thumbnail for given file type (${await file.getMimeType()})`);
+      .send(`Cannot generate thumbnail for given file type (${await file.getMimeType()})`);
     return;
   }
 
   if (fileRequestType == 'live_transcode') {
     res.status(410 /* GONE */)
-        .send('Live transcoding has moved to a separate endpoint');
+      .send('Live transcoding has moved to a separate endpoint');
     return;
   }
 
@@ -426,8 +426,8 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
 
   if (webVttThumbnailCache[inputFileAbsolutePath] != null) {
     res
-        .type('text/vtt')
-        .send(webVttThumbnailCache[inputFileAbsolutePath]);
+      .type('text/vtt')
+      .send(webVttThumbnailCache[inputFileAbsolutePath]);
     return;
   }
 
@@ -437,28 +437,28 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
     throw new Error('cwd is null');
   }
 
-  await Fs.promises.mkdir(Path.join(cwd, 'frames'), {recursive: true});
+  await Fs.promises.mkdir(Path.join(cwd, 'frames'), { recursive: true });
 
   const inputFileRelativePath = `input${Path.extname(file.getName())}`;
 
   await Utils.createHardLinkAndFallbackToSymbolicLinkIfCrossDevice(inputFileAbsolutePath, Path.join(cwd, inputFileRelativePath));
 
   const childProcess = await new ProcessBuilder('ffmpeg',
-      [
-        '-hwaccel', 'cuda',
-        '-bitexact',
-        '-n',
-        '-i', inputFileRelativePath,
+    [
+      '-hwaccel', 'cuda',
+      '-bitexact',
+      '-n',
+      '-i', inputFileRelativePath,
 
-        '-bt', '20',
-        '-vf', `fps=1/${SECONDS_BETWEEN_FRAMES},scale=240:-1`,
+      '-bt', '20',
+      '-vf', `fps=1/${SECONDS_BETWEEN_FRAMES},scale=240:-1`,
 
-        '-f', 'image2',
-        'frames/%d.png'
-      ])
-      .errorOnNonZeroExit()
-      .withCwd(cwd)
-      .runPromised();
+      '-f', 'image2',
+      'frames/%d.png'
+    ])
+    .errorOnNonZeroExit()
+    .withCwd(cwd)
+    .runPromised();
 
 
   if (childProcess.err) {
@@ -480,13 +480,13 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
     }
 
     args.push(
-        '-f', 'image2',
-        chunkFilePath
+      '-f', 'image2',
+      chunkFilePath
     );
 
     const childProcess = await new ProcessBuilder('ffmpeg', args)
-        .withCwd(cwd)
-        .runPromised();
+      .withCwd(cwd)
+      .runPromised();
 
     if (childProcess.err) {
       throw childProcess.err;
@@ -509,16 +509,16 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
   }
 
   const aliasToken = Crypto.createHash('sha256')
-      .update('webttv_thumbnails')
-      .update(inputFileAbsolutePath)
-      .digest()
-      .toString('hex');
+    .update('webttv_thumbnails')
+    .update(inputFileAbsolutePath)
+    .digest()
+    .toString('hex');
   registerAliasHandler(aliasToken, (req, res) => {
     if (req.path.match(/\/chunk_\d+.png/) != null) {
       res.sendFile(Path.join(cwd, req.path));
     } else {
       res.status(404)
-          .send('Not found');
+        .send('Not found');
     }
   });
 
@@ -548,10 +548,10 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
   }
 
   webVttThumbnailCache[inputFileAbsolutePath] = webVttContent;
-  await Fs.promises.rm(Path.join(cwd, 'frames'), {recursive: true});
+  await Fs.promises.rm(Path.join(cwd, 'frames'), { recursive: true });
 
   res.type('text/vtt')
-      .send(webVttContent);
+    .send(webVttContent);
 }
 
 async function generateBreadcrumbs(file: IUserFile): Promise<BreadcrumbItem[]> {
