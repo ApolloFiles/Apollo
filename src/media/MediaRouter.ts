@@ -75,10 +75,36 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         const posterFile = await UserFileHelper.findFolderPoster(libraryTitleDirectory);
         const posterFileStat = await posterFile?.stat();
         if (posterFile == null || posterFileStat == null || !posterFileStat.isFile()) {
+          const titleStartingLetters = libraryTitle.title
+            .split(/[\s_-]/g)
+            .map(word => word.charAt(0))
+            .join('')
+            .toUpperCase();
+
+          const posterData = await sharp({
+            create: {
+              width: 400,
+              height: 600,
+              channels: 3,
+              background: {r: 125, g: 125, b: 125}
+            }
+          })
+            .composite([{
+              input: {
+                text: {
+                  text: `<span foreground="white">${titleStartingLetters}</span>`,
+                  rgba: true,
+                  width: 300,
+                  height: 400
+                }
+              }
+            }])
+            .png()
+            .toBuffer();
+
           res
-            .status(404)
-            .type('text/plain')
-            .send(`File '${requestedFileName}' not found!`);
+            .type('image/png')
+            .send(posterData);
           return;
         }
 
@@ -102,7 +128,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
 
         const sharpInstance = sharp().png();
         posterFile.getReadStream().pipe(sharpInstance);
-        const posterData = await sharpInstance.toBuffer();
+        const posterData = await sharpInstance.removeAlpha().toBuffer();
 
         await FileSystemBasedCache.getInstance().setUserAssociatedCachedFile(posterFile.getOwner(), posterCacheKey, posterData);
         res
