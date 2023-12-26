@@ -28,7 +28,7 @@
 
         <div class="side-menu-items">
             <div><span class="material-icons icon-inline side-menu-icon" role="button">search</span></div>
-            <div><span class="material-icons icon-inline side-menu-icon side-menu-icon-active" role="button">play_circle</span></div>
+            <a href="/media/"><span class="material-icons icon-inline side-menu-icon side-menu-icon-active" role="button">play_circle</span></a>
             <div><span class="material-icons icon-inline side-menu-icon" role="button">folder</span></div>
             <div><span class="material-icons icon-inline side-menu-icon" role="button">settings</span></div>
         </div>
@@ -44,6 +44,10 @@
         </div>
 
         <div class="container">
+            <div class="row">
+                <div class="col small"><a href="/media/library/<%= locals.library.id %>/">« Zurück</a></div>
+            </div>
+
             <div class="row">
                 <div class="col video-thumbnail"><img src="/media/library/<%= locals.library.id %>/<%= locals.title.id %>/assets/poster.png" loading="lazy" width="500" height="416" style="border-radius: 10px;height: inherit"></div>
                 <div class="col">

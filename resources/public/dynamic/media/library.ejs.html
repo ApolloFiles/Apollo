@@ -31,8 +31,8 @@
 
         <div class="side-menu-items">
             <div><span class="material-icons icon-inline side-menu-icon" role="button">search</span></div>
-            <div><span class="material-icons icon-inline side-menu-icon side-menu-icon-active"
-                       role="button">play_circle</span></div>
+            <a href="/media/"><span class="material-icons icon-inline side-menu-icon side-menu-icon-active"
+                       role="button">play_circle</span></a>
             <div><span class="material-icons icon-inline side-menu-icon" role="button">folder</span></div>
             <div><span class="material-icons icon-inline side-menu-icon" role="button">settings</span></div>
         </div>
@@ -51,7 +51,7 @@
         <p><em><strong>DEBUG: <%- JSON.stringify({id: locals.library.id, name: locals.library.name}) -%></strong></em></p>
 
         <!-- Continue Watching -->
-        <div>
+        <div class="d-none">
             <h2 class="fw_600 h3 mb-4">Continue Watching</h2>
 
             <div class="wrap_continue_watching_videos position-relative">
@@ -144,7 +144,7 @@
         </div>
 
         <!-- Anime -->
-        <div>
+        <div class="d-none">
             <h2 class="fw_600 h3 mb-4">Anime</h2>
 
             <div class="position-relative">
@@ -178,7 +178,7 @@
         </div>
 
         <!-- SciFi -->
-        <div>
+        <div class="d-none">
             <h2 class="fw_600 h3 mb-4">Science fiction</h2>
             <div class="position-relative">
                 <div class="swiper thumbnail_videos">
