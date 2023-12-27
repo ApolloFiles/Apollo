@@ -38,7 +38,7 @@ RUN npm run generate
 ##
 # Quick fix for ffmpeg nvenc support
 ##
-FROM nvidia/cuda:12.2.0-base-ubuntu22.04 AS ffmpeg-cuda
+FROM nvidia/cuda:12.3.0-base-ubuntu22.04 AS ffmpeg-cuda
 RUN apt-get update && apt-get install -y ffmpeg
 
 ##
