@@ -42,10 +42,19 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
       }
     }
 
+    const streamDispositions: { [streamIndex: number]: { [key: string]: 0 | 1 } } = {};
+    for (const [streamIndex, streamMeta] of file.streamMeta.entries()) {
+      streamDispositions[streamIndex] = {};
+      for (const dispositionKey in streamMeta.disposition) {
+        streamDispositions[streamIndex][dispositionKey] = streamMeta.disposition[dispositionKey];
+      }
+    }
+
     const reqBody = {
       filePath: file.meta.filePath,
       fileTags,
-      streamTags
+      streamTags,
+      streamDispositions
     };
 
     await useFetch<WriteVideoTagsApiResponse>(
@@ -255,17 +264,33 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
       <div class="flex gap-4 flex-col pt-8"
            v-if="selectedFiles.length === 1"
            v-for="streamIndex in selectedFiles[0].streamMeta.keys()">
-        <h1>{{ capitalizeFirstLetter(selectedFiles[0].streamMeta.get(streamIndex)?.codecType ?? 'Stream') }}-Tags&nbsp;(#{{ streamIndex }})&nbsp;<UButton
-          icon="i-ic-outline-add"
-          size="2xs"
-          color="lime"
-          variant="solid"
-          square
-          @click="() => createNewTagForSelectedFiles(streamIndex)"
-        />
-          <br v-if="selectedFiles.length === 1">
-          <small v-if="selectedFiles.length === 1">{{ selectedFiles[0].streamMeta.get(streamIndex)?.codecNameLong }}</small>
-        </h1>
+        <div class="flex justify-between">
+          <div class="flex-shrink-0 mr-10">
+            <h1>{{ capitalizeFirstLetter(selectedFiles[0].streamMeta.get(streamIndex)?.codecType ?? 'Stream') }}-Tags&nbsp;(#{{ streamIndex
+              }})&nbsp;<UButton
+                icon="i-ic-outline-add"
+                size="2xs"
+                color="lime"
+                variant="solid"
+                square
+                @click="() => createNewTagForSelectedFiles(streamIndex)"
+              />
+              <br v-if="selectedFiles.length === 1">
+              <small v-if="selectedFiles.length === 1">{{ selectedFiles[0].streamMeta.get(streamIndex)?.codecNameLong }}</small>
+            </h1>
+          </div>
+          <div v-if="selectedFiles.length == 1">
+            <UBadge
+              :ui="{ rounded: 'rounded-full' }"
+              class="cursor-pointer mr-1"
+              :key="streamIndex.toString() + dispositionKey + JSON.stringify(selectedFiles)"
+              v-for="(dispositionValue, dispositionKey) of selectedFiles[0].streamMeta.get(streamIndex)!.disposition"
+              :variant="dispositionValue == 1 ? 'solid' : 'soft'"
+              :color="dispositionValue == 1 ? 'green': 'red'"
+              @click.passive="() => selectedFiles[0].streamMeta.get(streamIndex)!.disposition[dispositionKey] = (dispositionValue == 1 ? 0 : 1)"
+            >{{ dispositionKey }}</UBadge>
+          </div>
+        </div>
 
         <FileMetaEditorEditorViewInputs
           v-for="streamTag of selectedFiles[0].streamMeta.get(streamIndex)!.tags.values()"

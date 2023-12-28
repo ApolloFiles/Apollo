@@ -18,7 +18,13 @@ type VideoAnalysisResult = {
 
   tags: { [key: string]: string },
   chapters: { start: number, end: number, tags: { [key: string]: string } }[],
-  streams: { index: number, codecType: string, codecNameLong: string, tags: { [key: string]: string } }[]
+  streams: {
+    index: number,
+    codecType: string,
+    codecNameLong: string,
+    tags: { [key: string]: string },
+    disposition: { [key: string]: 0 | 1 }
+  }[];
 };
 
 export const apiRouter = express.Router();
@@ -184,7 +190,8 @@ apiRouter.use('/v1/video-analysis', requireAuthMiddleware, (req, res, next) => {
           index: stream.index,
           codecType: stream.codecType,
           codecNameLong: stream.codecNameLong,
-          tags: stream.tags
+          tags: stream.tags,
+          disposition: stream.disposition ?? {}
         }));
 
         return {
@@ -270,7 +277,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
       }
 
       const streamTags = req.body.streamTags;
-      if (typeof streamTags != 'object' || streamTags == null || Array.isArray(fileTags)) {
+      if (typeof streamTags != 'object' || streamTags == null || Array.isArray(streamTags)) {
         res
           .status(400)
           .type('application/json')
@@ -296,6 +303,43 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         }
       }
 
+      const streamDispositions = req.body.streamDispositions;
+      if (typeof streamDispositions != 'object' || streamDispositions == null || Array.isArray(streamDispositions)) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({ error: 'Invalid or missing streamDispositions.' });
+        return;
+      }
+      for (const streamIndex in streamDispositions) {
+        if (!streamTags.hasOwnProperty(streamIndex) || !StringUtils.isNumeric(streamIndex)) {
+          res
+            .status(400)
+            .type('application/json')
+            .send({ error: `Invalid key type/value for streamIndex: ${streamIndex}` });
+          return;
+        }
+
+        const streamDispositionsForStream = streamDispositions[streamIndex];
+        if (typeof streamDispositionsForStream != 'object' || streamDispositionsForStream == null || Array.isArray(streamDispositionsForStream)) {
+          res
+            .status(400)
+            .type('application/json')
+            .send({ error: `Invalid streamDispositions for streamIndex ${streamIndex}.` });
+          return;
+        }
+
+        for (const dispositionKey in streamDispositionsForStream) {
+          if (!streamDispositionsForStream.hasOwnProperty(dispositionKey) || (streamDispositionsForStream[dispositionKey] !== 1 && streamDispositionsForStream[dispositionKey] !== 0)) {
+            res
+              .status(400)
+              .type('application/json')
+              .send({ error: `Invalid dispositionValue for key ${dispositionKey}.` });
+            return;
+          }
+        }
+      }
+
       const videoFile = user.getDefaultFileSystem().getFile(requestedFilePath);
 
       const originalVideoAnalysis = await VideoAnalyser.analyze(videoFile.getAbsolutePathOnHost()!, true);
@@ -313,7 +357,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         })
       };
 
-      const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, fileTags, streamTags);
+      const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, fileTags, streamTags, streamDispositions);
       const actualResultVideoAnalysis = await VideoAnalyser.analyze(videoFilePathWithAppliedTags, true);
 
       function getNormalizedAnalysisForCompare(analysis: ExtendedVideoAnalysis): { [key: string]: any } {
@@ -325,6 +369,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         delete result.file.tags;
         for (const stream of result.streams) {
           delete stream.tags;
+          delete stream.disposition;
         }
 
         return result;
@@ -408,7 +453,8 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
               index: stream.index,
               codecType: stream.codecType,
               codecNameLong: stream.codecNameLong,
-              tags: stream.tags
+              tags: stream.tags,
+              disposition: stream.disposition ?? {}
             }))
           } satisfies VideoAnalysisResult
         });

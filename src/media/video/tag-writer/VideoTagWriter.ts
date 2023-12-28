@@ -9,7 +9,7 @@ type MetaTag = {
 }
 
 export default class VideoTagWriter {
-  static async writeTagsIntoNewFile(filePath: string, fileTags: MetaTag, streamTags: { [streamIndex: number]: MetaTag }): Promise<string> {
+  static async writeTagsIntoNewFile(filePath: string, fileTags: MetaTag, streamTags: { [streamIndex: number]: MetaTag }, streamDispositions: { [streamIndex:number]: { [key: string]: 0 | 1 } }): Promise<string> {
     const tmpDir = TmpFiles.createTmpDir(60 * 60, 'video-tag-writer');
     const tmpFilePath = Path.join(tmpDir, Crypto.randomUUID() + Path.extname(filePath));
 
@@ -28,6 +28,15 @@ export default class VideoTagWriter {
       for (const [key, value] of Object.entries(streamTags[streamIndex])) {
         ffmpegArgs.push(`-metadata:s:${streamIndex}`, `${key}=${value}`);
       }
+    }
+
+    for (const streamIndex in streamDispositions) {
+      const enabledDispositions = Object.entries(streamDispositions[streamIndex])
+        .filter(([_, value]) => value === 1)
+        .map(([key]) => key)
+        .join('+');
+
+      ffmpegArgs.push(`-disposition:${streamIndex}`, enabledDispositions || '0');
     }
 
     ffmpegArgs.push(

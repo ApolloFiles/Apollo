@@ -22,6 +22,7 @@ export type StreamMeta = {
   readonly codecType: string;
   readonly codecNameLong: string;
   readonly tags: Map<number, ParsedTag>;
+  readonly disposition: { [key: string]: 0 | 1 };
 }
 
 // FIXME: Setting appState.unsavedChanges to true causes focus lost on input fields which is just *slightly* annoying
@@ -192,10 +193,12 @@ export default class ParsedFile {
         }
         streamTagsForStream.set(++ParsedFile.TAG_COUNTER, { key: tagKey, value: stream.tags[tagKey] });
       }
+
       this.streamMeta.set(stream.index, {
         codecType: stream.codecType,
         codecNameLong: stream.codecNameLong,
-        tags: streamTagsForStream
+        tags: streamTagsForStream,
+        disposition: stream.disposition
       });
     }
 
@@ -225,9 +228,10 @@ export default class ParsedFile {
         streamTagsForStream.set(++this.TAG_COUNTER, { key: tagKey, value: tagValue });
       }
       streamMeta.set(stream.index, {
-        tags: streamTagsForStream,
         codecType: stream.codecType,
-        codecNameLong: stream.codecNameLong
+        codecNameLong: stream.codecNameLong,
+        tags: streamTagsForStream,
+        disposition: stream.disposition
       });
     }
 

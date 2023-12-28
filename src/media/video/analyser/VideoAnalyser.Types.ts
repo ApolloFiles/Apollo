@@ -68,6 +68,7 @@ export interface Stream {
   readonly extraDataSize: number;
 
   readonly tags: { readonly [key: string]: string };
+  readonly disposition?: { readonly [key: string]: 0 | 1 };
 }
 
 export interface VideoStream extends Stream {
@@ -91,7 +92,7 @@ export interface VideoStream extends Stream {
   readonly chromaLocation: string;
   readonly refs: number;
 
-  readonly disposition: { readonly [key: string]: number };
+  readonly disposition: { readonly [key: string]: 0 | 1 };
 }
 
 export interface AudioStream extends Stream {
@@ -105,7 +106,7 @@ export interface AudioStream extends Stream {
 
   readonly bitsPerSample: number;
 
-  readonly disposition: { readonly [key: string]: number };
+  readonly disposition: { readonly [key: string]: 0 | 1 };
 }
 
 export interface SubtitleStream extends Stream {
@@ -114,8 +115,6 @@ export interface SubtitleStream extends Stream {
 
 export interface AttachmentStream extends Stream {
   readonly codecType: 'attachment';
-
-  readonly disposition: { readonly [key: string]: number };
 
   readonly tags: Stream['tags'] & { filename?: string, mimetype?: string };
 }
