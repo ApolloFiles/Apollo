@@ -306,6 +306,11 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
                title="The Movie DB “movie_id” or “tv_id” identifier for movies/TV shows [@!MovieDB]. The variable length digits string MUST be prefixed with either “movie/” or “tv/”.">TMDB</pre>,
           <pre class="inline"
                title="The TV Database [@!TheTVDB] tag which can include movies. The variable length digits string representing a “Series ID”, “Episode ID” or “Movie ID” identifier MUST be prefixed with “series/”, “episodes/” or “movies/” respectively.">TVDB2</pre>
+          <pre class="inline"
+               title="Hab ich mir einfach ausgedacht – Die ID aus der URL nutzen">MYANIMELIST</pre>,
+          <pre class="inline"
+               title="Hab ich mir einfach ausgedacht – Die ID aus der URL nutzen">ANIDB</pre>,
+
 
           <h2 class="text-3xl">Personal &amp; Technical Information</h2>
           <pre class="inline" title="Any comment related to the content.">COMMENT</pre>,
@@ -325,9 +330,9 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
 
           <h2 class="text-3xl">Language</h2>
           <pre class="inline"
-               title="ISO639-2 (z.B. eng, deu, jpn=Japanisch, und=undefined); Muss ignoriert werden, wenn LanguageBCP47-Tag vorhanden">Language</pre>,
+               title="ISO639-2 (z.B. eng, deu, jpn=Japanisch, und=undefined); Muss ignoriert werden, wenn LanguageBCP47-Tag vorhanden">Language</pre> (<a href="https://www.loc.gov/standards/iso639-2/php/code_list.php" target="_blank" rel="noopener">ref</a>),
           <pre class="inline"
-               title="BCP47 (z.B. en, en-US, de, de-DE, ja); Wenn vorhanden muss ein Language-Tag ignoriert werden">LanguageBCP47</pre>
+               title="BCP47 (z.B. en, en-US, de, de-DE, ja); Wenn vorhanden muss ein Language-Tag ignoriert werden">LanguageBCP47</pre> (<a href="https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry" target="_blank" rel="noopener">ref</a>)
         </template>
       </UAccordion>
 
