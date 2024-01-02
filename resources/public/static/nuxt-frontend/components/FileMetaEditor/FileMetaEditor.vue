@@ -4,9 +4,10 @@ import type {VideoAnalysisApiResponse} from '~/types/FileMetaEditor';
 import ParsedFile from '~/types/ParsedFile';
 
 const props = defineProps<{ apolloDirectoryPath: string }>();
+const apolloBaseUrl = useAppConfig().apolloBaseUrl;
 
 const {pending, error, data: fetchedData} = await useLazyFetch<VideoAnalysisApiResponse>(
-  'http://localhost:8080/api/v1/video-analysis',
+  `${apolloBaseUrl}/api/v1/video-analysis`,
   {
     server: false,
     cache: 'no-store',

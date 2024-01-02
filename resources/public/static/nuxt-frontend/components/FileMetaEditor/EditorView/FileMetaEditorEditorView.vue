@@ -4,6 +4,7 @@ import type {WriteVideoTagsApiResponse} from '~/types/FileMetaEditor';
 import type ParsedFile from '~/types/ParsedFile';
 
 const props = defineProps<{ files: ParsedFile[] }>();
+const apolloBaseUrl = useAppConfig().apolloBaseUrl;
 const notifier = useToast();
 
 const selectedFiles = computed(() => props.files.filter(file => file.appState.selected));
@@ -101,7 +102,7 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
       };
 
       const writeVideoTagsRes = await useFetch<{ taskId: string, taskStatusUri: string }>(
-        'http://localhost:8080/api/v1/write-video-tags',
+        `${apolloBaseUrl}/api/v1/write-video-tags`,
         {
           server: false,
           cache: 'no-store',
@@ -135,7 +136,7 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
           finished: boolean,
           progressStats?: { progressPercentage?: number, text?: string }
           result?: { statusCode: number, body: WriteVideoTagsApiResponse }
-        }>(`http://localhost:8080${taskStatusUri}`,
+        }>(`${apolloBaseUrl}${taskStatusUri}`,
           {
             server: false,
             cache: 'no-store',
