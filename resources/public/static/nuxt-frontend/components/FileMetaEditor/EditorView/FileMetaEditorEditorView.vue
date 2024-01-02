@@ -35,9 +35,9 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
     }
 
     const streamTags: { [streamIndex: number]: { [key: string]: string } } = {};
-    for (const [streamIndex, streamTagMap] of file.streamTags.entries()) {
+    for (const [streamIndex, streamMeta] of file.streamMeta.entries()) {
       streamTags[streamIndex] = {};
-      for (const streamTag of streamTagMap.values()) {
+      for (const streamTag of streamMeta.tags.values()) {
         streamTags[streamIndex][streamTag.key] = streamTag.value;
       }
     }
@@ -121,6 +121,10 @@ function createNewTagForSelectedFiles(streamIndex: number): void {
       timeout: 4000
     });
   }
+}
+
+function capitalizeFirstLetter(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function _collectAllSelectedFileTagKeys(): Set<string> {
@@ -207,6 +211,7 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
             icon="i-ic-baseline-save"
             size="sm"
             color="primary"
+            :disabled="selectedFiles.length === 0"
             @click="() => saveSelectedFiles()"
           />
         </UTooltip>
@@ -231,6 +236,11 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
           square
           @click="() => createNewTagForSelectedFiles(-1)"
         />
+          <br v-if="selectedFiles.length === 1">
+          <small
+            v-if="selectedFiles.length === 1"
+            :title="`${selectedFiles[0].meta.probeScore}% Zuversicht in den erkannten Container-Typ (probeScore)`"
+          >{{ selectedFiles[0].meta.formatNameLong }} <UIcon name="i-ic-outline-info" /></small>
         </h1>
 
         <FileMetaEditorEditorViewInputs
@@ -244,8 +254,8 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
 
       <div class="flex gap-4 flex-col pt-8"
            v-if="selectedFiles.length === 1"
-           v-for="streamIndex in selectedFiles[0].streamTags.keys()">
-        <h1>Stream-Tags&nbsp;(#{{ streamIndex }})&nbsp;<UButton
+           v-for="streamIndex in selectedFiles[0].streamMeta.keys()">
+        <h1>{{ capitalizeFirstLetter(selectedFiles[0].streamMeta.get(streamIndex)?.codecType ?? 'Stream') }}-Tags&nbsp;(#{{ streamIndex }})&nbsp;<UButton
           icon="i-ic-outline-add"
           size="2xs"
           color="lime"
@@ -253,10 +263,12 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
           square
           @click="() => createNewTagForSelectedFiles(streamIndex)"
         />
+          <br v-if="selectedFiles.length === 1">
+          <small v-if="selectedFiles.length === 1">{{ selectedFiles[0].streamMeta.get(streamIndex)?.codecNameLong }}</small>
         </h1>
 
         <FileMetaEditorEditorViewInputs
-          v-for="streamTag of selectedFiles[0].streamTags.get(streamIndex)!.values()"
+          v-for="streamTag of selectedFiles[0].streamMeta.get(streamIndex)!.tags.values()"
           :key="streamIndex.toString() + streamTag.key + JSON.stringify(selectedFiles)"
           :initialTagKey="streamTag.key"
           :selectedFiles="selectedFiles"

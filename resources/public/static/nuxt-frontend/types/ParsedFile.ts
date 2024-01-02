@@ -18,6 +18,12 @@ export type ParsedFileAppState = {
   unsavedChanges: boolean;
 }
 
+export type StreamMeta = {
+  readonly codecType: string;
+  readonly codecNameLong: string;
+  readonly tags: Map<number, ParsedTag>;
+}
+
 // FIXME: Setting appState.unsavedChanges to true causes focus lost on input fields which is just *slightly* annoying
 export default class ParsedFile {
   private static TAG_COUNTER = 0;
@@ -26,12 +32,12 @@ export default class ParsedFile {
   public readonly appState: ParsedFileAppState = { selected: false, unsavedChanges: false };
 
   public readonly fileTags: Map<number, ParsedTag>;
-  public readonly streamTags: Map<number, Map<number, ParsedTag>>;
+  public readonly streamMeta: Map<number, StreamMeta>;
 
-  protected constructor(meta: ParsedFileMeta, fileTags: Map<number, ParsedTag>, streamTags: Map<number, Map<number, ParsedTag>>) {
+  protected constructor(meta: ParsedFileMeta, fileTags: Map<number, ParsedTag>, streamMeta: Map<number, StreamMeta>) {
     this.meta = meta;
     this.fileTags = fileTags;
-    this.streamTags = streamTags;
+    this.streamMeta = streamMeta;
   }
 
   /* File Tags */
@@ -99,7 +105,7 @@ export default class ParsedFile {
   /* Stream Tags */
 
   getStreamTagValue(streamIndex: number, tagKey: string): string | null {
-    for (const streamTag of this.streamTags.get(streamIndex)!.values()) {
+    for (const streamTag of this.streamMeta.get(streamIndex)!.tags.values()) {
       if (streamTag.key === tagKey) {
         return streamTag.value;
       }
@@ -108,7 +114,7 @@ export default class ParsedFile {
   }
 
   setStreamTagValue(streamIndex: number, tagKey: string, tagValue: string): void {
-    for (const streamTag of this.streamTags.get(streamIndex)!.values()) {
+    for (const streamTag of this.streamMeta.get(streamIndex)!.tags.values()) {
       if (streamTag.key === tagKey) {
         streamTag.value = tagValue;
         // this.appState.unsavedChanges = true;
@@ -116,13 +122,13 @@ export default class ParsedFile {
       }
     }
 
-    this.streamTags.get(streamIndex)!.set(++ParsedFile.TAG_COUNTER, { key: tagKey, value: tagValue });
+    this.streamMeta.get(streamIndex)!.tags.set(++ParsedFile.TAG_COUNTER, { key: tagKey, value: tagValue });
   }
 
   removeStreamTag(streamIndex: number, tagKey: string): void {
-    for (const [entryIndex, streamTag] of this.streamTags.get(streamIndex)!.entries()) {
+    for (const [entryIndex, streamTag] of this.streamMeta.get(streamIndex)!.tags.entries()) {
       if (streamTag.key === tagKey) {
-        this.streamTags.get(streamIndex)!.delete(entryIndex);
+        this.streamMeta.get(streamIndex)!.tags.delete(entryIndex);
         // this.appState.unsavedChanges = true;
         return;
       }
@@ -137,7 +143,7 @@ export default class ParsedFile {
       throw new Error(`Cannot rename tag ${JSON.stringify(oldTagKey)} to ${JSON.stringify(newTagKey)} because the new tag key already exists`);
     }
 
-    for (const streamTag of this.streamTags.get(streamIndex)!.values()) {
+    for (const streamTag of this.streamMeta.get(streamIndex)!.tags.values()) {
       if (streamTag.key === oldTagKey) {
         streamTag.key = newTagKey;
         // this.appState.unsavedChanges = true;
@@ -149,12 +155,12 @@ export default class ParsedFile {
   }
 
   createStreamTag(streamIndex: number): void {
-    this.streamTags.get(streamIndex)!.set(++ParsedFile.TAG_COUNTER, { key: '', value: '' });
+    this.streamMeta.get(streamIndex)!.tags.set(++ParsedFile.TAG_COUNTER, { key: '', value: '' });
   }
 
   hasStreamTag(streamIndex: number, tagKey: string): boolean {
     return Array
-      .from(this.streamTags.get(streamIndex)!.values())
+      .from(this.streamMeta.get(streamIndex)!.tags.values())
       .some(streamTag => streamTag.key === tagKey);
   }
 
@@ -177,7 +183,7 @@ export default class ParsedFile {
       this.fileTags.set(++ParsedFile.TAG_COUNTER, { key: tagKey, value: apiResponse.newVideoAnalysis.tags[tagKey] });
     }
 
-    this.streamTags.clear();
+    this.streamMeta.clear();
     for (const stream of apiResponse.newVideoAnalysis.streams) {
       const streamTagsForStream = new Map<number, ParsedTag>();
       for (const tagKey in stream.tags) {
@@ -186,7 +192,11 @@ export default class ParsedFile {
         }
         streamTagsForStream.set(++ParsedFile.TAG_COUNTER, { key: tagKey, value: stream.tags[tagKey] });
       }
-      this.streamTags.set(stream.index, streamTagsForStream);
+      this.streamMeta.set(stream.index, {
+        codecType: stream.codecType,
+        codecNameLong: stream.codecNameLong,
+        tags: streamTagsForStream
+      });
     }
 
     // this.appState.unsavedChanges = false;
@@ -203,7 +213,7 @@ export default class ParsedFile {
       fileTags.set(++this.TAG_COUNTER, { key: tagKey, value: tagValue });
     }
 
-    const streamTags = new Map<number, Map<number, ParsedTag>>();
+    const streamMeta = new Map<number, StreamMeta>();
     for (const stream of apiResponse.streams) {
       const streamTagsForStream = new Map<number, ParsedTag>();
       for (const tagKey in stream.tags) {
@@ -214,7 +224,11 @@ export default class ParsedFile {
         const tagValue = stream.tags[tagKey] as string;
         streamTagsForStream.set(++this.TAG_COUNTER, { key: tagKey, value: tagValue });
       }
-      streamTags.set(stream.index, streamTagsForStream);
+      streamMeta.set(stream.index, {
+        tags: streamTagsForStream,
+        codecType: stream.codecType,
+        codecNameLong: stream.codecNameLong
+      });
     }
 
     return new ParsedFile({
@@ -225,6 +239,6 @@ export default class ParsedFile {
         duration: apiResponse.duration
       },
       fileTags,
-      streamTags);
+      streamMeta);
   }
 }
