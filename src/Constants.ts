@@ -186,6 +186,16 @@ export function getUserStorageTmpRoot(): string {
   return Path.join(getAppTmpDir(), 'user-storage', Path.sep);
 }
 
+// TODO: Maybe introduce a admin setting to choose if potentially large temporary files,
+//       that will be moved (on success) to the user storage should be written to to the same partition or to APP_TMP_DIR,
+//       which might be on an faster SSD for example (but causes a more expensive copy/move operation to happen instead of a simpel and fast "rename")
+//       I am honestly not sure what is universally better... Right now only the video edit prototype uses it and it is *expected* to succeed every time
+//       (so writing it to the faster SSD and then copying it to the slower HDD is in theory always more expensive)
+//       But maybe this additional cost is preferred for some users/setups - Apollo should not make too many assumptions about the setup and offer ways to reasonable support most setups
+export function getUserStorageTmpRootOnSameFileSystem(): string {
+  return Path.join(getUserStorageRoot(), '.tmp', Path.sep);
+}
+
 export function getProcessManager(): ProcessManager {
   if (processManager == null) {
     processManager = new ProcessManager();

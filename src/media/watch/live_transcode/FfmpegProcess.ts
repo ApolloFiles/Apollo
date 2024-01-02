@@ -20,7 +20,7 @@ export default class FfmpegProcess extends EventEmitter {
     let hwDecoding = 'none/unknown';
     this.childProcess.stderr?.on('data', (data) => {
       const dataAsString = data.toString();
-      if (dataAsString.startsWith('frame=')) {
+      if (dataAsString.startsWith('frame=') || dataAsString.startsWith('size=')) {
         this.emit('metrics', {
           hwDecoding,
           ...FfmpegProcess.parseMetrics(dataAsString)
@@ -111,6 +111,9 @@ export default class FfmpegProcess extends EventEmitter {
       if (key === 'frame' || key === 'fps' || key === 'dup' || key === 'drop') {
         metrics[key] = parseInt(value, 10);
       } else if (key === 'speed' || key === 'q') {
+        if (value === 'N/A') {
+          continue;
+        }
         metrics[key] = parseFloat(value);
       } else {
         metrics[key] = value;

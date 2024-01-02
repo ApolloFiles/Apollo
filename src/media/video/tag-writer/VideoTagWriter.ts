@@ -1,7 +1,8 @@
 import Crypto from 'node:crypto';
+import Fs from 'node:fs';
 import Path from 'node:path';
-import TmpFiles from '../../../TmpFiles';
-import FfmpegProcess from '../../watch/live_transcode/FfmpegProcess';
+import { getUserStorageTmpRootOnSameFileSystem } from '../../../Constants';
+import FfmpegProcess, { FfmpegMetrics } from '../../watch/live_transcode/FfmpegProcess';
 
 type MetaTag = {
   key: string;
@@ -9,9 +10,14 @@ type MetaTag = {
 }
 
 export default class VideoTagWriter {
-  static async writeTagsIntoNewFile(filePath: string, fileTags: MetaTag, streamTags: { [streamIndex: number]: MetaTag }, streamDispositions: { [streamIndex:number]: { [key: string]: 0 | 1 } }): Promise<string> {
-    const tmpDir = TmpFiles.createTmpDir(60 * 60, 'video-tag-writer');
+  static async writeTagsIntoNewFile(filePath: string, fileTags: MetaTag, streamTags: { [streamIndex: number]: MetaTag }, streamDispositions: { [streamIndex:number]: { [key: string]: 0 | 1 } }, onMetrics: (metric: FfmpegMetrics) => void): Promise<string> {
+    const tmpDir = Path.join(getUserStorageTmpRootOnSameFileSystem(), `${Crypto.randomUUID()}`);
+    await Fs.promises.mkdir(tmpDir, { recursive: true });
+
     const tmpFilePath = Path.join(tmpDir, Crypto.randomUUID() + Path.extname(filePath));
+    if (Fs.existsSync(tmpFilePath)) {
+      throw new Error(`File ${tmpFilePath} already exists and cannot be used as temporary file.`);
+    }
 
     const ffmpegArgs = [
       '-n',
@@ -46,7 +52,11 @@ export default class VideoTagWriter {
       tmpFilePath
     );
 
-    const ffmpegProcess = new FfmpegProcess(ffmpegArgs, { stdio: 'inherit' });
+    const ffmpegProcess = new FfmpegProcess(ffmpegArgs,{
+      stdio: ['ignore', 'ignore', 'pipe'],
+      cwd: tmpDir
+    });
+    ffmpegProcess.on('metrics', onMetrics);
     await ffmpegProcess.waitForSuccessExit();
     return tmpFilePath;
   }

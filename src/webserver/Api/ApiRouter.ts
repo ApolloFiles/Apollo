@@ -6,6 +6,8 @@ import IUserFile from '../../files/IUserFile';
 import VideoAnalyser from '../../media/video/analyser/VideoAnalyser';
 import { ExtendedVideoAnalysis } from '../../media/video/analyser/VideoAnalyser.Types';
 import VideoTagWriter from '../../media/video/tag-writer/VideoTagWriter';
+import CompletableTask from '../../process_manager/tasks/CompletableTask';
+import TaskStorage from '../../process_manager/tasks/TaskStorage';
 import Utils from '../../Utils';
 import WebServer from '../WebServer';
 
@@ -357,106 +359,204 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         })
       };
 
-      const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, fileTags, streamTags, streamDispositions);
-      const actualResultVideoAnalysis = await VideoAnalyser.analyze(videoFilePathWithAppliedTags, true);
+      const performWriteAndValidations = async (backgroundTaskId: string): Promise<{ statusCode: number, body: unknown /* FIXME */ }> => {
+        TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, {
+          text: 'Writing changes into copy of original file…'
+        });
 
-      function getNormalizedAnalysisForCompare(analysis: ExtendedVideoAnalysis): { [key: string]: any } {
-        const result: { [key: string]: any } = JSON.parse(JSON.stringify(analysis));
-        delete result.file.fileName;
-        delete result.file.size;
-        delete result.file.bitRate; // No idea but ffmpeg changes this sometimes (maybe it 'knows better'?)
+        const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, fileTags, streamTags, streamDispositions, (metrics) => {
+          let progressText = 'Writing changes into copy of original file…';
+          if (metrics.time) {
+            progressText += `\nCurrently at ${metrics.time}`;
 
-        delete result.file.tags;
-        for (const stream of result.streams) {
-          delete stream.tags;
-          delete stream.disposition;
+            if (metrics.speed) {
+              progressText += ` (${metrics.speed}x speed)`;
+            }
+          }
+
+          TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { text: progressText });
+        });
+        TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { text: 'Analyzing and comparing original file with written changes…' });
+
+        const actualResultVideoAnalysis = await VideoAnalyser.analyze(videoFilePathWithAppliedTags, true);
+
+        function getNormalizedAnalysisForCompare(analysis: ExtendedVideoAnalysis): { [key: string]: any } {
+          const result: { [key: string]: any } = JSON.parse(JSON.stringify(analysis));
+          delete result.file.fileName;
+          delete result.file.size;
+
+          // No idea but ffmpeg changes bitRate/duration sometimes (maybe it 'knows better'?)
+          delete result.file.bitRate;
+          delete result.file.duration;
+
+          delete result.file.tags;
+          for (const stream of result.streams) {
+            delete stream.tags;
+            delete stream.disposition;
+
+            // No idea but ffmpeg changes duration(-Ts) sometimes (maybe it 'knows better'?)
+            delete stream.duration;
+            delete stream.durationTs;
+          }
+
+          return result;
         }
 
-        return result;
-      }
+        function getNormalizedTagsFromAnalysis(analysis: ExtendedVideoAnalysis): { file: { [key: string]: string }, streams: { [key: string]: string }[] } {
+          const getNormalizedTags = (tags: { [key: string]: string }): { [key: string]: string } => {
+            const normalizedTags: { [key: string]: string } = {};
+            for (const tagKey in Object.keys(tags).sort(getFileNameCollator().compare)) {
+              if (!tags.hasOwnProperty(tagKey)) {
+                continue;
+              }
+              if (tagKey.toLowerCase() === 'encoder') {
+                continue;
+              }
+              if (normalizedTags[tagKey.toLowerCase()] != null) {
+                throw new Error(`Duplicate tag key '${tagKey}' in tags – This is not supported right now: ${JSON.stringify(tags)}`);
+              }
+              normalizedTags[tagKey.toLowerCase()] = tags[tagKey];
+            }
+            return normalizedTags;
+          };
 
-      function getNormalizedTagsFromAnalysis(analysis: ExtendedVideoAnalysis): { file: { [key: string]: string }, streams: { [key: string]: string }[] } {
-        const getNormalizedTags = (tags: { [key: string]: string }): { [key: string]: string } => {
-          const normalizedTags: { [key: string]: string } = {};
-          for (const tagKey in Object.keys(tags).sort(getFileNameCollator().compare)) {
-            if (!tags.hasOwnProperty(tagKey)) {
-              continue;
+          return {
+            file: getNormalizedTags(analysis.file.tags),
+            streams: analysis.streams.map(stream => getNormalizedTags(stream.tags))
+          };
+        }
+
+        if (JSON.stringify(getNormalizedAnalysisForCompare(actualResultVideoAnalysis)) !== JSON.stringify(getNormalizedAnalysisForCompare(expectedResultVideoAnalysis))) {
+          const errorMessage = 'Unexpected mismatch when comparing the expected and actual written changes – Original file was kept unchanged.';
+          TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { progress: 1.0, text: errorMessage });
+
+          await Fs.promises.unlink(videoFilePathWithAppliedTags);
+
+          return {
+            statusCode: 500,
+            body: {
+              error: errorMessage,
+              expected: getNormalizedAnalysisForCompare(expectedResultVideoAnalysis),
+              actual: getNormalizedAnalysisForCompare(actualResultVideoAnalysis)
             }
-            if (tagKey.toLowerCase() === 'encoder') {
-              continue;
+          };
+        }
+
+        const actualTags = getNormalizedTagsFromAnalysis(actualResultVideoAnalysis);
+        const expectedTags = getNormalizedTagsFromAnalysis(expectedResultVideoAnalysis);
+        if (JSON.stringify(actualTags) !== JSON.stringify(expectedTags)) {
+          const errorMessage = 'Unexpected mismatch when comparing the expected and actual written tags – Original file was kept unchanged.';
+          TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { progress: 1.0, text: errorMessage });
+
+          await Fs.promises.unlink(videoFilePathWithAppliedTags);
+
+          return {
+            statusCode: 500,
+            body: {
+              error: errorMessage,
+              expected: expectedTags,
+              actual: actualTags
             }
-            if (normalizedTags[tagKey.toLowerCase()] != null) {
-              throw new Error(`Duplicate tag key '${tagKey}' in tags – This is not supported right now: ${JSON.stringify(tags)}`);
-            }
-            normalizedTags[tagKey.toLowerCase()] = tags[tagKey];
-          }
-          return normalizedTags;
-        };
+          };
+        }
+
+        TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { progress: 1.0, text: 'Finishing up…' });
+
+        // TODO: Delete left-over empty dir on success/error (maybe move tmp-dir control into this file?)
+        await Fs.promises.rename(videoFilePathWithAppliedTags, videoFile.getAbsolutePathOnHost()!);
 
         return {
-          file: getNormalizedTags(analysis.file.tags),
-          streams: analysis.streams.map(stream => getNormalizedTags(stream.tags))
+          statusCode: 200,
+          body: {
+            success: true,
+            newVideoAnalysis: {
+              filePath: videoFile.getPath(),
+              fileName: videoFile.getName(),
+              formatNameLong: actualResultVideoAnalysis.file.formatNameLong,
+              probeScore: actualResultVideoAnalysis.file.probeScore,
+              duration: actualResultVideoAnalysis.file.duration,
+
+              tags: actualResultVideoAnalysis.file.tags,
+              chapters: actualResultVideoAnalysis.chapters.map(chapter => ({
+                start: chapter.start,
+                end: chapter.end,
+                tags: chapter.tags
+              })),
+              streams: actualResultVideoAnalysis.streams.map(stream => ({
+                index: stream.index,
+                codecType: stream.codecType,
+                codecNameLong: stream.codecNameLong,
+                tags: stream.tags,
+                disposition: stream.disposition ?? {}
+              }))
+            } satisfies VideoAnalysisResult
+          }
         };
-      }
+      };
 
-      if (JSON.stringify(getNormalizedAnalysisForCompare(actualResultVideoAnalysis)) !== JSON.stringify(getNormalizedAnalysisForCompare(expectedResultVideoAnalysis))) {
-        await Fs.promises.unlink(videoFilePathWithAppliedTags);
+      const backgroundTask = CompletableTask.create(performWriteAndValidations);
 
+      res
+        .status(202)
+        .send({
+          taskId: backgroundTask.taskId,
+          taskStatusUri: `/api/v1/task-status?taskId=${encodeURIComponent(backgroundTask.taskId)}`
+        });
+    }
+  });
+});
+
+apiRouter.use('/v1/task-status', requireAuthMiddleware, (req, res, next) => {
+  handleRequestRestfully(req, res, next, {
+    get: async (): Promise<void> => {
+      const requestedTaskId = req.query.taskId;
+      if (typeof requestedTaskId != 'string' || requestedTaskId.trim().length <= 0) {
         res
-          .status(500)
+          .status(400)
           .type('application/json')
-          .send({
-            error: 'Unexpected mismatch when comparing the expected and actual written changes – Original file was kept unchanged.',
-            expected: expectedResultVideoAnalysis,
-            actual: actualResultVideoAnalysis
-          });
+          .send({ error: `Invalid or missing query parameter 'taskId'` });
         return;
       }
 
-      const actualTags = getNormalizedTagsFromAnalysis(actualResultVideoAnalysis);
-      const expectedTags = getNormalizedTagsFromAnalysis(expectedResultVideoAnalysis);
-      if (JSON.stringify(actualTags) !== JSON.stringify(expectedTags)) {
-        await Fs.promises.unlink(videoFilePathWithAppliedTags);
-
+      const backgroundTask = TaskStorage.getTask(requestedTaskId);
+      if (backgroundTask == null) {
         res
-          .status(500)
+          .status(404)
           .type('application/json')
-          .send({
-            error: 'Unexpected mismatch when comparing the expected and actual written tags – Original file was kept unchanged.',
-            expected: expectedTags,
-            actual: actualTags
-          });
+          .send({ error: `No task with id '${requestedTaskId}' found` });
         return;
       }
 
-      await Fs.promises.rename(videoFilePathWithAppliedTags, videoFile.getAbsolutePathOnHost()!);
+      if (typeof backgroundTask.owningUser == 'number' && backgroundTask.owningUser != WebServer.getUser(req).getId()) {
+        res
+          .status(403)
+          .type('application/json')
+          .send({ error: `Task with id '${requestedTaskId}' is owned by another user` });
+        return;
+      }
+
+      if (!backgroundTask.hasFinishedExecution()) {
+        res
+          .status(200)
+          .type('application/json')
+          .send({
+            taskId: backgroundTask.taskId,
+            creationTime: backgroundTask.creationTime,
+            finished: false,
+            progressStats: TaskStorage.getTaskProgressInfo(backgroundTask.taskId),
+          });
+        return;
+      }
 
       res
         .status(200)
         .type('application/json')
         .send({
-          success: true,
-          newVideoAnalysis: {
-            filePath: videoFile.getPath(),
-            fileName: videoFile.getName(),
-            formatNameLong: actualResultVideoAnalysis.file.formatNameLong,
-            probeScore: actualResultVideoAnalysis.file.probeScore,
-            duration: actualResultVideoAnalysis.file.duration,
-
-            tags: actualResultVideoAnalysis.file.tags,
-            chapters: actualResultVideoAnalysis.chapters.map(chapter => ({
-              start: chapter.start,
-              end: chapter.end,
-              tags: chapter.tags
-            })),
-            streams: actualResultVideoAnalysis.streams.map(stream => ({
-              index: stream.index,
-              codecType: stream.codecType,
-              codecNameLong: stream.codecNameLong,
-              tags: stream.tags,
-              disposition: stream.disposition ?? {}
-            }))
-          } satisfies VideoAnalysisResult
+          taskId: backgroundTask.taskId,
+          creationTime: new Date(backgroundTask.creationTime).toISOString(),
+          finished: true,
+          progressStats: TaskStorage.getTaskProgressInfo(backgroundTask.taskId),
+          result: await backgroundTask.waitForCompletion()
         });
     }
   });

@@ -1,5 +1,11 @@
 import Fs from 'node:fs';
-import { getAppTmpDir, getConfig, getProcessManager, getSqlDatabase } from './Constants';
+import {
+  getAppTmpDir,
+  getConfig,
+  getProcessManager,
+  getSqlDatabase,
+  getUserStorageTmpRootOnSameFileSystem
+} from './Constants';
 import LibraryManager from './media/libraries/LibraryManager';
 import LibraryScanner from './media/libraries/scan/LibraryScanner';
 import UserStorage from './UserStorage';
@@ -22,6 +28,8 @@ function index(): void {
 
   Fs.rmSync(getAppTmpDir(), { recursive: true, force: true });
   Fs.mkdirSync(getAppTmpDir(), { recursive: true });
+
+  Fs.rmSync(getUserStorageTmpRootOnSameFileSystem(), { recursive: true, force: true });
 
   new UserStorage().getUser(1)
     .then((user) => {
