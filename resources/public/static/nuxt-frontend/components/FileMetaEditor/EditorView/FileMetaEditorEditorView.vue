@@ -187,6 +187,27 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
   }
 }
 
+function deleteStatisticsTagsRelatedTagsFromSelectedFiles(): void {
+  for (const selectedFile of selectedFiles.value) {
+    for (const streamId of selectedFile.streamMeta.keys()) {
+      const statisticsTags = selectedFile.getStreamTagValue(streamId, '_STATISTICS_TAGS-eng');
+      if (statisticsTags == null) {
+        continue;
+      }
+
+      for (const tagKeyToRemove of statisticsTags.split(' ')) {
+        if (tagKeyToRemove.trim().length > 0) {
+          selectedFile.removeStreamTag(streamId, `${tagKeyToRemove}-eng`);
+        }
+      }
+
+      selectedFile.removeStreamTag(streamId, '_STATISTICS_TAGS-eng');
+      selectedFile.removeStreamTag(streamId, '_STATISTICS_WRITING_APP-eng');
+      selectedFile.removeStreamTag(streamId, '_STATISTICS_WRITING_DATE_UTC-eng');
+    }
+  }
+}
+
 function createNewTagForSelectedFiles(streamIndex: number): void {
   let allFilesAlreadyHaveTag = true;
 
@@ -310,6 +331,16 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
       </UAccordion>
 
       <div class="toolbar">
+        <UTooltip text="Reads the tag and deletes the listed tags">
+          <UButton
+            icon="i-ic-delete"
+            size="sm"
+            color="orange"
+            :disabled="selectedFiles.length === 0"
+            @click="() => deleteStatisticsTagsRelatedTagsFromSelectedFiles()"
+          >Delete <code>_STATISTICS_TAGS-eng</code> related tags</UButton>
+        </UTooltip>
+
         <!--        <UTooltip text="Discard changes in this file">-->
         <!--          <UButton-->
         <!--              icon="i-ic-baseline-refresh"-->
