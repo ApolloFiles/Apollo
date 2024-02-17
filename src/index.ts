@@ -35,8 +35,11 @@ function index(): void {
     .then((user) => {
       return new LibraryManager(user!).getLibraries()
         .then((libraries) => {
-          return new LibraryScanner().scanLibrary(libraries[0])
-            .then(() => console.log('Done scanning library.'));
+          for (const library of libraries) {
+            new LibraryScanner().scanLibrary(library)
+              .then(() => console.log(`Done scanning library ${library.name} (id: ${library.id})`))
+              .catch(console.error);
+          }
         });
     })
     .catch(console.error);

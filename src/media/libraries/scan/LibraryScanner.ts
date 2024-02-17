@@ -34,7 +34,7 @@ export default class LibraryScanner {
 
             if (!titleHasPosterSaved && externalMetaData.coverImageUrl) {
               const posterUrl = externalMetaData.coverImageUrl;
-              const targetPosterFile = await file.getFileSystem().getFile(Path.join(file.getPath(), 'folder.png'));
+              const targetPosterFile = file.getFileSystem().getFile(Path.join(file.getPath(), 'folder.png'));
 
               const coverResponse = await getHttpClient().get(posterUrl);
               if (!coverResponse.ok) {
@@ -161,68 +161,4 @@ export default class LibraryScanner {
     }
     return null;
   }
-
-  // async scanLibrary(library: Library): Promise<void> {
-  //   for (const directory of library.directories) {
-  //     const files = await directory.getFiles();
-  //
-  //     for (const file of files) {
-  //       if (await file.isDirectory()) {
-  //         const seriesName = file.getName();
-  //         const titleId = await MediaLibraryTable.getInstance().updateLibraryTitle(library.id, file.getPath(), seriesName);
-  //
-  //         await this.scanDirectory(library, titleId, file);
-  //       }
-  //     }
-  //   }
-  // }
-  //
-  // async scanDirectory(library: Library, titleId: string, directory: IUserFile): Promise<void> {
-  //   const directoryScanStartTime = new Date();
-  //
-  //   const files = await directory.getFiles();
-  //   for (const file of files) {
-  //     if (await file.isDirectory()) {
-  //       await this.scanDirectory(library, titleId, file);
-  //       continue;
-  //     }
-  //
-  //     await this.scanFile(library, titleId, file);
-  //   }
-  //
-  //   await MediaLibraryTables.getInstance().deleteFilesInDirectoryBeforeLastScannedAt(library.id, directory.getPath(), directoryScanStartTime);
-  // }
-  //
-  // async scanFile(library: Library, titleId: string, file: IUserFile): Promise<void> {
-  //   const fileName = file.getName();
-  //   const fileMimeType = await file.getMimeType();
-  //   if (fileMimeType == null || !fileMimeType.startsWith('video/')) {
-  //     return;
-  //   }
-  //
-  //   const seasonAndEpisodeNumbers = this.extractSeasonAndEpisodeNumbers(fileName);
-  //   if (seasonAndEpisodeNumbers.seasonNumber == null) {
-  //     seasonAndEpisodeNumbers.seasonNumber = this.determineSeasonNumberByParentDirectories(file, 3);
-  //   }
-  //   await MediaLibraryTables.getInstance().updateLibraryMedia(library.id, file.getPath(), titleId, fileName, seasonAndEpisodeNumbers.seasonNumber, seasonAndEpisodeNumbers.episodeNumber, new Date());
-  //   console.log(`Scanned file '${fileName}' with mime type '${fileMimeType}'`);
-  // }
-  //
-  // private determineSeasonNumberByParentDirectories(file: IUserFile, depth: number): number | null {
-  //   if (depth <= 0) {
-  //     return null;
-  //   }
-  //
-  //   const parentDirectory = file.getFileSystem().getFile(Path.dirname(file.getPath()));
-  //   if (file.getFileSystem().getFile('/').equals(parentDirectory)) {
-  //     return null;
-  //   }
-  //
-  //   const seasonAndEpisodeNumbers = this.extractSeasonAndEpisodeNumbers(parentDirectory.getName());
-  //   if (seasonAndEpisodeNumbers.seasonNumber != null) {
-  //     return seasonAndEpisodeNumbers.seasonNumber;
-  //   }
-  //
-  //   return this.determineSeasonNumberByParentDirectories(parentDirectory, depth - 1);
-  // }
 }
