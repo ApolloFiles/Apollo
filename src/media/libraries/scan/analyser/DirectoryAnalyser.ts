@@ -24,6 +24,7 @@ export interface ExtraMedia extends MediaFile {
 }
 
 export type MediaAnalysis = {
+  rootDirectory: string;
   name: string;
   year?: number;
   metaProviders: MetaProvider[];
@@ -45,6 +46,7 @@ export default class DirectoryAnalyser {
     variantsAndExtras.videoFiles.sort(this.compareVideoFiles);
     variantsAndExtras.extras?.sort((a, b) => getFileNameCollator().compare(a.filePath, b.filePath));
     return {
+      rootDirectory: directoryPath,
       ...this.extractBasicInfoFromName(Path.basename(directoryPath)),
       ...variantsAndExtras
     };
@@ -66,7 +68,6 @@ export default class DirectoryAnalyser {
 
         const seasonNumber = this.extractSeasonFromFileName(dirent.name);
         if (seasonNumber == null) {
-          console.log(`No season number found for directory: ${Path.join(directoryHandle.path, dirent.name)}`);
           continue;
         }
 
@@ -105,7 +106,6 @@ export default class DirectoryAnalyser {
 
       const episodeNumber = this.extractEpisodeFromFileName(dirent.name);
       if (episodeNumber == null) {
-        console.log(`No episode number found for file: ${Path.join(directoryHandle.path, dirent.name)}`);
         continue;
       }
 

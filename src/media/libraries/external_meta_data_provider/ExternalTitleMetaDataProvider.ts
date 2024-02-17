@@ -1,4 +1,6 @@
+import { StringUtils } from '@spraxdev/node-commons';
 import { getConfig } from '../../../Constants';
+import { MetaProvider } from '../scan/analyser/DirectoryAnalyser';
 import MyAnimeListClient, { MyAnimeListAnime } from './MyAnimeListClient';
 
 export default class ExternalTitleMetaDataProvider {
@@ -6,19 +8,24 @@ export default class ExternalTitleMetaDataProvider {
     'myanimelist': new MyAnimeListClient(getConfig().data.mediaLibrary.externalProviders.myAnimeList.clientId)
   };
 
-  async fetchMetaData(providers: { [identifier: string]: number }): Promise<MyAnimeListAnime | null> {
+  async fetchMetaData(providers: MetaProvider[]): Promise<MyAnimeListAnime | null> {
     for (const providerIdentifier in ExternalTitleMetaDataProvider.KNOWN_PROVIDERS) {
-      if (!providers.hasOwnProperty(providerIdentifier)) {
+      const metaProvider = providers.find((provider) => provider.providerId === providerIdentifier);
+      if (metaProvider == null) {
         continue;
       }
 
       const provider = ExternalTitleMetaDataProvider.KNOWN_PROVIDERS[providerIdentifier];
-      const externalMediaId = providers[providerIdentifier];
       if (!provider.isAvailable()) {
         continue;
       }
 
-      return provider.fetchAnime(externalMediaId);
+      const externalMediaId = metaProvider.mediaId;
+      if (!StringUtils.isNumeric(externalMediaId)) {
+        continue;
+      }
+
+      return provider.fetchAnime(parseInt(metaProvider.mediaId, 10));
     }
 
     return null;
