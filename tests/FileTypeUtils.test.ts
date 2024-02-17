@@ -22,7 +22,7 @@ describe('FileTypeUtils with and without file executable', () => {
     [true, 'text/html'],
     [false, 'text/plain'],
     [undefined, 'text/html']
-  ])('Simple HTML file', async (useFileApp, expectedMimeType) => {
+  ])('Simple HTML file (useFileApp=%s)', async (useFileApp, expectedMimeType) => {
     const filePath = Path.join(tmpDir, 'hello.txt');
     Fs.writeFileSync(filePath, '<html><body>Hello Jester!</body></html>');
 

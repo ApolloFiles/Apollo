@@ -3,7 +3,8 @@ import * as MimeType from 'mime-types';
 import ProcessBuilder from './process_manager/ProcessBuilder';
 
 export default class FileTypeUtils {
-  protected useFileApp: boolean;
+  private readonly useFileApp: boolean;
+  private applyNoSandboxWorkaround = false; // https://bugs.astron.com/view.php?id=408
 
   /**
    * @param useFileApp undefined checks if `file` is available on the system and uses it if it is.
@@ -18,7 +19,7 @@ export default class FileTypeUtils {
 
     if (this.useFileApp) {
       try {
-        fileMimeType = await FileTypeUtils.getMimeTypeFromFileApp(path);
+        fileMimeType = await this.getMimeTypeFromFileApp(path);
       } catch (err) {
         console.error(err);
       }
@@ -42,8 +43,13 @@ export default class FileTypeUtils {
   }
 
   // TODO: add support für path array
-  private static async getMimeTypeFromFileApp(path: string): Promise<string | null> {
-    const childProcessArgs = ['--mime-type', '--preserve-date', '--separator=', '-E', '--raw', '--print0', path];
+  private async getMimeTypeFromFileApp(path: string): Promise<string | null> {
+    const childProcessArgs = ['--mime-type', '--preserve-date', '--separator=', '-E', '--raw', '--print0'];
+    if (this.applyNoSandboxWorkaround) {
+      childProcessArgs.push('--no-sandbox');
+    }
+    childProcessArgs.push(path);
+
     const childProcessResult = await new ProcessBuilder('file', childProcessArgs)
       .errorOnNonZeroExit()
       .bufferStdOut()
@@ -52,6 +58,17 @@ export default class FileTypeUtils {
 
     if (childProcessResult.err) {
       if (childProcessResult.process.bufferedStdOut.includes('No such file or directory')) {
+        return null;
+      }
+
+      if (childProcessResult.signal === 'SIGSYS') {
+        if (!this.applyNoSandboxWorkaround) {
+          console.error('Looks like your version of `file` is affected by a bug related to a syscall sandbox (https://bugs.astron.com/view.php?id=408) – Forcing `--no-sandbox` flag now');
+          this.applyNoSandboxWorkaround = true;
+
+          return this.getMimeTypeFromFileApp(path);
+        }
+
         return null;
       }
 
