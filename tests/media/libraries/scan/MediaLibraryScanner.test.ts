@@ -1,17 +1,17 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
-import AbstractUser from '../../../../../src/AbstractUser';
-import Library from '../../../../../src/media/libraries/Library';
-import MovieDirectoryAnalyser from '../../../../../src/media/libraries/scan/movie/MovieDirectoryAnalyser';
-import MovieScanner from '../../../../../src/media/libraries/scan/movie/MovieScanner';
-import UserStorage from '../../../../../src/UserStorage';
+import AbstractUser from '../../../../src/AbstractUser';
+import Library from '../../../../src/media/libraries/Library';
+import MediaLibraryScanner from '../../../../src/media/libraries/scan/MediaLibraryScanner';
+import MovieDirectoryAnalyser from '../../../../src/media/libraries/scan/analyser/MovieDirectoryAnalyser';
+import UserStorage from '../../../../src/UserStorage';
 
-const movieScanner = new MovieScanner(new MovieDirectoryAnalyser());
+const movieScanner = new MediaLibraryScanner(new MovieDirectoryAnalyser());
 let user: AbstractUser;
 let movieRootDirectory: string;
 
 async function setupTestEnvironment(): Promise<void> {
-  user = await new UserStorage().createUser('MovieDirectoryAnalyserTest');
+  user = await new UserStorage().createUser('MediaLibraryScannerTest');
   movieRootDirectory = user.getDefaultFileSystem().getAbsolutePathOnHost();
 }
 
@@ -25,7 +25,7 @@ describe('Scan movie library', () => {
     await Fs.promises.writeFile(Path.join(movieDir, 'Film.mkv'), '');
 
     const library = new Library(user, '123', 'MovieScannerTest', [user.getDefaultFileSystem().getFile('/')]);
-    const scanResult = await movieScanner.scanMovieLibrary(library);
+    const scanResult = await movieScanner.scanLibrary(library);
     expect(scanResult).toHaveLength(1);
     expect(scanResult[0].name).toBe('Film');
     expect(scanResult[0].variants).toHaveLength(1);
@@ -46,7 +46,7 @@ describe('Scan movie library', () => {
     await Fs.promises.writeFile(Path.join(interviewDir2, 'The Art of Movie Making.mp4'), '');
 
     const library = new Library(user, '123', 'MovieScannerTest', [user.getDefaultFileSystem().getFile('/')]);
-    const scanResult = await movieScanner.scanMovieLibrary(library);
+    const scanResult = await movieScanner.scanLibrary(library);
 
     expect(scanResult).toHaveLength(2);
     expect([scanResult[0].name, scanResult[1].name].sort()).toStrictEqual(['Another Film', 'Film']);
@@ -75,7 +75,7 @@ describe('Scan movie library', () => {
     await Fs.promises.writeFile(Path.join(interviewDir2, 'The Art of Movie Making.mp4'), '');
 
     const library = new Library(user, '123', 'MovieScannerTest', [user.getDefaultFileSystem().getFile('/')]);
-    const scanResult = await movieScanner.scanMovieLibrary(library);
+    const scanResult = await movieScanner.scanLibrary(library);
 
     expect(scanResult).toHaveLength(2);
     expect([scanResult[0].name, scanResult[1].name].sort()).toStrictEqual(['Hated Film', 'Loved Film']);

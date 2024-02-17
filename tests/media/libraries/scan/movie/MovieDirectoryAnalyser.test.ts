@@ -1,11 +1,12 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import AbstractUser from '../../../../../src/AbstractUser';
-import MovieDirectoryAnalyser, {
-  MetaProvider,
-  MovieAnalysis,
-  MovieVariant
-} from '../../../../../src/media/libraries/scan/movie/MovieDirectoryAnalyser';
+import {
+  MediaAnalysis,
+  MediaVariant,
+  MetaProvider
+} from '../../../../../src/media/libraries/scan/IMediaDirectoryAnalyser';
+import MovieDirectoryAnalyser from '../../../../../src/media/libraries/scan/analyser/MovieDirectoryAnalyser';
 import UserStorage from '../../../../../src/UserStorage';
 
 const movieDirectoryAnalyser = new MovieDirectoryAnalyser();
@@ -46,7 +47,7 @@ describe('Simple directories without additional meta info in their name', () => 
     await Fs.promises.mkdir(movieDir);
     await Fs.promises.writeFile(Path.join(movieDir, 'Movie.mkv'), '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Movie',
       year: undefined,
       metaProviders: [],
@@ -60,7 +61,7 @@ describe('Simple directories without additional meta info in their name', () => 
     await Fs.promises.writeFile(Path.join(movieDir, 'Movie-cd1.avi'), '');
     await Fs.promises.writeFile(Path.join(movieDir, 'Movie-cd2.avi'), '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Movie',
       year: undefined,
       metaProviders: [],
@@ -78,7 +79,7 @@ describe('Movie Directories with name and year', () => {
     await Fs.promises.mkdir(movieDir);
     await Fs.promises.writeFile(Path.join(movieDir, 'Film.mkv'), '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Film',
       year: 2008,
       metaProviders: [],
@@ -93,7 +94,7 @@ describe('Movie Directories with name and year', () => {
     await Fs.promises.writeFile(Path.join(movieDir, 'Film-cd1.avi'), '');
     await Fs.promises.writeFile(Path.join(movieDir, 'Film-cd2.avi'), '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Film',
       year: 2010,
       metaProviders: [],
@@ -117,7 +118,7 @@ describe('Movie Directories with name and meta-provider-identifier', () => {
     await Fs.promises.mkdir(movieDir);
     await Fs.promises.writeFile(Path.join(movieDir, 'Film.mkv'), '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Film',
       year: 2008,
       metaProviders: expectedMetaProviders,
@@ -135,7 +136,7 @@ describe('Movie Directories with name and meta-provider-identifier', () => {
     await Fs.promises.mkdir(movieDir);
     await Fs.promises.writeFile(Path.join(movieDir, 'Film.mkv'), '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: `Film (2008) ${expectedNameSuffix}`,
       year: undefined,
       metaProviders: expectedMetaProviders,
@@ -153,13 +154,13 @@ describe('Multiple movie variants in one directory', () => {
     ['Film (2010)', 'Film - 1080p.mp4', undefined],
     ['Film (2010) [imdbid-tt0106145]', 'Film (2010) [imdbid-tt0106145] - 1080p.mp4', '1080p'],
     ['Film (2010) [imdbid-tt0106145]', 'Film (2010) - 1080p.mp4', '1080p']
-  ])('%s', async (dirName: string, fileName: string, expectedVariantName: MovieVariant['name']) => {
+  ])('%s', async (dirName: string, fileName: string, expectedVariantName: MediaVariant['name']) => {
     const movieDir = Path.join(movieRootDirectory, dirName);
 
     await Fs.promises.mkdir(movieDir);
     await Fs.promises.writeFile(Path.join(movieDir, fileName), '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Film',
       year: 2010,
       metaProviders: [],
@@ -175,7 +176,7 @@ describe('Multiple movie variants in one directory', () => {
     await Fs.promises.writeFile(Path.join(movieDir, 'Film \u2013 1080p.mkv'), '');  // en-dash
     await Fs.promises.writeFile(Path.join(movieDir, `Film \u2014 Director's Cut.mkv`), ''); // em-dash
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Film',
       year: undefined,
       metaProviders: [],
@@ -204,7 +205,7 @@ describe('Movie extras', () => {
     await Fs.promises.mkdir(Path.dirname(trailerFile), { recursive: true });
     await Fs.promises.writeFile(trailerFile, '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Film',
       year: 2010,
       metaProviders: [],
@@ -226,7 +227,7 @@ describe('Movie extras', () => {
     await Fs.promises.mkdir(Path.dirname(interviewFile), { recursive: true });
     await Fs.promises.writeFile(interviewFile, '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Film',
       year: 2010,
       metaProviders: [],
@@ -248,7 +249,7 @@ describe('Movie extras', () => {
     await Fs.promises.mkdir(Path.dirname(posterFile), { recursive: true });
     await Fs.promises.writeFile(posterFile, '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Movie',
       year: 2020,
       metaProviders: [],
@@ -269,7 +270,7 @@ describe('Movie extras', () => {
     await Fs.promises.mkdir(Path.dirname(backdropFile), { recursive: true });
     await Fs.promises.writeFile(backdropFile, '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Movie',
       year: 2021,
       metaProviders: [],
@@ -289,7 +290,7 @@ describe('Movie extras', () => {
     await Fs.promises.mkdir(Path.dirname(logoFile), { recursive: true });
     await Fs.promises.writeFile(logoFile, '');
 
-    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MovieAnalysis>({
+    await expect(movieDirectoryAnalyser.analyze(movieDir)).resolves.toStrictEqual<MediaAnalysis>({
       name: 'Movie',
       year: 2021,
       metaProviders: [],

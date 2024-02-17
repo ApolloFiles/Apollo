@@ -1,36 +1,19 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import { getFileNameCollator } from '../../../../Constants';
-
-export type MetaProvider = {
-  providerId: string;
-  mediaId: string;
-};
-
-export interface MovieVariant {
-  name?: string;
-  filePath: string;
-}
-
-export interface ExtraMedia extends MovieVariant {
-  type?: 'trailer' | 'interview' | 'poster' | 'backdrop' | 'logo';
-}
-
-export type MovieAnalysis = {
-  name: string;
-  year?: number;
-  metaProviders: MetaProvider[];
-
-  variants: MovieVariant[];
-  extras?: ExtraMedia[];
-};
+import IMediaDirectoryAnalyser, {
+  ExtraMedia,
+  MediaAnalysis,
+  MediaVariant,
+  MetaProvider
+} from '../IMediaDirectoryAnalyser';
 
 // TODO: There should probably be some mime type detection at some point of the analysis/scan chain to prevent stuff like `trailer.png` (image/png) from being added as a trailer.
-export default class MovieDirectoryAnalyser {
+export default class MovieDirectoryAnalyser implements IMediaDirectoryAnalyser {
   private static readonly YEAR_PATTERN = /\s+(\(\d{4}\))$/u;
   private static readonly TRAILING_META_PROVIDER_TAG_PATTERN = /\s+(\[[a-z][a-z0-9_]*-[a-z0-9_-]*\])$/iu;
 
-  async analyze(directoryPath: string): Promise<MovieAnalysis | null> {
+  async analyze(directoryPath: string): Promise<MediaAnalysis | null> {
     const variantsAndExtras = await this.findMediaFiles(directoryPath);
     if (variantsAndExtras.variants.length <= 0 && (variantsAndExtras.extras?.length ?? 0) <= 0) {
       return null;
@@ -44,10 +27,10 @@ export default class MovieDirectoryAnalyser {
     };
   }
 
-  private async findMediaFiles(directoryPath: string): Promise<Pick<MovieAnalysis, 'variants' | 'extras'>> {
+  private async findMediaFiles(directoryPath: string): Promise<Pick<MediaAnalysis, 'variants' | 'extras'>> {
     const directoryHandle = await Fs.promises.opendir(directoryPath);
 
-    const variants: MovieVariant[] = [];
+    const variants: MediaVariant[] = [];
     const extras: ExtraMedia[] = [];
 
     for await (const dirent of directoryHandle) {
@@ -124,7 +107,7 @@ export default class MovieDirectoryAnalyser {
     return null;
   }
 
-  private extractBasicInfoFromName(directoryName: string): Pick<MovieAnalysis, 'name' | 'year' | 'metaProviders'> {
+  private extractBasicInfoFromName(directoryName: string): Pick<MediaAnalysis, 'name' | 'year' | 'metaProviders'> {
     let name = directoryName.trim();
     let year: string | undefined;
     const metaProviders: MetaProvider[] = [];
