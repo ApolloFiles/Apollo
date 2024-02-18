@@ -397,6 +397,9 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
             // No idea but ffmpeg changes duration(-Ts) sometimes (maybe it 'knows better'?)
             delete stream.duration;
             delete stream.durationTs;
+
+            delete stream.rFrameRate;
+            delete stream.timeBase;
           }
 
           return result;
@@ -543,7 +546,7 @@ apiRouter.use('/v1/task-status', requireAuthMiddleware, (req, res, next) => {
             taskId: backgroundTask.taskId,
             creationTime: backgroundTask.creationTime,
             finished: false,
-            progressStats: TaskStorage.getTaskProgressInfo(backgroundTask.taskId),
+            progressStats: TaskStorage.getTaskProgressInfo(backgroundTask.taskId)
           });
         return;
       }
