@@ -305,11 +305,11 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
           <pre class="inline"
                title="The Movie DB “movie_id” or “tv_id” identifier for movies/TV shows [@!MovieDB]. The variable length digits string MUST be prefixed with either “movie/” or “tv/”.">TMDB</pre>,
           <pre class="inline"
-               title="The TV Database [@!TheTVDB] tag which can include movies. The variable length digits string representing a “Series ID”, “Episode ID” or “Movie ID” identifier MUST be prefixed with “series/”, “episodes/” or “movies/” respectively.">TVDB2</pre>
+               title="The TV Database [@!TheTVDB] tag which can include movies. The variable length digits string representing a “Series ID”, “Episode ID” or “Movie ID” identifier MUST be prefixed with “series/”, “episodes/” or “movies/” respectively.">TVDB2</pre>,
           <pre class="inline"
                title="Hab ich mir einfach ausgedacht – Die ID aus der URL nutzen">MYANIMELIST</pre>,
           <pre class="inline"
-               title="Hab ich mir einfach ausgedacht – Die ID aus der URL nutzen">ANIDB</pre>,
+               title="Hab ich mir einfach ausgedacht – Die ID aus der URL nutzen">ANIDB</pre>
 
 
           <h2 class="text-3xl">Personal &amp; Technical Information</h2>
