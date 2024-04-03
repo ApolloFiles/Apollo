@@ -8,6 +8,7 @@ USER node
 WORKDIR /app/
 
 COPY ./package.json ./package-lock.json ./tsconfig.json ./
+COPY ./prisma/ ./prisma/
 RUN npm ci && \
     npm cache clean --force
 
@@ -66,6 +67,7 @@ USER node
 WORKDIR /app/
 
 COPY package.json package-lock.json ./
+COPY ./prisma/ ./prisma/
 
 ENV NODE_ENV=production
 RUN npm ci && \

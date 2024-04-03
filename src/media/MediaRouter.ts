@@ -1,10 +1,11 @@
+import * as PrismaClient from '@prisma/client';
 import { handleRequestRestfully, StringUtils } from '@spraxdev/node-commons';
 import express from 'express';
 import Crypto from 'node:crypto';
 import Path from 'node:path';
 import sharp from 'sharp';
 import FileSystemBasedCache from '../cache/FileSystemBasedCache';
-import MediaLibraryTable, { LibraryMedia } from '../database/postgres/MediaLibraryTable';
+import { getPrismaClient } from '../Constants';
 import MediaLibraryEditMediaTemplate from '../frontend/MediaLibraryEditMediaTemplate';
 import MediaLibraryTemplate from '../frontend/MediaLibraryTemplate';
 import MediaLibraryTitleTemplate from '../frontend/MediaLibraryTitleTemplate';
@@ -527,10 +528,20 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           return;
         }
 
-        const media = await MediaLibraryTable.getInstance().getLibraryMediaByTitleOrderedBySeasonAndEpisode(library.id, libraryTitle.id);
-        const groupedMedia = new Map<string, LibraryMedia[]>();
+        const media = await getPrismaClient()!.mediaLibraryMediaItem.findMany({
+          where: {
+            mediaId: BigInt(libraryTitle.id)
+          },
+          orderBy: [
+            { seasonNumber: 'asc' },
+            { episodeNumber: 'asc' }
+          ]
+        });
+
+        //        const media = await MediaLibraryTable.getInstance().getLibraryMediaByTitleOrderedBySeasonAndEpisode(library.id, libraryTitle.id);
+        const groupedMedia = new Map<string, PrismaClient.MediaLibraryMediaItem[]>();
         for (const mediaItem of media) {
-          const key = mediaItem.season != null ? `Season ${mediaItem.season}` : 'Sonstiges';
+          const key = mediaItem.seasonNumber != null ? `Season ${mediaItem.seasonNumber}` : 'Sonstiges';
           if (!groupedMedia.has(key)) {
             groupedMedia.set(key, []);
           }

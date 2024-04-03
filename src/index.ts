@@ -2,8 +2,8 @@ import Fs from 'node:fs';
 import {
   getAppTmpDir,
   getConfig,
+  getPrismaClientIfAlreadyInitialized,
   getProcessManager,
-  getSqlDatabase,
   getUserStorageTmpRootOnSameFileSystem
 } from './Constants';
 import LibraryManager from './media/libraries/LibraryManager';
@@ -59,13 +59,14 @@ function shutdownHook(): void {
   console.log('Shutting down...');
 
   const postWebserver = async (): Promise<never> => {
-    if (getSqlDatabase()) {
+    const prismaClient = getPrismaClientIfAlreadyInitialized();
+    if (prismaClient != null) {
       try {
-        await getSqlDatabase()?.shutdown();
+        await prismaClient.$disconnect();
       } catch (err) {
         console.error(err);
       } finally {
-        console.log('Database handler has been shutdown.');
+        console.log('Disconnected from the database.');
       }
     }
 

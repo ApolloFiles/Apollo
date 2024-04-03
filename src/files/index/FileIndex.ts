@@ -1,6 +1,5 @@
 import AbstractUser from '../../AbstractUser';
-import { getSqlDatabase } from '../../Constants';
-import PostgresDatabase from '../../database/postgres/PostgresDatabase';
+import { getPrismaClient } from '../../Constants';
 import IUserFileSystem from '../filesystems/IUserFileSystem';
 import IUserFile from '../IUserFile';
 import PostgresFileIndex from './PostgresFileIndex';
@@ -20,12 +19,8 @@ export default abstract class FileIndex {
 
   static getInstance(): FileIndex | null {
     if (this.instance === undefined) {
-      if (getSqlDatabase() != null) {
-        if (getSqlDatabase() instanceof PostgresDatabase) {
-          this.instance = new PostgresFileIndex();
-        } else {
-          throw new Error('Unsupported database type: ' + getSqlDatabase()?.constructor.name);
-        }
+      if (getPrismaClient() != null) {
+        this.instance = new PostgresFileIndex();
       }
     }
 

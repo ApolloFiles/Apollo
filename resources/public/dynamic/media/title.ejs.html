@@ -89,10 +89,10 @@
                                 <% for (const media of mediaEntries) { %>
                                     <li class="list-group-item">
                                         <div class="row">
-                                            <div class="col-auto d-flex align-items-center"><%= media.episode ?? '?' %></div>
+                                            <div class="col-auto d-flex align-items-center"><%= media.episodeNumber ?? '?' %></div>
                                             <div class="col-2 video-thumbnail"><img src="/media/library/<%= locals.library.id %>/<%= locals.title.id %>/<%= Buffer.from(media.filePath).toString('base64') %>/assets/thumbnail.png" width="500" height="416" style="border-radius: 10px;height: inherit"></div>
                                             <div class="col">
-                                                <h2 style="color: #fff;"><%= media.name %></h2>
+                                                <h2 style="color: #fff;"><%= media.title %></h2>
                                                 <p>Lorem Ipsum und so</p>
                                             </div>
                                             <div class="col-auto d-flex align-items-center gap-2 ps-5 pe-5">
@@ -102,7 +102,7 @@
                                                 <a href="/nuxt-frontend/index.html?initPath=<%= encodeURIComponent(media.filePath) %>" target="_blank"><span class="material-icons" style="font-size: 36px">edit</span></a>
                                             </div>
                                             <div class="col-auto text-end">
-                                                <%= media.durationInSeconds <= 60 ? `${media.durationInSeconds} Sek.` : `${(media.durationInSeconds / 60).toFixed(0)} Min` %>
+                                                <%= media.durationInSec <= 60 ? `${media.durationInSec} Sek.` : `${(media.durationInSec / 60).toFixed(0)} Min` %>
                                                 <br>
                                                 <span class="badge bg-primary">4K</span>
                                                 <span class="badge bg-primary">CC</span>
@@ -120,8 +120,6 @@
 <!--                                    </a>-->
                                 <% } %>
                             </ul>
-
-                            <pre><%= JSON.stringify(mediaEntries, null, 2) %></pre>
                         </div>
                         <% isFirstTabContent = false; %>
                     <% } %>

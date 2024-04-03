@@ -1,11 +1,11 @@
+import * as PrismaClient from '@prisma/client';
 import express from 'express';
-import { LibraryTitle } from '../database/postgres/MediaLibraryTable';
 import Library from '../media/libraries/Library';
 import { SimpleTemplate } from './SimpleTemplate';
 
 export type MediaLibraryTemplateData = {
   library: Library;
-  titles: LibraryTitle[];
+  titles: PrismaClient.MediaLibraryMedia[];
 };
 
 export default class MediaLibraryTemplate extends SimpleTemplate {

@@ -1,11 +1,10 @@
+import { PrismaClient } from '@prisma/client';
 import { ConfigFile, HttpClient } from '@spraxdev/node-commons';
 import Crypto from 'node:crypto';
 import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
 import FileStatCache from './cache/FileStatCache';
-import PostgresDatabase from './database/postgres/PostgresDatabase';
-import SqlDatabase from './database/SqlDatabase';
 import FileTypeUtils from './FileTypeUtils';
 import { ApolloConfig } from './global';
 import ProcessManager from './process_manager/ProcessManager';
@@ -16,7 +15,7 @@ let processManager: ProcessManager;
 let fileTypeUtils: FileTypeUtils;
 let fileNameCollator: Intl.Collator;
 let httpClient: HttpClient;
-let postgresqlDb: PostgresDatabase | null;
+let prismaClient: PrismaClient | null;
 let fileStatCache: FileStatCache;
 
 const APP_ROOT = Path.resolve(Path.dirname(__dirname));
@@ -237,16 +236,34 @@ export function getHttpClient(): HttpClient {
   return httpClient;
 }
 
-export function getSqlDatabase(): SqlDatabase | null {
-  if (postgresqlDb === undefined) {
-    postgresqlDb = null;
+export function getPrismaClient(): PrismaClient | null {
+  if (prismaClient === undefined) {
+    prismaClient = null;
 
-    if (getConfig().data.database.postgres.enabled) {
-      postgresqlDb = new PostgresDatabase(getConfig().data.database.postgres);
+    const databaseConfig = getConfig().data.database.postgres;
+    if (databaseConfig.enabled) {
+      if ((process.env.DATABASE_URL?.trim().length ?? 0) <= 0) {
+        const databaseUrl = new URL(`postgresql://${databaseConfig.host}:${databaseConfig.port}`);
+        databaseUrl.username = databaseConfig.username;
+        databaseUrl.password = databaseConfig.password;
+        databaseUrl.pathname = databaseConfig.database;
+        databaseUrl.searchParams.set('ssl', databaseConfig.ssl ? 'true' : 'false');
+        databaseUrl.searchParams.set('connection_limit', databaseConfig.poolSize.toString());
+
+        process.env.DATABASE_URL = databaseUrl.toString();
+      } else {
+        console.warn('DATABASE_URL environment variable already set. Ignoring database config from config.json');
+      }
+
+      prismaClient = new PrismaClient();
     }
   }
 
-  return postgresqlDb;
+  return prismaClient;
+}
+
+export function getPrismaClientIfAlreadyInitialized(): PrismaClient | null {
+  return prismaClient ?? null;
 }
 
 export function getFileStatCache(): FileStatCache {

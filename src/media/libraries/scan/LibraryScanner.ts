@@ -1,7 +1,6 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
-import { getHttpClient } from '../../../Constants';
-import MediaLibraryTable from '../../../database/postgres/MediaLibraryTable';
+import { getHttpClient, getPrismaClient } from '../../../Constants';
 import IUserFile from '../../../files/IUserFile';
 import UserFileHelper from '../../../UserFileHelper';
 import VideoAnalyser from '../../video/analyser/VideoAnalyser';
@@ -20,7 +19,25 @@ export default class LibraryScanner {
       const mediaAnalyses = await this.mediaLibraryAnalyser.analyseLibrary(library);
       for (const mediaAnalysis of mediaAnalyses) {
         const titleRoot = directory.getFileSystem().getFile('/' + Path.relative(directory.getFileSystem().getAbsolutePathOnHost(), mediaAnalysis.rootDirectory)); // FIXME
-        const titleId = await MediaLibraryTable.getInstance().updateLibraryTitle(library.id, titleRoot.getPath(), mediaAnalysis.name);
+        const titleId = (await getPrismaClient()!.mediaLibraryMedia.upsert({
+          select: {
+            id: true
+          },
+          where: {
+            libraryId_directoryPath: {
+              libraryId: BigInt(library.id),
+              directoryPath: titleRoot.getPath()
+            }
+          },
+          create: {
+            libraryId: BigInt(library.id),
+            directoryPath: titleRoot.getPath(),
+            title: mediaAnalysis.name
+          },
+          update: {
+            title: mediaAnalysis.name
+          }
+        })).id.toString();
 
         for (const videoFile of mediaAnalysis.videoFiles) {
           const apolloVideoFile = directory.getFileSystem().getFile('/' + Path.relative(directory.getFileSystem().getAbsolutePathOnHost(), videoFile.filePath)); // FIXME
@@ -35,30 +52,80 @@ export default class LibraryScanner {
           const mediaTitle = this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title') ?? videoFile.title;
           const durationInSeconds = parseInt(videoAnalysis.file.duration, 10);
 
-          await MediaLibraryTable.getInstance().updateLibraryMedia(
-            library.id,
-            apolloVideoFile.getPath(),
-            titleId,
-            mediaTitle ?? Path.basename(videoFile.filePath, Path.extname(videoFile.filePath)),
-            videoFile.tvShow?.season ?? null,
-            videoFile.tvShow?.episode ?? null,
-            new Date(),
-            durationInSeconds
-          );
+          await getPrismaClient()!.mediaLibraryMediaItem.upsert({
+            where: {
+              mediaId_filePath: {
+                mediaId: BigInt(titleId),
+                filePath: apolloVideoFile.getPath()
+              }
+            },
+            create: {
+              mediaId: BigInt(titleId),
+              filePath: apolloVideoFile.getPath(),
+              title: mediaTitle ?? Path.basename(videoFile.filePath, Path.extname(videoFile.filePath)),
+              seasonNumber: videoFile.tvShow?.season ?? null,
+              episodeNumber: videoFile.tvShow?.episode ?? null,
+              lastScannedAt: libraryScanStart,
+              addedAt: new Date(),
+              durationInSec: durationInSeconds
+            },
+            update: {
+              title: mediaTitle ?? Path.basename(videoFile.filePath, Path.extname(videoFile.filePath)),
+              seasonNumber: videoFile.tvShow?.season ?? null,
+              episodeNumber: videoFile.tvShow?.episode ?? null,
+              lastScannedAt: new Date(),
+              durationInSec: durationInSeconds
+            }
+          });
         }
 
         await this.fetchExternalTitleMetaDataIfNeeded(library.id, titleId, titleRoot, mediaAnalysis.metaProviders);
       }
 
-      await MediaLibraryTable.getInstance().deleteMediaEntriesWithinDirectoryBeforeLastScannedAt(library.id, directory.getPath(), libraryScanStart);
+      await getPrismaClient()!.mediaLibraryMediaItem.deleteMany({
+        where: {
+          mediaId: BigInt(library.id),
+          filePath: {
+            startsWith: Path.join(directory.getPath(), '/')
+          },
+          lastScannedAt: {
+            lt: libraryScanStart
+          }
+        }
+      });
     }
 
-    await MediaLibraryTable.getInstance().deleteMediaEntriesBeforeLastScannedAt(library.id, libraryScanStart);
-    await MediaLibraryTable.getInstance().deleteMediaTitlesWithoutMediaEntries(library.id);
+    await getPrismaClient()!.mediaLibraryMediaItem.deleteMany({
+      where: {
+        media: {
+          libraryId: BigInt(library.id)
+        },
+        lastScannedAt: {
+          lt: libraryScanStart
+        }
+      }
+    });
+    await getPrismaClient()!.mediaLibraryMedia.deleteMany({
+      where: {
+        libraryId: BigInt(library.id),
+        items: {
+          none: {}
+        }
+      }
+    });
   }
 
   private async fetchExternalTitleMetaDataIfNeeded(libraryId: string, titleId: string, titleRoot: IUserFile, metaProvider: MetaProvider[]): Promise<void> {
-    const titleHasSynopsisSaved = (await MediaLibraryTable.getInstance().getLibraryTitle(libraryId, titleId))!.synopsis != null;
+    const existingMedia = await getPrismaClient()!.mediaLibraryMedia.findUnique({
+      select: {
+        synopsis: true
+      },
+      where: {
+        id: BigInt(titleId)
+      }
+    });
+
+    const titleHasSynopsisSaved = existingMedia?.synopsis != null;
     const titleHasPosterSaved = (await UserFileHelper.findFolderPoster(titleRoot)) != null;
     if (titleHasSynopsisSaved && titleHasPosterSaved) {
       return;
@@ -70,7 +137,14 @@ export default class LibraryScanner {
     }
 
     if (!titleHasSynopsisSaved && externalMetaData.synopsis) {
-      await MediaLibraryTable.getInstance().updateLibraryTitleMetaData(titleId, externalMetaData.synopsis);
+      await getPrismaClient()!.mediaLibraryMedia.update({
+        where: {
+          id: BigInt(titleId)
+        },
+        data: {
+          synopsis: externalMetaData.synopsis
+        }
+      });
     }
 
     if (!titleHasPosterSaved && externalMetaData.coverImageUrl) {

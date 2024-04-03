@@ -1,5 +1,6 @@
+import * as PrismaClient from '@prisma/client';
 import AbstractUser from '../../AbstractUser';
-import MediaLibraryTable, { LibraryMedia, LibraryTitle } from '../../database/postgres/MediaLibraryTable';
+import { getPrismaClient } from '../../Constants';
 import IUserFile from '../../files/IUserFile';
 
 export default class Library {
@@ -16,15 +17,29 @@ export default class Library {
     this.directories = directories;
   }
 
-  fetchTitles(): Promise<LibraryTitle[]> {
-    return MediaLibraryTable.getInstance().getLibraryTitlesOrderedRecentFirst(this.id);
+  fetchTitles(): Promise<PrismaClient.MediaLibraryMedia[]> {
+    return getPrismaClient()!.mediaLibraryMedia.findMany({
+      where: {
+        libraryId: BigInt(this.id)
+      },
+      orderBy: {
+        addedAt: 'desc'
+      }
+    });
   }
 
-  fetchTitle(titleId: string): Promise<LibraryTitle | null> {
-    return MediaLibraryTable.getInstance().getLibraryTitle(this.id, titleId);
+  fetchTitle(titleId: string): Promise<PrismaClient.MediaLibraryMedia | null> {
+    return getPrismaClient()!.mediaLibraryMedia.findUnique({ where: { id: BigInt(titleId) } });
   }
 
-  fetchMedia(titleId: string, mediaFilePath: string): Promise<LibraryMedia | null> {
-    return MediaLibraryTable.getInstance().getLibraryMedia(this.id, titleId, mediaFilePath);
+  fetchMedia(titleId: string, mediaFilePath: string): Promise<PrismaClient.MediaLibraryMediaItem | null> {
+    return getPrismaClient()!.mediaLibraryMediaItem.findUnique({
+      where: {
+        mediaId_filePath: {
+          mediaId: BigInt(titleId),
+          filePath: mediaFilePath
+        }
+      }
+    });
   }
 }

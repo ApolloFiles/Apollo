@@ -1,4 +1,4 @@
-import Crypto from 'crypto';
+import Crypto from 'node:crypto';
 import WatchSession from './WatchSession';
 
 export default class WatchSessionStorage {

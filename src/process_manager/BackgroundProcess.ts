@@ -1,5 +1,5 @@
-import Crypto from 'crypto';
-import EventEmitter from 'events';
+import Crypto from 'node:crypto';
+import EventEmitter from 'node:events';
 import AbstractUser from '../AbstractUser';
 import { getProcessManager } from '../Constants';
 import { IProcess, IProcessOptions } from './IProcess';

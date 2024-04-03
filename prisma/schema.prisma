@@ -1,0 +1,80 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm]
+}
+
+model MediaLibrary {
+  id             BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_id_seq'::text)"))
+  ownerId        BigInt   @map("owner_id")
+  name           String   @db.VarChar(256)
+  directoryPaths String[] @map("directory_paths")
+
+  media MediaLibraryMedia[]
+
+  @@map("media_libraries")
+}
+
+model MediaLibraryMedia {
+  id            BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_media_id_seq'::text)"))
+  libraryId     BigInt   @map("library_id")
+  title         String
+  directoryPath String   @map("directory_path")
+  addedAt       DateTime @default(now()) @map("added_at") @db.Timestamptz()
+  synopsis      String?
+
+  library MediaLibrary            @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  items   MediaLibraryMediaItem[]
+
+  @@unique([libraryId, directoryPath])
+  @@map("media_libraries_media")
+}
+
+model MediaLibraryMediaItem {
+  id            BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_media_items_id_seq'::text)"))
+  mediaId       BigInt   @map("media_id")
+  filePath      String   @map("file_path")
+  title         String
+  lastScannedAt DateTime @default(now()) @map("last_scanned_at") @db.Timestamptz()
+  addedAt       DateTime @default(now()) @map("added_at") @db.Timestamptz()
+  durationInSec Int      @map("duration_in_sec")
+  episodeNumber Int?     @map("episode_number")
+  seasonNumber  Int?     @map("season_number")
+  synopsis      String?
+
+  media MediaLibraryMedia @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, filePath])
+  @@map("media_libraries_media_items")
+}
+
+model MediaLibraryUserWatchProgress {
+  userId        BigInt   @map("user_id")
+  mediaItemId   BigInt   @map("media_item_id")
+  lastWatched   DateTime @default(now()) @map("last_watched") @db.Timestamptz()
+  durationInSec Int      @map("duration_in_sec")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@id([userId, mediaItemId])
+  @@map("media_libraries_user_watch_progress")
+}
+
+model FileSearchIndexEntry {
+  ownerId        BigInt   @map("owner_id")
+  filesystem     String   @db.VarChar(512)
+  filePath       String   @map("file_path")
+  isDirectory    Boolean  @map("is_directory")
+  sizeBytes      BigInt?  @map("size_bytes")
+  sha256         Bytes?   @map("sha256")
+  lastModifiedAt DateTime @map("last_modified_at") @db.Timestamptz()
+  lastValidation DateTime @default(now()) @map("last_validation") @db.Timestamptz()
+
+  @@id([ownerId, filesystem, filePath])
+  @@index([filePath(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@map("files_search_index")
+}
