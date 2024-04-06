@@ -44,7 +44,7 @@ export default class MyAnimeListClient {
       coverImageUrl: response.main_picture.large,
 
       year: new Date(response.start_date).getUTCFullYear(),
-      genres: response.genres.map((genre: any) => genre.name)
+      genres: response.genres?.map((genre: any) => genre.name) ?? []
     };
   }
 
