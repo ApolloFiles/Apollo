@@ -241,7 +241,7 @@ function capitalizeFirstLetter(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function _collectAllSelectedFileTagKeys(): Set<string> {
+function _collectAllSelectedFileTagKeys(): string[] {
   const result = new Set<string>();
 
   for (const selectedFile of selectedFiles.value) {
@@ -250,7 +250,7 @@ function _collectAllSelectedFileTagKeys(): Set<string> {
     }
   }
 
-  return result;
+  return Array.from(result).sort(new Intl.Collator('en', { numeric: true, sensitivity: 'accent' }).compare);
 }
 </script>
 
