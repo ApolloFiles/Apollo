@@ -49,7 +49,8 @@ export default class LibraryScanner {
           }
 
           const videoAnalysis = await VideoAnalyser.analyze(videoFile.filePath, true);
-          const mediaTitle = this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title') ?? videoFile.title;
+          const mediaTitle = (this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title')) ?? videoFile.title;
+          const mediaSynopsis = this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'synopsis-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'synopsis');
           const durationInSeconds = parseInt(videoAnalysis.file.duration, 10);
 
           await getPrismaClient()!.mediaLibraryMediaItem.upsert({
@@ -67,14 +68,16 @@ export default class LibraryScanner {
               episodeNumber: videoFile.tvShow?.episode ?? null,
               lastScannedAt: libraryScanStart,
               addedAt: new Date(),
-              durationInSec: durationInSeconds
+              durationInSec: durationInSeconds,
+              synopsis: mediaSynopsis
             },
             update: {
               title: mediaTitle ?? Path.basename(videoFile.filePath, Path.extname(videoFile.filePath)),
               seasonNumber: videoFile.tvShow?.season ?? null,
               episodeNumber: videoFile.tvShow?.episode ?? null,
               lastScannedAt: new Date(),
-              durationInSec: durationInSeconds
+              durationInSec: durationInSeconds,
+              synopsis: mediaSynopsis
             }
           });
         }
