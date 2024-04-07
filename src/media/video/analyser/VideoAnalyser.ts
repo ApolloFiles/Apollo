@@ -1,5 +1,5 @@
 import ProcessBuilder from '../../../process_manager/ProcessBuilder';
-import * as type from './VideoAnalyser.Types';
+import type * as type from './VideoAnalyser.Types';
 
 export default class VideoAnalyser {
   static async analyze(absolutePath: string, extendedAnalysis: true): Promise<type.ExtendedVideoAnalysis>;

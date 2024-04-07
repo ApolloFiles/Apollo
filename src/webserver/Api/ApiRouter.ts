@@ -342,21 +342,42 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         }
       }
 
+      const streamsToDelete = req.body.streamsToDelete;
+      if (!Array.isArray(streamsToDelete)) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({ error: 'Invalid or missing streamsToDelete.' });
+        return;
+      }
+      for (const streamIndex of streamsToDelete) {
+        if (typeof streamIndex !== 'number') {
+          res
+            .status(400)
+            .type('application/json')
+            .send({ error: `Invalid streamIndex in streamsToDelete: ${JSON.stringify(streamIndex)}` });
+          return;
+        }
+      }
+
       const videoFile = user.getDefaultFileSystem().getFile(requestedFilePath);
 
+      let expectedResultVideoAnalysisStreamCounter = 0;
       const originalVideoAnalysis = await VideoAnalyser.analyze(videoFile.getAbsolutePathOnHost()!, true);
       const expectedResultVideoAnalysis: ExtendedVideoAnalysis = {
         file: {
           ...originalVideoAnalysis.file,
+          streamCount: originalVideoAnalysis.file.streamCount - streamsToDelete.length,
           tags: fileTags
         },
         chapters: originalVideoAnalysis.chapters,
-        streams: originalVideoAnalysis.streams.map(stream => {
-          return {
+        streams: originalVideoAnalysis.streams
+          .filter(stream => !streamsToDelete.includes(stream.index))
+          .map(stream => ({
             ...stream,
+            index: expectedResultVideoAnalysisStreamCounter++,
             tags: streamTags[stream.index] ?? stream.tags
-          };
-        })
+          }))
       };
 
       const performWriteAndValidations = async (backgroundTaskId: string): Promise<{ statusCode: number, body: unknown /* FIXME */ }> => {
@@ -364,7 +385,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           text: 'Writing changes into copy of original file…'
         });
 
-        const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, fileTags, streamTags, streamDispositions, (metrics) => {
+        const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, originalVideoAnalysis, fileTags, streamTags, streamDispositions, streamsToDelete, (metrics) => {
           let progressText = 'Writing changes into copy of original file…';
           if (metrics.time) {
             progressText += `\nCurrently at ${metrics.time}`;

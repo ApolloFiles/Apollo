@@ -35,10 +35,19 @@ export default class ParsedFile {
   public readonly fileTags: Map<number, ParsedTag>;
   public readonly streamMeta: Map<number, StreamMeta>;
 
+  public readonly deletedStreams: number[] = [];
+
   protected constructor(meta: ParsedFileMeta, fileTags: Map<number, ParsedTag>, streamMeta: Map<number, StreamMeta>) {
     this.meta = meta;
     this.fileTags = fileTags;
     this.streamMeta = streamMeta;
+  }
+
+  /* Stream deletion */
+  deleteStream(streamIndex: number): void {
+    this.streamMeta.delete(streamIndex);
+    this.deletedStreams.push(streamIndex);
+    // this.appState.unsavedChanges = true;
   }
 
   /* File Tags */
@@ -201,6 +210,8 @@ export default class ParsedFile {
         disposition: stream.disposition
       });
     }
+
+    this.deletedStreams.length = 0;
 
     // this.appState.unsavedChanges = false;
   }

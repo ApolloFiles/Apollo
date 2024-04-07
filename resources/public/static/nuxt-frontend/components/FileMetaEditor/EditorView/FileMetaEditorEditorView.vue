@@ -83,7 +83,8 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
         filePath: file.meta.filePath,
         fileTags,
         streamTags,
-        streamDispositions
+        streamDispositions,
+        streamsToDelete: file.deletedStreams
       };
 
       const handleWriteResponse = (response: { statusCode: number, body: WriteVideoTagsApiResponse }) => {
@@ -237,6 +238,37 @@ function createNewTagForSelectedFiles(streamIndex: number): void {
   }
 }
 
+function askForStreamDeleteConfirmation(streamIndex: number): void {
+  if (selectedFiles.value.length !== 1) {
+    console.error('Cannot delete stream with multiple files selected');
+    return;
+  }
+
+  const file = selectedFiles.value[0];
+
+  if (file.streamMeta.size <= 1) {
+    notifier.add({
+      title: 'Cannot delete last stream',
+      description: 'Cannot delete the last stream of a file',
+      icon: 'i-ic-outline-warning-amber',
+      color: 'red',
+      timeout: 4000
+    });
+    return;
+  }
+
+  if (confirm(`Are you sure you want to delete stream #${streamIndex}?`)) {
+    file.deleteStream(streamIndex);
+    notifier.add({
+      title: 'Stream marked for deletion',
+      description: `Stream #${streamIndex} will be deleted when you save the file.`,
+      icon: 'i-ic-baseline-delete',
+      color: 'orange',
+      timeout: 4000
+    });
+  }
+}
+
 function capitalizeFirstLetter(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -250,7 +282,7 @@ function _collectAllSelectedFileTagKeys(): string[] {
     }
   }
 
-  return Array.from(result).sort(new Intl.Collator('en', { numeric: true, sensitivity: 'accent' }).compare);
+  return Array.from(result).sort(new Intl.Collator('en', {numeric: true, sensitivity: 'accent'}).compare);
 }
 </script>
 
@@ -339,7 +371,7 @@ function _collectAllSelectedFileTagKeys(): string[] {
       <div class="toolbar">
         <UTooltip text="Reads the tag and deletes the listed tags">
           <UButton
-            icon="i-ic-delete"
+            icon="i-ic-baseline-delete"
             size="sm"
             color="orange"
             :disabled="selectedFiles.length === 0"
@@ -415,6 +447,13 @@ function _collectAllSelectedFileTagKeys(): string[] {
                 variant="solid"
                 square
                 @click="() => createNewTagForSelectedFiles(streamIndex)"
+              />&nbsp;<UButton
+                icon="i-ic-delete"
+                size="2xs"
+                color="red"
+                variant="solid"
+                square
+                @click="() => askForStreamDeleteConfirmation(streamIndex)"
               />
               <br v-if="selectedFiles.length === 1">
               <small v-if="selectedFiles.length === 1">{{ selectedFiles[0].streamMeta.get(streamIndex)?.codecNameLong
