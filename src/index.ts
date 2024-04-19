@@ -1,7 +1,9 @@
+import ChildProcess from 'node:child_process';
 import Fs from 'node:fs';
 import {
   getAppTmpDir,
   getConfig,
+  getPrismaClient,
   getPrismaClientIfAlreadyInitialized,
   getProcessManager,
   getUserStorageTmpRootOnSameFileSystem
@@ -30,6 +32,17 @@ function index(): void {
   Fs.mkdirSync(getAppTmpDir(), { recursive: true });
 
   Fs.rmSync(getUserStorageTmpRootOnSameFileSystem(), { recursive: true, force: true });
+
+  if (process.env.APOLLO_RUN_DB_MIGRATIONS === '1') {
+    console.log('Running database migrations...');
+
+    try {
+      getPrismaClient();
+      ChildProcess.execSync('npm run prisma:migrate:deploy', { stdio: 'inherit', env: process.env });
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   new UserStorage().getUser(1)
     .then((user) => {
