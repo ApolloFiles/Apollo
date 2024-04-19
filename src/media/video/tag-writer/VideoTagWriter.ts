@@ -5,12 +5,11 @@ import { getUserStorageTmpRootOnSameFileSystem } from '../../../Constants';
 import FfmpegProcess, { FfmpegMetrics } from '../../watch/live_transcode/FfmpegProcess';
 import type { ExtendedVideoAnalysis } from '../analyser/VideoAnalyser.Types';
 
-type MetaTag = {
-  key: string;
-  value: string;
+type TagMap = {
+  [key: string]: string
 }
 type StreamTags = {
-  [streamIndex: number]: MetaTag
+  [streamIndex: number]: TagMap
 }
 
 type StreamDisposition = {
@@ -24,10 +23,11 @@ export default class VideoTagWriter {
   static async writeTagsIntoNewFile(
     filePath: string,
     videoAnalysis: ExtendedVideoAnalysis,
-    fileTags: MetaTag,
+    fileTags: TagMap,
     streamTags: StreamTags,
     streamDispositions: StreamDispositions,
     streamsToDelete: number[],
+    coverJpegPath: string | null,
     onMetrics: (metric: FfmpegMetrics) => void
   ): Promise<string> {
     this.assertStreamsToDeleteAreValid(streamsToDelete, videoAnalysis, streamTags, streamDispositions);
@@ -39,6 +39,15 @@ export default class VideoTagWriter {
     if (this.didTagsOrDispositionsChange(fileTags, streamTags, streamDispositions, videoAnalysis)) {
       tmpVideoFile = await this.writeTagsAndDispositions(filePath, fileTags, streamTags, streamDispositions, streamsToDelete, tmpDir, onMetrics);
     }
+
+    let existingCoverStreamIndex: number | null = null;
+    if (coverJpegPath != null) {
+      existingCoverStreamIndex = this.findCoverImageStreamIndex(videoAnalysis);
+      if (existingCoverStreamIndex != null) {
+        streamsToDelete.push(existingCoverStreamIndex);
+      }
+    }
+
     if (streamsToDelete.length > 0) {
       const fileWithDeletedStreams = await this.deleteStreams(tmpVideoFile, streamsToDelete, tmpDir, onMetrics);
       if (tmpVideoFile !== filePath) {
@@ -46,12 +55,16 @@ export default class VideoTagWriter {
       }
       tmpVideoFile = fileWithDeletedStreams;
     }
+
+    if (coverJpegPath != null) {
+      tmpVideoFile = await this.writeCoverImage(tmpVideoFile, coverJpegPath, existingCoverStreamIndex !== null ? streamTags[existingCoverStreamIndex] : {}, tmpDir, onMetrics);
+    }
     return tmpVideoFile;
   }
 
   private static async writeTagsAndDispositions(
     filePath: string,
-    fileTags: MetaTag,
+    fileTags: TagMap,
     streamTags: StreamTags,
     streamDispositions: StreamDispositions,
     streamsToDelete: number[],
@@ -136,6 +149,59 @@ export default class VideoTagWriter {
     return tmpFilePath;
   }
 
+  private static async writeCoverImage(
+    filePath: string,
+    coverJpegPath: string,
+    baseStreamTags: TagMap,
+    tmpDir: string,
+    onMetrics: (metric: FfmpegMetrics) => void
+  ): Promise<string> {
+    const streamTags: TagMap = {
+      ...baseStreamTags,
+      mimetype: 'image/jpeg',
+      filename: 'cover.jpg'
+    };
+
+    const tmpFilePath = this.generateTmpFilePath(tmpDir, Path.extname(filePath));
+    const ffmpegArgs = [
+      '-n',
+
+      '-i', filePath,
+
+      '-c', 'copy',
+      '-map', '0',
+      '-attach', coverJpegPath,
+
+      ...Object.entries(streamTags).flatMap(([key, value]) => ['-metadata:s:t:0', `${key}=${value}`]),
+
+      tmpFilePath
+    ];
+
+    const ffmpegProcess = new FfmpegProcess(ffmpegArgs, {
+      stdio: ['ignore', 'ignore', 'pipe'],
+      cwd: tmpDir
+    });
+    ffmpegProcess.on('metrics', onMetrics);
+    await ffmpegProcess.waitForSuccessExit();
+
+    return tmpFilePath;
+  }
+
+  static findCoverImageStreamIndex(videoAnalysis: ExtendedVideoAnalysis): number | null {
+    const coverImageStreams = videoAnalysis.streams
+      .filter(stream =>
+        stream.codecType == 'video' &&
+        stream.avgFrameRate == '0/0' &&
+        stream.tags.mimetype?.toLowerCase()?.startsWith('image/') &&
+        stream.tags.filename?.toLowerCase()?.startsWith('cover.')
+      );
+
+    if (coverImageStreams.length === 1) {
+      return coverImageStreams[0].index;
+    }
+    return null;
+  }
+
   private static assertStreamsToDeleteAreValid(
     streamsToDelete: number[],
     videoAnalysis: ExtendedVideoAnalysis,
@@ -153,7 +219,7 @@ export default class VideoTagWriter {
   }
 
   private static didTagsOrDispositionsChange(
-    fileTags: MetaTag,
+    fileTags: TagMap,
     streamTags: StreamTags,
     streamDispositions: StreamDispositions,
     videoAnalysis: ExtendedVideoAnalysis
@@ -177,7 +243,7 @@ export default class VideoTagWriter {
     return false;
   }
 
-  private static areTagsEqual(tags: MetaTag, tagsToCompare: { [key: string]: string }): boolean {
+  private static areTagsEqual(tags: TagMap, tagsToCompare: { [key: string]: string }): boolean {
     return Object.entries(tags).every(([key, value]) => tagsToCompare[key] === value);
   }
 

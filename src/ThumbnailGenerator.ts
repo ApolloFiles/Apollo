@@ -1,4 +1,4 @@
-import Path from 'path';
+import Path from 'node:path';
 import sharp, { Sharp } from 'sharp';
 import IUserFile from './files/IUserFile';
 import VideoAnalyser from './media/video/analyser/VideoAnalyser';

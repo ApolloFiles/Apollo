@@ -6,6 +6,7 @@ import IUserFile from '../../files/IUserFile';
 import VideoAnalyser from '../../media/video/analyser/VideoAnalyser';
 import { ExtendedVideoAnalysis } from '../../media/video/analyser/VideoAnalyser.Types';
 import VideoTagWriter from '../../media/video/tag-writer/VideoTagWriter';
+import VideoFrameExtractor from '../../media/video/VideoFrameExtractor';
 import CompletableTask from '../../process_manager/tasks/CompletableTask';
 import TaskStorage from '../../process_manager/tasks/TaskStorage';
 import Utils from '../../Utils';
@@ -29,9 +30,11 @@ type VideoAnalysisResult = {
   }[];
 };
 
+const videoFramesCache: { [path: string]: string[] } = {};
+
 export const apiRouter = express.Router();
 
-apiRouter.use((req, res, next) => {
+apiRouter.use((_req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Headers', 'Authorization');
   next();
@@ -360,6 +363,15 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         }
       }
 
+      const coverFrameIndexToWrite = req.body.coverFrameIndexToWrite;
+      if (coverFrameIndexToWrite != null && (typeof coverFrameIndexToWrite !== 'number' || coverFrameIndexToWrite < 0)) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({ error: `Invalid coverFrameIndexToWrite: ${JSON.stringify(coverFrameIndexToWrite)}` });
+        return;
+      }
+
       const videoFile = user.getDefaultFileSystem().getFile(requestedFilePath);
 
       let expectedResultVideoAnalysisStreamCounter = 0;
@@ -385,7 +397,16 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           text: 'Writing changes into copy of original file…'
         });
 
-        const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, originalVideoAnalysis, fileTags, streamTags, streamDispositions, streamsToDelete, (metrics) => {
+        let coverJpegPath: string | null = null;
+        if (typeof coverFrameIndexToWrite === 'number') {
+          if (videoFramesCache[await videoFile.generateCacheId()] == null) {
+            throw new Error('Cannot write cover frame into video file because the video frames have not been extracted yet.');
+          }
+
+          coverJpegPath = videoFramesCache[await videoFile.generateCacheId()][coverFrameIndexToWrite];
+        }
+
+        const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, originalVideoAnalysis, fileTags, streamTags, streamDispositions, streamsToDelete, coverJpegPath, (metrics) => {
           let progressText = 'Writing changes into copy of original file…';
           if (metrics.time) {
             progressText += `\nCurrently at ${metrics.time}`;
@@ -401,7 +422,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
 
         const actualResultVideoAnalysis = await VideoAnalyser.analyze(videoFilePathWithAppliedTags, true);
 
-        function getNormalizedAnalysisForCompare(analysis: ExtendedVideoAnalysis): { [key: string]: any } {
+        function getNormalizedAnalysisForCompare(analysis: ExtendedVideoAnalysis): Partial<ExtendedVideoAnalysis> {
           const result: { [key: string]: any } = JSON.parse(JSON.stringify(analysis));
           delete result.file.fileName;
           delete result.file.size;
@@ -429,11 +450,12 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         function getNormalizedTagsFromAnalysis(analysis: ExtendedVideoAnalysis): { file: { [key: string]: string }, streams: { [key: string]: string }[] } {
           const getNormalizedTags = (tags: { [key: string]: string }): { [key: string]: string } => {
             const normalizedTags: { [key: string]: string } = {};
-            for (const tagKey in Object.keys(tags).sort(getFileNameCollator().compare)) {
-              if (!tags.hasOwnProperty(tagKey)) {
+            for (const tagKey of Object.keys(tags).sort(getFileNameCollator().compare)) {
+              if (!Object.hasOwn(tags, tagKey)) {
+                console.warn(`Skipping non-own property ${tagKey}`);
                 continue;
               }
-              if (tagKey.toLowerCase() === 'encoder') {
+              if (tagKey.toLowerCase() === 'encoder' || tagKey.toLowerCase() === 'duration') {
                 continue;
               }
               if (normalizedTags[tagKey.toLowerCase()] != null) {
@@ -450,7 +472,29 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           };
         }
 
-        if (JSON.stringify(getNormalizedAnalysisForCompare(actualResultVideoAnalysis)) !== JSON.stringify(getNormalizedAnalysisForCompare(expectedResultVideoAnalysis))) {
+        if (coverJpegPath != null && actualResultVideoAnalysis.streams.length === (expectedResultVideoAnalysis.streams.length + 1)) {
+          const supposedCoverStream = actualResultVideoAnalysis.streams.at(-1);
+          if (supposedCoverStream == null || supposedCoverStream.codecType !== 'video' || supposedCoverStream.tags['filename'] !== 'cover.jpg' || supposedCoverStream.tags['mimetype'] !== 'image/jpeg') {
+            return {
+              statusCode: 500,
+              body: {
+                error: 'Could not verify that the cover image was attached correctly – Original file was kept unchanged.',
+                expected: getNormalizedAnalysisForCompare(expectedResultVideoAnalysis),
+                actual: getNormalizedAnalysisForCompare(actualResultVideoAnalysis)
+              }
+            };
+          }
+
+          expectedResultVideoAnalysis.streams.push({
+            ...actualResultVideoAnalysis.streams.at(-1)!,
+            index: expectedResultVideoAnalysis.streams.length
+          });
+          ++(expectedResultVideoAnalysis.file as any).streamCount;
+        }
+
+        const normalizedExpectedAnalysisForCompare = getNormalizedAnalysisForCompare(expectedResultVideoAnalysis);
+        const normalizedActualAnalysisForCompare = getNormalizedAnalysisForCompare(actualResultVideoAnalysis);
+        if (JSON.stringify(normalizedActualAnalysisForCompare) !== JSON.stringify(normalizedExpectedAnalysisForCompare)) {
           const errorMessage = 'Unexpected mismatch when comparing the expected and actual written changes – Original file was kept unchanged.';
           TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { progress: 1.0, text: errorMessage });
 
@@ -460,15 +504,15 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
             statusCode: 500,
             body: {
               error: errorMessage,
-              expected: getNormalizedAnalysisForCompare(expectedResultVideoAnalysis),
-              actual: getNormalizedAnalysisForCompare(actualResultVideoAnalysis)
+              expected: normalizedExpectedAnalysisForCompare,
+              actual: normalizedActualAnalysisForCompare
             }
           };
         }
 
-        const actualTags = getNormalizedTagsFromAnalysis(actualResultVideoAnalysis);
-        const expectedTags = getNormalizedTagsFromAnalysis(expectedResultVideoAnalysis);
-        if (JSON.stringify(actualTags) !== JSON.stringify(expectedTags)) {
+        const normalizedActualTags = getNormalizedTagsFromAnalysis(actualResultVideoAnalysis);
+        const normalizedExpectedTags = getNormalizedTagsFromAnalysis(expectedResultVideoAnalysis);
+        if (JSON.stringify(normalizedActualTags) !== JSON.stringify(normalizedExpectedTags)) {
           const errorMessage = 'Unexpected mismatch when comparing the expected and actual written tags – Original file was kept unchanged.';
           TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { progress: 1.0, text: errorMessage });
 
@@ -478,8 +522,8 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
             statusCode: 500,
             body: {
               error: errorMessage,
-              expected: expectedTags,
-              actual: actualTags
+              expected: normalizedExpectedTags,
+              actual: normalizedActualTags
             }
           };
         }
@@ -526,6 +570,76 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           taskId: backgroundTask.taskId,
           taskStatusUri: `/api/v1/task-status?taskId=${encodeURIComponent(backgroundTask.taskId)}`
         });
+    }
+  });
+});
+
+apiRouter.use('/v1/get-video-frames', requireAuthMiddleware, (req, res, next) => {
+  handleRequestRestfully(req, res, next, {
+    get: async (): Promise<void> => {
+      const user = WebServer.getUser(req);
+
+      const requestedPath = req.query.path;
+      if (typeof requestedPath != 'string' || requestedPath.trim().length <= 0) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({ error: 'Invalid path parameter.' });
+        return;
+      }
+      if (!requestedPath.startsWith('/')) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({ error: 'Requested path must be absolute.' });
+        return;
+      }
+
+      const frameIndex = req.query.frame;
+      if (frameIndex != null && (typeof frameIndex != 'string' || !StringUtils.isNumeric(frameIndex))) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({ error: 'Invalid (non-numeric) frame parameter.' });
+        return;
+      }
+
+      const requestedFile = user.getDefaultFileSystem().getFile(requestedPath);
+      if (!(await requestedFile.exists())) {
+        res
+          .status(404)
+          .type('application/json')
+          .send({ error: 'Requested file does not exist.' });
+        return;
+      }
+
+      const cacheKey = await requestedFile.generateCacheId();
+      if (videoFramesCache[cacheKey] == null) {
+        videoFramesCache[cacheKey] = (await VideoFrameExtractor.extractFrames(requestedFile)).imagePaths; // TODO: move files somewhere else and call #done()
+      }
+
+      const allFrames = videoFramesCache[cacheKey];
+      if (frameIndex == null) {
+        res
+          .status(200)
+          .type('application/json')
+          .send(allFrames.map((_, index) => '/api/v1/get-video-frames?path=' + encodeURIComponent(requestedPath) + '&frame=' + index));
+        return;
+      }
+
+      const requestedFrameIndex = parseInt(frameIndex, 10);
+      if (requestedFrameIndex < 0 || requestedFrameIndex >= allFrames.length) {
+        res
+          .status(404)
+          .type('application/json')
+          .send({ error: 'Requested frame does not exist.' });
+        return;
+      }
+
+      res
+        .status(200)
+        .type('image/jpeg')
+        .sendFile(allFrames[requestedFrameIndex]);
     }
   });
 });

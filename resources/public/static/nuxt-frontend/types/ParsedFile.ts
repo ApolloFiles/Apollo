@@ -36,6 +36,7 @@ export default class ParsedFile {
   public readonly streamMeta: Map<number, StreamMeta>;
 
   public readonly deletedStreams: number[] = [];
+  public coverFrameIndexToWrite: number | null = null;
 
   protected constructor(meta: ParsedFileMeta, fileTags: Map<number, ParsedTag>, streamMeta: Map<number, StreamMeta>) {
     this.meta = meta;
@@ -212,6 +213,7 @@ export default class ParsedFile {
     }
 
     this.deletedStreams.length = 0;
+    this.coverFrameIndexToWrite = null;
 
     // this.appState.unsavedChanges = false;
   }

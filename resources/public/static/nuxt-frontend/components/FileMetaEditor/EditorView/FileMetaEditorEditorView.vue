@@ -10,13 +10,14 @@ const notifier = useToast();
 const selectedFiles = computed(() => props.files.filter(file => file.appState.selected));
 const allSelectedFileTagKeys = computed(() => _collectAllSelectedFileTagKeys());
 
-let saveInProgress = ref(false);
-let saveInProgressStats: Ref<{
+const saveInProgress = ref(false);
+const saveInProgressStats: Ref<{
   currentFileName: string,
   currentFileIndex: number,
   total: number,
   progressStats?: { progress?: number, text?: string }
 }> = ref({currentFileName: '', currentFileIndex: -1, total: 0});
+const videoFrames: Ref<{ [filePath: string]: string[]|undefined }> = ref({});
 
 defineShortcuts({
   ctrl_s: {
@@ -84,7 +85,8 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
         fileTags,
         streamTags,
         streamDispositions,
-        streamsToDelete: file.deletedStreams
+        streamsToDelete: file.deletedStreams,
+        coverFrameIndexToWrite: file.coverFrameIndexToWrite
       };
 
       const handleWriteResponse = (response: { statusCode: number, body: WriteVideoTagsApiResponse }) => {
@@ -273,6 +275,28 @@ function capitalizeFirstLetter(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+async function fetchVideoFrames(): Promise<string[]> {
+  if (selectedFiles.value.length !== 1) {
+    throw new Error('Cannot get video frames with multiple files selected');
+  }
+
+  const file = selectedFiles.value[0];
+  if (videoFrames.value[file.meta.filePath] == null) {
+    videoFrames.value[file.meta.filePath] = [];
+    videoFrames.value[file.meta.filePath] = await $fetch<string[]>(
+      `${apolloBaseUrl}/api/v1/get-video-frames`,
+      {
+        retry: false,
+        cache: 'no-store',
+        method: 'GET',
+        query: {path: file.meta.filePath},
+        headers: {'Authorization': 'Bearer superSecretTokenForSpraxDev'}
+      }
+    );
+  }
+  return videoFrames.value[file.meta.filePath]!;
+}
+
 function _collectAllSelectedFileTagKeys(): string[] {
   const result = new Set<string>();
 
@@ -376,7 +400,8 @@ function _collectAllSelectedFileTagKeys(): string[] {
             color="orange"
             :disabled="selectedFiles.length === 0"
             @click="() => deleteStatisticsTagsRelatedTagsFromSelectedFiles()"
-          >Delete <code>_STATISTICS_TAGS-eng</code> related tags</UButton>
+          >Delete <code>_STATISTICS_TAGS-eng</code> related tags
+          </UButton>
         </UTooltip>
 
         <!--        <UTooltip text="Discard changes in this file">-->
@@ -484,6 +509,46 @@ function _collectAllSelectedFileTagKeys(): string[] {
       </div>
       <div v-else-if="selectedFiles.length > 1">
         <strong><em>Cannot edit stream tags with multiple files selected.</em></strong>
+      </div>
+
+      <div class="flex gap-4 flex-col pt-8"
+           v-if="selectedFiles.length === 1">
+        <div class="flex flex-wrap justify-center">
+          <img
+            v-for="(frameUrl, index) in videoFrames[selectedFiles[0]!.meta.filePath] ?? []"
+            :key="frameUrl"
+            :src="apolloBaseUrl + frameUrl"
+            loading="lazy"
+            :style="{ margin: '5px', flex: '0 1 150px', border: (selectedFiles[0]!.coverFrameIndexToWrite === index ? '2px solid lime' : '2px solid transparent') }"
+            width="640"
+            height="360"
+            @click="() => {
+              if (selectedFiles[0]!.coverFrameIndexToWrite === index) {
+                selectedFiles[0]!.coverFrameIndexToWrite = null;
+              } else {
+                selectedFiles[0]!.coverFrameIndexToWrite = index;
+              }
+              videoFrames[selectedFiles[0]!.meta.filePath] = undefined;
+            }"
+          />
+        </div>
+
+        <UButton
+          id="add-cover-stream-button"
+          icon="i-ic-outline-add"
+          size="2xs"
+          color="lime"
+          variant="solid"
+          square
+          :disabled="selectedFiles.length !== 1 || videoFrames[selectedFiles[0]!.meta.filePath] != null"
+          @click="() => {
+            fetchVideoFrames()
+            .then((urls) => {
+              console.log(JSON.parse(JSON.stringify(urls)));
+            });
+          }">
+          Add cover stream
+        </UButton>
       </div>
     </div>
   </div>
