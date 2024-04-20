@@ -71,6 +71,27 @@ Video Player
     width:         100%;
 }
 
+.video-player-controls-progress-thumbnail-container {
+    position:         absolute;
+    bottom:           60px;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.video-player-controls-progress-thumbnail-container [data-video-player-element='seek-thumbnail-image'] {
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.video-player-controls-progress-thumbnail-container img {
+    max-width: 100%;
+    height:    auto;
+}
+
+.video-player-controls-progress-thumbnail-container .video-player-controls-progress-thumbnail-time {
+    color:     white;
+    font-size: 12px;
+}
+
 .video-player-controls-volume-container {
     width:        24px;
     padding-left: 6px;

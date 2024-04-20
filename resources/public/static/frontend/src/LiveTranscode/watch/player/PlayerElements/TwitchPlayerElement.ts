@@ -1,5 +1,6 @@
 import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import { Media } from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import ApolloVideoPlayer from '../ApolloVideoPlayer';
 import SubtitleTrack from '../subtitles/SubtitleTrack';
 import PlayerElement, { AudioTrack, PlayerEvents } from './PlayerElement';
 
@@ -71,7 +72,14 @@ export default class TwitchPlayerElement extends PlayerElement {
   loadSubtitles(media: Media): void {
     if (media.metadata?.subtitles) {
       // no-op
-      console.warn('Unable to load custom subtitles for YouTube player.');
+      console.warn('Unable to load custom subtitles for Twitch player.');
+    }
+  }
+
+  loadSeekThumbnails(media: Media, videoPlayer: ApolloVideoPlayer): void {
+    if (media.metadata?.seekThumbnailUri) {
+      // no-op
+      console.warn('Unable to load custom seek thumbnails for Twitch player.');
     }
   }
 

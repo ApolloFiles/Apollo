@@ -115,6 +115,7 @@ export default class ApolloVideoPlayer {
 
     if (media != null) {
       this._playerState._getReferenceElement().loadSubtitles(media, this);
+      this._playerState._getReferenceElement().loadSeekThumbnails(media, this);
     }
 
     this._currentMedia = media;

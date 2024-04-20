@@ -1,6 +1,7 @@
 import Fs from 'node:fs/promises';
 import Path from 'node:path';
 import Utils from '../../../../Utils';
+import WebVttThumbnailGenerator from '../../WebVttThumbnailGenerator';
 import WatchSession from '../WatchSession';
 import WatchSessionClient from '../WatchSessionClient';
 import BaseSessionMedia from './BaseSessionMedia';
@@ -26,9 +27,27 @@ export default class ApolloFileMedia extends BaseSessionMedia {
     await Fs.mkdir(hardLinkTargetDir, { recursive: true });
     await Utils.createHardLinkAndFallbackToSymbolicLinkIfCrossDevice(srcPathOnHost, this.hardLinkedFilePath);
 
+    const thumbnailsDirName = 'thumbnails_' + this.generateRandomFileName();
+    await Fs.mkdir(Path.join(session.workingDir.publicPath, thumbnailsDirName), { recursive: true });
+    await Fs.writeFile(Path.join(session.workingDir.publicPath, thumbnailsDirName, 'thumbnails.vtt.wip'), '');
+    new WebVttThumbnailGenerator().generate(this.hardLinkedFilePath, Path.join(session.workingDir.publicPath, thumbnailsDirName))
+      .then(() => {
+        console.log('Generated thumbnails');
+      })
+      .catch((err) => {
+        console.error(err);
+      })
+      .finally(() => {
+        return Fs.rm(Path.join(session.workingDir.publicPath, thumbnailsDirName, 'thumbnails.vtt.wip'), { force: true });
+      });
+
     this.data = {
       mode: 'native',
-      uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(hardLinkFileName)}`
+      uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(hardLinkFileName)}`,
+
+      metadata: {
+        seekThumbnailUri: `./${encodeURIComponent(session.id)}/f/${thumbnailsDirName}/thumbnails.vtt`
+      }
     };
     await super.init(session, issuingClient);
   }

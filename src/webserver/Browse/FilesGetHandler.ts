@@ -10,14 +10,15 @@ import FileIndex from '../../files/index/FileIndex';
 import IUserFile from '../../files/IUserFile';
 import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
 import UrlBuilder from '../../frontend/UrlBuilder';
+import WebVttThumbnailGenerator from '../../media/watch/WebVttThumbnailGenerator';
 import ProcessBuilder from '../../process_manager/ProcessBuilder';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
 import { registerAliasHandler } from '../AliasRouter';
 import WebServer from '../WebServer';
 
-type FileRequestType = 'thumbnail' | 'download' | 'search' | 'live_transcode' | 'webttv_thumbnails';
-const allowedFileRequestTypes = ['thumbnail', 'download', 'search', 'live_transcode', 'webttv_thumbnails'];  // Needs to be identical to FileRequestType
+type FileRequestType = 'thumbnail' | 'download' | 'search' | 'live_transcode' | 'webvtt_thumbnails';
+const allowedFileRequestTypes = ['thumbnail', 'download', 'search', 'live_transcode', 'webvtt_thumbnails'];  // Needs to be identical to FileRequestType
 
 export function filesHandleGet(req: express.Request, res: express.Response, next: express.NextFunction, frontendType: 'browse' | 'trash'): () => Promise<void> {
   return async (): Promise<void> => {
@@ -406,7 +407,7 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
     return;
   }
 
-  if (fileRequestType == 'webttv_thumbnails') {
+  if (fileRequestType == 'webvtt_thumbnails') {
     return handleWebVttThumbnailRequest(req, res, next, user, file);
   }
 
@@ -417,8 +418,6 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
 const webVttThumbnailCache: { [key: string]: string } = {};
 
 async function handleWebVttThumbnailRequest(req: express.Request, res: express.Response, next: express.NextFunction, user: AbstractUser, file: IUserFile): Promise<void> {
-  const SECONDS_BETWEEN_FRAMES: number = 5;
-
   const inputFileAbsolutePath = file.getAbsolutePathOnHost();
   if (inputFileAbsolutePath == null) {
     throw new Error('File does not exist on host file system');
@@ -437,79 +436,10 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
     throw new Error('cwd is null');
   }
 
-  await Fs.promises.mkdir(Path.join(cwd, 'frames'), { recursive: true });
-
-  const inputFileRelativePath = `input${Path.extname(file.getName())}`;
-
-  await Utils.createHardLinkAndFallbackToSymbolicLinkIfCrossDevice(inputFileAbsolutePath, Path.join(cwd, inputFileRelativePath));
-
-  const childProcess = await new ProcessBuilder('ffmpeg',
-    [
-      '-hwaccel', 'cuda',
-      '-bitexact',
-      '-n',
-      '-i', inputFileRelativePath,
-
-      '-bt', '20',
-      '-vf', `fps=1/${SECONDS_BETWEEN_FRAMES},scale=240:-1`,
-
-      '-f', 'image2',
-      'frames/%d.png'
-    ])
-    .errorOnNonZeroExit()
-    .withCwd(cwd)
-    .runPromised();
-
-
-  if (childProcess.err) {
-    throw childProcess.err;
-  }
-
-  const mergeFramesIntoChunkImage = async (imageFiles: string[], chunkFilePath: string): Promise<void> => {
-    const args = [
-      '-bitexact',
-      '-n'
-    ];
-
-    for (const imagePath of imageFiles) {
-      args.push('-i', imagePath);
-    }
-
-    if (imageFiles.length > 1) {
-      args.push('-filter_complex', `hstack=inputs=${imageFiles.length}`);
-    }
-
-    args.push(
-      '-f', 'image2',
-      chunkFilePath
-    );
-
-    const childProcess = await new ProcessBuilder('ffmpeg', args)
-      .withCwd(cwd)
-      .runPromised();
-
-    if (childProcess.err) {
-      throw childProcess.err;
-    }
-  };
-
-  const frameFiles = (await Fs.promises.readdir(Path.join(cwd, 'frames'))).map((fileName) => Path.join('frames', fileName));
-  frameFiles.sort(getFileNameCollator().compare);
-
-  const chunkSize = 6;
-  for (let i = 0; i < frameFiles.length; i += chunkSize) {
-    const chunk = frameFiles.slice(i, i + chunkSize);
-
-    await mergeFramesIntoChunkImage(chunk, `chunk_${i / chunkSize}.png`);
-  }
-
-  const frameMetaData = await sharp(Path.join(cwd, 'frames/1.png')).metadata();
-  if (frameMetaData.width == null || frameMetaData.height == null) {
-    throw new Error('Failed to get frame dimensions');
-  }
+  const webVtt = await new WebVttThumbnailGenerator().generate(inputFileAbsolutePath, cwd);
 
   const aliasToken = Crypto.createHash('sha256')
-    .update('webttv_thumbnails')
+    .update('webvtt_thumbnails')
     .update(inputFileAbsolutePath)
     .digest()
     .toString('hex');
@@ -522,36 +452,11 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
     }
   });
 
-  const generateImageUrl: (fileName: string) => string = (fileName) => {
-    return new URL(`/alias/${aliasToken}/${fileName}`, getConfig().data.baseUrl).href;
-  };
-  const toWebVttTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const seconds2 = Math.floor(seconds % 60);
+  webVttThumbnailCache[inputFileAbsolutePath] = (await Fs.promises.readFile(Path.join(cwd, webVtt.vttFileName), 'utf-8')).replaceAll('chunk_', new URL(`/alias/${aliasToken}/chunk_`, getConfig().data.baseUrl).href);
 
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds2.toString().padStart(2, '0')}.000`;
-  };
-
-  let webVttContent = 'WEBVTT\n\n';
-
-  for (let i = 0; i < frameFiles.length; i += chunkSize) {
-    const chunk = frameFiles.slice(i, i + chunkSize);
-    const chunkFileName = `chunk_${i / chunkSize}.png`;
-
-    for (let j = 0; j < chunk.length; ++j) {
-      const frameStart = (i * SECONDS_BETWEEN_FRAMES) + (j * SECONDS_BETWEEN_FRAMES);
-
-      webVttContent += `${toWebVttTime(frameStart)} --> ${toWebVttTime(frameStart + SECONDS_BETWEEN_FRAMES)}\n`;
-      webVttContent += `${generateImageUrl(chunkFileName)}?#xywh=${frameMetaData.width * j},0,${frameMetaData.width},${frameMetaData.height}\n\n`;
-    }
-  }
-
-  webVttThumbnailCache[inputFileAbsolutePath] = webVttContent;
-  await Fs.promises.rm(Path.join(cwd, 'frames'), { recursive: true });
-
-  res.type('text/vtt')
-    .send(webVttContent);
+  res
+    .type('text/vtt')
+    .send(webVttThumbnailCache[inputFileAbsolutePath]);
 }
 
 async function generateBreadcrumbs(file: IUserFile): Promise<BreadcrumbItem[]> {

@@ -51,6 +51,8 @@ export default abstract class PlayerElement {
 
   abstract loadSubtitles(media: CommunicationProtocol.Media, videoPlayer: ApolloVideoPlayer): void;
 
+  abstract loadSeekThumbnails(media: CommunicationProtocol.Media, videoPlayer: ApolloVideoPlayer): void;
+
   abstract destroyPlayer(): void;
 
   abstract play(): Promise<void>;

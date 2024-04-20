@@ -1,5 +1,6 @@
 import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import { Media } from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import ApolloVideoPlayer from '../ApolloVideoPlayer';
 import SubtitleTrack from '../subtitles/SubtitleTrack';
 import PlayerElement, { AudioTrack, PlayerEvents } from './PlayerElement';
 
@@ -74,6 +75,13 @@ export default class YouTubePlayerElement extends PlayerElement {
     if (media.metadata?.subtitles) {
       // no-op
       console.warn('Unable to load custom subtitles for YouTube player.');
+    }
+  }
+
+  loadSeekThumbnails(media: Media, videoPlayer: ApolloVideoPlayer): void {
+    if (media.metadata?.seekThumbnailUri) {
+      // no-op
+      console.warn('Unable to load custom seek thumbnails for YouTube player.');
     }
   }
 

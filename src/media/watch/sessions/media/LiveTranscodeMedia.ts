@@ -71,7 +71,9 @@ export default class LiveTranscodeMedia extends ApolloFileMedia {
             uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(transcodeDirName)}/_subtitles/fonts/${encodeURIComponent(font.fileName)}`
           };
         }),
-        audioNames: Object.fromEntries(transcode.audioNameMap)
+        audioNames: Object.fromEntries(transcode.audioNameMap),
+
+        seekThumbnailUri: this.data.metadata?.seekThumbnailUri
       }
     };
   }

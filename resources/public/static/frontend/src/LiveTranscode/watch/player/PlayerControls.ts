@@ -1,6 +1,7 @@
 import { formatPlaybackTime } from '../PlaybackTimeFormatter';
 import PlayerController from './PlayerController';
 import PlayerState from './PlayerState';
+import WebVttThumbnails from './WebVttThumbnails';
 
 const iconMapping = {
   paused: (isPaused: boolean) => isPaused ? 'play_arrow' : 'pause',
@@ -25,6 +26,10 @@ export default class PlayerControls {
   private readonly progressBarContainer: HTMLElement;
   private readonly progressBar: HTMLElement;
 
+  private readonly seekThumbnailContainer: HTMLElement;
+  private readonly seekThumbnailImage: HTMLImageElement;
+  private readonly seekThumbnailTime: HTMLElement;
+
   private readonly volumeSliderContainer: HTMLElement;
   private readonly volumeSlider: HTMLElement;
   private readonly volumeSliderChild: HTMLElement;
@@ -36,6 +41,7 @@ export default class PlayerControls {
   private readonly fullscreenButton: HTMLElement;
 
   private enabled = true;
+  private webVttThumbnails: WebVttThumbnails | null = null;
 
   constructor(videoPlayerWrapper: HTMLElement, controlsContainer: HTMLElement, videoPlayerContainer: HTMLElement, playerState: PlayerState, playerController: PlayerController) {
     this.videoPlayerWrapper = videoPlayerWrapper;
@@ -51,6 +57,10 @@ export default class PlayerControls {
     this.progressBarTimes = this.controlsContainer.querySelector('[data-video-player-element="progress-times"]')!;
     this.progressBarContainer = this.controlsContainer.querySelector('[data-video-player-element="progress-bar"]')!;
     this.progressBar = this.progressBarContainer.querySelector('[role="progressbar"]')!;
+
+    this.seekThumbnailContainer = this.controlsContainer.querySelector('[data-video-player-element="seek-thumbnail-container"]')!;
+    this.seekThumbnailImage = this.seekThumbnailContainer.querySelector('[data-video-player-element="seek-thumbnail-image"]')!;
+    this.seekThumbnailTime = this.seekThumbnailContainer.querySelector('[data-video-player-element="seek-thumbnail-time"]')!;
 
     this.volumeSliderContainer = this.controlsContainer.querySelector('[data-video-player-element="volume-slider-container"]')!;
     this.volumeSlider = this.controlsContainer.querySelector('[data-video-player-element="volume-slider"]')!;
@@ -83,6 +93,10 @@ export default class PlayerControls {
 
     this.controlsContainer.classList.add('d-none');
     this.videoPlayerWrapper.style.cursor = 'none';
+  }
+
+  setSeekThumbnails(webVttThumbnails: WebVttThumbnails | null): void {
+    this.webVttThumbnails = webVttThumbnails;
   }
 
   updateUserInterface(): void {
@@ -190,6 +204,7 @@ export default class PlayerControls {
   private registerSeekEventListeners(): void {
     const progressBarContainer = this.progressBarContainer;
     let draggingProgress = false;
+    let videoWasPlayingBeforeSeek = false;
 
     this.progressBarContainer.addEventListener('click', (event) => {
       const rect = this.progressBarContainer.getBoundingClientRect();
@@ -198,12 +213,48 @@ export default class PlayerControls {
       this.playerController.seek(pos * this.playerState.duration).catch(console.error);
     }, { passive: true });
 
+    const updateSeekThumbnails = (visible: boolean, clientX?: number): void => {
+      this.seekThumbnailContainer.style.display = visible ? 'block' : 'none';
+      if (!visible) {
+        return;
+      }
+      if (typeof clientX !== 'number') {
+        throw new Error('clientX is not a number');
+      }
 
-    document.addEventListener('mouseup', () => draggingProgress = false, { passive: true });
+      const progressBarContainerX = progressBarContainer.getBoundingClientRect().x;
+      const pos = clientX - progressBarContainerX;
+
+      const videoPosition = pos / progressBarContainer.offsetWidth;
+      const time = videoPosition * this.playerState.duration;
+      this.seekThumbnailTime.innerText = formatPlaybackTime(time);
+
+      const thumbnail = this.webVttThumbnails?.getCue(time);
+      this.seekThumbnailImage.style.backgroundImage = thumbnail ? `url(${thumbnail.uri})` : '';
+      this.seekThumbnailImage.style.width = thumbnail?.width ? `${thumbnail.width}px` : '';
+      this.seekThumbnailImage.style.height = thumbnail?.height ? `${thumbnail.height}px` : '';
+      this.seekThumbnailImage.style.backgroundPosition = `-${thumbnail?.x ?? 0}px -${thumbnail?.y ?? 0}px`;
+
+      this.seekThumbnailContainer.style.left = `${pos - (thumbnail?.width ?? 0) / 4}px`;
+      this.seekThumbnailContainer.style.bottom = `${(thumbnail?.height ?? 0) / 2}px`;
+    };
+
+    progressBarContainer.addEventListener('mousemove', (e) => updateSeekThumbnails(true, e.clientX), { passive: true });
+    progressBarContainer.addEventListener('mouseleave', () => updateSeekThumbnails(false), { passive: true });
+
+    document.addEventListener('mouseup', () => {
+      draggingProgress = false;
+      if (videoWasPlayingBeforeSeek) {
+        this.playerState.play();
+      }
+    }, { passive: true });
 
     progressBarContainer.addEventListener('mousedown', () => {
       // this.hideAdditionalControlContainers();
+      videoWasPlayingBeforeSeek = !this.playerState.paused;
       draggingProgress = true;
+
+      this.playerState.pause();
     }, { passive: true });
 
     document.addEventListener('mousemove', (e) => {

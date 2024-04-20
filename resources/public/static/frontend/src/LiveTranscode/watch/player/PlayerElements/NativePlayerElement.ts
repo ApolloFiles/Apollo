@@ -1,8 +1,10 @@
 import * as CommunicationProtocol from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
+import { Media } from '../../../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import ApolloVideoPlayer from '../ApolloVideoPlayer';
 import AssSubtitleTrack from '../subtitles/AssSubtitleTrack';
 import NativeSubtitleTrack from '../subtitles/NativeSubtitleTrack';
 import SubtitleTrack from '../subtitles/SubtitleTrack';
+import WebVttThumbnails from '../WebVttThumbnails';
 import PlayerElement, { AudioTrack, PlayerEvents } from './PlayerElement';
 
 export default class NativePlayerElement extends PlayerElement {
@@ -80,6 +82,14 @@ export default class NativePlayerElement extends PlayerElement {
     }
 
     this.setAudioTrackNameMapping(media.metadata.audioNames ?? {});
+  }
+
+  loadSeekThumbnails(media: Media, videoPlayer: ApolloVideoPlayer): void {
+    if (media.metadata?.seekThumbnailUri == null) {
+      return;
+    }
+
+    videoPlayer._controls.setSeekThumbnails(new WebVttThumbnails(media.metadata.seekThumbnailUri));
   }
 
   destroyPlayer(): void {

@@ -38,18 +38,31 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
       get: async (): Promise<void> => {
         const session = sessionStorage.find(req.params.sessionId);
         if (session == null) {
-          res.status(404).send('Session not found');
+          res
+            .status(404)
+            .send('Session not found');
           return;
         }
 
         const requestedFilePathOnHost = Path.join(session.workingDir.publicPath, req.path);
         if (!requestedFilePathOnHost.startsWith(session.workingDir.publicPath)) {
-          res.status(403).send('Forbidden');
+          res
+            .status(403)
+            .send('Forbidden');
           return;
         }
 
         if (!Fs.existsSync(requestedFilePathOnHost)) {
-          res.status(404).send('File not found');
+          if (Fs.existsSync(requestedFilePathOnHost + '.wip')) {
+            res
+              .status(202)
+              .send('Looks like the requested file is not ready yet. Please try again later.');
+            return;
+          }
+
+          res
+            .status(404)
+            .send('File not found');
           return;
         }
 
