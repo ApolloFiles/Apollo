@@ -96,6 +96,9 @@ export default class PlayerControls {
   }
 
   setSeekThumbnails(webVttThumbnails: WebVttThumbnails | null): void {
+    if (this.webVttThumbnails !== webVttThumbnails) {
+      this.webVttThumbnails?.destroyPreloadedImages();
+    }
     this.webVttThumbnails = webVttThumbnails;
   }
 
@@ -235,8 +238,8 @@ export default class PlayerControls {
       this.seekThumbnailImage.style.height = thumbnail?.height ? `${thumbnail.height}px` : '';
       this.seekThumbnailImage.style.backgroundPosition = `-${thumbnail?.x ?? 0}px -${thumbnail?.y ?? 0}px`;
 
-      this.seekThumbnailContainer.style.left = `${pos - (thumbnail?.width ?? 0) / 4}px`;
-      this.seekThumbnailContainer.style.bottom = `${(thumbnail?.height ?? 0) / 2}px`;
+      this.seekThumbnailContainer.style.left = `${pos - ((thumbnail?.width ?? -(pos / 2)) / 4)}px`;
+      this.seekThumbnailContainer.style.bottom = `${(thumbnail?.height ?? 130) / 2}px`;
     };
 
     progressBarContainer.addEventListener('mousemove', (e) => updateSeekThumbnails(true, e.clientX), { passive: true });

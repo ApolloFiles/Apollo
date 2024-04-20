@@ -75,6 +75,7 @@ export default class ApolloVideoPlayer {
     this._playerState._prepareDestroyOfReferenceElement();
     this._videoPlayerWrapper.innerHTML = '';
     this._controls.setEnabled(false);
+    this._controls.setSeekThumbnails(null);
 
     if (media == null) {
       const placeholderElement = document.createElement('div');

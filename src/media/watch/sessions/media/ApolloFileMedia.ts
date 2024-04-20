@@ -1,7 +1,7 @@
 import Fs from 'node:fs/promises';
 import Path from 'node:path';
 import Utils from '../../../../Utils';
-import WebVttThumbnailGenerator from '../../WebVttThumbnailGenerator';
+import WebVttKeyframeGenerator from '../../WebVttKeyframeGenerator';
 import WatchSession from '../WatchSession';
 import WatchSessionClient from '../WatchSessionClient';
 import BaseSessionMedia from './BaseSessionMedia';
@@ -27,10 +27,10 @@ export default class ApolloFileMedia extends BaseSessionMedia {
     await Fs.mkdir(hardLinkTargetDir, { recursive: true });
     await Utils.createHardLinkAndFallbackToSymbolicLinkIfCrossDevice(srcPathOnHost, this.hardLinkedFilePath);
 
-    const thumbnailsDirName = 'thumbnails_' + this.generateRandomFileName();
+    const thumbnailsDirName = 'keyframes_' + this.generateRandomFileName();
     await Fs.mkdir(Path.join(session.workingDir.publicPath, thumbnailsDirName), { recursive: true });
-    await Fs.writeFile(Path.join(session.workingDir.publicPath, thumbnailsDirName, 'thumbnails.vtt.wip'), '');
-    new WebVttThumbnailGenerator().generate(this.hardLinkedFilePath, Path.join(session.workingDir.publicPath, thumbnailsDirName))
+    await Fs.writeFile(Path.join(session.workingDir.publicPath, thumbnailsDirName, `${WebVttKeyframeGenerator.VTT_FILE_NAME}.wip`), '');
+    new WebVttKeyframeGenerator().generate(this.hardLinkedFilePath, Path.join(session.workingDir.publicPath, thumbnailsDirName))
       .then(() => {
         console.log('Generated thumbnails');
       })
@@ -38,7 +38,7 @@ export default class ApolloFileMedia extends BaseSessionMedia {
         console.error(err);
       })
       .finally(() => {
-        return Fs.rm(Path.join(session.workingDir.publicPath, thumbnailsDirName, 'thumbnails.vtt.wip'), { force: true });
+        return Fs.rm(Path.join(session.workingDir.publicPath, thumbnailsDirName, `${WebVttKeyframeGenerator.VTT_FILE_NAME}.wip`), { force: true });
       });
 
     this.data = {
@@ -46,7 +46,7 @@ export default class ApolloFileMedia extends BaseSessionMedia {
       uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(hardLinkFileName)}`,
 
       metadata: {
-        seekThumbnailUri: `./${encodeURIComponent(session.id)}/f/${thumbnailsDirName}/thumbnails.vtt`
+        seekThumbnailUri: `./${encodeURIComponent(session.id)}/f/${thumbnailsDirName}/${WebVttKeyframeGenerator.VTT_FILE_NAME}`
       }
     };
     await super.init(session, issuingClient);

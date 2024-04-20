@@ -10,7 +10,7 @@ import FileIndex from '../../files/index/FileIndex';
 import IUserFile from '../../files/IUserFile';
 import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
 import UrlBuilder from '../../frontend/UrlBuilder';
-import WebVttThumbnailGenerator from '../../media/watch/WebVttThumbnailGenerator';
+import WebVttKeyframeGenerator from '../../media/watch/WebVttKeyframeGenerator';
 import ProcessBuilder from '../../process_manager/ProcessBuilder';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
 import Utils from '../../Utils';
@@ -436,7 +436,7 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
     throw new Error('cwd is null');
   }
 
-  const webVtt = await new WebVttThumbnailGenerator().generate(inputFileAbsolutePath, cwd);
+  const webVtt = await new WebVttKeyframeGenerator().generate(inputFileAbsolutePath, cwd);
 
   const aliasToken = Crypto.createHash('sha256')
     .update('webvtt_thumbnails')
@@ -452,7 +452,7 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
     }
   });
 
-  webVttThumbnailCache[inputFileAbsolutePath] = (await Fs.promises.readFile(Path.join(cwd, webVtt.vttFileName), 'utf-8')).replaceAll('chunk_', new URL(`/alias/${aliasToken}/chunk_`, getConfig().data.baseUrl).href);
+  webVttThumbnailCache[inputFileAbsolutePath] = (await Fs.promises.readFile(Path.join(cwd, WebVttKeyframeGenerator.VTT_FILE_NAME), 'utf-8')).replaceAll('keyframes_', new URL(`/alias/${aliasToken}/keyframes_`, getConfig().data.baseUrl).href);
 
   res
     .type('text/vtt')

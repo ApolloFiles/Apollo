@@ -17,11 +17,15 @@ export default class WebVttThumbnails {
   private loaded = false;
   private error = false;
 
+  private readonly imageBlobUrls = new Map<string, string>();
+
   constructor(url: string) {
     WebVttThumbnails.fetchFromUrl(url)
       .then((webVttData) => {
         if (webVttData != null) {
           this.cues = WebVttThumbnails.parse(webVttData, new URL(url, window.location.href));
+
+          this.preloadImages().catch(console.error);
         }
         this.loaded = true;
       })
@@ -43,17 +47,40 @@ export default class WebVttThumbnails {
 
     for (const cue of this.cues) {
       if (cue.startMillis <= timeInSeconds * 1000 && timeInSeconds * 1000 < cue.endMillis) {
-        return cue.image;
+        return {
+          ...cue.image,
+          uri: this.imageBlobUrls.get(cue.image.uri) ?? cue.image.uri
+        };
       }
     }
 
     return null;
   }
 
+  destroyPreloadedImages(): void {
+    for (const objectUrl of this.imageBlobUrls.values()) {
+      URL.revokeObjectURL(objectUrl);
+    }
+    this.imageBlobUrls.clear();
+  }
+
+  private async preloadImages(): Promise<void> {
+    for (const cue of this.cues) {
+      if (cue.image.uri in this.imageBlobUrls) {
+        continue;
+      }
+
+      const imageBlob = await (await fetch(cue.image.uri)).blob();
+      this.imageBlobUrls.set(cue.image.uri, URL.createObjectURL(imageBlob));
+    }
+  }
+
   private static parse(data: string, vttFileUrl: URL): ParsedCue[] {
     const result: ParsedCue[] = [];
 
     const lines = data.split(/\r?\n/);
+    lines.shift();
+
     let startMillis = 0;
     let endMillis = 0;
     let image = '';

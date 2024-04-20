@@ -79,7 +79,6 @@ Video Player
 
 .video-player-controls-progress-thumbnail-container [data-video-player-element='seek-thumbnail-image'] {
     background-repeat: no-repeat;
-    background-size: cover;
 }
 
 .video-player-controls-progress-thumbnail-container img {
