@@ -64,7 +64,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           return;
         }
 
-        const libraryTitleDirectory = user.getDefaultFileSystem().getFile(libraryTitle.directoryPath);
+        const libraryTitleDirectory = library.owner.getDefaultFileSystem().getFile(libraryTitle.directoryPath);
         if (!(await libraryTitleDirectory.isDirectory())) {
           res
             .status(404)
@@ -168,7 +168,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           return;
         }
 
-        const mediaFile = user.getDefaultFileSystem().getFile(libraryTitleMedia.filePath);
+        const mediaFile = library.owner.getDefaultFileSystem().getFile(libraryTitleMedia.filePath);
         if (mediaFile.getOwner().getId() !== user.getId()) {
           res
             .status(403)
@@ -247,7 +247,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           return;
         }
 
-        const mediaFile = user.getDefaultFileSystem().getFile(libraryTitleMedia.filePath);
+        const mediaFile = library.owner.getDefaultFileSystem().getFile(libraryTitleMedia.filePath);
         const mediaFileStat = await mediaFile.stat();
         if (!mediaFileStat.isFile()) {
           res
@@ -464,7 +464,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           return;
         }
 
-        const mediaFile = user.getDefaultFileSystem().getFile(libraryTitleMedia.filePath);
+        const mediaFile = library.owner.getDefaultFileSystem().getFile(libraryTitleMedia.filePath);
         const mediaFileStat = await mediaFile.stat();
         if (!mediaFileStat.isFile()) {
           res

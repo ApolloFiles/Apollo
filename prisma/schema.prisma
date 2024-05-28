@@ -15,9 +15,20 @@ model MediaLibrary {
   name           String   @db.VarChar(256)
   directoryPaths String[] @map("directory_paths")
 
-  media MediaLibraryMedia[]
+  media                  MediaLibraryMedia[]
+  MediaLibrarySharedWith MediaLibrarySharedWith[]
 
   @@map("media_libraries")
+}
+
+model MediaLibrarySharedWith {
+  libraryId BigInt @map("library_id")
+  userId    BigInt @map("user_id")
+
+  library MediaLibrary @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+
+  @@id([libraryId, userId])
+  @@map("media_libraries_shared_with")
 }
 
 model MediaLibraryMedia {

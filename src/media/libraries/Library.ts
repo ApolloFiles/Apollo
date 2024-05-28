@@ -7,13 +7,15 @@ export default class Library {
   readonly owner: AbstractUser;
   readonly id: string;
   readonly name: string;
+  readonly sharedWithUserIds: number[];
 
   readonly directories: IUserFile[];
 
-  constructor(owner: AbstractUser, id: string, name: string, directories: IUserFile[]) {
+  constructor(owner: AbstractUser, id: string, name: string, sharedWithUserIds: number[], directories: IUserFile[]) {
     this.owner = owner;
     this.id = id;
     this.name = name;
+    this.sharedWithUserIds = sharedWithUserIds;
     this.directories = directories;
   }
 
