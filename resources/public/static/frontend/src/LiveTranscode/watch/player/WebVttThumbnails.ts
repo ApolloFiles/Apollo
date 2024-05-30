@@ -66,7 +66,7 @@ export default class WebVttThumbnails {
 
   private async preloadImages(): Promise<void> {
     for (const cue of this.cues) {
-      if (cue.image.uri in this.imageBlobUrls) {
+      if (this.imageBlobUrls.has(cue.image.uri)) {
         continue;
       }
 
