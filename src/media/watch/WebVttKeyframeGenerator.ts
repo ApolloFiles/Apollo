@@ -61,10 +61,16 @@ export default class WebVttKeyframeGenerator {
         bufferedChunks.length = 0;
         chunk = chunk.subarray(indexOfNewline + 1);
 
-        if (line.startsWith('[Parsed_select_0 @ ')) {
+        if (line.startsWith('[Parsed_select_0 @ ') && line.includes(' -> select:1.0')) {
           const timeIndex = line.indexOf('t:');
           const timeValue = line.substring(timeIndex + 2, line.indexOf(' ', timeIndex + 2));
-          frameTimes.push(parseFloat(timeValue));
+
+          const parseFrameTime = parseFloat(timeValue);
+          if (!Number.isFinite(parseFrameTime)) {
+            console.warn('Failed to parse frame time as float:', timeValue);
+            continue;
+          }
+          frameTimes.push(parseFrameTime);
         }
       }
 
