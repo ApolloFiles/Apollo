@@ -1,5 +1,5 @@
 import express from 'express';
-import Path from 'path';
+import Path from 'node:path';
 import AbstractUser from '../../../AbstractUser';
 import IUserFile from '../../../files/IUserFile';
 import IPostActionHandler from './IPostActionHandler';

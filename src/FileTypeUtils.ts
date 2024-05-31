@@ -1,4 +1,4 @@
-import ChildProcess from 'child_process';
+import ChildProcess from 'node:child_process';
 import * as MimeType from 'mime-types';
 import ProcessBuilder from './process_manager/ProcessBuilder';
 

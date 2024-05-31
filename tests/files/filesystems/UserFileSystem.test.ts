@@ -1,4 +1,4 @@
-import Path from 'path';
+import Path from 'node:path';
 import AbstractUser from '../../../src/AbstractUser';
 import UserFileSystem from '../../../src/files/filesystems/UserFileSystem';
 import UserStorage from '../../../src/UserStorage';

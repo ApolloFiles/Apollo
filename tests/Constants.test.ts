@@ -1,6 +1,6 @@
 import Fs from 'node:fs';
-import Os from 'os';
-import Path from 'path';
+import Os from 'node:os';
+import Path from 'node:path';
 
 describe('#isProduction', () => {
   let originalNodeEnv: string | undefined;

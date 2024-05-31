@@ -1,5 +1,5 @@
 import express from 'express';
-import Path from 'path';
+import Path from 'node:path';
 import { getAppResourcesDir, getConfig } from '../Constants';
 import Utils from '../Utils';
 import { AbstractTemplate } from './AbstractTemplate';

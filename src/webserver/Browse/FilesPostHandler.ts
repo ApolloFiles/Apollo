@@ -1,6 +1,6 @@
 import express from 'express';
 import expressFileUpload from 'express-fileupload';
-import Path from 'path';
+import Path from 'node:path';
 import Utils from '../../Utils';
 import WebServer from '../WebServer';
 import CreateFilePostActionHandler from './PostActionHandler/CreateFilePostActionHandler';
