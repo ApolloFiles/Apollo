@@ -25,7 +25,7 @@ export default class StreamArgsBuilder {
         result.push(...AudioEncoderArgsBuilder.buildArgs(stream as AudioStream));
 
         // ISO 639-2 language code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)
-        varStreamMap.push(`a:${outputStreamCounter.audio++},agroup:${audioGroupName},name:${audioGroupName}_${outputStreamCounter.audio},language:${this.stripNonAlphaChars(stream.tags.language) || 'und'},default:${outputStreamCounter.audio == 1 ? 'yes' : 'no'}`);
+        varStreamMap.push(`a:${outputStreamCounter.audio++},agroup:${audioGroupName},name:${audioGroupName}_${outputStreamCounter.audio},language:${this.stripNonAlphaChars(stream.tags.language ?? '') || 'und'},default:${outputStreamCounter.audio == 1 ? 'yes' : 'no'}`);
         audioNameMap.set(`audio_${outputStreamCounter.audio}`, `${(stream.tags.title ?? stream.tags.language) || 'und'}`);
         continue;
       }
