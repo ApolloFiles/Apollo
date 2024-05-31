@@ -1,13 +1,13 @@
-import AbstractUser from '../../AbstractUser';
 import { getPrismaClient } from '../../Constants';
-import IUserFile from '../../files/IUserFile';
-import UserStorage from '../../UserStorage';
+import ApolloUser from '../../user/ApolloUser';
+import ApolloUserStorage from '../../user/ApolloUserStorage';
+import LocalFile from '../../user/files/local/LocalFile';
 import Library from './Library';
 
 export default class LibraryManager {
-  private readonly user: AbstractUser;
+  private readonly user: ApolloUser;
 
-  constructor(user: AbstractUser) {
+  constructor(user: ApolloUser) {
     this.user = user;
   }
 
@@ -17,11 +17,11 @@ export default class LibraryManager {
         id: BigInt(libraryId),
         OR: [
           {
-            ownerId: BigInt(this.user.getId())
+            ownerId: this.user.id
           },
           {
             MediaLibrarySharedWith: {
-              some: { userId: BigInt(this.user.getId()) }
+              some: { userId: this.user.id }
             }
           }
         ]
@@ -42,9 +42,9 @@ export default class LibraryManager {
       return null;
     }
 
-    let user: AbstractUser | null = this.user;
-    if (library.ownerId !== BigInt(this.user.getId())) {
-      user = await new UserStorage().getUser(Number(library.ownerId));
+    let user: ApolloUser | null = this.user;
+    if (library.ownerId !== this.user.id) {
+      user = await new ApolloUserStorage().findById(library.ownerId);
     }
     if (user == null) {
       throw new Error('Library is owned by a user that does not exist');
@@ -64,11 +64,11 @@ export default class LibraryManager {
       where: {
         OR: [
           {
-            ownerId: BigInt(this.user.getId())
+            ownerId: this.user.id
           },
           {
             MediaLibrarySharedWith: {
-              some: { userId: BigInt(this.user.getId()) }
+              some: { userId: this.user.id }
             }
           }
         ]
@@ -88,9 +88,9 @@ export default class LibraryManager {
 
     const result: Library[] = [];
     for (const library of libraries) {
-      let user: AbstractUser | null = this.user;
-      if (library.ownerId !== BigInt(this.user.getId())) {
-        user = await new UserStorage().getUser(Number(library.ownerId));
+      let user: ApolloUser | null = this.user;
+      if (library.ownerId !== this.user.id) {
+        user = await new ApolloUserStorage().findById(library.ownerId);
       }
       if (user == null) {
         throw new Error('Library is owned by a user that does not exist');
@@ -107,7 +107,7 @@ export default class LibraryManager {
     return result;
   }
 
-  private mapLibraryPathToUserFile(paths: string[]): IUserFile[] {
+  private mapLibraryPathToUserFile(paths: string[]): LocalFile[] {
     return paths.map(path => this.user.getDefaultFileSystem().getFile(path));
   }
 }

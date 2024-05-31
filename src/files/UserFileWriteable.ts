@@ -5,22 +5,22 @@ import Path from 'node:path';
 import * as NodeStream from 'node:stream';
 import { getFileStatCache } from '../Constants';
 import BackgroundProcess from '../process_manager/BackgroundProcess';
+import LocalFile from '../user/files/local/LocalFile';
 import FileIndex from './index/FileIndex';
-import IUserFile from './IUserFile';
-import IUserFileWriteable from './IUserFileWriteable';
 
-export default class UserFileWriteable implements IUserFileWriteable {
+/** @deprecated This class is part of the old file abstraction and needs to be re-implemented into the new file abstraction */
+export default class UserFileWriteable {
   protected readonly req: express.Request;
-  protected readonly userFile: IUserFile;
+  protected readonly userFile: LocalFile;
 
-  constructor(req: express.Request, userFile: IUserFile) {
+  constructor(req: express.Request, userFile: LocalFile) {
     this.req = req;
     this.userFile = userFile;
   }
 
   async write(
-      data: string | NodeJS.ArrayBufferView | Iterable<string | NodeJS.ArrayBufferView> | AsyncIterable<string | NodeJS.ArrayBufferView> | NodeStream,
-      options?: (Fs.ObjectEncodingOptions & { mode?: Fs.Mode | undefined; flag?: Fs.OpenMode | undefined; } & NodeEvents.Abortable) | BufferEncoding | null
+    data: string | NodeJS.ArrayBufferView | Iterable<string | NodeJS.ArrayBufferView> | AsyncIterable<string | NodeJS.ArrayBufferView> | NodeStream,
+    options?: (Fs.ObjectEncodingOptions & { mode?: Fs.Mode | undefined; flag?: Fs.OpenMode | undefined; } & NodeEvents.Abortable) | BufferEncoding | null
   ): Promise<void> {
     const filePath = this.userFile.getAbsolutePathOnHost();
 
@@ -32,8 +32,8 @@ export default class UserFileWriteable implements IUserFileWriteable {
     await Fs.promises.writeFile(filePath, data, options);
 
     await getFileStatCache().clearFile(this.userFile);
-    UserFileWriteable.updateFileIndexMkDir(this.userFile, firstDirCreated != null);
-    UserFileWriteable.updateFileIndexWrite(this.userFile);
+    this.updateFileIndexMkDir(this.userFile, firstDirCreated != null);
+    this.updateFileIndexWrite(this.userFile);
   }
 
   async mkdir(options?: Fs.MakeDirectoryOptions): Promise<void> {
@@ -46,10 +46,10 @@ export default class UserFileWriteable implements IUserFileWriteable {
     const firstDirCreated = await Fs.promises.mkdir(filePath, options);
 
     await getFileStatCache().clearFile(this.userFile);
-    UserFileWriteable.updateFileIndexMkDir(this.userFile, firstDirCreated != null);
+    this.updateFileIndexMkDir(this.userFile, firstDirCreated != null);
   }
 
-  async move(destination: IUserFileWriteable): Promise<void> {
+  async move(destination: UserFileWriteable): Promise<void> {
     const srcPath = this.userFile.getAbsolutePathOnHost();
     const destPath = destination.getUserFile().getAbsolutePathOnHost();
 
@@ -61,11 +61,11 @@ export default class UserFileWriteable implements IUserFileWriteable {
 
     await getFileStatCache().clearFile(this.userFile);
     await getFileStatCache().clearFile(destination.getUserFile());
-    UserFileWriteable.updateFileIndexRename(this.userFile, destination);
+    this.updateFileIndexRename(this.userFile, destination);
   }
 
   async moveToTrashBin(): Promise<void> {
-    if (this.userFile.getFileSystem().getAbsolutePathOnHost() == this.userFile.getOwner().getTrashBinFileSystem().getAbsolutePathOnHost()) {
+    if (this.userFile.fileSystem.getAbsolutePathOnHost() == this.userFile.fileSystem.owner.getTrashBinFileSystem().getAbsolutePathOnHost()) {
       throw new Error('File is already in trash bin');
     }
 
@@ -74,8 +74,8 @@ export default class UserFileWriteable implements IUserFileWriteable {
       throw new Error('File path is null');
     }
 
-    const targetFileSystem = this.userFile.getOwner().getTrashBinFileSystem();
-    const targetFile = targetFileSystem.getFile(this.userFile.getPath());
+    const targetFileSystem = this.userFile.fileSystem.owner.getTrashBinFileSystem();
+    const targetFile = targetFileSystem.getFile(this.userFile.path);
 
     const targetFileAbsolutePathOnHost = targetFile.getAbsolutePathOnHost();
     if (targetFileAbsolutePathOnHost == null) {
@@ -85,7 +85,7 @@ export default class UserFileWriteable implements IUserFileWriteable {
     await targetFileSystem.acquireLock(this.req, targetFile, async (writeableFile) => {
       await targetFileSystem.acquireLock(
         this.req,
-        targetFileSystem.getFile(Path.dirname(targetFile.getPath())),
+        targetFileSystem.getFile(Path.dirname(targetFile.path)),
         (writeableParentFile) => writeableParentFile.mkdir({ recursive: true })
       );
 
@@ -93,13 +93,13 @@ export default class UserFileWriteable implements IUserFileWriteable {
         return this.move(writeableFile);
       }
 
-      let newTargetFile: IUserFile;
+      let newTargetFile: LocalFile;
       let counter = 0;
       let loop = true;
       while (loop) {
         ++counter;
 
-        newTargetFile = targetFileSystem.getFile(Path.join(Path.dirname(targetFile.getPath()), Path.basename(targetFile.getPath(), Path.extname(targetFile.getPath())) + '~' + counter + Path.extname(targetFile.getPath())));
+        newTargetFile = targetFileSystem.getFile(Path.join(Path.dirname(targetFile.path), Path.basename(targetFile.path, Path.extname(targetFile.path)) + '~' + counter + Path.extname(targetFile.path)));
         const newTargetFileAbsolutePathOnHost = newTargetFile.getAbsolutePathOnHost();
 
         if (newTargetFileAbsolutePathOnHost == null) {
@@ -127,52 +127,52 @@ export default class UserFileWriteable implements IUserFileWriteable {
     await Fs.promises.rm(filePath, options);
 
     await getFileStatCache().clearFile(this.userFile);
-    UserFileWriteable.updateFileIndexDelete(this.userFile);
+    this.updateFileIndexDelete(this.userFile);
   }
 
-  getUserFile(): IUserFile {
+  getUserFile(): LocalFile {
     return this.userFile;
   }
 
-  protected static updateFileIndexWrite(userFile: IUserFile): void {
+  private updateFileIndexWrite(userFile: LocalFile): void {
     const fileIndex = FileIndex.getInstance();
     if (fileIndex == null) {
       return;
     }
 
     new BackgroundProcess<void>(async (ctx) => {
-      ctx.log(`Updating file index for file '${userFile.getPath()}' in '${userFile.getFileSystem().getUniqueId()}'`);
+      ctx.log(`Updating file index for file '${userFile.path}' in '${userFile.fileSystem.getUniqueId()}'`);
       return fileIndex.refreshIndex(userFile, false, true);
-    }, undefined, userFile.getOwner());
+    }, undefined, userFile.fileSystem.owner);
   }
 
-  protected static updateFileIndexDelete(userFile: IUserFile): void {
+  private updateFileIndexDelete(userFile: LocalFile): void {
     const fileIndex = FileIndex.getInstance();
     if (fileIndex == null) {
       return;
     }
 
     new BackgroundProcess<void>(async (ctx) => {
-      ctx.log(`Deleting file indices for '${userFile.getPath()}' in '${userFile.getFileSystem().getUniqueId()}'`);
+      ctx.log(`Deleting file indices for '${userFile.path}' in '${userFile.fileSystem.getUniqueId()}'`);
       return fileIndex.deleteIndex(userFile);
-    }, undefined, userFile.getOwner());
+    }, undefined, userFile.fileSystem.owner);
   }
 
-  protected static updateFileIndexRename(src: IUserFile, dest: IUserFileWriteable): void {
+  private updateFileIndexRename(src: LocalFile, dest: UserFileWriteable): void {
     const fileIndex = FileIndex.getInstance();
     if (fileIndex == null) {
       return;
     }
 
     new BackgroundProcess<void>(async (ctx) => {
-        ctx.log(`Renames file indices from '${src.getPath()}' in '${src.getFileSystem().getUniqueId()}' to '${dest.getUserFile().getPath()}' in '${dest.getUserFile().getFileSystem().getUniqueId()}'`);
+        ctx.log(`Renames file indices from '${src.path}' in '${src.fileSystem.getUniqueId()}' to '${dest.getUserFile().path}' in '${dest.getUserFile().fileSystem.getUniqueId()}'`);
 
         await fileIndex.renameIndex(src, dest.getUserFile());
       },
-      undefined, src.getOwner());
+      undefined, src.fileSystem.owner);
   }
 
-  protected static updateFileIndexMkDir(userFile: IUserFile, recursive: boolean): void {
+  private updateFileIndexMkDir(userFile: LocalFile, recursive: boolean): void {
     const fileIndex = FileIndex.getInstance();
     if (fileIndex == null) {
       return;
@@ -180,19 +180,19 @@ export default class UserFileWriteable implements IUserFileWriteable {
 
     new BackgroundProcess<void>(async (ctx) => {
       if (!recursive) {
-        ctx.log(`Creating file index for directory '${userFile.getPath()}' in '${userFile.getFileSystem().getUniqueId()}'`);
+        ctx.log(`Creating file index for directory '${userFile.path}' in '${userFile.fileSystem.getUniqueId()}'`);
         return fileIndex.refreshIndex(userFile, false, true);
       }
 
-      ctx.log(`Creating file indices recursively for directory '${userFile.getPath()}' in '${userFile.getFileSystem().getUniqueId()}'`);
+      ctx.log(`Creating file indices recursively for directory '${userFile.path}' in '${userFile.fileSystem.getUniqueId()}'`);
 
-      let currentFile = userFile.getFileSystem().getFile('/');
+      let currentFile = userFile.fileSystem.getFile('/');
 
       await fileIndex.refreshIndex(currentFile, false, true);
-      for (const pathSegment of userFile.getPath().split('/')) {
-        currentFile = userFile.getFileSystem().getFile(Path.join(currentFile.getPath(), pathSegment));
+      for (const pathSegment of userFile.path.split('/')) {
+        currentFile = userFile.fileSystem.getFile(Path.join(currentFile.path, pathSegment));
         await fileIndex.refreshIndex(currentFile, false, true);
       }
-    }, undefined, userFile.getOwner());
+    }, undefined, userFile.fileSystem.owner);
   }
 }

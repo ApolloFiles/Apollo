@@ -1,6 +1,6 @@
 import { RawData, WebSocket } from 'ws';
-import AbstractUser from '../../../AbstractUser';
 import { ApolloWebSocket } from '../../../global';
+import ApolloUser from '../../../user/ApolloUser';
 import {
   Message,
   PlaybackStatePingMessage,
@@ -40,7 +40,7 @@ export default class WatchSessionClient {
     }
   }
 
-  getApolloUser(): AbstractUser {
+  getApolloUser(): ApolloUser {
     return this.socket.apollo.user!;
   }
 

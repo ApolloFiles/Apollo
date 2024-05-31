@@ -2,12 +2,12 @@ import { handleRequestRestfully } from '@spraxdev/node-commons';
 import express from 'express';
 import Fs from 'node:fs';
 import Path from 'node:path';
-import AbstractUser from '../../AbstractUser';
 import { getFileNameCollator, getFileTypeUtils } from '../../Constants';
-import IUserFile from '../../files/IUserFile';
 import NEW_VideoLiveTranscodeTemplate from '../../frontend/NEW_VideoLiveTranscodeTemplate';
 import { ApolloWebSocket } from '../../global';
-import UserStorage from '../../UserStorage';
+import ApolloUser from '../../user/ApolloUser';
+import ApolloUserStorage from '../../user/ApolloUserStorage';
+import LocalFile from '../../user/files/local/LocalFile';
 import Utils from '../../Utils';
 import WebServer from '../../webserver/WebServer';
 import { WS_CLOSE_PROTOCOL_ERROR } from './sessions/WatchSessionClient';
@@ -62,7 +62,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
 
           res
             .status(404)
-            .send('File not found');
+            .send('VirtualFile not found');
           return;
         }
 
@@ -106,9 +106,9 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
 
         const user = WebServer.getUser(req);
         const fileSystem = user.getDefaultFileSystem();
-        const files = await fileSystem.getFiles(startPath);
+        const files = await fileSystem.getFile(startPath).getFiles();
 
-        const directoryFiles: IUserFile[] = [];
+        const directoryFiles: LocalFile[] = [];
         for (const innerFile of files) {
           try {
             if (await innerFile.isDirectory()) {
@@ -129,14 +129,14 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
             return 1;
           }
 
-          return getFileNameCollator().compare(a.getName(), b.getName());
+          return getFileNameCollator().compare(a.getFileName(), b.getFileName());
         });
 
         const result: { path: string, name: string, isDir: boolean }[] = [];
         for (const file of files) {
           result.push({
-            path: file.getPath(),
-            name: file.getName(),
+            path: file.path,
+            name: file.getFileName(),
             isDir: directoryFiles.includes(file)
           });
         }
@@ -178,9 +178,9 @@ function attachWebSocketConnectionHandler(webserver: WebServer, sessionMiddlewar
       await callSessionMiddleware(request as any);
       const sessionUserId = (request as any).session?.userId;
 
-      let user: AbstractUser | null = null;
+      let user: ApolloUser | null = null;
       if (typeof sessionUserId == 'number') {
-        user = await new UserStorage().getUser(sessionUserId);
+        user = await new ApolloUserStorage().findById(BigInt(sessionUserId));
       }
       if (user == null) {
         client.close(WS_CLOSE_PROTOCOL_ERROR, 'Not logged into Apollo');
@@ -199,7 +199,7 @@ function attachWebSocketConnectionHandler(webserver: WebServer, sessionMiddlewar
 
       // TODO: Check file/session access
 
-      session.welcomeClient(client, client.apollo.user.getDisplayName())
+      session.welcomeClient(client, client.apollo.user.displayName)
         .catch(console.error);
     });
   });

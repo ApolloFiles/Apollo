@@ -2,11 +2,11 @@ import { handleRequestRestfully } from '@spraxdev/node-commons';
 import express from 'express';
 import Path from 'node:path';
 import * as querystring from 'querystring';
-import AbstractUser from '../AbstractUser';
 import { getConfig, getHttpClient } from '../Constants';
 import { LoginTemplate, LoginTemplateData } from '../frontend/LoginTemplate';
 import { ApolloConfig } from '../global';
-import UserStorage from '../UserStorage';
+import ApolloUser from '../user/ApolloUser';
+import ApolloUserStorage from '../user/ApolloUserStorage';
 import Utils from '../Utils';
 import WebServer from './WebServer';
 
@@ -15,7 +15,7 @@ export const loginRouter = express.Router();
 loginRouter.all('/', (req: express.Request, res, next) => {
   handleRequestRestfully(req, res, next, {
     get: () => {
-      if (req.user instanceof AbstractUser) {
+      if (req.user instanceof ApolloUser) {
         if (typeof req.query.returnTo == 'string') {
           res.redirect(extractReturnTo(req));
           return;
@@ -52,7 +52,7 @@ loginRouter.all('/', (req: express.Request, res, next) => {
 loginRouter.all('/third-party/:thirdPartyProviderKey?', (req: express.Request, res, next) => {
   handleRequestRestfully(req, res, next, {
     get: async (): Promise<void> => {
-      if (req.user instanceof AbstractUser) {
+      if (req.user instanceof ApolloUser) {
         if (req.query.code == null) {
           res.redirect(extractReturnTo(req));
           return;
@@ -236,7 +236,7 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
     return;
   }
 
-  const apolloUser = await new UserStorage().getUserByOauth(thirdPartyProviderKey, accountId);
+  const apolloUser = await new ApolloUserStorage().findByOAuth(thirdPartyProviderKey, accountId);
 
   if (apolloUser == null) {
     res.status(401)
@@ -250,7 +250,7 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
 
   await updateSessionData(req, apolloUser);
 
-  console.log(`User '${apolloUser.getDisplayName()}' (id=${apolloUser.getId()}) successfully logged in from '${req.ip}' via ${thirdPartyProviderKey} (User-Agent='${req.header('User-Agent') ?? ''}')`);
+  console.log(`User '${apolloUser.displayName}' (id=${apolloUser.id}) successfully logged in from '${req.ip}' via ${thirdPartyProviderKey} (User-Agent='${req.header('User-Agent') ?? ''}')`);
 
   res.redirect(returnToOnSuccess);
 }
@@ -269,8 +269,7 @@ function getValueForKeyPath(obj: object, keys: string[]): any {
   return currObj;
 }
 
-async function updateSessionData(req: express.Request, user: AbstractUser): Promise<void> {
-  req.session.userId = user.getId();
-
+async function updateSessionData(req: express.Request, user: ApolloUser): Promise<void> {
+  req.session.userId = user.id.toString();
   await WebServer.saveSession(req);
 }

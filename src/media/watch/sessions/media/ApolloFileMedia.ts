@@ -15,10 +15,7 @@ export default class ApolloFileMedia extends BaseSessionMedia {
       throw new Error('Requested file is not a file');
     }
 
-    const srcPathOnHost = await requestedFile.getAbsolutePathOnHost();
-    if (srcPathOnHost == null) {
-      throw new Error('Could not get absolute path on host');
-    }
+    const srcPathOnHost = requestedFile.getAbsolutePathOnHost();
 
     const hardLinkTargetDir = this.determineHardLinkTargetDir(session);
     const hardLinkFileName = this.generateRandomFileName(this.data.uri);

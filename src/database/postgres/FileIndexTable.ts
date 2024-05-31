@@ -1,6 +1,6 @@
 import Fs from 'node:fs';
 import { getPrismaClient } from '../../Constants';
-import IUserFile from '../../files/IUserFile';
+import VirtualFile from '../../user/files/VirtualFile';
 
 export default class FileIndexTable {
   private static INSTANCE: FileIndexTable;
@@ -8,12 +8,12 @@ export default class FileIndexTable {
   protected constructor() {
   }
 
-  async isFileUpToDate(file: IUserFile, fileStats: Fs.Stats): Promise<boolean> {
+  async isFileUpToDate(file: VirtualFile, fileStats: Fs.Stats): Promise<boolean> {
     const dbRes = await getPrismaClient()!.fileSearchIndexEntry.findFirst({
       where: {
-        ownerId: file.getOwner().getId(),
-        filesystem: file.getFileSystem().getUniqueId(),
-        filePath: file.getPath(),
+        ownerId: file.fileSystem.owner.id,
+        filesystem: file.fileSystem.getUniqueId(),
+        filePath: file.path,
         isDirectory: fileStats.isDirectory(),
         sizeBytes: fileStats.isDirectory() ? null : BigInt(fileStats.size)
       },
@@ -24,7 +24,7 @@ export default class FileIndexTable {
     return dbRes != null;
   }
 
-  async setFileIndex(file: IUserFile, fileStats: Fs.Stats, sha256?: Buffer): Promise<void> {
+  async setFileIndex(file: VirtualFile, fileStats: Fs.Stats, sha256?: Buffer): Promise<void> {
     if (fileStats.isFile() && !(sha256 instanceof Buffer)) {
       throw new Error('SHA256 is required for file indexing');
     }
@@ -33,7 +33,7 @@ export default class FileIndexTable {
           INSERT INTO files_search_index
             (owner_id, filesystem, file_path, is_directory, size_bytes, sha256, last_modified_at)
           VALUES
-            (${file.getOwner().getId()}, ${file.getFileSystem().getUniqueId()}, ${file.getPath()}, ${fileStats.isDirectory()}, ${fileStats.isDirectory() ? null : fileStats.size}, ${sha256 ?? null}, ${fileStats.mtime})
+            (${file.fileSystem.owner.id}, ${file.fileSystem.getUniqueId()}, ${file.path}, ${fileStats.isDirectory()}, ${fileStats.isDirectory() ? null : fileStats.size}, ${sha256 ?? null}, ${fileStats.mtime})
           ON CONFLICT
             (owner_id, filesystem, file_path)
           DO UPDATE SET

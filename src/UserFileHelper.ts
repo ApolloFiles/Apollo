@@ -1,14 +1,14 @@
-import IUserFile from './files/IUserFile';
+import VirtualFile from './user/files/VirtualFile';
 
 export default class UserFileHelper {
-  static findFolderPoster(directory: IUserFile): Promise<IUserFile | null> {
+  static findFolderPoster(directory: VirtualFile): Promise<VirtualFile | null> {
     return UserFileHelper.findFirstFileMatchingInDirectory(directory, /^(?:poster|folder|cover)\.(?:png|jpg|jpeg|webp)$/ig);
   }
 
-  static async findFirstFileMatchingInDirectory(directory: IUserFile, fileNamePattern: RegExp): Promise<IUserFile | null> {
+  static async findFirstFileMatchingInDirectory(directory: VirtualFile, fileNamePattern: RegExp): Promise<VirtualFile | null> {
     const files = await directory.getFiles(); // TODO: Replace with a walk
     for (const file of files) {
-      if (fileNamePattern.test(file.getName())) {
+      if (fileNamePattern.test(file.getFileName())) {
         return file;
       }
     }

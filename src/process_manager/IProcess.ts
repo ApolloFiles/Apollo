@@ -1,10 +1,10 @@
 import EventEmitter from 'events';
-import AbstractUser from '../AbstractUser';
+import ApolloUser from '../user/ApolloUser';
 
 export interface IProcess extends EventEmitter {
   readonly uniqueId: string;
   readonly started: Date;
-  readonly user?: AbstractUser;
+  readonly user?: ApolloUser;
 
   readonly options?: IProcessOptions;
   readonly bufferedStdOut: Buffer;

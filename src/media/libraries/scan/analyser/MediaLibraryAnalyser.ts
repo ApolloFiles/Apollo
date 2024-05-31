@@ -15,7 +15,7 @@ export default class MediaLibraryAnalyser {
     for (const directory of library.directories) {
       const directoryPath = directory.getAbsolutePathOnHost();
       if (directoryPath == null) {
-        console.warn(`Library #${library.id} has a directory with no absolute path on host: ${directory.getPath()}`);
+        console.warn(`Library #${library.id} has a directory with no absolute path on host: ${directory.path}`);
         continue;
       }
 

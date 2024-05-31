@@ -3,14 +3,15 @@ import express from 'express';
 import Crypto from 'node:crypto';
 import Fs from 'node:fs';
 import Path from 'node:path';
-import AbstractUser from '../../AbstractUser';
 import { getConfig, getFileNameCollator } from '../../Constants';
 import FileIndex from '../../files/index/FileIndex';
-import IUserFile from '../../files/IUserFile';
 import { BreadcrumbItem, FileIcon, FilesTemplate, FilesTemplateData } from '../../frontend/FilesTemplate';
 import UrlBuilder from '../../frontend/UrlBuilder';
 import WebVttKeyframeGenerator from '../../media/watch/WebVttKeyframeGenerator';
 import ThumbnailGenerator from '../../ThumbnailGenerator';
+import ApolloUser from '../../user/ApolloUser';
+import LocalFile from '../../user/files/local/LocalFile';
+import VirtualFile from '../../user/files/VirtualFile';
 import Utils from '../../Utils';
 import { registerAliasHandler } from '../AliasRouter';
 import WebServer from '../WebServer';
@@ -37,8 +38,8 @@ export function filesHandleGet(req: express.Request, res: express.Response, next
     const file = await fileSystem.getFile(requestedFilePath);
 
     if (!(await file.exists())) {
-      if (file.getPath() != '/') {
-        console.debug(`User '${user.getDisplayName()}' requested non-existent file '${requestedFilePath}'`);
+      if (file.path != '/') {
+        console.debug(`User '${user.displayName}' requested non-existent file '${requestedFilePath}'`);
         res.status(404)
           .send('File not found');
         return;
@@ -60,14 +61,14 @@ export function filesHandleGet(req: express.Request, res: express.Response, next
       return;
     }
 
-    console.debug(`User '${user.getDisplayName()}' requested unknown file '${requestedFilePath}'`);
+    console.debug(`User '${user.displayName}' requested unknown file '${requestedFilePath}'`);
     res.status(500)
       .type('text/plain')
       .send('Unknown file type\n\n' + JSON.stringify(file, null, 2));
   };
 }
 
-async function handleDirectoryRequest(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile, type: 'browse' | 'trash', fileRequestType?: FileRequestType): Promise<void> {
+async function handleDirectoryRequest(req: express.Request, res: express.Response, user: ApolloUser, file: VirtualFile, type: 'browse' | 'trash', fileRequestType?: FileRequestType): Promise<void> {
   if (fileRequestType === 'thumbnail') {
     res.status(400)
       .send('Cannot generate thumbnail for directory');
@@ -110,7 +111,7 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
     res.locals.timings?.startNext('downloadDirectory:init');
 
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(file.getName())}.zip"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(file.getFileName())}.zip"`);
 
     const zip = Archiver.create('zip', { store: true, forceZip64: true });
     zip.pipe(res);
@@ -123,21 +124,20 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
       res.end();
     });
 
-    const absolutePathOnHost = file.getAbsolutePathOnHost();
-    if (absolutePathOnHost == null) {
+    if (!(file instanceof LocalFile)) {
       res.status(500)
         .send('Cannot download the given directory as it does not exist on the host');
       return;
     }
 
     res.locals.timings?.startNext('downloadDirectory:zip');
-    zip.directory(absolutePathOnHost, file.getName());
+    zip.directory(file.getAbsolutePathOnHost(), file.getFileName());
     await zip.finalize();
 
     return;
   }
 
-  console.debug(`User '${user.getDisplayName()}' requested directory '${file.getPath()}'`);
+  console.debug(`User '${user.displayName}' requested directory '${file.path}'`);
 
   res.locals.timings?.startNext('getFileList');
   const files = await file.getFiles();
@@ -145,10 +145,10 @@ async function handleDirectoryRequest(req: express.Request, res: express.Respons
   await sendDirectoryView(req, res, type, file, files);
 }
 
-async function sendDirectoryView(req: express.Request, res: express.Response, type: 'browse' | 'trash', requestedFile: IUserFile | null, files: IUserFile[]): Promise<void> {
+async function sendDirectoryView(req: express.Request, res: express.Response, type: 'browse' | 'trash', requestedFile: VirtualFile | null, files: VirtualFile[]): Promise<void> {
   res.locals.timings?.startNext('#sendDirectoryView_findDirectories');
 
-  const directoryFiles: IUserFile[] = [];
+  const directoryFiles: VirtualFile[] = [];
   for (const innerFile of files) {
     try {
       if (await innerFile.isDirectory()) {
@@ -170,7 +170,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
       return 1;
     }
 
-    return getFileNameCollator().compare(a.getName(), b.getName());
+    return getFileNameCollator().compare(a.getFileName(), b.getFileName());
   });
 
   res.locals.timings?.startNext('#sendDirectoryView_prepareFileListForRender');
@@ -208,7 +208,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
 
       filesToRender.push({
         icon: fileIcon,
-        name: innerFile.getName(),
+        name: innerFile.getFileName(),
         owner: 'Ich',
         lastChanged: innerFileStat.mtime,
         size: /*Utils.prettifyFileSize(await innerFile.getSize())*/ '-',
@@ -373,7 +373,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
   //     '<ul>';
 }
 
-async function handleFileRequest(req: express.Request, res: express.Response, next: express.NextFunction, user: AbstractUser, file: IUserFile, fileRequestType?: FileRequestType): Promise<void> {
+async function handleFileRequest(req: express.Request, res: express.Response, next: express.NextFunction, user: ApolloUser, file: VirtualFile, fileRequestType?: FileRequestType): Promise<void> {
   if (fileRequestType == 'search') {
     res.status(400)
       .type('text/plain')
@@ -382,18 +382,25 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
   }
 
   if (fileRequestType == 'thumbnail') {
+    if(!(file instanceof LocalFile)){
+      res
+        .status(501)
+        .send('Cannot generate thumbnail for file that does not exist on the host');
+      return;
+    }
+
     const start = process.hrtime();
     const thumbnail = await new ThumbnailGenerator().generateThumbnail(file);
     const tookMs = (process.hrtime(start)[1] / 1000000).toFixed(2);
 
     if (thumbnail != null) {
-      console.log(`User '${user.getDisplayName()}' successfully requested thumbnail for file '${file.getPath()}' in ${tookMs}ms`);
+      console.log(`User '${user.displayName}' successfully requested thumbnail for file '${file.path}' in ${tookMs}ms`);
       res.type(thumbnail.mime)
         .send(thumbnail.data);
       return;
     }
 
-    console.log(`User '${user.getDisplayName()}' failed to generate thumbnail for file '${file.getPath()}' in ${tookMs}ms`);
+    console.log(`User '${user.displayName}' failed to generate thumbnail for file '${file.path}' in ${tookMs}ms`);
     res.status(501)
       .send(`Cannot generate thumbnail for given file type (${await file.getMimeType()})`);
     return;
@@ -409,18 +416,18 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
     return handleWebVttThumbnailRequest(req, res, next, user, file);
   }
 
-  console.log(`User '${user.getDisplayName()}' requested file '${file.getPath()}'`);
+  console.log(`User '${user.displayName}' requested file '${file.path}'`);
   await Utils.sendFileRespectingRequestedRange(req, res, next, file, await file.getMimeType() ?? 'text/plain', fileRequestType == 'download');
 }
 
 const webVttThumbnailCache: { [key: string]: string } = {};
 
-async function handleWebVttThumbnailRequest(req: express.Request, res: express.Response, next: express.NextFunction, user: AbstractUser, file: IUserFile): Promise<void> {
-  const inputFileAbsolutePath = file.getAbsolutePathOnHost();
-  if (inputFileAbsolutePath == null) {
+async function handleWebVttThumbnailRequest(req: express.Request, res: express.Response, next: express.NextFunction, user: ApolloUser, file: VirtualFile): Promise<void> {
+  if (!(file instanceof LocalFile)) {
     throw new Error('File does not exist on host file system');
   }
 
+  const inputFileAbsolutePath = file.getAbsolutePathOnHost();
   if (webVttThumbnailCache[inputFileAbsolutePath] != null) {
     res
       .type('text/vtt')
@@ -457,9 +464,9 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
     .send(webVttThumbnailCache[inputFileAbsolutePath]);
 }
 
-async function generateBreadcrumbs(file: IUserFile): Promise<BreadcrumbItem[]> {
-  const path = file.getPath();
-  const pathArgs = file.getPath().split('/');
+async function generateBreadcrumbs(file: VirtualFile): Promise<BreadcrumbItem[]> {
+  const path = file.path;
+  const pathArgs = file.path.split('/');
 
   if (path.charAt(0) == '/') {
     pathArgs.shift();
@@ -471,7 +478,7 @@ async function generateBreadcrumbs(file: IUserFile): Promise<BreadcrumbItem[]> {
 
   const result: BreadcrumbItem[] = [{
     name: 'root',
-    frontendUrl: await UrlBuilder.buildUrl(file.getFileSystem().getFile('/'))
+    frontendUrl: await UrlBuilder.buildUrl(file.fileSystem.getFile('/'))
   }];
 
   let currPath = '/';
@@ -480,7 +487,7 @@ async function generateBreadcrumbs(file: IUserFile): Promise<BreadcrumbItem[]> {
 
     result.push({
       name: arg,
-      frontendUrl: await UrlBuilder.buildUrl(file.getFileSystem().getFile(currPath))
+      frontendUrl: await UrlBuilder.buildUrl(file.fileSystem.getFile(currPath))
     });
   }
 

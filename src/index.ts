@@ -10,7 +10,7 @@ import {
 } from './Constants';
 import LibraryManager from './media/libraries/LibraryManager';
 import LibraryScanner from './media/libraries/scan/LibraryScanner';
-import UserStorage from './UserStorage';
+import ApolloUserStorage from './user/ApolloUserStorage';
 import WebServer from './webserver/WebServer';
 
 let webServer: WebServer | undefined;
@@ -44,7 +44,7 @@ function index(): void {
     }
   }
 
-  new UserStorage().getUser(1)
+  new ApolloUserStorage().findById(1n)
     .then((user) => {
       return new LibraryManager(user!).getLibraries()
         .then((libraries) => {

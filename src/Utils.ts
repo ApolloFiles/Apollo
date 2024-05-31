@@ -1,10 +1,10 @@
 import express from 'express';
 import Fs from 'node:fs';
 import Path from 'node:path';
-import IUserFile from './files/IUserFile';
+import VirtualFile from './user/files/VirtualFile';
 
 export default class Utils {
-  static async sendFileRespectingRequestedRange(req: express.Request, res: express.Response, next: express.NextFunction, file: string | IUserFile, mimeType: string, sendAsAttachment: boolean = false): Promise<void> {
+  static async sendFileRespectingRequestedRange(req: express.Request, res: express.Response, next: express.NextFunction, file: string | VirtualFile, mimeType: string, sendAsAttachment: boolean = false): Promise<void> {
     let fileStat: Fs.Stats;
 
     if (typeof file === 'string') {
@@ -53,7 +53,7 @@ export default class Utils {
     res.setHeader('Accept-Ranges', 'bytes');
 
     if (sendAsAttachment) {
-      res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(typeof file == 'string' ? Path.basename(file) : file.getName())}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${Utils.tryReplacingBadCharactersForFileName(typeof file == 'string' ? Path.basename(file) : file.getFileName())}"`);
     }
 
     res.setHeader('Content-Length', fileSize);

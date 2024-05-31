@@ -1,9 +1,9 @@
 import ChildProcess from 'node:child_process';
 import Crypto from 'node:crypto';
 import Fs from 'node:fs';
-import AbstractUser from '../AbstractUser';
 import { getProcessManager } from '../Constants';
 import TmpFiles from '../TmpFiles';
+import ApolloUser from '../user/ApolloUser';
 import { ChildProcessExitCode, ChildProcessExitSignal, ChildProcessOptions, IChildProcess } from './IChildProcess';
 
 // TODO: Allow configuring uid and gui for processes and use them to ensure that only the cwd can be accessed (or at least written to).
@@ -13,7 +13,7 @@ export default class ProcessBuilder {
   private _args: string[];
   private _cwd: string | null = null;
 
-  private _user: AbstractUser | null = null;
+  private _user: ApolloUser | null = null;
 
   private _env: ChildProcessOptions['env'] = process.env;
   private _stdio: ChildProcessOptions['stdio'] = ['ignore', 'pipe', 'pipe'];
@@ -79,7 +79,7 @@ export default class ProcessBuilder {
     return this._cwd;
   }
 
-  get user(): AbstractUser | null {
+  get user(): ApolloUser | null {
     return this._user;
   }
 
@@ -120,7 +120,7 @@ export default class ProcessBuilder {
     return this;
   }
 
-  withUser(user: AbstractUser | null): ProcessBuilder {
+  withUser(user: ApolloUser | null): ProcessBuilder {
     this._user = user;
     return this;
   }

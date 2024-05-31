@@ -1,6 +1,6 @@
 import NodeCache from 'node-cache';
 import Fs from 'node:fs';
-import IUserFile from '../files/IUserFile';
+import LocalFile from '../user/files/local/LocalFile';
 
 export default class FileStatCache {
   private readonly cache: NodeCache;
@@ -16,43 +16,42 @@ export default class FileStatCache {
     this.cache.flushAll();
   }
 
-  async clearFile(file: IUserFile): Promise<void> {
+  async clearFile(file: LocalFile): Promise<void> {
     const cacheClear = Promise.all([
       this.getCacheKey(file, 'stat').then(key => this.cache.del(key)),
       this.getCacheKey(file, 'mimeType').then(key => this.cache.del(key))
     ]);
 
-    if (file.getPath().lastIndexOf('/') === 0) {
+    if (file.path.lastIndexOf('/') === 0) {
       this.cache.keys()
         .filter(key => key.endsWith(`:directorySize`))
         .forEach(key => this.cache.del(key));
     } else {
-      const subdirPath = file.getFileSystem().getFile(file.getPath().substring(0, file.getPath().indexOf('/', 1) + 1)).getAbsolutePathOnHost();
+      const subDirPath = file.fileSystem.getFile(file.path.substring(0, file.path.indexOf('/', 1) + 1)).getAbsolutePathOnHost();
 
-      if (subdirPath != null) {
+      if (subDirPath != null) {
         this.cache.keys()
-          .filter(key => key.startsWith(subdirPath))
+          .filter(key => key.startsWith(subDirPath))
           .forEach(key => this.cache.del(key));
       }
     }
 
-
     await cacheClear;
   }
 
-  async setStat(file: IUserFile, stat: Fs.Stats): Promise<void> {
+  async setStat(file: LocalFile, stat: Fs.Stats): Promise<void> {
     this.cache.set(await this.getCacheKey(file, 'stat'), stat);
   }
 
-  async getStat(file: IUserFile): Promise<Fs.Stats | undefined> {
+  async getStat(file: LocalFile): Promise<Fs.Stats | undefined> {
     return this.cache.get(await this.getCacheKey(file, 'stat'));
   }
 
-  async setMimeType(file: IUserFile, mimeType: string | null): Promise<void> {
+  async setMimeType(file: LocalFile, mimeType: string | null): Promise<void> {
     this.cache.set(await this.getCacheKey(file, 'mimeType'), mimeType);
   }
 
-  async getMimeType(file: IUserFile): Promise<string | null | undefined> {
+  async getMimeType(file: LocalFile): Promise<string | null | undefined> {
     return this.cache.get(await this.getCacheKey(file, 'mimeType'));
   }
 
@@ -64,7 +63,7 @@ export default class FileStatCache {
     return this.cache.get(`${filePath}:directorySize`);
   }
 
-  private async getCacheKey(file: IUserFile, type: 'stat' | 'mimeType'): Promise<string> {
+  private async getCacheKey(file: LocalFile, type: 'stat' | 'mimeType'): Promise<string> {
     return `${await file.generateCacheId()}:${type}`;
   }
 }

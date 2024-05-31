@@ -1,17 +1,14 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import { getFileNameCollator } from '../../Constants';
-import IUserFile from '../../files/IUserFile';
 import ProcessBuilder from '../../process_manager/ProcessBuilder';
+import LocalFile from '../../user/files/local/LocalFile';
 
 export default class VideoFrameExtractor {
-  static async extractFrames(file: IUserFile): Promise<{ imagePaths: string[], done: () => Promise<void> }> {
-    const filePath = await file.getAbsolutePathOnHost();
-    if (filePath == null) {
-      throw new Error('filePath is null');
-    }
+  static async extractFrames(file: LocalFile): Promise<{ imagePaths: string[], done: () => Promise<void> }> {
+    const filePath = file.getAbsolutePathOnHost();
 
-    const cwdFile = await file.getOwner().getTmpFileSystem().createTmpDir('video-frames-');
+    const cwdFile = await file.fileSystem.owner.getTmpFileSystem().createTmpDir('video-frames-');
     const cwd = cwdFile.getAbsolutePathOnHost();
     if (cwd == null) {
       throw new Error('cwd is null');

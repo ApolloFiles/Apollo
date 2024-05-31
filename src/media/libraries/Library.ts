@@ -1,17 +1,17 @@
 import * as PrismaClient from '@prisma/client';
-import AbstractUser from '../../AbstractUser';
 import { getPrismaClient } from '../../Constants';
-import IUserFile from '../../files/IUserFile';
+import ApolloUser from '../../user/ApolloUser';
+import LocalFile from '../../user/files/local/LocalFile';
 
 export default class Library {
-  readonly owner: AbstractUser;
+  readonly owner: ApolloUser;
   readonly id: string;
   readonly name: string;
   readonly sharedWithUserIds: number[];
 
-  readonly directories: IUserFile[];
+  readonly directories: LocalFile[];
 
-  constructor(owner: AbstractUser, id: string, name: string, sharedWithUserIds: number[], directories: IUserFile[]) {
+  constructor(owner: ApolloUser, id: string, name: string, sharedWithUserIds: number[], directories: LocalFile[]) {
     this.owner = owner;
     this.id = id;
     this.name = name;

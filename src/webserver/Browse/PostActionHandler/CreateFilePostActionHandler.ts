@@ -1,6 +1,6 @@
 import express from 'express';
-import AbstractUser from '../../../AbstractUser';
-import IUserFile from '../../../files/IUserFile';
+import ApolloUser from '../../../user/ApolloUser';
+import VirtualFile from '../../../user/files/VirtualFile';
 import IPostActionHandler from './IPostActionHandler';
 
 export default class CreateFilePostActionHandler implements IPostActionHandler {
@@ -14,7 +14,7 @@ export default class CreateFilePostActionHandler implements IPostActionHandler {
     return this.createDirectory ? 'apollo-create-directory' : 'apollo-create-file';
   }
 
-  async handle(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, frontendType: 'browse' | 'trash', postValue: string): Promise<void> {
+  async handle(req: express.Request, res: express.Response, user: ApolloUser, file: VirtualFile | null, frontendType: 'browse' | 'trash', postValue: string): Promise<void> {
     if (file == null) {
       res.status(400)
         .type('text/plain')
@@ -22,7 +22,7 @@ export default class CreateFilePostActionHandler implements IPostActionHandler {
       return;
     }
 
-    await file.getFileSystem().acquireLock(req, file, async (writeableFile) => {
+    await file.fileSystem.acquireLock(req, file, async (writeableFile) => {
       if (!(await file.exists())) {
         if (this.createDirectory) {
           await writeableFile.mkdir();

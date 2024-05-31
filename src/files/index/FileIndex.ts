@@ -1,21 +1,21 @@
-import AbstractUser from '../../AbstractUser';
 import { getPrismaClient } from '../../Constants';
-import IUserFileSystem from '../filesystems/IUserFileSystem';
-import IUserFile from '../IUserFile';
+import ApolloUser from '../../user/ApolloUser';
+import VirtualFile from '../../user/files/VirtualFile';
+import VirtualFileSystem from '../../user/files/VirtualFileSystem';
 import PostgresFileIndex from './PostgresFileIndex';
 
 export default abstract class FileIndex {
   private static instance: FileIndex | null;
 
-  abstract search(startDir: IUserFile, query: string): Promise<IUserFile[]>;
+  abstract search(startDir: VirtualFile, query: string): Promise<VirtualFile[]>;
 
-  abstract refreshIndex(file: IUserFile, recursive: boolean, forceUpdate?: boolean): Promise<void>;
+  abstract refreshIndex(file: VirtualFile, recursive: boolean, forceUpdate?: boolean): Promise<void>;
 
-  abstract deleteIndex(file: IUserFile): Promise<void>;
+  abstract deleteIndex(file: VirtualFile): Promise<void>;
 
-  abstract renameIndex(src: IUserFile, dest: IUserFile): Promise<void>;
+  abstract renameIndex(src: VirtualFile, dest: VirtualFile): Promise<void>;
 
-  abstract clearIndex(user: AbstractUser, fileSystem?: IUserFileSystem): Promise<void>;
+  abstract clearIndex(user: ApolloUser, fileSystem?: VirtualFileSystem): Promise<void>;
 
   static getInstance(): FileIndex | null {
     if (this.instance === undefined) {

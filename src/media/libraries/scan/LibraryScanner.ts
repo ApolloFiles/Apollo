@@ -1,7 +1,6 @@
-import Fs from 'node:fs';
 import Path from 'node:path';
 import { getHttpClient, getPrismaClient } from '../../../Constants';
-import IUserFile from '../../../files/IUserFile';
+import VirtualFile from '../../../user/files/VirtualFile';
 import UserFileHelper from '../../../UserFileHelper';
 import VideoAnalyser from '../../video/analyser/VideoAnalyser';
 import ExternalTitleMetaDataProvider from '../external_meta_data_provider/ExternalTitleMetaDataProvider';
@@ -18,7 +17,7 @@ export default class LibraryScanner {
     for (const directory of library.directories) {
       const mediaAnalyses = await this.mediaLibraryAnalyser.analyseLibrary(library);
       for (const mediaAnalysis of mediaAnalyses) {
-        const titleRoot = directory.getFileSystem().getFile('/' + Path.relative(directory.getFileSystem().getAbsolutePathOnHost(), mediaAnalysis.rootDirectory)); // FIXME
+        const titleRoot = directory.fileSystem.getFile('/' + Path.relative(directory.fileSystem.getAbsolutePathOnHost(), mediaAnalysis.rootDirectory)); // FIXME
         const titleId = (await getPrismaClient()!.mediaLibraryMedia.upsert({
           select: {
             id: true
@@ -26,12 +25,12 @@ export default class LibraryScanner {
           where: {
             libraryId_directoryPath: {
               libraryId: BigInt(library.id),
-              directoryPath: titleRoot.getPath()
+              directoryPath: titleRoot.path
             }
           },
           create: {
             libraryId: BigInt(library.id),
-            directoryPath: titleRoot.getPath(),
+            directoryPath: titleRoot.path,
             title: mediaAnalysis.name
           },
           update: {
@@ -40,7 +39,7 @@ export default class LibraryScanner {
         })).id.toString();
 
         for (const videoFile of mediaAnalysis.videoFiles) {
-          const apolloVideoFile = directory.getFileSystem().getFile('/' + Path.relative(directory.getFileSystem().getAbsolutePathOnHost(), videoFile.filePath)); // FIXME
+          const apolloVideoFile = directory.fileSystem.getFile('/' + Path.relative(directory.fileSystem.getAbsolutePathOnHost(), videoFile.filePath)); // FIXME
 
           const fileMimeType = await apolloVideoFile.getMimeType();
           if (fileMimeType == null || !fileMimeType.startsWith('video/')) {
@@ -57,12 +56,12 @@ export default class LibraryScanner {
             where: {
               mediaId_filePath: {
                 mediaId: BigInt(titleId),
-                filePath: apolloVideoFile.getPath()
+                filePath: apolloVideoFile.path
               }
             },
             create: {
               mediaId: BigInt(titleId),
-              filePath: apolloVideoFile.getPath(),
+              filePath: apolloVideoFile.path,
               title: mediaTitle ?? Path.basename(videoFile.filePath, Path.extname(videoFile.filePath)),
               seasonNumber: videoFile.tvShow?.season ?? null,
               episodeNumber: videoFile.tvShow?.episode ?? null,
@@ -89,7 +88,7 @@ export default class LibraryScanner {
         where: {
           mediaId: BigInt(library.id),
           filePath: {
-            startsWith: Path.join(directory.getPath(), '/')
+            startsWith: Path.join(directory.path, '/')
           },
           lastScannedAt: {
             lt: libraryScanStart
@@ -118,7 +117,7 @@ export default class LibraryScanner {
     });
   }
 
-  private async fetchExternalTitleMetaDataIfNeeded(libraryId: string, titleId: string, titleRoot: IUserFile, metaProvider: MetaProvider[]): Promise<void> {
+  private async fetchExternalTitleMetaDataIfNeeded(libraryId: string, titleId: string, titleRoot: VirtualFile, metaProvider: MetaProvider[]): Promise<void> {
     const existingMedia = await getPrismaClient()!.mediaLibraryMedia.findUnique({
       select: {
         synopsis: true
@@ -152,14 +151,16 @@ export default class LibraryScanner {
 
     if (!titleHasPosterSaved && externalMetaData.coverImageUrl) {
       const posterUrl = externalMetaData.coverImageUrl;
-      const targetPosterFile = titleRoot.getFileSystem().getFile(Path.join(titleRoot.getPath(), 'folder.png'));
+      const targetPosterFile = titleRoot.fileSystem.getFile(Path.join(titleRoot.path, 'folder.png'));
 
       const coverResponse = await getHttpClient().get(posterUrl);
       if (!coverResponse.ok) {
         console.error(`Failed to download cover image from '${posterUrl}': ${coverResponse.status} ${coverResponse.body.toString('utf-8')}`);
       }
 
-      await Fs.promises.writeFile(targetPosterFile.getAbsolutePathOnHost()! /* FIXME */, coverResponse.body);
+      await titleRoot.fileSystem.acquireLock(null as any, targetPosterFile, (writableFile) => {
+        writableFile.write(coverResponse.body);
+      });
     }
   }
 

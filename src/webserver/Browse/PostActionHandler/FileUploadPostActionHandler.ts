@@ -1,8 +1,8 @@
 import express from 'express';
 import Fs from 'node:fs';
 import Path from 'node:path';
-import AbstractUser from '../../../AbstractUser';
-import IUserFile from '../../../files/IUserFile';
+import ApolloUser from '../../../user/ApolloUser';
+import VirtualFile from '../../../user/files/VirtualFile';
 import Utils from '../../../Utils';
 import IPostActionHandler from './IPostActionHandler';
 
@@ -11,7 +11,7 @@ export default class FileUploadPostActionHandler implements IPostActionHandler {
     return 'apollo-file-upload';
   }
 
-  async handle(req: express.Request, res: express.Response, user: AbstractUser, file: IUserFile | null, frontendType: 'browse' | 'trash', postValue: string): Promise<void> {
+  async handle(req: express.Request, res: express.Response, user: ApolloUser, file: VirtualFile | null, frontendType: 'browse' | 'trash', postValue: string): Promise<void> {
     if (frontendType != 'browse') {
       res.status(400)
         .type('text/plain')

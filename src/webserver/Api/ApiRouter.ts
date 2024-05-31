@@ -2,13 +2,13 @@ import { handleRequestRestfully, StringUtils } from '@spraxdev/node-commons';
 import express from 'express';
 import Fs from 'node:fs';
 import { getFileNameCollator } from '../../Constants';
-import IUserFile from '../../files/IUserFile';
 import VideoAnalyser from '../../media/video/analyser/VideoAnalyser';
 import { ExtendedVideoAnalysis } from '../../media/video/analyser/VideoAnalyser.Types';
 import VideoTagWriter from '../../media/video/tag-writer/VideoTagWriter';
 import VideoFrameExtractor from '../../media/video/VideoFrameExtractor';
 import CompletableTask from '../../process_manager/tasks/CompletableTask';
 import TaskStorage from '../../process_manager/tasks/TaskStorage';
+import LocalFile from '../../user/files/local/LocalFile';
 import Utils from '../../Utils';
 import WebServer from '../WebServer';
 
@@ -60,8 +60,8 @@ apiRouter.use('/v1/userinfo', requireAuthMiddleware, (req, res, next) => {
         .status(200)
         .type('application/json')
         .send({
-          id: user.getId(),
-          displayName: user.getDisplayName()
+          id: user.id.toString(),
+          displayName: user.displayName
         });
     }
   });
@@ -101,11 +101,11 @@ apiRouter.use('/v1/file/list', requireAuthMiddleware, (req, res, next) => {
       for (const file of userFiles) {
         const isDirectory = await file.isDirectory();
         if (isDirectory) {
-          directoryNames.push(file.getName());
+          directoryNames.push(file.getFileName());
         }
 
         files.push({
-          name: file.getName(),
+          name: file.getFileName(),
           mimeType: isDirectory ? undefined : (await file.getMimeType() ?? undefined),
           isDirectory: isDirectory
         });
@@ -125,7 +125,7 @@ apiRouter.use('/v1/file/list', requireAuthMiddleware, (req, res, next) => {
         .status(200)
         .type('application/json')
         .send({
-          path: requestedDirectory.getPath(),
+          path: requestedDirectory.path,
           files
         });
     }
@@ -184,8 +184,8 @@ apiRouter.use('/v1/video-analysis', requireAuthMiddleware, (req, res, next) => {
         return;
       }
 
-      const analyseVideo = async (video: IUserFile): Promise<VideoAnalysisResult> => {
-        const videoAnalysis = await VideoAnalyser.analyze(video.getAbsolutePathOnHost()!, true);
+      const analyseVideo = async (video: LocalFile): Promise<VideoAnalysisResult> => {
+        const videoAnalysis = await VideoAnalyser.analyze(video.getAbsolutePathOnHost(), true);
         const chapters = videoAnalysis.chapters.map(chapter => ({
           start: chapter.start,
           end: chapter.end,
@@ -200,8 +200,8 @@ apiRouter.use('/v1/video-analysis', requireAuthMiddleware, (req, res, next) => {
         }));
 
         return {
-          filePath: video.getPath(),
-          fileName: video.getName(),
+          filePath: video.path,
+          fileName: video.getFileName(),
           formatNameLong: videoAnalysis.file.formatNameLong,
           probeScore: videoAnalysis.file.probeScore,
           duration: videoAnalysis.file.duration,
@@ -538,8 +538,8 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           body: {
             success: true,
             newVideoAnalysis: {
-              filePath: videoFile.getPath(),
-              fileName: videoFile.getName(),
+              filePath: videoFile.path,
+              fileName: videoFile.getFileName(),
               formatNameLong: actualResultVideoAnalysis.file.formatNameLong,
               probeScore: actualResultVideoAnalysis.file.probeScore,
               duration: actualResultVideoAnalysis.file.duration,
@@ -665,7 +665,7 @@ apiRouter.use('/v1/task-status', requireAuthMiddleware, (req, res, next) => {
         return;
       }
 
-      if (typeof backgroundTask.owningUser == 'number' && backgroundTask.owningUser != WebServer.getUser(req).getId()) {
+      if (typeof backgroundTask.owningUser === 'bigint' && backgroundTask.owningUser !== WebServer.getUser(req).id) {
         res
           .status(403)
           .type('application/json')

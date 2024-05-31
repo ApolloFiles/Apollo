@@ -110,7 +110,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         }
 
         const posterCacheKey = `${req.originalUrl}${posterFileStat.mtime.getTime()}${posterFileStat.size}`;
-        const cachedPoster = await FileSystemBasedCache.getInstance().getUserAssociatedCachedFile(posterFile.getOwner(), posterCacheKey);
+        const cachedPoster = await FileSystemBasedCache.getInstance().getUserAssociatedCachedFile(posterFile.fileSystem.owner, posterCacheKey);
         if (cachedPoster != null) {
           res
             .type('image/png')
@@ -131,7 +131,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         posterFile.getReadStream().pipe(sharpInstance);
         const posterData = await sharpInstance.removeAlpha().toBuffer();
 
-        await FileSystemBasedCache.getInstance().setUserAssociatedCachedFile(posterFile.getOwner(), posterCacheKey, posterData);
+        await FileSystemBasedCache.getInstance().setUserAssociatedCachedFile(posterFile.fileSystem.owner, posterCacheKey, posterData);
         res
           .type('image/png')
           .send(posterData);
@@ -169,7 +169,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         }
 
         const mediaFile = library.owner.getDefaultFileSystem().getFile(libraryTitleMedia.filePath);
-        if (mediaFile.getOwner().getId() !== user.getId()) {
+        if (mediaFile.fileSystem.owner.id !== user.id) {
           res
             .status(403)
             .type('text/plain')
@@ -210,7 +210,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
 
         res.send(new MediaLibraryEditMediaTemplate().render(req, {
           videoAnalysis: {
-            fileName: mediaFile.getName(),
+            fileName: mediaFile.getFileName(),
             formatNameLong: videoAnalysis.file.formatNameLong,
             probeScore: videoAnalysis.file.probeScore,
             duration: videoAnalysis.file.duration,
@@ -395,8 +395,8 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           }
         }
 
-        const temporaryFileName = `${mediaFile.getName()}.${Crypto.randomUUID()}.${Path.extname(mediaFile.getName())}`;
-        const temporaryFile = user.getDefaultFileSystem().getFile(Path.join(mediaFile.getPath(), '..', temporaryFileName));
+        const temporaryFileName = `${mediaFile.getFileName()}.${Crypto.randomUUID()}.${Path.extname(mediaFile.getFileName())}`;
+        const temporaryFile = user.getDefaultFileSystem().getFile(Path.join(mediaFile.path, '..', temporaryFileName));
         const temporaryFileAbsolutePath = temporaryFile.getAbsolutePathOnHost();
         if (temporaryFileAbsolutePath == null) {
           throw new Error(`Temporary file '${temporaryFileName}' does not have an absolute path on the host!`);
@@ -475,7 +475,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         }
 
         const thumbnailCacheKey = `${req.originalUrl}${mediaFileStat.mtime.getTime()}${mediaFileStat.size}`;
-        const cachedThumbnail = await FileSystemBasedCache.getInstance().getUserAssociatedCachedFile(mediaFile.getOwner(), thumbnailCacheKey);
+        const cachedThumbnail = await FileSystemBasedCache.getInstance().getUserAssociatedCachedFile(mediaFile.fileSystem.owner, thumbnailCacheKey);
         if (cachedThumbnail != null) {
           res
             .type('image/png')
@@ -492,7 +492,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           return;
         }
 
-        await FileSystemBasedCache.getInstance().setUserAssociatedCachedFile(mediaFile.getOwner(), thumbnailCacheKey, thumbnail.data);
+        await FileSystemBasedCache.getInstance().setUserAssociatedCachedFile(mediaFile.fileSystem.owner, thumbnailCacheKey, thumbnail.data);
         res
           .type(thumbnail.mime)
           .send(thumbnail.data);

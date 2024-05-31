@@ -1,13 +1,13 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
-import AbstractUser from '../../src/AbstractUser';
-import FileTypeUtils from '../../src/FileTypeUtils';
-import UserStorage from '../../src/UserStorage';
-import TestHelper from '../TestHelper';
+import FileTypeUtils from '../../../../src/FileTypeUtils';
+import ApolloUser from '../../../../src/user/ApolloUser';
+import ApolloUserStorage from '../../../../src/user/ApolloUserStorage';
+import TestHelper from '../../../TestHelper';
 
-let user: AbstractUser;
+let user: ApolloUser;
 beforeEach(async () => {
-  user = await new UserStorage().createUser('Jester');
+  user = await new ApolloUserStorage().create('Jester');
 });
 
 describe('', () => {
@@ -21,9 +21,9 @@ describe('', () => {
     const fileSystemRoot = fileSystem.getFile('/');
     const absolutePathOnHost = fileSystemRoot.getAbsolutePathOnHost();
 
-    expect(fileSystemRoot.getOwner()).toBe(user);
-    expect(fileSystemRoot.getFileSystem()).toBe(fileSystem);
-    expect(fileSystemRoot.getPath()).toBe('/');
+    expect(fileSystemRoot.fileSystem.owner).toBe(user);
+    expect(fileSystemRoot.fileSystem).toBe(fileSystem);
+    expect(fileSystemRoot.path).toBe('/');
 
     expect(typeof absolutePathOnHost).toBe('string');
     expect(Path.isAbsolute(absolutePathOnHost as string)).toBe(true);

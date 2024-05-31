@@ -1,7 +1,7 @@
-import IUserFile from './files/IUserFile';
+import VirtualFile from './user/files/VirtualFile';
 
 export default class FileSearch {
-  static async searchFile(file: IUserFile, query: string): Promise<IUserFile[]> {
+  static async searchFile(file: VirtualFile, query: string): Promise<VirtualFile[]> {
     if (!await file.isDirectory()) {
       throw new Error('File is not a directory');
     }
@@ -9,11 +9,11 @@ export default class FileSearch {
     return this.searchFileRecursive(await file.getFiles(), query);
   }
 
-  private static async searchFileRecursive(files: IUserFile[], query: string): Promise<IUserFile[]> {
+  private static async searchFileRecursive(files: VirtualFile[], query: string): Promise<VirtualFile[]> {
     const result = [];
 
     for (const file of files) {
-      if (file.getName().toLowerCase().includes(query.toLowerCase())) {
+      if (file.getFileName().toLowerCase().includes(query.toLowerCase())) {
         result.push(file);
       }
 

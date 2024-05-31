@@ -1,20 +1,20 @@
 import Crypto from 'node:crypto';
 import Path from 'node:path';
-import AbstractUser from '../../AbstractUser';
 import { getPrismaClient } from '../../Constants';
 import FileIndexTable from '../../database/postgres/FileIndexTable';
 import PostgresDatabase from '../../database/postgres/PostgresDatabase';
-import IUserFileSystem from '../filesystems/IUserFileSystem';
-import IUserFile from '../IUserFile';
+import ApolloUser from '../../user/ApolloUser';
+import VirtualFile from '../../user/files/VirtualFile';
+import VirtualFileSystem from '../../user/files/VirtualFileSystem';
 import FileIndex from './FileIndex';
 
 export default class PostgresFileIndex implements FileIndex {
-  async search(startDir: IUserFile, query: string, page = 1): Promise<IUserFile[]> {
+  async search(startDir: VirtualFile, query: string, page = 1): Promise<VirtualFile[]> {
     if (page <= 0) {
       throw new Error('Page must be greater than 0');
     }
 
-    const startDirPattern = PostgresDatabase.escapeForLikePattern(Path.join(startDir.getPath(), '/')) + '%';
+    const startDirPattern = PostgresDatabase.escapeForLikePattern(Path.join(startDir.path, '/')) + '%';
     const userQueryPattern = '%' + PostgresDatabase.escapeForLikePattern(query) + '%';
 
     const limit = 100;
@@ -22,8 +22,8 @@ export default class PostgresFileIndex implements FileIndex {
 
     const dbRes = await getPrismaClient()!.$queryRaw`SELECT file_path
          FROM files_search_index
-         WHERE owner_id = ${startDir.getOwner().getId()}
-           AND filesystem = ${startDir.getFileSystem().getUniqueId()}
+         WHERE owner_id = ${startDir.fileSystem.owner.id}
+           AND filesystem = ${startDir.fileSystem.getUniqueId()}
            AND file_path LIKE ${startDirPattern} ESCAPE '#'
              AND basename(file_path)
              ILIKE ${userQueryPattern} ESCAPE '#'
@@ -31,14 +31,14 @@ export default class PostgresFileIndex implements FileIndex {
          OFFSET ${offset} LIMIT ${limit};`;
 
 
-    const files: IUserFile[] = [];
+    const files: VirtualFile[] = [];
     for (const row of (dbRes as any)) {
-      files.push(startDir.getFileSystem().getFile(row.file_path));
+      files.push(startDir.fileSystem.getFile(row.file_path));
     }
     return files;
   }
 
-  async refreshIndex(file: IUserFile, recursive: boolean, forceUpdate: boolean = false): Promise<void> {
+  async refreshIndex(file: VirtualFile, recursive: boolean, forceUpdate: boolean = false): Promise<void> {
     await this.refreshIndexForFile(file, forceUpdate);
 
     if (await file.isFile()) {
@@ -68,54 +68,54 @@ export default class PostgresFileIndex implements FileIndex {
     }
   }
 
-  async deleteIndex(file: IUserFile): Promise<void> {
+  async deleteIndex(file: VirtualFile): Promise<void> {
     await getPrismaClient()!.fileSearchIndexEntry.deleteMany({
       where: {
         AND: {
-          ownerId: BigInt(file.getOwner().getId()),
-          filesystem: file.getFileSystem().getUniqueId()
+          ownerId: file.fileSystem.owner.id,
+          filesystem: file.fileSystem.getUniqueId()
         },
         OR: [
-          { filePath: file.getPath() },
-          { filePath: { startsWith: Path.join(file.getPath(), '/') } }
+          { filePath: file.path },
+          { filePath: { startsWith: Path.join(file.path, '/') } }
         ]
       }
     });
   }
 
-  async renameIndex(src: IUserFile, dest: IUserFile): Promise<void> {
+  async renameIndex(src: VirtualFile, dest: VirtualFile): Promise<void> {
     await getPrismaClient()!.fileSearchIndexEntry.updateMany({
       where: {
-        ownerId: BigInt(src.getOwner().getId()),
-        filesystem: src.getFileSystem().getUniqueId(),
-        filePath: src.getPath()
+        ownerId: src.fileSystem.owner.id,
+        filesystem: src.fileSystem.getUniqueId(),
+        filePath: src.path
       },
       data: {
-        ownerId: BigInt(dest.getOwner().getId()),
-        filesystem: dest.getFileSystem().getUniqueId(),
-        filePath: dest.getPath()
+        ownerId: dest.fileSystem.owner.id,
+        filesystem: dest.fileSystem.getUniqueId(),
+        filePath: dest.path
       }
     });
 
     getPrismaClient()!.$executeRaw`UPDATE user_file_index
-     SET owner_id   = ${dest.getOwner().getId()},
-         filesystem = ${dest.getFileSystem().getUniqueId()},
-         file_path  = ${Path.join(dest.getPath(), '/')} || substr(file_path, ${Path.join(src.getPath(), '/').length + 1})
-     WHERE owner_id = ${src.getOwner().getId()}
-       AND filesystem = ${src.getFileSystem().getUniqueId()}
-       AND file_path LIKE ${PostgresDatabase.escapeForLikePattern(Path.join(src.getPath(), '/')) + '%'};`;
+     SET owner_id   = ${dest.fileSystem.owner.id},
+         filesystem = ${dest.fileSystem.getUniqueId()},
+         file_path  = ${Path.join(dest.path, '/')} || substr(file_path, ${Path.join(src.path, '/').length + 1})
+     WHERE owner_id = ${src.fileSystem.owner.id}
+       AND filesystem = ${src.fileSystem.getUniqueId()}
+       AND file_path LIKE ${PostgresDatabase.escapeForLikePattern(Path.join(src.path, '/')) + '%'};`;
   }
 
-  async clearIndex(user: AbstractUser, fileSystem?: IUserFileSystem): Promise<void> {
+  async clearIndex(user: ApolloUser, fileSystem?: VirtualFileSystem): Promise<void> {
     await getPrismaClient()!.fileSearchIndexEntry.deleteMany({
       where: {
-        ownerId: BigInt(user.getId()),
+        ownerId: user.id,
         filesystem: fileSystem?.getUniqueId()
       }
     });
   }
 
-  private async refreshIndexForFile(file: IUserFile, forceUpdate: boolean): Promise<void> {
+  private async refreshIndexForFile(file: VirtualFile, forceUpdate: boolean): Promise<void> {
     const stat = await file.stat();
 
     if (!forceUpdate && await FileIndexTable.getInstance().isFileUpToDate(file, stat)) {

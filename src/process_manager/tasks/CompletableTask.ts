@@ -1,10 +1,10 @@
 import Crypto from 'node:crypto';
-import AbstractUser from '../../AbstractUser';
+import ApolloUser from '../../user/ApolloUser';
 import TaskStorage from './TaskStorage';
 
 export default class CompletableTask<T> {
   public readonly taskId = Crypto.randomUUID();
-  public readonly owningUser?: AbstractUser['id'];
+  public readonly owningUser?: ApolloUser['id'];
   public readonly creationTime = Date.now();
 
   private readonly task: Promise<T>;
@@ -12,7 +12,7 @@ export default class CompletableTask<T> {
   private reject?: (err: Error) => void;
   private finishedExecution?: number;
 
-  private constructor(owningUser?: AbstractUser['id']) {
+  private constructor(owningUser?: ApolloUser['id']) {
     this.owningUser = owningUser;
 
     this.task = new Promise<T>((resolve, reject) => {
@@ -44,7 +44,7 @@ export default class CompletableTask<T> {
     return this.task;
   }
 
-  static create<T>(runnable: (taskId: string) => Promise<T>, owningUser?: AbstractUser['id']): CompletableTask<T> {
+  static create<T>(runnable: (taskId: string) => Promise<T>, owningUser?: ApolloUser['id']): CompletableTask<T> {
     const task = new CompletableTask<T>(owningUser);
     TaskStorage.addTask(task);
 

@@ -6,12 +6,12 @@ import Http from 'node:http';
 import Path from 'node:path';
 import SessionFileStore from 'session-file-store';
 import { WebSocketServer } from 'ws';
-import AbstractUser from '../AbstractUser';
 import { getAppConfigDir, getAppResourcesDir, getConfig, isProduction } from '../Constants';
 import { ApolloWebSocket } from '../global';
 import { createMediaRouter } from '../media/MediaRouter';
 import { ServerTiming } from '../ServerTiming';
-import UserStorage from '../UserStorage';
+import ApolloUser from '../user/ApolloUser';
+import ApolloUserStorage from '../user/ApolloUserStorage';
 import { adminRouter } from './AdminRouter';
 import { createAliasRouter } from './AliasRouter';
 import { apiRouter } from './Api/ApiRouter';
@@ -60,7 +60,9 @@ export default class WebServer {
 
       // Destroy session
       req.session.destroy((err) => {
-        if (err) return next(err);
+        if (err) {
+          return next(err);
+        }
 
         // Delete cookie
         res.clearCookie('sessID', {
@@ -206,7 +208,7 @@ export default class WebServer {
 
     this.app.use(async (req: express.Request, res: express.Response, next): Promise<void> => {
       if (req.session.userId != null) {
-        req.user = await new UserStorage().getUser(req.session.userId);
+        req.user = await new ApolloUserStorage().findById(BigInt(req.session.userId));
       }
 
       res.locals.timings?.startNext('sessionEnd');
@@ -227,10 +229,10 @@ export default class WebServer {
       }
 
       const token = authHeader.substring('Bearer '.length);
-      const user = await new UserStorage().getUserForApiToken(token);
+      const user = await new ApolloUserStorage().findByApiToken(token);
       if (user != null) {
         req.user = user;
-        console.debug(`Authenticated request for user ${req.user.getId()} (${req.user.getDisplayName()}) from ApiToken`);
+        console.debug(`Authenticated request for user ${req.user.id} (${req.user.displayName}) from ApiToken`);
       }
 
       next();
@@ -244,7 +246,7 @@ export default class WebServer {
       res
         .status(404)
         .type('text/html')
-        .send(StringUtils.format(htmlTemplate, { 'currentUserName': req.user?.getDisplayName() ?? '<em>-</em>' }));
+        .send(StringUtils.format(htmlTemplate, { 'currentUserName': req.user?.displayName ?? '<em>-</em>' }));
     });
 
     this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -276,8 +278,8 @@ export default class WebServer {
   /**
    * @throws Error if the user is not logged in
    */
-  static getUser(req: express.Request): AbstractUser {
-    if (req.user instanceof AbstractUser) {
+  static getUser(req: express.Request): ApolloUser {
+    if (req.user instanceof ApolloUser) {
       return req.user;
     }
 
@@ -297,7 +299,7 @@ export default class WebServer {
   }
 
   private static requireValidLogin(req: express.Request, res: express.Response, next: express.NextFunction): void {
-    if (!(req.user instanceof AbstractUser)) {
+    if (!(req.user instanceof ApolloUser)) {
       res.redirect(generateLoginRedirectUri(req));
       return;
     }

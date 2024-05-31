@@ -1,8 +1,8 @@
 import Path from 'node:path';
 import sharp, { Sharp } from 'sharp';
-import IUserFile from './files/IUserFile';
 import VideoAnalyser from './media/video/analyser/VideoAnalyser';
 import ProcessBuilder from './process_manager/ProcessBuilder';
+import LocalFile from './user/files/local/LocalFile';
 
 export default class ThumbnailGenerator {
   readonly sharpMimeTypes: string[];
@@ -54,7 +54,7 @@ export default class ThumbnailGenerator {
    * FIXME: Everything below has been copied from NASWeb, the predecessor of Apollo – This needs heavy refactoring :p
    */
 
-  async generateThumbnail(file: IUserFile): Promise<{ mime: string, data: Buffer } | null> {
+  async generateThumbnail(file: LocalFile): Promise<{ mime: string, data: Buffer } | null> {
     const mimeType = await file.getMimeType();
 
     if (mimeType == null) {
@@ -110,9 +110,8 @@ export default class ThumbnailGenerator {
     };
   }
 
-  private async extractVideoCover(file: IUserFile): Promise<Sharp | null> {
-    const filePath = await file.getAbsolutePathOnHost();
-    if (filePath == null) throw new Error('filePath is null');
+  private async extractVideoCover(file: LocalFile): Promise<Sharp | null> {
+    const filePath = file.getAbsolutePathOnHost();
 
     const videoStreams = await VideoAnalyser.analyze(filePath, true);
     const potentialCoverStreams = videoStreams.streams.filter(stream => stream.codecType == 'video' && stream.avgFrameRate == '0/0');
@@ -135,11 +134,8 @@ export default class ThumbnailGenerator {
 
     // FIXME: Delete cwd when done
     // FIXME: write lock on cwd
-    const cwdFile = await file.getOwner().getTmpFileSystem().createTmpDir('thumbnail-');
+    const cwdFile = await file.fileSystem.owner.getTmpFileSystem().createTmpDir('thumbnail-');
     const cwd = cwdFile.getAbsolutePathOnHost();
-    if (cwd == null) {
-      throw new Error('cwd is null');
-    }
 
     const args = ['-i', filePath, '-map', coverStream.streamSpecifier, '-frames', '1', '-f', 'image2', coverStream.fileName];
 
@@ -155,12 +151,10 @@ export default class ThumbnailGenerator {
     return sharp(Path.join(cwd, coverStream.fileName));
   }
 
-  private static async generateVideoThumbnail(file: IUserFile, sampleSize: number = 3, width = 500): Promise<{ img: Sharp }> {
+  private static async generateVideoThumbnail(file: LocalFile, sampleSize: number = 3, width = 500): Promise<{ img: Sharp }> {
     if (sampleSize <= 0) throw new Error('sampleSize has to be positive');
 
-    const filePath = await file.getAbsolutePathOnHost();
-
-    if (filePath == null) throw new Error('filePath is null');
+    const filePath = file.getAbsolutePathOnHost();
 
     let videoDuration = 0;
 
@@ -183,11 +177,8 @@ export default class ThumbnailGenerator {
 
     // FIXME: Delete cwd when done
     // FIXME: write lock on cwd
-    const cwdFile = await file.getOwner().getTmpFileSystem().createTmpDir('thumbnail-');
+    const cwdFile = await file.fileSystem.owner.getTmpFileSystem().createTmpDir('thumbnail-');
     const cwd = cwdFile.getAbsolutePathOnHost();
-    if (cwd == null) {
-      throw new Error('cwd is null');
-    }
 
     const args = ['-i', filePath];
     args.unshift('-ss', Math.floor(0.1 * videoDuration).toString(), '-noaccurate_seek');

@@ -1,7 +1,7 @@
 import Crypto from 'node:crypto';
 import EventEmitter from 'node:events';
-import AbstractUser from '../AbstractUser';
 import { getProcessManager } from '../Constants';
+import ApolloUser from '../user/ApolloUser';
 import { IProcess, IProcessOptions } from './IProcess';
 
 export type BackgroundTaskArg = { log: (msg: string | number) => void, error: (msg: string | number) => void };
@@ -12,7 +12,7 @@ export default class BackgroundProcess<T> extends EventEmitter implements IProce
 
   public readonly uniqueId = Crypto.randomUUID();
   public readonly started = new Date();
-  public readonly user?: AbstractUser;
+  public readonly user?: ApolloUser;
 
   private readonly task: BackgroundTask<T>;
   public readonly options?: IProcessOptions;
@@ -22,7 +22,7 @@ export default class BackgroundProcess<T> extends EventEmitter implements IProce
 
   public readonly result: Promise<T>;
 
-  constructor(task: BackgroundTask<T>, options?: IProcessOptions, user?: AbstractUser) {
+  constructor(task: BackgroundTask<T>, options?: IProcessOptions, user?: ApolloUser) {
     super();
 
     this.task = task;
