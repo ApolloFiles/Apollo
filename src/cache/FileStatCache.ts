@@ -28,12 +28,9 @@ export default class FileStatCache {
         .forEach(key => this.cache.del(key));
     } else {
       const subDirPath = file.fileSystem.getFile(file.path.substring(0, file.path.indexOf('/', 1) + 1)).getAbsolutePathOnHost();
-
-      if (subDirPath != null) {
-        this.cache.keys()
-          .filter(key => key.startsWith(subDirPath))
-          .forEach(key => this.cache.del(key));
-      }
+      this.cache.keys()
+        .filter(key => key.startsWith(subDirPath))
+        .forEach(key => this.cache.del(key));
     }
 
     await cacheClear;

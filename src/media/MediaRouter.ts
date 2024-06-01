@@ -186,16 +186,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           return;
         }
 
-        const absolutePathOnHost = mediaFile.getAbsolutePathOnHost();
-        if (absolutePathOnHost == null) {
-          res
-            .status(404)
-            .type('text/plain')
-            .send(`File '${requestedMediaFilePath}' does not have an absolute path on the host!`);
-          return;
-        }
-
-        const videoAnalysis = await VideoAnalyser.analyze(absolutePathOnHost, true);
+        const videoAnalysis = await VideoAnalyser.analyze(mediaFile.getAbsolutePathOnHost(), true);
         const chapters = videoAnalysis.chapters.map(chapter => ({
           start: chapter.start,
           end: chapter.end,
@@ -254,15 +245,6 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
             .status(404)
             .type('text/plain')
             .send(`File '${requestedMediaFilePath}' is not a file!`);
-          return;
-        }
-
-        const absolutePathOnHost = mediaFile.getAbsolutePathOnHost();
-        if (absolutePathOnHost == null) {
-          res
-            .status(404)
-            .type('text/plain')
-            .send(`File '${requestedMediaFilePath}' does not have an absolute path on the host!`);
           return;
         }
 
@@ -373,7 +355,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           '-bitexact',
           '-n',
 
-          '-i', absolutePathOnHost,
+          '-i', mediaFile.getAbsolutePathOnHost(),
           '-map', '0',
           '-c', 'copy',
 
@@ -397,11 +379,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
 
         const temporaryFileName = `${mediaFile.getFileName()}.${Crypto.randomUUID()}.${Path.extname(mediaFile.getFileName())}`;
         const temporaryFile = user.getDefaultFileSystem().getFile(Path.join(mediaFile.path, '..', temporaryFileName));
-        const temporaryFileAbsolutePath = temporaryFile.getAbsolutePathOnHost();
-        if (temporaryFileAbsolutePath == null) {
-          throw new Error(`Temporary file '${temporaryFileName}' does not have an absolute path on the host!`);
-        }
-        args.push(temporaryFileAbsolutePath);
+        args.push(temporaryFile.getAbsolutePathOnHost());
 
         await user.getDefaultFileSystem().acquireLock(req, temporaryFile, async (temporaryFileWriteable) => {
           const childProcess = await new ProcessBuilder('ffmpeg', args)

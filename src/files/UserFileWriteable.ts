@@ -24,10 +24,6 @@ export default class UserFileWriteable {
   ): Promise<void> {
     const filePath = this.userFile.getAbsolutePathOnHost();
 
-    if (filePath == null) {
-      throw new Error('File path is null');
-    }
-
     const firstDirCreated = await Fs.promises.mkdir(Path.dirname(filePath), { recursive: true });
     await Fs.promises.writeFile(filePath, data, options);
 
@@ -37,13 +33,7 @@ export default class UserFileWriteable {
   }
 
   async mkdir(options?: Fs.MakeDirectoryOptions): Promise<void> {
-    const filePath = this.userFile.getAbsolutePathOnHost();
-
-    if (filePath == null) {
-      throw new Error('File path is null');
-    }
-
-    const firstDirCreated = await Fs.promises.mkdir(filePath, options);
+    const firstDirCreated = await Fs.promises.mkdir(this.userFile.getAbsolutePathOnHost(), options);
 
     await getFileStatCache().clearFile(this.userFile);
     this.updateFileIndexMkDir(this.userFile, firstDirCreated != null);
@@ -52,11 +42,6 @@ export default class UserFileWriteable {
   async move(destination: UserFileWriteable): Promise<void> {
     const srcPath = this.userFile.getAbsolutePathOnHost();
     const destPath = destination.getUserFile().getAbsolutePathOnHost();
-
-    if (srcPath == null || destPath == null) {
-      throw new Error(`Path cannot be null (src="${srcPath}",dest="${destPath}")`);
-    }
-
     await Fs.promises.rename(srcPath, destPath);
 
     await getFileStatCache().clearFile(this.userFile);
@@ -69,18 +54,8 @@ export default class UserFileWriteable {
       throw new Error('File is already in trash bin');
     }
 
-    const srcAbsolutePathOnHost = this.userFile.getAbsolutePathOnHost();
-    if (srcAbsolutePathOnHost == null) {
-      throw new Error('File path is null');
-    }
-
     const targetFileSystem = this.userFile.fileSystem.owner.getTrashBinFileSystem();
     const targetFile = targetFileSystem.getFile(this.userFile.path);
-
-    const targetFileAbsolutePathOnHost = targetFile.getAbsolutePathOnHost();
-    if (targetFileAbsolutePathOnHost == null) {
-      throw new Error('File path is null');
-    }
 
     await targetFileSystem.acquireLock(this.req, targetFile, async (writeableFile) => {
       await targetFileSystem.acquireLock(
@@ -100,12 +75,6 @@ export default class UserFileWriteable {
         ++counter;
 
         newTargetFile = targetFileSystem.getFile(Path.join(Path.dirname(targetFile.path), Path.basename(targetFile.path, Path.extname(targetFile.path)) + '~' + counter + Path.extname(targetFile.path)));
-        const newTargetFileAbsolutePathOnHost = newTargetFile.getAbsolutePathOnHost();
-
-        if (newTargetFileAbsolutePathOnHost == null) {
-          throw new Error('File path is null');
-        }
-
         await targetFileSystem.acquireLock(this.req, newTargetFile, async (writeableFile) => {
           if (!await newTargetFile.exists()) {
             loop = false;
@@ -118,13 +87,7 @@ export default class UserFileWriteable {
   }
 
   async deleteIgnoringTrashBin(options?: Fs.RmOptions): Promise<void> {
-    const filePath = this.userFile.getAbsolutePathOnHost();
-
-    if (filePath == null) {
-      throw new Error('File path is null');
-    }
-
-    await Fs.promises.rm(filePath, options);
+    await Fs.promises.rm(this.userFile.getAbsolutePathOnHost(), options);
 
     await getFileStatCache().clearFile(this.userFile);
     this.updateFileIndexDelete(this.userFile);

@@ -437,11 +437,8 @@ async function handleWebVttThumbnailRequest(req: express.Request, res: express.R
 
   const tmpDir = await user.getTmpFileSystem().createTmpDir('webVtt_thumbnails-');
   const cwd = tmpDir.getAbsolutePathOnHost();
-  if (cwd == null) {
-    throw new Error('cwd is null');
-  }
 
-  const webVtt = await new WebVttKeyframeGenerator().generate(inputFileAbsolutePath, cwd);
+  await new WebVttKeyframeGenerator().generate(inputFileAbsolutePath, cwd);
 
   const aliasToken = Crypto.createHash('sha256')
     .update('webvtt_thumbnails')

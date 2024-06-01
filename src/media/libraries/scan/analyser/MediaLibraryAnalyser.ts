@@ -13,13 +13,7 @@ export default class MediaLibraryAnalyser {
   async analyseLibrary(library: Library): Promise<MediaAnalysis[]> {
     const discoveredMedia: MediaAnalysis[] = [];
     for (const directory of library.directories) {
-      const directoryPath = directory.getAbsolutePathOnHost();
-      if (directoryPath == null) {
-        console.warn(`Library #${library.id} has a directory with no absolute path on host: ${directory.path}`);
-        continue;
-      }
-
-      discoveredMedia.push(...(await this.scanDirectory(directoryPath)));
+      discoveredMedia.push(...(await this.scanDirectory(directory.getAbsolutePathOnHost())));
     }
     return discoveredMedia;
   }

@@ -375,7 +375,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
       const videoFile = user.getDefaultFileSystem().getFile(requestedFilePath);
 
       let expectedResultVideoAnalysisStreamCounter = 0;
-      const originalVideoAnalysis = await VideoAnalyser.analyze(videoFile.getAbsolutePathOnHost()!, true);
+      const originalVideoAnalysis = await VideoAnalyser.analyze(videoFile.getAbsolutePathOnHost(), true);
       const expectedResultVideoAnalysis: ExtendedVideoAnalysis = {
         file: {
           ...originalVideoAnalysis.file,
@@ -406,7 +406,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           coverJpegPath = videoFramesCache[await videoFile.generateCacheId()][coverFrameIndexToWrite];
         }
 
-        const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost()!, originalVideoAnalysis, fileTags, streamTags, streamDispositions, streamsToDelete, coverJpegPath, (metrics) => {
+        const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost(), originalVideoAnalysis, fileTags, streamTags, streamDispositions, streamsToDelete, coverJpegPath, (metrics) => {
           let progressText = 'Writing changes into copy of original file…';
           if (metrics.time) {
             progressText += `\nCurrently at ${metrics.time}`;
@@ -531,7 +531,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { progress: 1.0, text: 'Finishing up…' });
 
         // TODO: Delete left-over empty dir on success/error (maybe move tmp-dir control into this file?)
-        await Fs.promises.rename(videoFilePathWithAppliedTags, videoFile.getAbsolutePathOnHost()!);
+        await Fs.promises.rename(videoFilePathWithAppliedTags, videoFile.getAbsolutePathOnHost());
 
         return {
           statusCode: 200,

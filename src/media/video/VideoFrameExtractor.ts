@@ -6,17 +6,12 @@ import LocalFile from '../../user/files/local/LocalFile';
 
 export default class VideoFrameExtractor {
   static async extractFrames(file: LocalFile): Promise<{ imagePaths: string[], done: () => Promise<void> }> {
-    const filePath = file.getAbsolutePathOnHost();
-
     const cwdFile = await file.fileSystem.owner.getTmpFileSystem().createTmpDir('video-frames-');
     const cwd = cwdFile.getAbsolutePathOnHost();
-    if (cwd == null) {
-      throw new Error('cwd is null');
-    }
 
     const ffmpegArgs = [
       '-n',
-      '-i', filePath,
+      '-i', file.getAbsolutePathOnHost(),
 
       '-map', 'v:0',
       '-vf', `select='eq(pict_type,PICT_TYPE_I)',scale=640:-2`,

@@ -45,17 +45,7 @@ export default class FileUploadPostActionHandler implements IPostActionHandler {
           return;
         }
 
-        const targetFilePath = targetFile.getAbsolutePathOnHost();
-        if (targetFilePath == null) {
-          await Fs.promises.rm(uploadedFile.tempFilePath);
-
-          res.status(500)
-            .type('text/plain')
-            .send('The destination cannot be resolved on the host, this is currently not supported');
-          return;
-        }
-
-        await Fs.promises.rename(uploadedFile.tempFilePath, targetFilePath);
+        await Fs.promises.rename(uploadedFile.tempFilePath, targetFile.getAbsolutePathOnHost());
       });
 
       if (res.headersSent) {
