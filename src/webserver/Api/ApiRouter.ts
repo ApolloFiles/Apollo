@@ -442,6 +442,11 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
 
             delete stream.rFrameRate;
             delete stream.timeBase;
+
+            // is sometimes deleted/removed by ffmpeg
+            delete stream.channelLayout;
+            // sometimes ffmpeg changes this to 0/0 (which is correct)
+            delete stream.avgFrameRate;
           }
 
           return result;
