@@ -17,7 +17,7 @@ const saveInProgressStats: Ref<{
   total: number,
   progressStats?: { progress?: number, text?: string }
 }> = ref({currentFileName: '', currentFileIndex: -1, total: 0});
-const videoFrames: Ref<{ [filePath: string]: string[]|undefined }> = ref({});
+const videoFrames: Ref<{ [filePath: string]: string[] | undefined }> = ref({});
 
 defineShortcuts({
   ctrl_s: {
@@ -188,6 +188,38 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
 
   } finally {
     saveInProgress.value = false;
+  }
+}
+
+function addMissingCommonFileTagsToSelectedFiles(): void {
+  const commonFileTags = [
+    'ANIDB',
+    'DATE_DIGITIZED',
+    'DATE_ENCODED',
+    'DATE_RELEASED',
+    'DATE_TAGGED',
+    'IMDB',
+    'LAW_RATING',
+    'MYANIMELIST',
+    'ORIGINAL_MEDIA_TYPE',
+    'SYNOPSIS',
+    'SYNOPSIS-eng',
+    'SYNOPSIS-ger',
+    'title',
+    'TITLE-eng',
+    'TITLE-ger',
+    'TMDB',
+    'TOTAL_PARTS',
+    'track',
+    'TVDB2'
+  ];
+
+  for (const selectedFile of selectedFiles.value) {
+    for (const tagKey of commonFileTags) {
+      if (!selectedFile.hasFileTag(tagKey)) {
+        selectedFile.setFileTagValue(tagKey, '');
+      }
+    }
   }
 }
 
@@ -393,7 +425,17 @@ function _collectAllSelectedFileTagKeys(): string[] {
       </UAccordion>
 
       <div class="toolbar">
-        <UTooltip text="Reads the tag and deletes the listed tags">
+        <UTooltip text="Existing tags are not overwritten">
+          <UButton
+            icon="i-ic-baseline-add"
+            size="sm"
+            color="lime"
+            :disabled="selectedFiles.length === 0"
+            @click="() => addMissingCommonFileTagsToSelectedFiles()"
+          >Add my common file tags
+          </UButton>
+        </UTooltip>
+        <UTooltip text="Parses the statistics tag and removes it and the listed tags">
           <UButton
             icon="i-ic-baseline-delete"
             size="sm"
