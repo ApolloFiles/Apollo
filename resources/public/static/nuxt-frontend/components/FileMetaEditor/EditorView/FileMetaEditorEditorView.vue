@@ -357,15 +357,15 @@ function _collectAllSelectedFileTagKeys(): string[] {
 
           <h2 class="text-3xl">Identifiers</h2>
           <pre class="inline"
-               title="Internet Movie Database [@!IMDb] identifier. “tt” followed by at least 7 digits for Movies, TV Shows, and Episodes.">IMDB</pre>,
+               title="Internet Movie Database [@!IMDb] identifier. “tt” followed by at least 7 digits for Movies, TV Shows, and Episodes.">IMDB</pre> (<a href="https://www.imdb.com/" target="_blank" rel="noopener">ref</a>),
           <pre class="inline"
-               title="The Movie DB “movie_id” or “tv_id” identifier for movies/TV shows [@!MovieDB]. The variable length digits string MUST be prefixed with either “movie/” or “tv/”.">TMDB</pre>,
+               title="The Movie DB “movie_id” or “tv_id” identifier for movies/TV shows [@!MovieDB]. The variable length digits string MUST be prefixed with either “movie/” or “tv/”.">TMDB</pre> (<a href="https://www.themoviedb.org/" target="_blank" rel="noopener">ref</a>),
           <pre class="inline"
-               title="The TV Database [@!TheTVDB] tag which can include movies. The variable length digits string representing a “Series ID”, “Episode ID” or “Movie ID” identifier MUST be prefixed with “series/”, “episodes/” or “movies/” respectively.">TVDB2</pre>,
+               title="The TV Database [@!TheTVDB] tag which can include movies. The variable length digits string representing a “Series ID”, “Episode ID” or “Movie ID” identifier MUST be prefixed with “series/”, “episodes/” or “movies/” respectively.">TVDB2</pre> (<a href="https://www.thetvdb.com/" target="_blank" rel="noopener">ref</a>),
           <pre class="inline"
-               title="Hab ich mir einfach ausgedacht – Die ID aus der URL nutzen">MYANIMELIST</pre>,
+               title="Hab ich mir einfach ausgedacht – Die ID aus der URL nutzen">MYANIMELIST</pre> (<a href="https://myanimelist.net/" target="_blank" rel="noopener">ref</a>),
           <pre class="inline"
-               title="Hab ich mir einfach ausgedacht – Die ID aus der URL nutzen">ANIDB</pre>
+               title="Hab ich mir einfach ausgedacht – Die ID aus der URL nutzen">ANIDB</pre> (<a href="https://anidb.net/" target="_blank" rel="noopener">ref</a>)
 
 
           <h2 class="text-3xl">Personal &amp; Technical Information</h2>
