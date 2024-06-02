@@ -7,7 +7,7 @@ function deleteTag(): void {
   for (const selectedFile of props.selectedFiles) {
     if (props.streamIndex === -1) {
       selectedFile.removeFileTag(props.initialTagKey);
-      return;
+      continue;
     }
 
     selectedFile.removeStreamTag(props.streamIndex, props.initialTagKey);
