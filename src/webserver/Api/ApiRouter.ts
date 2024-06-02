@@ -363,6 +363,32 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         }
       }
 
+      const streamOrder = req.body.streamOrder;
+      if (!Array.isArray(streamOrder)) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({ error: 'Missing streamOrder-Array in body.' });
+        return;
+      }
+      if (!streamOrder.every(stream => typeof stream === 'number') ||
+        !streamOrder.toSorted((a, b) => a - b).every((stream, index) => stream === index)) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({ error: 'streamOrder should contain all streams in the new order (no duplicates, no gaps).' });
+        return;
+      }
+
+      const streamOrderChanged = !streamOrder.every((stream, index) => stream === index);
+      if (streamsToDelete.length > 0 && streamOrderChanged) {
+        res
+          .status(400)
+          .type('application/json')
+          .send({ error: 'Cannot delete streams and reorder them at the same time (not implemented yet)' });
+        return;
+      }
+
       const coverFrameIndexToWrite = req.body.coverFrameIndexToWrite;
       if (coverFrameIndexToWrite != null && (typeof coverFrameIndexToWrite !== 'number' || coverFrameIndexToWrite < 0)) {
         res
@@ -391,6 +417,10 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
             tags: streamTags[stream.index] ?? stream.tags
           }))
       };
+      for (const stream of expectedResultVideoAnalysis.streams) {
+        (stream as any).index = streamOrder.indexOf(stream.index);
+      }
+      expectedResultVideoAnalysis.streams.sort((a, b) => a.index - b.index);
 
       const performWriteAndValidations = async (backgroundTaskId: string): Promise<{ statusCode: number, body: unknown /* FIXME */ }> => {
         TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, {
@@ -406,7 +436,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           coverJpegPath = videoFramesCache[await videoFile.generateCacheId()][coverFrameIndexToWrite];
         }
 
-        const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost(), originalVideoAnalysis, fileTags, streamTags, streamDispositions, streamsToDelete, coverJpegPath, (metrics) => {
+        const videoFilePathWithAppliedTags = await VideoTagWriter.writeTagsIntoNewFile(videoFile.getAbsolutePathOnHost(), originalVideoAnalysis, streamOrder, fileTags, streamTags, streamDispositions, streamsToDelete, coverJpegPath, (metrics) => {
           let progressText = 'Writing changes into copy of original file…';
           if (metrics.time) {
             progressText += `\nCurrently at ${metrics.time}`;

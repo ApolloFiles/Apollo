@@ -32,6 +32,8 @@ export default class ParsedFile {
   public readonly meta: ParsedFileMeta;
   public readonly appState: ParsedFileAppState = { selected: false, unsavedChanges: false };
 
+  public readonly streamOrder: number[];
+
   public readonly fileTags: Map<number, ParsedTag>;
   public readonly streamMeta: Map<number, StreamMeta>;
 
@@ -42,12 +44,38 @@ export default class ParsedFile {
     this.meta = meta;
     this.fileTags = fileTags;
     this.streamMeta = streamMeta;
+
+    this.streamOrder = Array.from(streamMeta.keys()).sort((a, b) => a - b);
   }
 
   /* Stream deletion */
   deleteStream(streamIndex: number): void {
     this.streamMeta.delete(streamIndex);
     this.deletedStreams.push(streamIndex);
+    // this.appState.unsavedChanges = true;
+  }
+
+  moveStreamUp(streamIndex: number): void {
+    const index = this.streamOrder.indexOf(streamIndex);
+    if (index === 0) {
+      return;
+    }
+
+    const temp = this.streamOrder[index];
+    this.streamOrder[index] = this.streamOrder[index - 1];
+    this.streamOrder[index - 1] = temp;
+    // this.appState.unsavedChanges = true;
+  }
+
+  moveStreamDown(streamIndex: number): void {
+    const index = this.streamOrder.indexOf(streamIndex);
+    if (index === this.streamOrder.length - 1) {
+      return;
+    }
+
+    const temp = this.streamOrder[index];
+    this.streamOrder[index] = this.streamOrder[index + 1];
+    this.streamOrder[index + 1] = temp;
     // this.appState.unsavedChanges = true;
   }
 
@@ -214,6 +242,9 @@ export default class ParsedFile {
 
     this.deletedStreams.length = 0;
     this.coverFrameIndexToWrite = null;
+
+    this.streamOrder.length = 0;
+    this.streamOrder.push(...Array.from(this.streamMeta.keys()).sort((a, b) => a - b));
 
     // this.appState.unsavedChanges = false;
   }

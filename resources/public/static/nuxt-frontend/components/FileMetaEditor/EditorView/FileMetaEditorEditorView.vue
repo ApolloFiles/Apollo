@@ -10,6 +10,8 @@ const notifier = useToast();
 const selectedFiles = computed(() => props.files.filter(file => file.appState.selected));
 const allSelectedFileTagKeys = computed(() => _collectAllSelectedFileTagKeys());
 
+const streamOrderModalOpen = ref(false);
+
 const saveInProgress = ref(false);
 const saveInProgressStats: Ref<{
   currentFileName: string,
@@ -82,6 +84,7 @@ async function saveFiles(files: ParsedFile[]): Promise<void> {
 
       const reqBody = {
         filePath: file.meta.filePath,
+        streamOrder: file.streamOrder,
         fileTags,
         streamTags,
         streamDispositions,
@@ -425,6 +428,16 @@ function _collectAllSelectedFileTagKeys(): string[] {
       </UAccordion>
 
       <div class="toolbar">
+        <UTooltip text="Select ONE file to edit its stream's order">
+          <UButton
+            icon="i-ic-baseline-format-list-numbered"
+            size="sm"
+            color="lime"
+            :disabled="selectedFiles.length !== 1"
+            @click="() => streamOrderModalOpen = !streamOrderModalOpen"
+          >Change stream order
+          </UButton>
+        </UTooltip>
         <UTooltip text="Existing tags are not overwritten">
           <UButton
             icon="i-ic-baseline-add"
@@ -506,8 +519,7 @@ function _collectAllSelectedFileTagKeys(): string[] {
            v-for="streamIndex in selectedFiles[0].streamMeta.keys()">
         <div class="flex justify-between">
           <div class="flex-shrink-0 mr-10">
-            <h1>{{ capitalizeFirstLetter(selectedFiles[0].streamMeta.get(streamIndex)?.codecType ?? 'Stream') }}-Tags&nbsp;(#{{ streamIndex
-              }})&nbsp;<UButton
+            <h1>{{ capitalizeFirstLetter(selectedFiles[0].streamMeta.get(streamIndex)?.codecType ?? 'Stream') }}-Tags&nbsp;(#{{ streamIndex }})&nbsp;<UButton
                 icon="i-ic-outline-add"
                 size="2xs"
                 color="lime"
@@ -523,8 +535,7 @@ function _collectAllSelectedFileTagKeys(): string[] {
                 @click="() => askForStreamDeleteConfirmation(streamIndex)"
               />
               <br v-if="selectedFiles.length === 1">
-              <small v-if="selectedFiles.length === 1">{{ selectedFiles[0].streamMeta.get(streamIndex)?.codecNameLong
-                }}</small>
+              <small v-if="selectedFiles.length === 1">{{ selectedFiles[0].streamMeta.get(streamIndex)?.codecNameLong }}</small>
             </h1>
           </div>
           <div v-if="selectedFiles.length == 1">
@@ -608,6 +619,38 @@ function _collectAllSelectedFileTagKeys(): string[] {
       <p v-if="saveInProgressStats.progressStats?.text" style="white-space: pre">
         {{ saveInProgressStats.progressStats.text }}
       </p>
+    </UCard>
+  </UModal>
+
+  <UModal v-model="streamOrderModalOpen">
+    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <template #header>
+        <h1>Change stream order</h1>
+      </template>
+
+      <ul>
+        <li v-for="streamIndex in selectedFiles[0].streamOrder">
+            {{ capitalizeFirstLetter(selectedFiles[0].streamMeta.get(streamIndex)?.codecType ?? '') }}&nbsp;Stream&nbsp;(#{{ streamIndex }})
+          <UButton
+            :key="streamIndex"
+            icon="i-ic-baseline-keyboard-arrow-up"
+            size="sm"
+            color="lime"
+            variant="solid"
+            square
+            @click="() => selectedFiles[0].moveStreamUp(streamIndex)"
+          ></UButton>&nbsp;
+          <UButton
+            :key="streamIndex"
+            icon="i-ic-baseline-keyboard-arrow-down"
+            size="sm"
+            color="lime"
+            variant="solid"
+            square
+            @click="() => selectedFiles[0].moveStreamDown(streamIndex)"
+          ></UButton>
+        </li>
+      </ul>
     </UCard>
   </UModal>
 </template>

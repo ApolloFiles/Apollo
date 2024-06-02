@@ -23,6 +23,7 @@ export default class VideoTagWriter {
   static async writeTagsIntoNewFile(
     filePath: string,
     videoAnalysis: ExtendedVideoAnalysis,
+    streamOrder: number[],
     fileTags: TagMap,
     streamTags: StreamTags,
     streamDispositions: StreamDispositions,
@@ -32,12 +33,22 @@ export default class VideoTagWriter {
   ): Promise<string> {
     this.assertStreamsToDeleteAreValid(streamsToDelete, videoAnalysis, streamTags, streamDispositions);
 
+    if (videoAnalysis.streams.length !== streamOrder.length) {
+      throw new Error('Stream order array must contain all streams');
+    }
+
+    const streamOrderChanged = streamOrder.some((streamIndex, index) => streamIndex !== index);
+
     const tmpDir = Path.join(getUserStorageTmpRootOnSameFileSystem(), `${Crypto.randomUUID()}`);
     await Fs.promises.mkdir(tmpDir, { recursive: true });
 
     let tmpVideoFile = filePath;
     if (this.didTagsOrDispositionsChange(fileTags, streamTags, streamDispositions, videoAnalysis)) {
-      tmpVideoFile = await this.writeTagsAndDispositions(filePath, fileTags, streamTags, streamDispositions, streamsToDelete, tmpDir, onMetrics);
+      tmpVideoFile = await this.writeTagsAndDispositions(tmpVideoFile, fileTags, streamTags, streamDispositions, streamsToDelete, tmpDir, onMetrics);
+    }
+
+    if (streamOrderChanged) {
+      tmpVideoFile = await this.reorderStreams(tmpVideoFile, streamOrder, tmpDir, onMetrics);
     }
 
     let existingCoverStreamIndex: number | null = null;
@@ -49,6 +60,10 @@ export default class VideoTagWriter {
     }
 
     if (streamsToDelete.length > 0) {
+      if (streamOrderChanged) {
+        throw new Error('Cannot delete streams and change stream order at the same time.');
+      }
+
       const fileWithDeletedStreams = await this.deleteStreams(tmpVideoFile, streamsToDelete, tmpDir, onMetrics);
       if (tmpVideoFile !== filePath) {
         await Fs.promises.rm(tmpVideoFile);
@@ -119,6 +134,36 @@ export default class VideoTagWriter {
     return tmpFilePath;
   }
 
+  private static async reorderStreams(
+    filePath: string,
+    streamOrder: number[],
+    tmpDir: string,
+    onMetrics: (metric: FfmpegMetrics) => void
+  ): Promise<string> {
+    const tmpFilePath = this.generateTmpFilePath(tmpDir, Path.extname(filePath));
+    const ffmpegArgs = [
+      '-n',
+
+      '-i', filePath,
+
+      '-map_metadata', '0',
+      ...streamOrder.flatMap(streamIndex => ['-map', `0:${streamIndex}`]),
+
+      '-c', 'copy',
+
+      tmpFilePath
+    ];
+
+    const ffmpegProcess = new FfmpegProcess(ffmpegArgs, {
+      stdio: ['ignore', 'ignore', 'pipe'],
+      cwd: tmpDir
+    });
+    ffmpegProcess.on('metrics', onMetrics);
+    await ffmpegProcess.waitForSuccessExit();
+
+    return tmpFilePath;
+  }
+
   private static async deleteStreams(
     filePath: string,
     streamsToDelete: number[],
@@ -131,6 +176,7 @@ export default class VideoTagWriter {
 
       '-i', filePath,
 
+      '-map_metadata', '0',
       '-map', '0',
       ...streamsToDelete.flatMap(streamIndex => ['-map', `-0:${streamIndex}`]),
 
@@ -168,6 +214,7 @@ export default class VideoTagWriter {
 
       '-i', filePath,
 
+      '-map_metadata', '0',
       '-c', 'copy',
       '-map', '0',
       '-attach', coverJpegPath,
