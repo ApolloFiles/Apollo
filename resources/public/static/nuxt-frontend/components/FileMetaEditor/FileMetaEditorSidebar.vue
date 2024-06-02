@@ -38,6 +38,19 @@ function formatVideoDuration(durationStr: string): string {
   return `${hours.toString().padStart(2, '0')}:${result}`;
 }
 
+function selectAllToggle(): void {
+  const allFilesSelected = props.files.every(file => file.appState.selected);
+
+  if (allFilesSelected) {
+    _unselectAll();
+    return;
+  }
+
+  for (const file of props.files) {
+    file.appState.selected = true;
+  }
+}
+
 function _unselectAll(): void {
   for (const file of props.files) {
     file.appState.selected = false;
@@ -47,6 +60,14 @@ function _unselectAll(): void {
 
 <template>
   <div class="sidebar overflow-y-auto">
+    <UButton
+      icon="i-ic-baseline-select-all"
+      size="sm"
+      color="lime"
+      class="mt-2 ml-2"
+      @click="() => selectAllToggle()"
+    >Select all files
+    </UButton>
     <ul>
       <li v-for="file in props.files"
           :key="file.meta.name"
