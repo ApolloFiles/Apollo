@@ -461,7 +461,10 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
               if (normalizedTags[tagKey.toLowerCase()] != null) {
                 throw new Error(`Duplicate tag key '${tagKey}' in tags – This is not supported right now: ${JSON.stringify(tags)}`);
               }
-              normalizedTags[tagKey.toLowerCase()] = tags[tagKey];
+
+              if (tags[tagKey] !== '') {
+                normalizedTags[tagKey.toLowerCase()] = tags[tagKey];
+              }
             }
             return normalizedTags;
           };
