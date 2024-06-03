@@ -291,11 +291,13 @@ export default class VideoTagWriter {
   }
 
   private static areTagsEqual(tags: TagMap, tagsToCompare: { [key: string]: string }): boolean {
-    return Object.entries(tags).every(([key, value]) => tagsToCompare[key] === value);
+    return Object.entries(tags).every(([key, value]) => tagsToCompare[key] === value)
+      && Object.entries(tagsToCompare).every(([key, value]) => tags[key] === value);
   }
 
   private static areDispositionsEqual(dispositions: StreamDisposition, dispositionsToCompare: StreamDisposition): boolean {
-    return Object.entries(dispositions).every(([key, value]) => dispositionsToCompare[key] === value);
+    return Object.entries(dispositions).every(([key, value]) => dispositionsToCompare[key] === value)
+      && Object.entries(dispositionsToCompare).every(([key, value]) => dispositions[key] === value);
   }
 
   private static generateTmpFilePath(tmpDir: string, extension: string): string {
