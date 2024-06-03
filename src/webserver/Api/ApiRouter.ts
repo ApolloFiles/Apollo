@@ -536,7 +536,9 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           const errorMessage = 'Unexpected mismatch when comparing the expected and actual written changes – Original file was kept unchanged.';
           TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { progress: 1.0, text: errorMessage });
 
-          await Fs.promises.unlink(videoFilePathWithAppliedTags);
+          if (videoFilePathWithAppliedTags !== videoFile.getAbsolutePathOnHost()) {
+            await Fs.promises.unlink(videoFilePathWithAppliedTags);
+          }
 
           return {
             statusCode: 500,
@@ -554,7 +556,9 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           const errorMessage = 'Unexpected mismatch when comparing the expected and actual written tags – Original file was kept unchanged.';
           TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { progress: 1.0, text: errorMessage });
 
-          await Fs.promises.unlink(videoFilePathWithAppliedTags);
+          if (videoFilePathWithAppliedTags !== videoFile.getAbsolutePathOnHost()) {
+            await Fs.promises.unlink(videoFilePathWithAppliedTags);
+          }
 
           return {
             statusCode: 500,
@@ -569,7 +573,9 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, { progress: 1.0, text: 'Finishing up…' });
 
         // TODO: Delete left-over empty dir on success/error (maybe move tmp-dir control into this file?)
-        await Fs.promises.rename(videoFilePathWithAppliedTags, videoFile.getAbsolutePathOnHost());
+        if (videoFilePathWithAppliedTags !== videoFile.getAbsolutePathOnHost()) {
+          await Fs.promises.rename(videoFilePathWithAppliedTags, videoFile.getAbsolutePathOnHost());
+        }
 
         return {
           statusCode: 200,
