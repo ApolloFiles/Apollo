@@ -34,7 +34,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           return;
         }
 
-        if (requestedFileName != 'poster.png') {
+        if (requestedFileName != 'poster.jpg') {
           res
             .status(404)
             .type('text/plain')
@@ -100,11 +100,11 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
                 }
               }
             }])
-            .png()
+            .jpeg()
             .toBuffer();
 
           res
-            .type('image/png')
+            .type('image/jpeg')
             .send(posterData);
           return;
         }
@@ -113,7 +113,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         const cachedPoster = await FileSystemBasedCache.getInstance().getUserAssociatedCachedFile(posterFile.fileSystem.owner, posterCacheKey);
         if (cachedPoster != null) {
           res
-            .type('image/png')
+            .type('image/jpeg')
             .send(cachedPoster);
           return;
         }
@@ -127,13 +127,21 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           return;
         }
 
-        const sharpInstance = sharp().png();
+        const sharpInstance = sharp();
         posterFile.getReadStream().pipe(sharpInstance);
-        const posterData = await sharpInstance.removeAlpha().toBuffer();
+        const posterData = await sharpInstance
+          .removeAlpha()
+          .resize({
+            height: 720,
+            fit: 'contain',
+            withoutEnlargement: true
+          })
+          .jpeg()
+          .toBuffer();
 
         await FileSystemBasedCache.getInstance().setUserAssociatedCachedFile(posterFile.fileSystem.owner, posterCacheKey, posterData);
         res
-          .type('image/png')
+          .type('image/jpeg')
           .send(posterData);
       }
     });

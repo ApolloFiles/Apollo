@@ -157,7 +157,7 @@ export default class LibraryScanner {
     }
 
     if (!titleHasPosterSaved && externalMetaData.hasPosterImage) {
-      const targetPosterFile = titleRoot.fileSystem.getFile(Path.join(titleRoot.path, 'folder.png'));
+      const targetPosterFile = titleRoot.fileSystem.getFile(Path.join(titleRoot.path, 'folder.jpg'));
 
       const posterImage = await externalMetaData.fetchPosterImage();
       if (posterImage != null) {
@@ -168,7 +168,7 @@ export default class LibraryScanner {
             fit: 'contain',
             withoutEnlargement: true
           })
-          .png()
+          .jpeg()
           .toBuffer();
 
         await titleRoot.fileSystem.acquireLock(null as any, targetPosterFile, (writableFile) => {
