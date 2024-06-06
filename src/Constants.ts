@@ -59,6 +59,9 @@ export function getConfig(): ConfigFile<ApolloConfig> {
         externalProviders: {
           myAnimeList: {
             clientId: ''
+          },
+          theMovieDb: {
+            apiReadAccessToken: ''
           }
         }
       },

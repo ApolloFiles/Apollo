@@ -44,17 +44,22 @@ function index(): void {
     }
   }
 
-  new ApolloUserStorage().findById(1n)
-    .then((user) => {
-      return new LibraryManager(user!).getLibraries()
-        .then((libraries) => {
-          for (const library of libraries) {
-            new LibraryScanner().scanLibrary(library)
-              .then(() => console.log(`Done scanning library ${library.name} (id: ${library.id})`))
-              .catch(console.error);
-          }
-        });
-    })
+  (async () => {
+    const user = await new ApolloUserStorage().findById(1n);
+    if (user == null) {
+      throw new Error('User 1n not found');
+    }
+
+    const libraries = await new LibraryManager(user).getLibraries();
+    for (const library of libraries) {
+      try {
+        await new LibraryScanner().scanLibrary(library);
+        console.log(`Done scanning library ${library.name} (id: ${library.id})`);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  })()
     .catch(console.error);
 
   webServer = new WebServer();

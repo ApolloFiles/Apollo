@@ -1,6 +1,7 @@
 import { HttpResponse } from '@spraxdev/node-commons';
-import { getHttpClient } from '../../../Constants';
+import { getHttpClient } from '../../../../Constants';
 
+// TODO: Make sure to properly type null and maybe convert empty strings to null to avoid confusion (and update MyAnimeListMetadataProvider to reflect theses changes)
 export interface MyAnimeListAnime {
   readonly id: number;
   readonly title: string;
@@ -9,18 +10,13 @@ export interface MyAnimeListAnime {
 
   readonly year: number;
   readonly genres: string[];
-  // readonly rating;
 }
 
-export default class MyAnimeListClient {
+export default class MyAnimeListApiClient {
   private readonly clientId: string;
 
   constructor(clientId: string) {
     this.clientId = clientId;
-  }
-
-  isAvailable(): boolean {
-    return this.clientId != '';
   }
 
   async fetchAnime(animeId: number): Promise<MyAnimeListAnime | null> {

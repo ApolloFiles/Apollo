@@ -63,6 +63,9 @@ export interface ApolloConfig {
       readonly myAnimeList: {
         readonly clientId: string;
       }
+      readonly theMovieDb: {
+        readonly apiReadAccessToken: string;
+      }
     };
   };
 

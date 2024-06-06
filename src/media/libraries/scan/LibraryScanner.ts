@@ -1,5 +1,5 @@
 import Path from 'node:path';
-import { getHttpClient, getPrismaClient } from '../../../Constants';
+import { getPrismaClient } from '../../../Constants';
 import VirtualFile from '../../../user/files/VirtualFile';
 import UserFileHelper from '../../../UserFileHelper';
 import VideoAnalyser from '../../video/analyser/VideoAnalyser';
@@ -7,6 +7,7 @@ import ExternalTitleMetaDataProvider from '../external_meta_data_provider/Extern
 import Library from '../Library';
 import DirectoryAnalyser, { MetaProvider } from './analyser/DirectoryAnalyser';
 import MediaLibraryAnalyser from './analyser/MediaLibraryAnalyser';
+import Sharp from 'sharp';
 
 export default class LibraryScanner {
   private readonly mediaLibraryAnalyser = new MediaLibraryAnalyser(new DirectoryAnalyser());
@@ -133,7 +134,13 @@ export default class LibraryScanner {
       return;
     }
 
-    const externalMetaData = await new ExternalTitleMetaDataProvider().fetchMetaData(metaProvider);
+    let externalMetaData;
+    try {
+      externalMetaData = await new ExternalTitleMetaDataProvider().fetchMetaData(metaProvider);
+    } catch (err) {
+      console.error('Error fetching external meta data:', err);
+      return;
+    }
     if (externalMetaData == null) {
       return;
     }
@@ -149,18 +156,25 @@ export default class LibraryScanner {
       });
     }
 
-    if (!titleHasPosterSaved && externalMetaData.coverImageUrl) {
-      const posterUrl = externalMetaData.coverImageUrl;
+    if (!titleHasPosterSaved && externalMetaData.hasPosterImage) {
       const targetPosterFile = titleRoot.fileSystem.getFile(Path.join(titleRoot.path, 'folder.png'));
 
-      const coverResponse = await getHttpClient().get(posterUrl);
-      if (!coverResponse.ok) {
-        console.error(`Failed to download cover image from '${posterUrl}': ${coverResponse.status} ${coverResponse.body.toString('utf-8')}`);
-      }
+      const posterImage = await externalMetaData.fetchPosterImage();
+      if (posterImage != null) {
+        const posterImageToWrite = await Sharp(posterImage)
+          .removeAlpha()
+          .resize({
+            height: 1500,
+            fit: 'contain',
+            withoutEnlargement: true
+          })
+          .png()
+          .toBuffer();
 
-      await titleRoot.fileSystem.acquireLock(null as any, targetPosterFile, (writableFile) => {
-        writableFile.write(coverResponse.body);
-      });
+        await titleRoot.fileSystem.acquireLock(null as any, targetPosterFile, (writableFile) => {
+          writableFile.write(posterImageToWrite);
+        });
+      }
     }
   }
 

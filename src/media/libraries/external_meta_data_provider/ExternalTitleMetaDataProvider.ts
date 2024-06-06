@@ -1,17 +1,20 @@
-import { StringUtils } from '@spraxdev/node-commons';
 import { getConfig } from '../../../Constants';
 import { MetaProvider } from '../scan/analyser/DirectoryAnalyser';
-import MyAnimeListClient, { MyAnimeListAnime } from './MyAnimeListClient';
+import MetadataProvider, { TitleMetaData } from './MetadataProvider';
+import MyAnimeListMetadataProvider from './myanimelist/MyAnimeListMetadataProvider';
+import TheMovieDatabaseMetadataProvider from './tmdb/TheMovieDatabaseMetadataProvider';
 
 export default class ExternalTitleMetaDataProvider {
-  private static readonly KNOWN_PROVIDERS: { [identifier: string]: MyAnimeListClient } = {
-    'myanimelist': new MyAnimeListClient(getConfig().data.mediaLibrary.externalProviders.myAnimeList.clientId)
+  private static readonly KNOWN_PROVIDERS: { [identifier: string]: MetadataProvider } = {
+    'myanimelist': new MyAnimeListMetadataProvider(getConfig().data.mediaLibrary.externalProviders.myAnimeList.clientId),
+    'tmdb': new TheMovieDatabaseMetadataProvider(getConfig().data.mediaLibrary.externalProviders.theMovieDb.apiReadAccessToken),
+    'imdb': new TheMovieDatabaseMetadataProvider(getConfig().data.mediaLibrary.externalProviders.theMovieDb.apiReadAccessToken)
   };
 
-  async fetchMetaData(providers: MetaProvider[]): Promise<MyAnimeListAnime | null> {
+  async fetchMetaData(providers: MetaProvider[]): Promise<TitleMetaData | null> {
     for (const providerIdentifier in ExternalTitleMetaDataProvider.KNOWN_PROVIDERS) {
-      const metaProvider = providers.find((provider) => provider.providerId === providerIdentifier);
-      if (metaProvider == null) {
+      const providerClient = providers.find((provider) => provider.providerId.toLowerCase() === providerIdentifier);
+      if (providerClient == null) {
         continue;
       }
 
@@ -20,12 +23,7 @@ export default class ExternalTitleMetaDataProvider {
         continue;
       }
 
-      const externalMediaId = metaProvider.mediaId;
-      if (!StringUtils.isNumeric(externalMediaId)) {
-        continue;
-      }
-
-      return provider.fetchAnime(parseInt(metaProvider.mediaId, 10));
+      return await provider.fetchByMetaProvider(providerClient);
     }
 
     return null;
