@@ -66,6 +66,9 @@ export interface ApolloConfig {
       readonly theMovieDb: {
         readonly apiReadAccessToken: string;
       }
+      readonly theTvDb: {
+        readonly apiKey: string;
+      }
     };
   };
 

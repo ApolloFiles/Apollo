@@ -62,6 +62,9 @@ export function getConfig(): ConfigFile<ApolloConfig> {
           },
           theMovieDb: {
             apiReadAccessToken: ''
+          },
+          theTvDb: {
+            apiKey: ''
           }
         }
       },
