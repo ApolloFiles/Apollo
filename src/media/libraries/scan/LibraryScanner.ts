@@ -1,4 +1,5 @@
 import Path from 'node:path';
+import Sharp from 'sharp';
 import { getPrismaClient } from '../../../Constants';
 import VirtualFile from '../../../user/files/VirtualFile';
 import UserFileHelper from '../../../UserFileHelper';
@@ -7,7 +8,6 @@ import ExternalTitleMetaDataProvider from '../external_meta_data_provider/Extern
 import Library from '../Library';
 import DirectoryAnalyser, { MetaProvider } from './analyser/DirectoryAnalyser';
 import MediaLibraryAnalyser from './analyser/MediaLibraryAnalyser';
-import Sharp from 'sharp';
 
 export default class LibraryScanner {
   private readonly mediaLibraryAnalyser = new MediaLibraryAnalyser(new DirectoryAnalyser());
@@ -39,14 +39,10 @@ export default class LibraryScanner {
           }
         })).id.toString();
 
+        console.log(`[DEBUG] Scanning title '${mediaAnalysis.name}'...`);
+
         for (const videoFile of mediaAnalysis.videoFiles) {
           const apolloVideoFile = directory.fileSystem.getFile('/' + Path.relative(directory.fileSystem.getAbsolutePathOnHost(), videoFile.filePath)); // FIXME
-
-          const fileMimeType = await apolloVideoFile.getMimeType();
-          if (fileMimeType == null || !fileMimeType.startsWith('video/')) {
-            console.warn(`File '${videoFile.filePath}' is not a video file: ${fileMimeType}`);
-            continue;
-          }
 
           const videoAnalysis = await VideoAnalyser.analyze(videoFile.filePath, true);
           const mediaTitle = (this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title')) ?? videoFile.title;

@@ -1,6 +1,6 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
-import { getFileNameCollator } from '../../../../Constants';
+import { getFileNameCollator, getFileTypeUtils } from '../../../../Constants';
 
 export type MetaProvider = {
   providerId: string;
@@ -84,9 +84,12 @@ export default class DirectoryAnalyser {
         continue;
       }
 
-      videoFiles.push({
-        filePath: Path.join(directoryHandle.path, dirent.name)
-      });
+      const videoFilePath = Path.join(directoryHandle.path, dirent.name);
+      if ((await getFileTypeUtils().getMimeType(videoFilePath))?.startsWith('video/') === true) {
+        videoFiles.push({
+          filePath: videoFilePath
+        });
+      }
     }
 
     if (extras.length <= 0) {
