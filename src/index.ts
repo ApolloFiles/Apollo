@@ -38,7 +38,7 @@ function index(): void {
 
     try {
       getPrismaClient();
-      ChildProcess.execSync('npm run prisma:migrate:deploy', { stdio: 'inherit', env: process.env });
+      ChildProcess.execSync('npm run prisma:migrate:deploy', { stdio: 'inherit', env: { ...process.env, PRISMA_HIDE_UPDATE_MESSAGE: '1' } });
     } catch (err) {
       console.error(err);
     }
