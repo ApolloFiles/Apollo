@@ -461,6 +461,8 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           delete result.file.bitRate;
           delete result.file.duration;
 
+          delete result.file.startTime;
+
           delete result.file.tags;
           for (const stream of result.streams) {
             delete stream.tags;
@@ -469,6 +471,10 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
             // No idea but ffmpeg changes duration(-Ts) sometimes (maybe it 'knows better'?)
             delete stream.duration;
             delete stream.durationTs;
+
+            // maybe ffmpeg knows better here too?
+            delete stream.startPts;
+            delete stream.startTime;
 
             delete stream.rFrameRate;
             delete stream.timeBase;
