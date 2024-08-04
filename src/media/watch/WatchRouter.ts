@@ -179,7 +179,7 @@ function attachWebSocketConnectionHandler(webserver: WebServer, sessionMiddlewar
       const sessionUserId = (request as any).session?.userId;
 
       let user: ApolloUser | null = null;
-      if (typeof sessionUserId == 'number') {
+      if (typeof sessionUserId === 'string') {
         user = await new ApolloUserStorage().findById(BigInt(sessionUserId));
       }
       if (user == null) {
