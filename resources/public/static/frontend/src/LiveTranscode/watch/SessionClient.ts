@@ -1,4 +1,4 @@
-import AWN from 'awesome-notifications';
+import * as AWN from 'awesome-notifications';
 import * as CommunicationProtocol from '../../../../../../../src/media/watch/sessions/CommunicationProtocol';
 import MediaSession from './MediaSession';
 import ClientStateElement from './player/ClientStateElement';
