@@ -52,46 +52,46 @@
     "linux"
   ],
   "dependencies": {
-    "@prisma/client": "^5.16.1",
+    "@prisma/client": "^5.22.0",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#3c5641d74fdd6e368d0132d2d2a681b312e31822",
     "archiver": "^7.0.1",
     "async-mutex": "^0.5.0",
     "bootstrap": "^5.3.3",
     "ejs": "^3.1.10",
-    "express": "^4.19.2",
-    "express-fileupload": "^1.5.0",
-    "express-session": "^1.18.0",
+    "express": "^4.21.1",
+    "express-fileupload": "^1.5.1",
+    "express-session": "^1.18.1",
     "fast-directory-size": "github:SpraxDev/Fast-Directory-Size#c68a7795a04fce93b9b4d77b22560ab0638c05a2",
     "material-design-icons-iconfont": "^6.7.0",
     "mime-types": "^2.1.35",
     "node-cache": "^5.1.2",
     "session-file-store": "^1.5.0",
-    "sharp": "^0.33.4",
-    "ws": "^8.17.1"
+    "sharp": "^0.33.5",
+    "ws": "^8.18.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.4",
-    "@types/archiver": "^6.0.2",
+    "@types/archiver": "^6.0.3",
     "@types/ejs": "^3.1.5",
     "@types/express": "^4.17.21",
-    "@types/express-fileupload": "^1.4.4",
+    "@types/express-fileupload": "^1.5.1",
     "@types/express-session": "^1.17.10",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^29.5.14",
     "@types/mime-types": "^2.1.4",
-    "@types/node": "^20.14.10",
+    "@types/node": "^20.17.6",
     "@types/session-file-store": "^1.2.5",
-    "@types/ws": "^8.5.10",
+    "@types/ws": "^8.5.13",
     "all-contributors-cli": "^6.26.1",
     "jest": "^29.7.0",
-    "nodemon": "^3.1.4",
-    "prisma": "^5.16.1",
-    "snyk": "^1.1292.1",
-    "ts-jest": "^29.1.5",
+    "nodemon": "^3.1.7",
+    "prisma": "^5.22.0",
+    "snyk": "^1.1294.0",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.3"
+    "typescript": "^5.6.3"
   },
   "nodemonConfig": {
     "signal": "SIGINT"
