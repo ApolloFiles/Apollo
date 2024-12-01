@@ -1,0 +1,33 @@
+{
+  "name": "frontend",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "postinstall": "patch-package",
+
+    "build": "rm -Rf node_modules/.cache/imagetools/ && vite build && npm run build:postprocess",
+    "build:dev": "vite build --mode developemt --minify false && npm run build:postprocess",
+    "build:postprocess": "rm build/index.js && node inject-apollo-into-handler.mjs",
+
+    "dev": "vite dev",
+    "preview": "vite preview",
+
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "material-design-icons-iconfont": "^6.7.0"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "^5.2.9",
+    "@sveltejs/enhanced-img": "^0.4.1",
+    "@sveltejs/kit": "^2.9.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.2",
+    "patch-package": "^8.0.0",
+    "svelte": "^5.2.12",
+    "svelte-check": "^4.1.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}

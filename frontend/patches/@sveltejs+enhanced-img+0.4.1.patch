@@ -1,0 +1,14 @@
+diff --git a/node_modules/@sveltejs/enhanced-img/src/index.js b/node_modules/@sveltejs/enhanced-img/src/index.js
+index 793d665..884a176 100644
+--- a/node_modules/@sveltejs/enhanced-img/src/index.js
++++ b/node_modules/@sveltejs/enhanced-img/src/index.js
+@@ -82,7 +82,8 @@ function imagetools_plugin() {
+ 				...(kind === 'x' && !qs.has('w') && { basePixels: widths[0].toString() })
+ 			});
+ 		},
+-		namedExports: false
++		namedExports: false,
++		removeMetadata: false
+ 	};
+ 
+ 	// TODO: should we make formats or sizes configurable besides just letting people override defaultDirectives?

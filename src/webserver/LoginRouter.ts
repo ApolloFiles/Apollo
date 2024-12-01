@@ -21,30 +21,13 @@ loginRouter.all('/', (req: express.Request, res, next) => {
           return;
         }
 
-        res.status(401)
+        res.status(400)
           .send('You are already logged in.');
         return;
       }
 
-      const oAuthProvider: LoginTemplateData['oAuthProvider'] = [];
-
-      for (const thirdPartyKey in getConfig().data.login.thirdParty) {
-        const thirdParty = getConfig().data.login.thirdParty[thirdPartyKey];
-
-        if (!thirdParty.enabled) {
-          continue;
-        }
-
-        oAuthProvider.push({
-          id: thirdPartyKey,
-          displayName: thirdParty.displayName ?? thirdPartyKey,
-          href: `${Path.join('/login/third-party/', thirdPartyKey)}?returnTo=${encodeURIComponent(extractReturnTo(req))}`
-        });
-      }
-
-      res.status(401)
-        .type('text/html')
-        .send(new LoginTemplate().render(req, { oAuthProvider }));
+      // Svelte should handle the request
+      next();
     }
   });
 });

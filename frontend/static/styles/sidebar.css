@@ -1,0 +1,103 @@
+#sidebar {
+    background:  #f5f5f5;
+    color:       #6c6c6c;
+    transition:  all .4s, width 1s;
+
+    width:       min-content;
+    white-space: nowrap;
+}
+
+#sidebar .sidebar-header img {
+    min-width: 32px;
+}
+
+#sidebar.sidebar-slim {
+    text-align: center;
+}
+
+#sidebar .sidebar-header {
+    padding: 20px;
+}
+
+#sidebar ul {
+    padding: 20px 0;
+}
+
+#sidebar ul li a {
+    display:    block;
+    font-size:  1.1em;
+    padding:    20px 10px;
+    text-align: left;
+}
+
+#sidebar ul li a:hover {
+    background: #fff;
+    color:      #7386d5;
+}
+
+#sidebar.sidebar-slim ul li a {
+    text-align: center;
+}
+
+#sidebar:not(.sidebar-slim) img {
+    max-width: 40%;
+}
+
+#sidebar a,
+#sidebar a:hover,
+#sidebar a:focus {
+    transition: all .3s;
+}
+
+
+/** Active menu item **/
+
+#sidebar ul li.active a {
+    border-right: .25rem solid #151651;
+    color:        #151651;
+}
+
+#sidebar ul li.active a .material-icons {
+    background:              linear-gradient(45deg, rgba(23, 18, 75, 1) 0%, rgba(50, 137, 219, 1) 90%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+
+/** Hide text when slim **/
+
+#sidebar.sidebar-slim .d-none-when-slim,
+#sidebar.sidebar-slim li span:not(.material-icons) {
+    display: none;
+}
+
+
+/** Sidebar-Collapse Button rotation (icon) **/
+
+#sidebar #sidebarExpand .material-icons {
+    transform: rotate(-90deg);
+}
+
+#sidebar.sidebar-slim #sidebarExpand .material-icons {
+    transform: rotate(90deg);
+}
+
+/* ---------------------------------------------------
+    SIDEBAR STYLE
+----------------------------------------------------- */
+
+.wrapper {
+    align-items: stretch;
+    display:     flex;
+}
+
+/* ---------------------------------------------------
+    CONTENT STYLE
+----------------------------------------------------- */
+
+#content {
+    min-height: 100vh;
+    padding:    20px;
+    transition: all 0.3s;
+    width:      100%;
+}
