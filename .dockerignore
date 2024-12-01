@@ -6,10 +6,16 @@
 !README.md
 
 !src/
-!resources/
 !prisma/
+
+!resources/
 resources/public/static/frontend/dist/
 resources/public/static/frontend/node_modules/
+
+!frontend/
+frontend/node_modules/
+frontend/build/
+frontend/.svelte-kit/
 
 # TODO: remove the debug line below
 !apollo_g_streamer

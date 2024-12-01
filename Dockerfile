@@ -36,6 +36,13 @@ COPY ./resources/public/static/nuxt-frontend/public/ ./public/
 COPY ./resources/public/static/nuxt-frontend/types/ ./types/
 RUN npm run generate
 
+WORKDIR /app/frontend/
+
+COPY ./frontend/ ./
+RUN npm ci && \
+    npm run build && \
+    npm cache clean --force
+
 ##
 # Quick fix for ffmpeg nvenc support
 ##
@@ -74,6 +81,8 @@ RUN npm ci && \
     npm cache clean --force
 
 COPY resources/ ./resources/
+COPY --from=builder /app/frontend/build/ ./frontend/build/
+COPY --from=builder /app/frontend/package.json ./frontend/package.json
 COPY --from=builder /app/dist/ ./dist/
 COPY --from=builder /app/resources/public/static/frontend/dist/ ./resources/public/static/frontend/dist/
 COPY --from=builder /app/resources/public/static/nuxt-frontend/.output/public/ ./resources/public/static/nuxt-frontend/
