@@ -9,6 +9,17 @@ const config = {
     adapter: adapter({
       out: 'build',
     }),
+    csp: {
+      directives: {
+        'default-src': ['none'],
+        'script-src': ['self'],
+        'style-src': ['self', 'unsafe-inline'],
+        'font-src': ['self'],
+        'img-src': ['self', 'data:'],
+        'manifest-src': ['self'],
+        'base-uri': ['none'],
+      },
+    },
   },
 };
 
