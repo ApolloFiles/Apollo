@@ -8,8 +8,8 @@ export type LoginPageData = {
 };
 
 export default class FrontendRenderingDataAccess {
-  async getLoggedInUser(currentUrl: URL) {
-    const userId = currentUrl.searchParams.get('_apollo_logged_in_user_id');
+  async getLoggedInUser(request: SvelteKitRequest): Promise<LoggedInUserData> {
+    const userId = request.headers.get('x-apollo-logged-in-user-id') || null;
     if (userId == null) {
       return null;
     }
