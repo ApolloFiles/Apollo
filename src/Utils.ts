@@ -38,7 +38,7 @@ export default class Utils {
       Fs.createReadStream(file, readStreamOptions) :
       file.getReadStream(readStreamOptions);
 
-    fileReadStream.on('error', (err) => {
+    fileReadStream.on('error', (err: any) => {
       console.error(err);
 
       fileReadStream.destroy();
