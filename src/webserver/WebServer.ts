@@ -18,6 +18,7 @@ import { apiRouter } from './Api/ApiRouter';
 import { createFilesRouter } from './Browse/FilesRouter';
 import FrontendRenderingDataAccess from '../frontend/FrontendRenderingDataAccess';
 import { generateLoginRedirectUri, loginRouter } from './LoginRouter';
+import SvelteKitMiddleware from './SvelteKitMiddleware';
 
 export default class WebServer {
   protected app: express.Application;
@@ -89,18 +90,7 @@ export default class WebServer {
       });
     });
 
-    (process as any).apollo_hacky_frontend_rendering_data_access_class = new FrontendRenderingDataAccess();
-    const svelteHandler = import('../../frontend/build/handler.js' as any);
-    this.app.use(async (req, res, next) => {
-      console.log('Letting Svelte handle the request:', req.url);
-      req.query._apollo_logged_in_user_id = req.session.userId;
-
-      const parsedUrl = new URL(req.url, 'http://localhost:8080');
-      parsedUrl.searchParams.set('_apollo_logged_in_user_id', req.session.userId ?? '');
-      req.url = parsedUrl.pathname + parsedUrl.search;
-
-      (await svelteHandler).handler(req, res, next);
-    });
+    SvelteKitMiddleware.register(this.app);
 
     this.setupErrorHandling();
   }
