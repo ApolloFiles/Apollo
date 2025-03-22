@@ -81,7 +81,7 @@
     "@types/express-session": "^1.18.1",
     "@types/jest": "^29.5.14",
     "@types/mime-types": "^2.1.4",
-    "@types/node": "^20.17.24",
+    "@types/node": "^20.17.25",
     "@types/session-file-store": "^1.2.5",
     "@types/ws": "^8.18.0",
     "all-contributors-cli": "^6.26.1",
