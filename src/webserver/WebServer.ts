@@ -126,9 +126,9 @@ export default class WebServer {
       this.webSocketServer?.clients.forEach((_client) => {
         const client: ApolloWebSocket = _client as any;
         if (client.apollo.isAlive === false) {
-          console.error('[DEBUG] Would normally close connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
-          // console.log('Closing WebSocket connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
-          // return client.terminate();
+//          console.error('[DEBUG] Would normally close connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
+           console.log('Closing WebSocket connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
+           return client.terminate();
         }
 
         client.apollo.isAlive = false;
