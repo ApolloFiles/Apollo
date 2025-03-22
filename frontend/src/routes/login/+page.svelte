@@ -3,13 +3,17 @@
 </svelte:head>
 
 <script lang="ts">
+  import type {LoginPageData} from '../../../../src/frontend/FrontendRenderingDataAccess';
+
     const assetThirdPartyLoginLogos: Record<string, any> = import.meta.glob('$lib/assets/login/third-party/*.svg', {
         eager: true,
         query: {enhanced: true}
     });
 
-    const {data} = $props();
-    const oAuthProvider = data.oAuthProvider;
+    const {data}: { data: LoginPageData } = $props();
+    const oAuthProvider = data.pageData.oAuthProvider;
+
+    // TODO: Mal https://smashing-freiburg-2024.netlify.app/16-user-valid/ anschauen?
 </script>
 
 <div class="row g-0">
