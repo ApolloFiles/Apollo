@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "patch-package",
 
-    "build": "rm -Rf node_modules/.cache/imagetools/ && vite build && npm run build:postprocess",
+    "build": "rm -Rf node_modules/.cache/imagetools/ && vite build && rm -R build/client/_dev/ && echo '' > build/shims.js && npm run build:postprocess",
     "build:dev": "vite build --mode developemt --minify false && npm run build:postprocess",
     "build:postprocess": "rm build/index.js && node inject-apollo-into-handler.mjs",
 
