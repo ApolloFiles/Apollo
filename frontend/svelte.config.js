@@ -17,6 +17,7 @@ const config = {
         'font-src': ['self'],
         'img-src': ['self', 'data:'],
         'manifest-src': ['self'],
+        'connect-src': ['self'],
         'base-uri': ['none'],
       },
     },
