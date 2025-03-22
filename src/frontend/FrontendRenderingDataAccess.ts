@@ -28,6 +28,22 @@ export interface LoginPageData extends PageRequestData {
   };
 }
 
+export interface MediaWatchPageData extends AuthenticatedPageRequestData {
+  readonly pageData: {
+    media: {
+      title: string;
+      episode?: {
+        season: number,
+        episode: number,
+        title: string
+      };
+      thumbnailImageUrl: string;
+      audioTracks: string[];
+      subtitleTracks: string[];
+    }
+  };
+}
+
 export interface MediaOverviewPageData extends AuthenticatedPageRequestData {
   readonly pageData: {
     libraries: { id: string, displayName: string }[];
