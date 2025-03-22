@@ -45,7 +45,16 @@ export default class FileUploadPostActionHandler implements IPostActionHandler {
           return;
         }
 
-        await Fs.promises.rename(uploadedFile.tempFilePath, targetFile.getAbsolutePathOnHost());
+        try {
+          await Fs.promises.rename(uploadedFile.tempFilePath, targetFile.getAbsolutePathOnHost());
+        } catch (err: any) {
+          if (err.code === 'EXDEV' && err.message.includes('cross-device link not permitted, rename')) {
+            await Fs.promises.copyFile(uploadedFile.tempFilePath, targetFile.getAbsolutePathOnHost());
+            await Fs.promises.unlink(uploadedFile.tempFilePath);
+            return;
+          }
+          throw err;
+        }
       });
 
       if (res.headersSent) {

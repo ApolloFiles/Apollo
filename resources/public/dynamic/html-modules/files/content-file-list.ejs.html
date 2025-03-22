@@ -41,13 +41,18 @@ if (!validLocals) {
   </ol>
 </nav>
 
-<noscript>
+<!--<noscript>-->
   <form method="post" enctype="multipart/form-data">
     <input name="action" type="hidden" value="apollo-file-upload">
     <input name="value" type="file" required multiple>
     <button type="submit">Upload file</button>
   </form>
-</noscript>
+  <form method="post" enctype="multipart/form-data">
+    <input name="action" type="hidden" value="apollo-create-directory">
+    <input name="value" type="text" placeholder="dir name" required multiple>
+    <button type="submit">mkdir</button>
+  </form>
+<!--</noscript>-->
 
 <table id="file-list" class="table table-responsive table-hover">
   <% if (locals.files.length <= 0) { %>
