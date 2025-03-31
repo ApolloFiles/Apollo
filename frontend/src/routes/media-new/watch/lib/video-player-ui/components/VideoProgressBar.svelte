@@ -1,5 +1,15 @@
 <script lang="ts">
-  const {}: {} = $props();
+  import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
+
+  const {videoPlayer}: { videoPlayer: VideoPlayer } = $props();
+
+  let showSeekPreview = $state(false);
+  let seekPreviewLeftPosition = $state(0);
+  let seekTimePosition = $state(0);
+
+  const watchProgressPercentage = $derived(toFixedPrecision((videoPlayer.$currentTime / videoPlayer.$duration) * 100));
+  const localBufferedPercentage = $derived(toFixedPrecision(((videoPlayer.$localBufferedRangeToDisplay?.end ?? 0) / videoPlayer.$duration) * 100));
+  const remoteBufferedPercentage = $derived(toFixedPrecision(((videoPlayer.$remoteBufferedRange?.end ?? 0) / videoPlayer.$duration) * 100));
 
   function formatTime(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
@@ -7,61 +17,54 @@
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
 
+  function toFixedPrecision(value: number): number {
+    return (value * 1e2) / 1e2;
+  }
+
   function handleSeekHover(event: MouseEvent): void {
     const container = event.currentTarget as HTMLElement;
-    const preview = container.querySelector('.seek-preview') as HTMLElement;
-    const timeDisplay = preview.querySelector('.seek-preview-time') as HTMLElement;
 
-    // Calculate position relative to container
     const rect = container.getBoundingClientRect();
     const position = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
     const percentage = position / rect.width;
 
-    // Calculate time (assuming 10-minute video for now)
-    const totalSeconds = 10 * 60; // FIXME
-    const currentSeconds = totalSeconds * percentage;
-
-    // Update preview position and time
-    preview.style.display = 'block';
-    preview.style.left = `${position}px`;
-    timeDisplay.textContent = formatTime(currentSeconds);
+    showSeekPreview = true;
+    seekPreviewLeftPosition = position;
+    seekTimePosition = videoPlayer.$duration * percentage;
   }
 
-  function handleSeekLeave(event: MouseEvent): void {
-    const container = event.currentTarget as HTMLElement;
-    const preview = container.querySelector('.seek-preview') as HTMLElement;
-    preview.style.display = 'none';
-  }
+  // TODO: implement seeking (and maybe make it reusable for the volume slider?)
 </script>
 
 <div class="seek-row">
-  <span class="timestamp">0:00</span>
+  <span class="timestamp">{formatTime(videoPlayer.$currentTime)}</span>
   <!-- svelte-ignore a11y_interactive_supports_focus -->
-  <!-- TODO: Make sure to update aria-valuemin etc. -->
   <div
     class="progress-bar-container"
     onmousemove={handleSeekHover}
-    onmouseleave={handleSeekLeave}
+    onmouseleave={() => showSeekPreview = false}
     role="slider"
     aria-label="Video progress"
     aria-valuemin="0"
     aria-valuemax="100"
-    aria-valuenow="10"
+    aria-valuenow={watchProgressPercentage}
   >
     <div class="progress-bar total"></div>
-    <div class="progress-bar remote-buffered" style="width: 50%"></div>
-    <div class="progress-bar local-buffered" style="width: 20%"></div>
-    <div class="progress-bar watched" style="width: 10%"></div>
-    <div class="seek-handle" style="left: 10%"></div>
+    <div class="progress-bar remote-buffered" style:width="{remoteBufferedPercentage}%"></div>
+    <div class="progress-bar local-buffered" style:width="{localBufferedPercentage}%"></div>
+    <div class="progress-bar watched" style:width="{watchProgressPercentage}%"></div>
+    <div class="seek-handle" style:left="{watchProgressPercentage}%"></div>
 
-    <div class="seek-preview" style="display: none">
+    <div class="seek-preview"
+         style:display="{showSeekPreview ? 'block' : 'none'}"
+         style:left="{seekPreviewLeftPosition}px"
+    >
       <img src="example.png" alt="Preview" class="seek-preview-thumbnail">
-      <div class="seek-preview-time">05:12</div>
+      <div class="seek-preview-time">{formatTime(seekTimePosition)}</div>
     </div>
   </div>
-  <span class="timestamp">10:00</span>
+  <span class="timestamp">{formatTime(videoPlayer.$duration)}</span>
 </div>
-
 
 <style>
   .seek-row {

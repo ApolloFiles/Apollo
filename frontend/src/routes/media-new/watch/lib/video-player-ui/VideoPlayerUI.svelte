@@ -1,11 +1,15 @@
 <script lang="ts">
   import {onMount} from 'svelte';
   import type {MediaWatchPageData} from '../../../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type VideoPlayer from '../client-side/VideoPlayer.svelte';
   import VideoContextMenu from './components/VideoContextMenu.svelte';
   import ControlsBottomBar from './layout/ControlsBottomBar.svelte';
   import ControlsTopBar from './layout/ControlsTopBar.svelte';
 
-  const {mediaInfo}: { mediaInfo: MediaWatchPageData['pageData']['media'] } = $props();
+  const {mediaInfo, videoPlayer}: {
+    mediaInfo: MediaWatchPageData['pageData']['media'],
+    videoPlayer: VideoPlayer
+  } = $props();
 
   let playerControlsBottomRef: ControlsBottomBar;
   let closeOtherMenusRef = $state((): void => undefined);
@@ -16,7 +20,7 @@
 <VideoContextMenu closeOtherMenus={closeOtherMenusRef}/>
 <div class="controls-overlay">
   <ControlsTopBar mediaInfo={mediaInfo}/>
-  <ControlsBottomBar bind:this={playerControlsBottomRef} mediaInfo={mediaInfo}/>
+  <ControlsBottomBar bind:this={playerControlsBottomRef} mediaInfo={mediaInfo} videoPlayer={videoPlayer}/>
 </div>
 
 <style>

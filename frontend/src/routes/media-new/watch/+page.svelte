@@ -3,24 +3,45 @@
 </svelte:head>
 
 <script lang="ts">
+  import {onMount} from 'svelte';
   import type {MediaWatchPageData} from '../../../../../src/frontend/FrontendRenderingDataAccess';
+  import HtmlVideoPlayerBackend from './lib/client-side/HtmlVideoPlayerBackend';
+  import VideoPlayer from './lib/client-side/VideoPlayer.svelte';
   import VideoPlayerUI from './lib/video-player-ui/VideoPlayerUI.svelte';
 
   const {data}: { data: MediaWatchPageData } = $props();
 
   const episodeTitlePrefix = data.pageData.media.episode ? `S${data.pageData.media.episode.season.toString().padStart(2, '0')}E${data.pageData.media.episode.episode.toString().padStart(2, '0')} • ` : '';
+  let videoContainerRef: HTMLDivElement;
+
+  async function createVideoPlayer() {
+    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, {backend: {src: '/_dev/BigBuckBunny_320x180.mp4'}});
+    return new VideoPlayer(backend);
+  }
+
+  let videoPlayerPromise: Promise<VideoPlayer> | undefined = $state(undefined);
+
+  onMount(() => {
+    videoPlayerPromise = createVideoPlayer();
+  });
 </script>
 
+<!-- TODO: ein click-event auf video-container für play/pause etc.? -->
+<!-- TODO: keyboard shortcuts? :3 -->
 <main class="watch-main" id="_tmp_id_watch_main">
-  <!-- svelte-ignore a11y_media_has_caption -->
-  <video
-    src="/_dev/BigBuckBunny_320x180.mp4"
-    poster={data.pageData.media.thumbnailImageUrl}
-    playsinline
-    disablepictureinpicture
-  ></video>
+  <div class="video-container" bind:this={videoContainerRef}></div>
 
-  <VideoPlayerUI mediaInfo={data.pageData.media}/>
+  {#await videoPlayerPromise}
+    <!-- TODO: Show loading spinner or something -->
+    Loading…
+  {:then videoPlayer}
+    {#if videoPlayer}
+      <VideoPlayerUI mediaInfo={data.pageData.media} videoPlayer={videoPlayer}/>
+    {:else}
+      <!-- TODO: Show loading spinner or something -->
+      Loading…
+    {/if}
+  {/await}
 </main>
 
 <style>
@@ -30,6 +51,10 @@
     background-color: black;
     display:          flex;
     justify-content:  center;
+  }
+
+  .video-container {
+    display: contents;
   }
 
   video {

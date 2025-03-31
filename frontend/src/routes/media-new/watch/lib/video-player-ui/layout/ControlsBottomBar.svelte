@@ -1,19 +1,20 @@
 <script lang="ts">
   import type {MediaWatchPageData} from '../../../../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
   import BottomMenuBox from '../components/BottomMenuBox.svelte';
   import FullscreenButton from '../components/FullscreenButton.svelte';
   import VideoProgressBar from '../components/VideoProgressBar.svelte';
   import VolumeControl from '../components/VolumeControl.svelte';
 
-  const {mediaInfo}: { mediaInfo: MediaWatchPageData['pageData']['media'] } = $props();
+  const {mediaInfo, videoPlayer}: {
+    mediaInfo: MediaWatchPageData['pageData']['media'],
+    videoPlayer: VideoPlayer
+  } = $props();
 
   let activeSubtitleTrack = $state('');
   let activeAudioTrack = $state(mediaInfo.audioTracks[0]);
   let showSubtitleTrackMenu = $state(false);
   let showAudioTrackMenu = $state(false);
-
-  let videoVolume = $state(0.75);
-  let videoMuted = $state(false);
 
   export function closeAllMenus(): void {
     showSubtitleTrackMenu = false;
@@ -22,14 +23,14 @@
 </script>
 
 <div class="control-bar">
-  <VideoProgressBar/>
+  <VideoProgressBar videoPlayer={videoPlayer}/>
 
   <div class="buttons-row">
     <div class="left-controls">
-      <button class="control-button play-button">▶</button>
+      <button class="control-button play-button" onclick={() => videoPlayer.$isPlaying ? videoPlayer.pause() : videoPlayer.play()}>{videoPlayer.$isPlaying ? '⏸' : '▶'}</button>
       <VolumeControl
-        bind:volume={videoVolume}
-        bind:muted={videoMuted}
+        bind:volume={videoPlayer.$volume}
+        bind:muted={videoPlayer.$muted}
       />
     </div>
 
