@@ -6,6 +6,10 @@
   let showContextMenu = $state(false);
   let contextMenuPosition = $state({x: 0, y: 0});
 
+  export function isVisible(): boolean {
+    return showContextMenu;
+  }
+
   if (typeof document !== 'undefined') {
     document.querySelector<HTMLElement>('main.watch-main')!.addEventListener('contextmenu', handleContextMenuEvent);
 
@@ -27,7 +31,7 @@
 
   function handleContextMenuEvent(event: MouseEvent): void {
     const targetIsPartOfContextMenu = (event.target as HTMLElement).closest('.context-menu') != null;
-    const targetIsPartOfVideoPlayer = (event.target as HTMLElement).closest('main.watch-main') != null;
+    const targetIsPartOfVideoPlayer = (event.target as HTMLElement).closest('main.watch-main .video-container') != null;
 
     if (!targetIsPartOfVideoPlayer) {
       showContextMenu = false;

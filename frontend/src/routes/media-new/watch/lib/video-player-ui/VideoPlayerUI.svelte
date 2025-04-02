@@ -11,12 +11,17 @@
     videoPlayer: VideoPlayer
   } = $props();
 
+  let videoContextMenuRef: VideoContextMenu;
   let playerControlsBottomRef: ControlsBottomBar;
   let closeOtherMenusRef = $state((): void => undefined);
 
   let controlsVisible = $state(true);
   let hideTimeout: number | undefined;
   let mainElement: HTMLElement | null = null;
+
+  function isSomeMenuOpen(): boolean {
+    return videoContextMenuRef?.isVisible() || playerControlsBottomRef?.isAnyMenuOpen();
+  }
 
   function showControls(): void {
     controlsVisible = true;
@@ -42,7 +47,7 @@
       clearTimeout(hideTimeout);
     }
     hideTimeout = window.setTimeout(() => {
-      if (!videoPlayer.$isPlaying || playerControlsBottomRef?.isAnyMenuOpen()) {
+      if (!videoPlayer.$isPlaying || isSomeMenuOpen()) {
         return;
       }
       hideControls();
@@ -73,17 +78,44 @@
       }
     });
 
+    const handleVideoContainerClick = (event: MouseEvent) => {
+      if (event.target instanceof HTMLElement && event.target.closest('.control-bar')) {
+        return;
+      }
+      if (!(event.target instanceof HTMLVideoElement)) {
+        return;
+      }
+      if (isSomeMenuOpen()) {
+        return;
+      }
+
+      // TODO: add double-click support to toggle fullscreen
+
+      if (videoPlayer.$isPlaying) {
+        videoPlayer.pause();
+        showControls();
+      } else {
+        videoPlayer.play();
+      }
+    };
+
+    mainElement.querySelector<HTMLDivElement>('.video-container')!.addEventListener('click', handleVideoContainerClick, {passive: true});
+
     return () => {
       if (hideTimeout) clearTimeout(hideTimeout);
       if (mainElement) {
         mainElement.removeEventListener('mousemove', handleMouseMove);
         mainElement.style.cursor = '';
+
+        mainElement.querySelector<HTMLDivElement>('.video-container')!.removeEventListener('click', handleVideoContainerClick);
       }
     };
   });
 </script>
 
-<VideoContextMenu closeOtherMenus={closeOtherMenusRef}/>
+<VideoContextMenu
+  bind:this={videoContextMenuRef}
+  closeOtherMenus={closeOtherMenusRef}/>
 <div
   class="controls-overlay"
   class:fade-out={!controlsVisible}
