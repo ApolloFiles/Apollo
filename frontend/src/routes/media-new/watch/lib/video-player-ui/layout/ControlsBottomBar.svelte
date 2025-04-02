@@ -3,7 +3,7 @@
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
   import BottomMenuBox from '../components/BottomMenuBox.svelte';
   import FullscreenButton from '../components/FullscreenButton.svelte';
-  import VideoProgressBar from '../components/VideoProgressBar.svelte';
+  import VideoProgressBar from '../components/progress-bar/VideoProgressBar.svelte';
   import VolumeControl from '../components/VolumeControl.svelte';
 
   const {mediaInfo, videoPlayer}: {
@@ -27,7 +27,8 @@
 
   <div class="buttons-row">
     <div class="left-controls">
-      <button class="control-button play-button" onclick={() => videoPlayer.$isPlaying ? videoPlayer.pause() : videoPlayer.play()}>{videoPlayer.$isPlaying ? '⏸' : '▶'}</button>
+      <button class="control-button play-button"
+              onclick={() => videoPlayer.$isPlaying ? videoPlayer.pause() : videoPlayer.play()}>{videoPlayer.$isPlaying ? '⏸' : '▶'}</button>
       <VolumeControl
         bind:volume={videoPlayer.$volume}
         bind:muted={videoPlayer.$muted}
