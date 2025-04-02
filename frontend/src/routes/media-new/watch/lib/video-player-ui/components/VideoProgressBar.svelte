@@ -1,15 +1,23 @@
 <script lang="ts">
+  import {onMount} from 'svelte';
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
 
   const {videoPlayer}: { videoPlayer: VideoPlayer } = $props();
 
-  let showSeekPreview = $state(false);
+  let seekHandleRef: HTMLDivElement;
+
+  let activateSeekPreview = $state(false);
   let seekPreviewLeftPosition = $state(0);
   let seekTimePosition = $state(0);
 
+  let usingSeekHandle = $state(false);
+  let currentSeekPercentage = $state(0);
+
+  const showSeekPreview = $derived(activateSeekPreview || usingSeekHandle);
   const watchProgressPercentage = $derived(toFixedPrecision((videoPlayer.$currentTime / videoPlayer.$duration) * 100));
   const localBufferedPercentage = $derived(toFixedPrecision(((videoPlayer.$localBufferedRangeToDisplay?.end ?? 0) / videoPlayer.$duration) * 100));
   const remoteBufferedPercentage = $derived(toFixedPrecision(((videoPlayer.$remoteBufferedRange?.end ?? 0) / videoPlayer.$duration) * 100));
+  const displayedPercentage = $derived(usingSeekHandle ? currentSeekPercentage : watchProgressPercentage);
 
   function formatTime(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
@@ -28,12 +36,95 @@
     const position = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
     const percentage = position / rect.width;
 
-    showSeekPreview = true;
+    activateSeekPreview = true;
     seekPreviewLeftPosition = position;
     seekTimePosition = videoPlayer.$duration * percentage;
   }
 
-  // TODO: implement seeking (and maybe make it reusable for the volume slider?)
+  onMount(() => {
+    let wasPlayingBeforeSeek = false;
+    let lastSeekTime = 0;
+    const progressBarContainer = document.querySelector<HTMLDivElement>('.progress-bar-container')!;
+
+    const preventSelection = (e: Event) => {
+      if (e.preventDefault) {
+        e.preventDefault();
+      }
+    };
+
+    const startSeeking = () => {
+      document.body.classList.add('seeking');
+      seekHandleRef.classList.add('seeking');
+      progressBarContainer.classList.add('seeking');
+    };
+
+    const stopSeeking = () => {
+      document.body.classList.remove('seeking');
+      seekHandleRef.classList.remove('seeking');
+      progressBarContainer.classList.remove('seeking');
+    };
+
+    progressBarContainer.addEventListener('click', (event) => {
+      const rect = progressBarContainer.getBoundingClientRect();
+      const percentage = (event.clientX - rect.left) / rect.width;
+      const time = percentage * videoPlayer.$duration;
+      videoPlayer.seek(time);
+    }, {passive: true});
+
+    seekHandleRef.addEventListener('mousedown', (event) => {
+      wasPlayingBeforeSeek = videoPlayer.$isPlaying;
+      usingSeekHandle = true;
+      videoPlayer.pause();
+
+      preventSelection(event);
+      document.addEventListener('selectstart', preventSelection);
+      startSeeking();
+    }, {passive: false});
+
+    progressBarContainer.addEventListener('mousedown', (event) => {
+      wasPlayingBeforeSeek = videoPlayer.$isPlaying;
+      usingSeekHandle = true;
+      videoPlayer.pause();
+
+      preventSelection(event);
+      document.addEventListener('selectstart', preventSelection);
+      startSeeking();
+    }, {passive: false});
+
+    document.addEventListener('mousemove', (event) => {
+      if (!usingSeekHandle) {
+        return;
+      }
+
+      const rect = progressBarContainer.getBoundingClientRect();
+      const position = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
+      const percentage = position / rect.width;
+
+      currentSeekPercentage = percentage * 100;
+      seekPreviewLeftPosition = position;
+      seekTimePosition = videoPlayer.$duration * percentage;
+      lastSeekTime = seekTimePosition;
+
+      requestAnimationFrame(() => {
+        videoPlayer.fastSeek(seekTimePosition);
+      });
+    }, {passive: true});
+
+    document.addEventListener('mouseup', () => {
+      if (!usingSeekHandle) {
+        return;
+      }
+
+      usingSeekHandle = false;
+      document.removeEventListener('selectstart', preventSelection);
+      stopSeeking();
+
+      videoPlayer.seek(lastSeekTime);
+      if (wasPlayingBeforeSeek) {
+        videoPlayer.play();
+      }
+    }, {passive: true});
+  });
 </script>
 
 <div class="seek-row">
@@ -42,7 +133,7 @@
   <div
     class="progress-bar-container"
     onmousemove={handleSeekHover}
-    onmouseleave={() => showSeekPreview = false}
+    onmouseleave={() => activateSeekPreview = false}
     role="slider"
     aria-label="Video progress"
     aria-valuemin="0"
@@ -52,8 +143,8 @@
     <div class="progress-bar total"></div>
     <div class="progress-bar remote-buffered" style:width="{remoteBufferedPercentage}%"></div>
     <div class="progress-bar local-buffered" style:width="{localBufferedPercentage}%"></div>
-    <div class="progress-bar watched" style:width="{watchProgressPercentage}%"></div>
-    <div class="seek-handle" style:left="{watchProgressPercentage}%"></div>
+    <div class="progress-bar watched" style:width="{displayedPercentage}%"></div>
+    <div class="seek-handle" bind:this={seekHandleRef} style:left="{displayedPercentage}%"></div>
 
     <div class="seek-preview"
          style:display="{showSeekPreview ? 'block' : 'none'}"
@@ -72,13 +163,15 @@
     align-items: center;
     gap:         15px;
     width:       100%;
+    user-select: none;
   }
 
   .progress-bar-container {
-    flex-grow: 1;
-    position:  relative;
-    cursor:    pointer;
-    padding:   14px 0;
+    flex-grow:   1;
+    position:    relative;
+    cursor:      pointer;
+    padding:     14px 0;
+    user-select: none;
   }
 
   .progress-bar {
@@ -124,6 +217,15 @@
     transform:        translate(-50%, -50%);
     cursor:           grab;
     transition:       transform 0.1s;
+    user-select:      none;
+  }
+
+  :global(.seeking) {
+    cursor: grabbing !important;
+  }
+
+  :global(.seek-handle.seeking) {
+    cursor: grabbing;
   }
 
   .progress-bar-container:hover .seek-handle {

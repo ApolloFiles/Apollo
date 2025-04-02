@@ -53,6 +53,10 @@ export default class HtmlVideoPlayerBackend extends VideoPlayerBackend {
     this.videoElement.pause();
   }
 
+  fastSeek(time: number): void {
+    this.videoElement.currentTime = time;
+  }
+
   getAudioTracks(): { id: string, label: string }[] {
     return [{ id: '1', label: 'Default' }];
   }

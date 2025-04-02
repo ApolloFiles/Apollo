@@ -131,6 +131,10 @@ export default class VideoPlayer {
     this.backend.currentTime = time;
   }
 
+  fastSeek(time: number): void {
+    this.backend.fastSeek(time);
+  }
+
   destroy(): void {
     this.backend.destroy();
   }

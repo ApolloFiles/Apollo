@@ -29,6 +29,8 @@ export default abstract class VideoPlayerBackend {
   abstract play(): Promise<void>;
   abstract pause(): void;
 
+  abstract fastSeek(time: number): void;
+
   abstract getAudioTracks(): { id: string, label: string }[];
   abstract getSubtitleTracks(): { id: string, label: string }[];
 
