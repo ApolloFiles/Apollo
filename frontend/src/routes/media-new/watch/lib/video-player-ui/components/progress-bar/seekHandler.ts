@@ -97,7 +97,11 @@ function attachEventListeners(context: SeekHandlerContext, handlers: ReturnType<
   };
 
   const mouseEvents = {
-    'mousedown': (event: MouseEvent) => handleSeekStart(event.clientX),
+    'mousedown': (event: MouseEvent) => {
+      if (event.button === 0) { // left mouse button
+        handleSeekStart(event.clientX);
+      }
+    },
     'mousemove': handleMouseMove,
     'mouseup': handleSeekEnd
   };
