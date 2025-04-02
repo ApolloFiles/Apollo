@@ -14,13 +14,89 @@
   let playerControlsBottomRef: ControlsBottomBar;
   let closeOtherMenusRef = $state((): void => undefined);
 
-  onMount(() => closeOtherMenusRef = playerControlsBottomRef.closeAllMenus);
+  let controlsVisible = $state(true);
+  let hideTimeout: number | undefined;
+  let mainElement: HTMLElement | null = null;
+
+  function showControls(): void {
+    controlsVisible = true;
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = undefined;
+    }
+
+    if (mainElement) {
+      mainElement.style.cursor = '';
+    }
+  }
+
+  function hideControls(): void {
+    controlsVisible = false;
+    if (mainElement) {
+      mainElement.style.cursor = 'none';
+    }
+  }
+
+  function scheduleHide(): void {
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+    }
+    hideTimeout = window.setTimeout(() => {
+      if (!videoPlayer.$isPlaying || playerControlsBottomRef?.isAnyMenuOpen()) {
+        return;
+      }
+      hideControls();
+    }, 2000);
+  }
+
+  function handleMouseMove(event: MouseEvent): void {
+    showControls();
+
+    if (event.target instanceof HTMLElement) {
+      const isHoveringControls = event.target.closest('.controls-overlay');
+      if (!isHoveringControls) {
+        scheduleHide();
+      }
+    }
+  }
+
+  onMount(() => {
+    closeOtherMenusRef = playerControlsBottomRef.closeAllMenus;
+
+    mainElement = document.querySelector('main.watch-main');
+    if (!mainElement) return;
+
+    mainElement.addEventListener('mousemove', handleMouseMove);
+    mainElement.addEventListener('mouseleave', () => {
+      if (videoPlayer.$isPlaying && !isSomeMenuOpen()) {
+        hideControls();
+      }
+    });
+
+    return () => {
+      if (hideTimeout) clearTimeout(hideTimeout);
+      if (mainElement) {
+        mainElement.removeEventListener('mousemove', handleMouseMove);
+        mainElement.style.cursor = '';
+      }
+    };
+  });
 </script>
 
 <VideoContextMenu closeOtherMenus={closeOtherMenusRef}/>
-<div class="controls-overlay">
+<div
+  class="controls-overlay"
+  class:fade-out={!controlsVisible}
+  onmouseenter={showControls}
+  role="region"
+  aria-label="Video player controls"
+>
   <ControlsTopBar mediaInfo={mediaInfo}/>
-  <ControlsBottomBar bind:this={playerControlsBottomRef} mediaInfo={mediaInfo} videoPlayer={videoPlayer}/>
+  <ControlsBottomBar
+    bind:this={playerControlsBottomRef}
+    mediaInfo={mediaInfo}
+    videoPlayer={videoPlayer}
+  />
 </div>
 
 <style>
@@ -41,5 +117,15 @@
     flex-direction:  column;
     justify-content: space-between;
     pointer-events:  none;
+    opacity:         1;
+    transition:      opacity 0.3s ease;
+  }
+
+  .controls-overlay.fade-out {
+    opacity: 0;
+  }
+
+  .controls-overlay :global(> *) {
+    pointer-events: auto;
   }
 </style>

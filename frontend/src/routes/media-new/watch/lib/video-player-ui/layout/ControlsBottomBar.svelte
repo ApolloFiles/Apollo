@@ -16,6 +16,10 @@
   let showSubtitleTrackMenu = $state(false);
   let showAudioTrackMenu = $state(false);
 
+  export function isAnyMenuOpen(): boolean {
+    return showSubtitleTrackMenu || showAudioTrackMenu;
+  }
+
   export function closeAllMenus(): void {
     showSubtitleTrackMenu = false;
     showAudioTrackMenu = false;
