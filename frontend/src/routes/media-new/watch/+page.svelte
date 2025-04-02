@@ -57,7 +57,7 @@
     display: contents;
   }
 
-  video {
+  :global(.video-container video) {
     max-width:  100%;
     max-height: 100%;
   }
