@@ -5,6 +5,7 @@
   const {videoPlayer}: { videoPlayer: VideoPlayer } = $props();
 
   let seekHandleRef: HTMLDivElement;
+  let progressBarContainerRef: HTMLDivElement;
 
   let activateSeekPreview = $state(false);
   let seekPreviewLeftPosition = $state(0);
@@ -29,11 +30,9 @@
     return (value * 1e2) / 1e2;
   }
 
-  function handleSeekHover(event: MouseEvent): void {
-    const container = event.currentTarget as HTMLElement;
-
-    const rect = container.getBoundingClientRect();
-    const position = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
+  function handleSeekPreview(clientX: number): void {
+    const rect = progressBarContainerRef.getBoundingClientRect();
+    const position = Math.max(0, Math.min(clientX - rect.left, rect.width));
     const percentage = position / rect.width;
 
     activateSeekPreview = true;
@@ -44,7 +43,7 @@
   onMount(() => {
     let wasPlayingBeforeSeek = false;
     let lastSeekTime = 0;
-    const progressBarContainer = document.querySelector<HTMLDivElement>('.progress-bar-container')!;
+    let usingSeekHandle = false;
 
     const preventSelection = (e: Event) => {
       if (e.preventDefault) {
@@ -55,49 +54,18 @@
     const startSeeking = () => {
       document.body.classList.add('seeking');
       seekHandleRef.classList.add('seeking');
-      progressBarContainer.classList.add('seeking');
+      progressBarContainerRef.classList.add('seeking');
     };
 
     const stopSeeking = () => {
       document.body.classList.remove('seeking');
       seekHandleRef.classList.remove('seeking');
-      progressBarContainer.classList.remove('seeking');
+      progressBarContainerRef.classList.remove('seeking');
     };
 
-    progressBarContainer.addEventListener('click', (event) => {
-      const rect = progressBarContainer.getBoundingClientRect();
-      const percentage = (event.clientX - rect.left) / rect.width;
-      const time = percentage * videoPlayer.$duration;
-      videoPlayer.seek(time);
-    }, {passive: true});
-
-    seekHandleRef.addEventListener('mousedown', (event) => {
-      wasPlayingBeforeSeek = videoPlayer.$isPlaying;
-      usingSeekHandle = true;
-      videoPlayer.pause();
-
-      preventSelection(event);
-      document.addEventListener('selectstart', preventSelection);
-      startSeeking();
-    }, {passive: false});
-
-    progressBarContainer.addEventListener('mousedown', (event) => {
-      wasPlayingBeforeSeek = videoPlayer.$isPlaying;
-      usingSeekHandle = true;
-      videoPlayer.pause();
-
-      preventSelection(event);
-      document.addEventListener('selectstart', preventSelection);
-      startSeeking();
-    }, {passive: false});
-
-    document.addEventListener('mousemove', (event) => {
-      if (!usingSeekHandle) {
-        return;
-      }
-
-      const rect = progressBarContainer.getBoundingClientRect();
-      const position = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
+    const handleSeekMove = (clientX: number) => {
+      const rect = progressBarContainerRef.getBoundingClientRect();
+      const position = Math.max(0, Math.min(clientX - rect.left, rect.width));
       const percentage = position / rect.width;
 
       currentSeekPercentage = percentage * 100;
@@ -105,12 +73,24 @@
       seekTimePosition = videoPlayer.$duration * percentage;
       lastSeekTime = seekTimePosition;
 
+      activateSeekPreview = true;
+
       requestAnimationFrame(() => {
         videoPlayer.fastSeek(seekTimePosition);
       });
-    }, {passive: true});
+    };
 
-    document.addEventListener('mouseup', () => {
+    const handleSeekStart = (clientX: number) => {
+      wasPlayingBeforeSeek = videoPlayer.$isPlaying;
+      usingSeekHandle = true;
+      videoPlayer.pause();
+      document.addEventListener('selectstart', preventSelection);
+      startSeeking();
+
+      handleSeekMove(clientX);
+    };
+
+    const handleSeekEnd = () => {
       if (!usingSeekHandle) {
         return;
       }
@@ -118,12 +98,81 @@
       usingSeekHandle = false;
       document.removeEventListener('selectstart', preventSelection);
       stopSeeking();
+      activateSeekPreview = false;
 
       videoPlayer.seek(lastSeekTime);
       if (wasPlayingBeforeSeek) {
         videoPlayer.play();
       }
+    };
+
+    seekHandleRef.addEventListener('mousedown', (event) => {
+      handleSeekStart(event.clientX);
+    }, {passive: false});
+
+    progressBarContainerRef.addEventListener('mousedown', (event) => {
+      handleSeekStart(event.clientX);
+    }, {passive: false});
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!usingSeekHandle) return;
+      handleSeekMove(e.clientX);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove, {passive: true});
+
+    document.addEventListener('mouseup', handleSeekEnd, {passive: true});
+
+    seekHandleRef.addEventListener('touchstart', (event) => {
+      handleSeekStart(event.touches[0].clientX);
+    }, {passive: false});
+
+    progressBarContainerRef.addEventListener('touchstart', (event) => {
+      handleSeekStart(event.touches[0].clientX);
+    }, {passive: false});
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!usingSeekHandle) return;
+      handleSeekMove(e.touches[0].clientX);
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, {passive: true});
+
+    document.addEventListener('touchend', handleSeekEnd, {passive: true});
+    document.addEventListener('touchcancel', handleSeekEnd, {passive: true});
+
+    progressBarContainerRef.addEventListener('mousemove', (event) => {
+      if (!usingSeekHandle) {
+        handleSeekPreview(event.clientX);
+      }
     }, {passive: true});
+
+    progressBarContainerRef.addEventListener('mouseleave', () => {
+      if (!usingSeekHandle) {
+        activateSeekPreview = false;
+      }
+    }, {passive: true});
+
+    progressBarContainerRef.addEventListener('touchmove', (event) => {
+      if (!usingSeekHandle) {
+        handleSeekPreview(event.touches[0].clientX);
+      }
+    }, {passive: true});
+
+    progressBarContainerRef.addEventListener('touchend', () => {
+      if (!usingSeekHandle) {
+        activateSeekPreview = false;
+      }
+    }, {passive: true});
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleSeekEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleSeekEnd);
+      document.removeEventListener('touchcancel', handleSeekEnd);
+      document.removeEventListener('selectstart', preventSelection);
+    };
   });
 </script>
 
@@ -131,9 +180,8 @@
   <span class="timestamp">{formatTime(videoPlayer.$currentTime)}</span>
   <!-- svelte-ignore a11y_interactive_supports_focus -->
   <div
+    bind:this={progressBarContainerRef}
     class="progress-bar-container"
-    onmousemove={handleSeekHover}
-    onmouseleave={() => activateSeekPreview = false}
     role="slider"
     aria-label="Video progress"
     aria-valuemin="0"
@@ -167,11 +215,12 @@
   }
 
   .progress-bar-container {
-    flex-grow:   1;
-    position:    relative;
-    cursor:      pointer;
-    padding:     14px 0;
-    user-select: none;
+    flex-grow:    1;
+    position:     relative;
+    cursor:       pointer;
+    padding:      14px 0;
+    user-select:  none;
+    touch-action: none;
   }
 
   .progress-bar {
@@ -218,6 +267,7 @@
     cursor:           grab;
     transition:       transform 0.1s;
     user-select:      none;
+    touch-action:     none;
   }
 
   :global(.seeking) {
