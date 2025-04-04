@@ -30,14 +30,16 @@
   <div class="video-container" bind:this={videoContainerRef}></div>
 
   {#await videoPlayerPromise}
-    <!-- TODO: Show loading spinner or something -->
-    Loading…
+    <div class="loading-container">
+      <span class="spinner">0</span>
+    </div>
   {:then videoPlayer}
     {#if videoPlayer}
       <VideoPlayerUI mediaInfo={data.pageData.media} videoPlayer={videoPlayer}/>
     {:else}
-      <!-- TODO: Show loading spinner or something -->
-      Loading…
+      <div class="loading-container">
+        <span class="spinner">0</span>
+      </div>
     {/if}
   {/await}
 </main>
@@ -58,5 +60,28 @@
   :global(.video-container video) {
     max-width:  100%;
     max-height: 100%;
+  }
+
+  .loading-container {
+    position:  absolute;
+    top:       50%;
+    left:      50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .spinner {
+    display:   inline-block;
+    color:     white;
+    font-size: 48px;
+    animation: spin 2s infinite linear;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>
