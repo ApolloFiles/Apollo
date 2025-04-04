@@ -1,7 +1,9 @@
 <script lang="ts">
+  import {onMount} from 'svelte';
+
   let isFullscreen = $state(typeof document !== 'undefined' && document.fullscreenElement != null);
 
-  function toggleFullscreen(): void {
+  export function toggleFullscreen(): void {
     if (document.fullscreenElement != null) {
       document.exitFullscreen?.()
         .catch((err) => console.error('Error exiting fullscreen:', err));
@@ -13,9 +15,17 @@
       .catch((err) => console.error('Error enabling fullscreen:', err));
   }
 
-  if (typeof document !== 'undefined') {
-    document.addEventListener('fullscreenchange', () => isFullscreen = document.fullscreenElement != null);
+  function handleFullscreenChange() {
+    isFullscreen = document.fullscreenElement != null;
   }
+
+  onMount(() => {
+    document.addEventListener('fullscreenchange', handleFullscreenChange, {passive: true});
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  });
 </script>
 
 <button class="fullscreen-button" onclick={toggleFullscreen}>

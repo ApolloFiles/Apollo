@@ -11,6 +11,9 @@
     videoPlayer: VideoPlayer
   } = $props();
 
+  let fullscreenRef: FullscreenButton;
+  export const toggleFullscreen = () => fullscreenRef.toggleFullscreen();
+
   let activeSubtitleTrack = $state('');
   let activeAudioTrack = $state(mediaInfo.audioTracks[0]);
   let showSubtitleTrackMenu = $state(false);
@@ -57,7 +60,7 @@
         onMenuOpen={() => closeAllMenus()}
       />
 
-      <FullscreenButton/>
+      <FullscreenButton bind:this={fullscreenRef}/>
     </div>
   </div>
 </div>

@@ -26,7 +26,6 @@
   });
 </script>
 
-<!-- TODO: keyboard shortcuts? :3 -->
 <main class="watch-main" id="_tmp_id_watch_main">
   <div class="video-container" bind:this={videoContainerRef}></div>
 

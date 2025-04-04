@@ -99,10 +99,62 @@
       }
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isTargetTextInput = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || (event.target instanceof HTMLElement && event.target.isContentEditable);
+      const isSpecialKeyActive = event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || event.isComposing;
+      if (isTargetTextInput || isSpecialKeyActive) {
+        return;
+      }
+
+      switch (event.key) {
+        case 'k':
+          if (!event.repeat) {
+            if (videoPlayer.$isPlaying) {
+              videoPlayer.pause();
+              showControls();
+            } else {
+              videoPlayer.play();
+              scheduleHide();
+            }
+          }
+          break;
+
+        case 'm':
+          if (!event.repeat) {
+            videoPlayer.$muted = !videoPlayer.$muted;
+            showControls();
+            scheduleHide();
+          }
+          break;
+
+        case 'j':
+          videoPlayer.seek(videoPlayer.$currentTime - 5);
+          showControls();
+          scheduleHide();
+          break;
+
+        case 'l':
+          videoPlayer.seek(videoPlayer.$currentTime + 5);
+          showControls();
+          scheduleHide();
+          break;
+
+        case 'f':
+          playerControlsBottomRef.toggleFullscreen();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, {passive: true});
     mainElement.querySelector<HTMLDivElement>('.video-container')!.addEventListener('click', handleVideoContainerClick, {passive: true});
 
     return () => {
-      if (hideTimeout) clearTimeout(hideTimeout);
+      document.removeEventListener('keydown', handleKeyDown);
+
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+      }
+
       if (mainElement) {
         mainElement.removeEventListener('mousemove', handleMouseMove);
         mainElement.style.cursor = '';
