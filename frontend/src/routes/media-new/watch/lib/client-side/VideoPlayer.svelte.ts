@@ -1,7 +1,8 @@
 import type VideoPlayerBackend from './VideoPlayerBackend';
 
 export default class VideoPlayer {
-  private backend: VideoPlayerBackend;
+  private readonly backend: VideoPlayerBackend;
+  private readonly intervalId: number;
 
   private shouldShowCustomControls = $state(true);
 
@@ -30,6 +31,13 @@ export default class VideoPlayer {
     this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
 
     this.setupEventListeners();
+    this.intervalId = window.setInterval(() => {
+      if (this.$isPlaying) {
+        return;
+      }
+
+      this.localBufferedRanges = this.backend.getBufferedRanges();
+    }, 250);
   }
 
   get $shouldShowCustomControls(): boolean {
@@ -101,6 +109,7 @@ export default class VideoPlayer {
   }
 
   destroy(): void {
+    window.clearInterval(this.intervalId);
     this.backend.destroy();
   }
 
