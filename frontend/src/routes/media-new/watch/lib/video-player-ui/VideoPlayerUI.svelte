@@ -6,21 +6,22 @@
   import ControlsBottomBar from './layout/ControlsBottomBar.svelte';
   import ControlsTopBar from './layout/ControlsTopBar.svelte';
 
-  const {mediaInfo, videoPlayer}: {
+  const {mediaInfo, videoPlayer, showCustomControls = true}: {
     mediaInfo: MediaWatchPageData['pageData']['media'],
-    videoPlayer: VideoPlayer
+    videoPlayer: VideoPlayer,
+    showCustomControls: boolean
   } = $props();
 
   let videoContextMenuRef: VideoContextMenu;
-  let playerControlsBottomRef: ControlsBottomBar;
-  let closeOtherMenusRef = $state((): void => undefined);
+  let playerControlsBottomRef: ControlsBottomBar | undefined = $state(undefined);
+  let closeOtherMenusRef = $derived(() => playerControlsBottomRef?.closeAllMenus);
 
   let controlsVisible = $state(true);
   let hideTimeout: number | undefined;
   let mainElement: HTMLElement | null = null;
 
   function isSomeMenuOpen(): boolean {
-    return videoContextMenuRef?.isVisible() || playerControlsBottomRef?.isAnyMenuOpen();
+    return (videoContextMenuRef?.isVisible() || playerControlsBottomRef?.isAnyMenuOpen()) ?? false;
   }
 
   function showControls(): void {
@@ -37,7 +38,7 @@
 
   function hideControls(): void {
     controlsVisible = false;
-    if (mainElement) {
+    if (mainElement && showCustomControls) {
       mainElement.style.cursor = 'none';
     }
   }
@@ -55,6 +56,10 @@
   }
 
   function handleMouseMove(event: MouseEvent): void {
+    if (!showCustomControls) {
+      return;
+    }
+
     showControls();
 
     if (event.target instanceof HTMLElement) {
@@ -65,20 +70,24 @@
     }
   }
 
-  onMount(() => {
-    closeOtherMenusRef = playerControlsBottomRef.closeAllMenus;
+  function handleMouseLeave(): void {
+    if (videoPlayer.$isPlaying && !isSomeMenuOpen()) {
+      hideControls();
+    }
+  }
 
+  onMount(() => {
     mainElement = document.querySelector('main.watch-main');
     if (!mainElement) return;
 
     mainElement.addEventListener('mousemove', handleMouseMove);
-    mainElement.addEventListener('mouseleave', () => {
-      if (videoPlayer.$isPlaying && !isSomeMenuOpen()) {
-        hideControls();
-      }
-    });
+    mainElement.addEventListener('mouseleave', handleMouseLeave, {passive: true});
 
     const handleVideoContainerClick = (event: MouseEvent) => {
+      if (!showCustomControls) {
+        return;
+      }
+
       if (event.target instanceof HTMLElement && event.target.closest('.control-bar')) {
         return;
       }
@@ -100,6 +109,10 @@
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!showCustomControls) {
+        return;
+      }
+
       const isTargetTextInput = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || (event.target instanceof HTMLElement && event.target.isContentEditable);
       const isSpecialKeyActive = event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || event.isComposing;
       if (isTargetTextInput || isSpecialKeyActive) {
@@ -140,7 +153,7 @@
           break;
 
         case 'f':
-          playerControlsBottomRef.toggleFullscreen();
+          playerControlsBottomRef?.toggleFullscreen();
           break;
       }
     };
@@ -157,6 +170,7 @@
 
       if (mainElement) {
         mainElement.removeEventListener('mousemove', handleMouseMove);
+        mainElement.removeEventListener('mouseleave', handleMouseLeave);
         mainElement.style.cursor = '';
 
         mainElement.querySelector<HTMLDivElement>('.video-container')!.removeEventListener('click', handleVideoContainerClick);
@@ -168,20 +182,22 @@
 <VideoContextMenu
   bind:this={videoContextMenuRef}
   closeOtherMenus={closeOtherMenusRef}/>
-<div
-  class="controls-overlay"
-  class:fade-out={!controlsVisible}
-  onmouseenter={showControls}
-  role="region"
-  aria-label="Video player controls"
->
-  <ControlsTopBar mediaInfo={mediaInfo}/>
-  <ControlsBottomBar
-    bind:this={playerControlsBottomRef}
-    mediaInfo={mediaInfo}
-    videoPlayer={videoPlayer}
-  />
-</div>
+{#if showCustomControls}
+  <div
+    class="controls-overlay"
+    class:fade-out={!controlsVisible}
+    onmouseenter={showControls}
+    role="region"
+    aria-label="Video player controls"
+  >
+    <ControlsTopBar mediaInfo={mediaInfo}/>
+    <ControlsBottomBar
+      bind:this={playerControlsBottomRef}
+      mediaInfo={mediaInfo}
+      videoPlayer={videoPlayer}
+    />
+  </div>
+{/if}
 
 <style>
   .controls-overlay {

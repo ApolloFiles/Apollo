@@ -18,6 +18,8 @@ export type PlayerEvent = 'loadedmetadata'
                           | 'seeked';
 
 export default abstract class VideoPlayerBackend {
+  abstract readonly shouldShowCustomControls: boolean;
+
   abstract currentTime: number;
   abstract volume: number;
   abstract muted: boolean;

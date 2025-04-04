@@ -16,6 +16,7 @@
 
   async function createVideoPlayer() {
     const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, {backend: {src: '/_dev/BigBuckBunny_320x180.mp4'}});
+    // const backend = await YouTubePlayerBackend.create(videoContainerRef, {backend: {videoUrlOrId: 'https://youtu.be/0PHJfOzWV3w'}});
     return new VideoPlayer(backend);
   }
 
@@ -23,6 +24,10 @@
 
   onMount(() => {
     videoPlayerPromise = createVideoPlayer();
+
+    return () => {
+      videoPlayerPromise?.then((videoPlayer) => videoPlayer.destroy());
+    };
   });
 </script>
 
@@ -35,7 +40,9 @@
     </div>
   {:then videoPlayer}
     {#if videoPlayer}
-      <VideoPlayerUI mediaInfo={data.pageData.media} videoPlayer={videoPlayer}/>
+      <VideoPlayerUI mediaInfo={data.pageData.media}
+                     videoPlayer={videoPlayer}
+                     showCustomControls={videoPlayer.$shouldShowCustomControls}/>
     {:else}
       <div class="loading-container">
         <span class="spinner">0</span>

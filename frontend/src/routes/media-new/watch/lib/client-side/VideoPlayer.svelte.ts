@@ -3,6 +3,8 @@ import type VideoPlayerBackend from './VideoPlayerBackend';
 export default class VideoPlayer {
   private backend: VideoPlayerBackend;
 
+  private shouldShowCustomControls = $state(true);
+
   private currentTime = $state(0);
   private duration = $state(0);
   private volume = $state(1);
@@ -25,7 +27,13 @@ export default class VideoPlayer {
   // TODO: make private?
   constructor(backend: VideoPlayerBackend) {
     this.backend = backend;
+    this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
+
     this.setupEventListeners();
+  }
+
+  get $shouldShowCustomControls(): boolean {
+    return this.shouldShowCustomControls;
   }
 
   get $currentTime(): number {

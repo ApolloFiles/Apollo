@@ -12,11 +12,12 @@ const config = {
     csp: {
       directives: {
         'default-src': ['none'],
-        'script-src': ['self'],
+        'script-src': ['self', 'https://www.youtube.com/'],
         'style-src': ['self', 'unsafe-inline'],
         'font-src': ['self'],
         'img-src': ['self', 'data:'],
         'media-src': ['self'],
+        'frame-src': ['https://www.youtube.com/embed/'],
         'manifest-src': ['self'],
         'connect-src': ['self'],
         'base-uri': ['none'],
