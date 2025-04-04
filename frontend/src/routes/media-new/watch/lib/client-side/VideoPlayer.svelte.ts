@@ -83,8 +83,16 @@ export default class VideoPlayer {
     return this.volume;
   }
 
+  set $volume(volume: number) {
+    this.backend.volume = volume;
+  }
+
   get $muted(): boolean {
     return this.muted;
+  }
+
+  set $muted(muted: boolean) {
+    this.backend.muted = muted;
   }
 
   get $isPlaying(): boolean {
@@ -117,14 +125,6 @@ export default class VideoPlayer {
 
   pause(): void {
     this.backend.pause();
-  }
-
-  setVolume(value: number): void {
-    this.backend.volume = this.volume;
-  }
-
-  setMuted(value: boolean): void {
-    this.backend.muted = value;
   }
 
   seek(time: number): void {

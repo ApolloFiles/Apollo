@@ -1,12 +1,74 @@
 <script lang="ts">
-  const {volume = $bindable(), muted = $bindable()}: { volume: number, muted: boolean } = $props();
+  let {volume = $bindable(), muted = $bindable()}: { volume: number, muted: boolean } = $props();
+
+  let sliderRef: HTMLDivElement;
+  let isDragging = $state(false);
+
+  function preventSelection(event: Event): void {
+    event.preventDefault();
+  }
+
+  function handleVolumeChange(clientX: number) {
+    const rect = sliderRef.getBoundingClientRect();
+    const newVolume = Math.max(0, Math.min((clientX - rect.left) / rect.width, 1));
+    volume = newVolume;
+    if (muted && newVolume > 0) {
+      muted = false;
+    }
+  }
+
+  function handleMouseDown(event: MouseEvent) {
+    if (event.button !== 0) { // left mouse button only
+      return;
+    }
+
+    isDragging = true;
+    handleVolumeChange(event.clientX);
+
+    document.addEventListener('selectstart', preventSelection);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        handleVolumeChange(e.clientX);
+      }
+    };
+
+    const handleMouseUp = () => {
+      isDragging = false;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('selectstart', preventSelection);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }
+
+  function toggleMute() {
+    muted = !muted;
+  }
 </script>
 
-<button class="control-button">{muted ? '🔇' : '🔊'}</button>
+<button class="control-button"
+        onclick={toggleMute}
+        aria-label={muted ? "Unmute" : "Mute"}>
+  {muted ? '🔇' : '🔊'}
+</button>
 <div class="volume-slider-container">
-  <div class="volume-slider">
+  <div class="volume-slider"
+       bind:this={sliderRef}
+       onmousedown={handleMouseDown}
+       role="slider"
+       aria-label="Volume"
+       aria-valuemin="0"
+       aria-valuemax="100"
+       aria-valuenow={muted ? 0 : Math.round(volume * 100)}
+       tabindex="0">
     <div class="volume-level" style:width="{muted ? 0 : volume * 100}%"></div>
-    <div class="volume-handle" style:left="{muted ? 0 : volume * 100}%"></div>
+    <div class="volume-handle"
+         style:left="{muted ? 0 : volume * 100}%"
+         class:dragging={isDragging}
+         role="presentation"></div>
   </div>
 </div>
 
@@ -63,6 +125,11 @@
     transform:        translate(-50%, -50%);
     cursor:           grab;
     transition:       transform 0.1s;
+  }
+
+  .volume-handle.dragging {
+    cursor:    grabbing;
+    transform: translate(-50%, -50%) scale(1.5);
   }
 
   .volume-slider-container:hover .volume-handle {
