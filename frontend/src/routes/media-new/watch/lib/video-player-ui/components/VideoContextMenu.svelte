@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {onDestroy} from 'svelte';
+  import {onMount} from 'svelte';
 
   const {closeOtherMenus}: { closeOtherMenus: () => void } = $props();
 
@@ -8,15 +8,6 @@
 
   export function isVisible(): boolean {
     return showContextMenu;
-  }
-
-  if (typeof document !== 'undefined') {
-    document.querySelector<HTMLElement>('main.watch-main')!.addEventListener('contextmenu', handleContextMenuEvent);
-
-    document.addEventListener('click', handleClickOutside);
-    onDestroy(() => {
-      document.removeEventListener('click', handleClickOutside);
-    });
   }
 
   function handleClickOutside(event: MouseEvent): void {
@@ -57,6 +48,15 @@
     alert(1);
     showContextMenu = false;
   }
+
+  onMount(() => {
+    document.querySelector<HTMLElement>('main.watch-main')!.addEventListener('contextmenu', handleContextMenuEvent);
+    document.addEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  });
 </script>
 
 {#if showContextMenu}

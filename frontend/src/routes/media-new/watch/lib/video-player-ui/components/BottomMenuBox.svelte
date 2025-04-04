@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {onDestroy} from 'svelte';
+  import {onMount} from 'svelte';
 
   let {buttonLabel, menuVisible = $bindable(), menuItems, activeItemId = $bindable(), onSelect, onMenuOpen}: {
     buttonLabel: string,
@@ -38,10 +38,11 @@
     menuVisible = false;
   }
 
-  if (typeof document !== 'undefined') {
+  onMount(() => {
     document.addEventListener('click', handleClickOutside);
-    onDestroy(() => document.removeEventListener('click', handleClickOutside));
-  }
+
+    return () => document.removeEventListener('click', handleClickOutside);
+  });
 </script>
 
 <div class="menu-box-container">
