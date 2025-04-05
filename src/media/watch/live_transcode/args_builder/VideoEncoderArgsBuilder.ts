@@ -53,7 +53,7 @@ export default class VideoEncoderArgsBuilder {
 
       '-b:v', '0',
       '-maxrate:v', '120M',
-      '-bufsize:v', '240M'
+      '-bufsize:v', '240M',
     ];
     if (complexFilter.args.length > 0) {
       args.push(`-filter_complex`, complexFilter.args.join(','));
@@ -77,7 +77,7 @@ export default class VideoEncoderArgsBuilder {
       '-pix_fmt:v', 'nv12',
 
       '-maxrate:v', '120M',
-      '-bufsize:v', '240M'
+      '-bufsize:v', '240M',
     ];
     if (complexFilter.args.length > 0) {
       args.push(`-filter_complex`, complexFilter.args.join(','));
@@ -105,7 +105,7 @@ export default class VideoEncoderArgsBuilder {
       '-pix_fmt:v', 'yuv420p',
 
       '-maxrate:v', '120M',
-      '-bufsize:v', '240M'
+      '-bufsize:v', '240M',
     ];
     if (complexFilter.args.length > 0) {
       args.push(`-filter_complex`, complexFilter.args.join(','));
@@ -144,7 +144,7 @@ export default class VideoEncoderArgsBuilder {
 
     return {
       args: videoFilters,
-      videoStreamIdentifier: currentVideoStream
+      videoStreamIdentifier: currentVideoStream,
     };
   }
 }

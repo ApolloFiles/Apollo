@@ -83,7 +83,7 @@ export default class ThumbnailGenerator {
       if (thumbnail != null) {
         return {
           mime: 'image/png',
-          data: await thumbnail.png().toBuffer({ resolveWithObject: false })
+          data: await thumbnail.png().toBuffer({ resolveWithObject: false }),
         };
       }
 
@@ -93,12 +93,12 @@ export default class ThumbnailGenerator {
     const sharpInstance = sharp({
       failOnError: false,
       sequentialRead: true,
-      density: 300
+      density: 300,
     })
       .resize(256, 256, {
         fit: 'inside',
         fastShrinkOnLoad: true,
-        withoutEnlargement: true
+        withoutEnlargement: true,
       })
       .png();
 
@@ -106,7 +106,7 @@ export default class ThumbnailGenerator {
 
     return {
       mime: 'image/png',
-      data: await sharpInstance.toBuffer()
+      data: await sharpInstance.toBuffer(),
     };
   }
 
@@ -152,7 +152,9 @@ export default class ThumbnailGenerator {
   }
 
   private static async generateVideoThumbnail(file: LocalFile, sampleSize: number = 3, width = 500): Promise<{ img: Sharp }> {
-    if (sampleSize <= 0) throw new Error('sampleSize has to be positive');
+    if (sampleSize <= 0) {
+      throw new Error('sampleSize has to be positive');
+    }
 
     const filePath = file.getAbsolutePathOnHost();
 
@@ -227,7 +229,7 @@ class Color {
     return {
       x: 0.412453 * c.r + 0.357580 * c.g + 0.189423 * c.b,
       y: 0.212671 * c.r + 0.715160 * c.g + 0.072169 * c.b,
-      z: 0.019334 * c.r + 0.119193 * c.g + 0.950227 * c.b
+      z: 0.019334 * c.r + 0.119193 * c.g + 0.950227 * c.b,
     };
   }
 
@@ -240,7 +242,7 @@ class Color {
     return {
       L: 116 * this.f(c.y / Yo) - 16,
       a: 500 * (this.f(c.x / Xo) - this.f(c.y / Yo)),
-      b: 200 * (this.f(c.y / Yo) - this.f(c.z / Zo))
+      b: 200 * (this.f(c.y / Yo) - this.f(c.z / Zo)),
     };
   }
 

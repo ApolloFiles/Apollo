@@ -22,7 +22,7 @@ adminRouter.use(async (req, res, next): Promise<void> => {
   const fileDescriptors = [];
   const processIds = [
     process.pid,
-    ...childProcess.process.bufferedStdOut.toString('utf-8').split('\n')
+    ...childProcess.process.bufferedStdOut.toString('utf-8').split('\n'),
   ];
 
   for (const pid of processIds) {

@@ -5,7 +5,7 @@ import {
   Message,
   PlaybackStatePingMessage,
   RequestMediaChangeMessage,
-  RequestPlaybackStateChangeMessage
+  RequestPlaybackStateChangeMessage,
 } from './CommunicationProtocol';
 import WatchSession from './WatchSession';
 
@@ -61,7 +61,7 @@ export default class WatchSessionClient {
           this.session._setPlaybackState({
             paused: message.data.state.paused,
             currentTime: message.data.state.currentTime,
-            playbackRate: message.data.state.playbackRate
+            playbackRate: message.data.state.playbackRate,
           });
         }
 
@@ -69,8 +69,8 @@ export default class WatchSessionClient {
           type: 'playbackStatePing',
           data: {
             clientId: this.id,
-            state: message.data.state
-          }
+            state: message.data.state,
+          },
         }, this.id);
         break;
 
@@ -96,8 +96,8 @@ export default class WatchSessionClient {
           type: 'requestMediaChange',
           data: {
             clientId: message.data.clientId,
-            media: message.data.media // TODO: validate
-          }
+            media: message.data.media, // TODO: validate
+          },
         });
         break;
       case 'requestPlaybackStateChange':
@@ -107,8 +107,8 @@ export default class WatchSessionClient {
           type: 'requestPlaybackStateChange',
           data: {
             clientId: message.data.clientId,
-            state: message.data.state // TODO: validate
-          }
+            state: message.data.state, // TODO: validate
+          },
         });
         break;
 

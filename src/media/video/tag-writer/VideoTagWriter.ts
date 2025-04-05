@@ -29,7 +29,7 @@ export default class VideoTagWriter {
     streamDispositions: StreamDispositions,
     streamsToDelete: number[],
     coverJpegPath: string | null,
-    onMetrics: (metric: FfmpegMetrics) => void
+    onMetrics: (metric: FfmpegMetrics) => void,
   ): Promise<string> {
     this.assertStreamsToDeleteAreValid(streamsToDelete, videoAnalysis, streamTags, streamDispositions);
 
@@ -84,7 +84,7 @@ export default class VideoTagWriter {
     streamDispositions: StreamDispositions,
     streamsToDelete: number[],
     tmpDir: string,
-    onMetrics: (metric: FfmpegMetrics) => void
+    onMetrics: (metric: FfmpegMetrics) => void,
   ): Promise<string> {
     const tmpFilePath = this.generateTmpFilePath(tmpDir, Path.extname(filePath));
 
@@ -94,7 +94,7 @@ export default class VideoTagWriter {
       '-i', filePath,
 
       '-map_metadata:g', '-1',
-      ...Object.entries(fileTags).flatMap(([key, value]) => ['-metadata:g', `${key}=${value}`])
+      ...Object.entries(fileTags).flatMap(([key, value]) => ['-metadata:g', `${key}=${value}`]),
     ];
 
     for (const streamIndex in streamTags) {
@@ -121,12 +121,12 @@ export default class VideoTagWriter {
       '-c', 'copy',
       '-map', '0',
 
-      tmpFilePath
+      tmpFilePath,
     );
 
     const ffmpegProcess = new FfmpegProcess(ffmpegArgs, {
       stdio: ['ignore', 'ignore', 'pipe'],
-      cwd: tmpDir
+      cwd: tmpDir,
     });
     ffmpegProcess.on('metrics', onMetrics);
     await ffmpegProcess.waitForSuccessExit();
@@ -138,7 +138,7 @@ export default class VideoTagWriter {
     filePath: string,
     streamOrder: number[],
     tmpDir: string,
-    onMetrics: (metric: FfmpegMetrics) => void
+    onMetrics: (metric: FfmpegMetrics) => void,
   ): Promise<string> {
     const tmpFilePath = this.generateTmpFilePath(tmpDir, Path.extname(filePath));
     const ffmpegArgs = [
@@ -151,12 +151,12 @@ export default class VideoTagWriter {
 
       '-c', 'copy',
 
-      tmpFilePath
+      tmpFilePath,
     ];
 
     const ffmpegProcess = new FfmpegProcess(ffmpegArgs, {
       stdio: ['ignore', 'ignore', 'pipe'],
-      cwd: tmpDir
+      cwd: tmpDir,
     });
     ffmpegProcess.on('metrics', onMetrics);
     await ffmpegProcess.waitForSuccessExit();
@@ -168,7 +168,7 @@ export default class VideoTagWriter {
     filePath: string,
     streamsToDelete: number[],
     tmpDir: string,
-    onMetrics: (metric: FfmpegMetrics) => void
+    onMetrics: (metric: FfmpegMetrics) => void,
   ): Promise<string> {
     const tmpFilePath = this.generateTmpFilePath(tmpDir, Path.extname(filePath));
     const ffmpegArgs = [
@@ -182,12 +182,12 @@ export default class VideoTagWriter {
 
       '-c', 'copy',
 
-      tmpFilePath
+      tmpFilePath,
     ];
 
     const ffmpegProcess = new FfmpegProcess(ffmpegArgs, {
       stdio: ['ignore', 'ignore', 'pipe'],
-      cwd: tmpDir
+      cwd: tmpDir,
     });
     ffmpegProcess.on('metrics', onMetrics);
     await ffmpegProcess.waitForSuccessExit();
@@ -200,12 +200,12 @@ export default class VideoTagWriter {
     coverJpegPath: string,
     baseStreamTags: TagMap,
     tmpDir: string,
-    onMetrics: (metric: FfmpegMetrics) => void
+    onMetrics: (metric: FfmpegMetrics) => void,
   ): Promise<string> {
     const streamTags: TagMap = {
       ...baseStreamTags,
       mimetype: 'image/jpeg',
-      filename: 'cover.jpg'
+      filename: 'cover.jpg',
     };
 
     const tmpFilePath = this.generateTmpFilePath(tmpDir, Path.extname(filePath));
@@ -221,12 +221,12 @@ export default class VideoTagWriter {
 
       ...Object.entries(streamTags).flatMap(([key, value]) => ['-metadata:s:t:0', `${key}=${value}`]),
 
-      tmpFilePath
+      tmpFilePath,
     ];
 
     const ffmpegProcess = new FfmpegProcess(ffmpegArgs, {
       stdio: ['ignore', 'ignore', 'pipe'],
-      cwd: tmpDir
+      cwd: tmpDir,
     });
     ffmpegProcess.on('metrics', onMetrics);
     await ffmpegProcess.waitForSuccessExit();
@@ -240,7 +240,7 @@ export default class VideoTagWriter {
         stream.codecType == 'video' &&
         stream.avgFrameRate == '0/0' &&
         stream.tags.mimetype?.toLowerCase()?.startsWith('image/') &&
-        stream.tags.filename?.toLowerCase()?.startsWith('cover.')
+        stream.tags.filename?.toLowerCase()?.startsWith('cover.'),
       );
 
     if (coverImageStreams.length === 1) {
@@ -253,7 +253,7 @@ export default class VideoTagWriter {
     streamsToDelete: number[],
     videoAnalysis: ExtendedVideoAnalysis,
     streamTags: StreamTags,
-    streamDispositions: StreamDispositions
+    streamDispositions: StreamDispositions,
   ): void {
     for (const streamIndex of streamsToDelete) {
       if (videoAnalysis.streams.length <= streamIndex) {
@@ -269,7 +269,7 @@ export default class VideoTagWriter {
     fileTags: TagMap,
     streamTags: StreamTags,
     streamDispositions: StreamDispositions,
-    videoAnalysis: ExtendedVideoAnalysis
+    videoAnalysis: ExtendedVideoAnalysis,
   ): boolean {
     if (fileTags != null && !this.areTagsEqual(fileTags, videoAnalysis.file.tags)) {
       return true;

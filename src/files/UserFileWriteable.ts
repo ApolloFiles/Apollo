@@ -61,7 +61,7 @@ export default class UserFileWriteable {
       await targetFileSystem.acquireLock(
         this.req,
         targetFileSystem.getFile(Path.dirname(targetFile.path)),
-        (writeableParentFile) => writeableParentFile.mkdir({ recursive: true })
+        (writeableParentFile) => writeableParentFile.mkdir({ recursive: true }),
       );
 
       if (!(await targetFile.exists())) {

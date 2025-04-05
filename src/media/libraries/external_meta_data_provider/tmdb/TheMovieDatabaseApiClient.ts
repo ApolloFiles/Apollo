@@ -131,7 +131,7 @@ export default class TheMovieDatabaseApiClient {
   private fetchApiUrl(apiUrl: string): Promise<HttpResponse> {
     return getHttpClient().get(apiUrl, {
       Accept: 'application/json',
-      Authorization: `Bearer ${this.apiReadAccessToken}`
+      Authorization: `Bearer ${this.apiReadAccessToken}`,
     });
   }
 
@@ -170,7 +170,7 @@ export default class TheMovieDatabaseApiClient {
       adult: this.parseBoolean(responseBody.adult),
 
       genres: this.parseGenres(responseBody.genres),
-      belongsToCollection: this.parseCollection(responseBody.belongs_to_collection)
+      belongsToCollection: this.parseCollection(responseBody.belongs_to_collection),
     };
   }
 
@@ -198,7 +198,7 @@ export default class TheMovieDatabaseApiClient {
       homepage: this.parseStringOptional(responseBody.homepage),
       adult: this.parseBoolean(responseBody.adult),
 
-      genres: this.parseGenres(responseBody.genres)
+      genres: this.parseGenres(responseBody.genres),
     };
   }
 
@@ -253,7 +253,7 @@ export default class TheMovieDatabaseApiClient {
     if (Array.isArray(value)) {
       return value.map((genre) => ({
         id: this.parseNumber(genre.id),
-        name: this.parseString(genre.name)
+        name: this.parseString(genre.name),
       }));
     }
 
@@ -269,7 +269,7 @@ export default class TheMovieDatabaseApiClient {
         id: this.parseNumber(value.id),
         name: this.parseString(value.name),
         posterPath: this.parseStringOptional(value.poster_path),
-        backdropPath: this.parseStringOptional(value.backdrop_path)
+        backdropPath: this.parseStringOptional(value.backdrop_path),
       };
     }
     throw new Error(`Expected object or null, got ${typeof value}: ${JSON.stringify(value)}`);

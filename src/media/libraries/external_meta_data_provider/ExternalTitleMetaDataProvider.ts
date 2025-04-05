@@ -10,7 +10,7 @@ export default class ExternalTitleMetaDataProvider {
     'myanimelist': new MyAnimeListMetadataProvider(getConfig().data.mediaLibrary.externalProviders.myAnimeList.clientId),
     'tmdb': new TheMovieDatabaseMetadataProvider(getConfig().data.mediaLibrary.externalProviders.theMovieDb.apiReadAccessToken),
     'imdb': new TheMovieDatabaseMetadataProvider(getConfig().data.mediaLibrary.externalProviders.theMovieDb.apiReadAccessToken),
-    'tvdb': new TheTvDatabaseMetadataProvider(getConfig().data.mediaLibrary.externalProviders.theTvDb.apiKey)
+    'tvdb': new TheTvDatabaseMetadataProvider(getConfig().data.mediaLibrary.externalProviders.theTvDb.apiKey),
   };
 
   async fetchMetaData(providers: MetaProvider[]): Promise<TitleMetaData | null> {

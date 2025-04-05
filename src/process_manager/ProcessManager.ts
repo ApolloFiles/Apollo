@@ -60,7 +60,7 @@ export default class ProcessManager {
       additionalInitValues = {
         pid: process.pid,
         command: process.command,
-        args: process.args
+        args: process.args,
       };
     }
 
@@ -68,7 +68,7 @@ export default class ProcessManager {
       uniqueId: process.uniqueId,
       options: process.options,
 
-      ...additionalInitValues
+      ...additionalInitValues,
     }, null, 2));
     ProcessManager.writeToLog(logWriteStream);
 
@@ -186,7 +186,7 @@ class ApolloChildProcess extends EventEmitter implements IChildProcess {
     this.spawnedProcess = ChildProcess.spawn(command, args, {
       cwd: this.options.cwd,
       stdio: this.options.stdio,
-      env: this.options.env
+      env: this.options.env,
     });
 
     this.spawnedProcess.on('error', (err) => {

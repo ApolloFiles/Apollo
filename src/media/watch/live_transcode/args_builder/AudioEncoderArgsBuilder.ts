@@ -12,7 +12,7 @@ export default class AudioEncoderArgsBuilder {
       '-c:a', 'aac',
       '-b:a', '128k',
       '-ac', targetChannelCount.toString(),
-      '-ar', targetSampleRate.toString()
+      '-ar', targetSampleRate.toString(),
     ];
   }
 }

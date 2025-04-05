@@ -23,7 +23,7 @@ export default class FfmpegProcess extends EventEmitter {
       if (dataAsString.startsWith('frame=') || dataAsString.startsWith('size=')) {
         this.emit('metrics', {
           hwDecoding,
-          ...FfmpegProcess.parseMetrics(dataAsString)
+          ...FfmpegProcess.parseMetrics(dataAsString),
         });
 
         return;

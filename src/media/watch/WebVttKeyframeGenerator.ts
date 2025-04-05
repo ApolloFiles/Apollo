@@ -39,10 +39,10 @@ export default class WebVttKeyframeGenerator {
       '-vsync', '0',  // prevent ffmpeg from duplicating each output frame to accommodate the originally detected frame rate
       'keyframes_%03d.jpg',
 
-      '-loglevel', 'debug'
+      '-loglevel', 'debug',
     ], {
       cwd: targetDir,
-      stdio: ['ignore', 'ignore', 'pipe']
+      stdio: ['ignore', 'ignore', 'pipe'],
     });
 
     const bufferedChunks: Buffer[] = [];
@@ -115,7 +115,7 @@ export default class WebVttKeyframeGenerator {
 
     return {
       width: imageMetadata.width / WebVttKeyframeGenerator.GRID_SIZE,
-      height: imageMetadata.height / WebVttKeyframeGenerator.GRID_SIZE
+      height: imageMetadata.height / WebVttKeyframeGenerator.GRID_SIZE,
     };
   }
 

@@ -10,7 +10,7 @@ export default class SessionMedia {
     ['apollo_file']: ApolloFileMedia,
     ['live_transcode']: LiveTranscodeMedia,
     ['youtube']: BaseSessionMedia,
-    ['twitch']: BaseSessionMedia
+    ['twitch']: BaseSessionMedia,
   };
 
   static constructSessionMedia(media: CommunicationProtocol.Media): BaseSessionMedia {

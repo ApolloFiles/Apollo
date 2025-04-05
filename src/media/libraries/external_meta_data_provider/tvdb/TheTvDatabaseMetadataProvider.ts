@@ -59,7 +59,7 @@ export default class TheTvDatabaseMetadataProvider extends MetadataProvider {
       },
 
       year: response.year,
-      genres: response.genres
+      genres: response.genres,
     };
   }
 
@@ -82,7 +82,7 @@ export default class TheTvDatabaseMetadataProvider extends MetadataProvider {
 
     return {
       mediaType: mediaType,
-      id
+      id,
     };
   }
 }

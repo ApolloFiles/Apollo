@@ -63,7 +63,7 @@ export default class MyAnimeListMetadataProvider extends MetadataProvider {
       },
 
       year: response.year,
-      genres: response.genres
+      genres: response.genres,
     };
   }
 }

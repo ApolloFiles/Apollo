@@ -34,7 +34,7 @@ export default class StreamArgsBuilder {
     return {
       args: result,
       varStreamMap,
-      audioNameMap
+      audioNameMap,
     };
   }
 

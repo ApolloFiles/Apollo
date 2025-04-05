@@ -41,9 +41,9 @@ export class FilesTemplate extends AbstractTemplate {
         apolloConfig: getConfig().data,
 
         HELPERS: {
-          escapeHtml: Utils.escapeHtml
-        }
-      }
+          escapeHtml: Utils.escapeHtml,
+        },
+      },
     });
   }
 }

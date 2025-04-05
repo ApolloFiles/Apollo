@@ -41,7 +41,7 @@ export default class ProcessBuilder {
 
       buffersStdOut: this.buffersStdOut,
       buffersStdErr: this.buffersStdErr,
-      errorOnNonZeroExit: this.errorsOnNonZeroExit
+      errorOnNonZeroExit: this.errorsOnNonZeroExit,
     });
 
     if (this.cwd == null) {

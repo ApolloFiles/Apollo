@@ -29,7 +29,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
       get: async (): Promise<void> => {
         const session = sessionStorage.create();
         res.redirect(`./s/${session.id}`);
-      }
+      },
     });
   });
 
@@ -68,7 +68,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
 
         const mimeType = await getFileTypeUtils().getMimeType(requestedFilePathOnHost);
         await Utils.sendFileRespectingRequestedRange(req, res, next, requestedFilePathOnHost, mimeType ?? 'application/octet-stream');
-      }
+      },
     });
   });
 
@@ -89,9 +89,9 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
         }
 
         res.send(new NEW_VideoLiveTranscodeTemplate().render(req, {
-          sessionId: session.id
+          sessionId: session.id,
         }));
-      }
+      },
     });
   });
 
@@ -137,7 +137,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
           result.push({
             path: file.path,
             name: file.getFileName(),
-            isDir: directoryFiles.includes(file)
+            isDir: directoryFiles.includes(file),
           });
         }
 
@@ -145,7 +145,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
           result.unshift({ path: Path.dirname(startPath), name: '..', isDir: true });
         }
         res.json(result);
-      }
+      },
     });
   });
 

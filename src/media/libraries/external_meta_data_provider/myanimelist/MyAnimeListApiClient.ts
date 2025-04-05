@@ -40,14 +40,14 @@ export default class MyAnimeListApiClient {
       coverImageUrl: response.main_picture.large,
 
       year: new Date(response.start_date).getUTCFullYear(),
-      genres: response.genres?.map((genre: any) => genre.name) ?? []
+      genres: response.genres?.map((genre: any) => genre.name) ?? [],
     };
   }
 
   private fetchApiUrl(apiUrl: string): Promise<HttpResponse> {
     return getHttpClient().get(apiUrl, {
       Accept: 'application/json',
-      'X-MAL-CLIENT-ID': this.clientId
+      'X-MAL-CLIENT-ID': this.clientId,
     });
   }
 }

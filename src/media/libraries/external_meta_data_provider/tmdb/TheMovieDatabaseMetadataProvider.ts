@@ -65,7 +65,7 @@ export default class TheMovieDatabaseMetadataProvider extends MetadataProvider {
       },
 
       year: dateToExtractYearFrom != null ? parseInt(dateToExtractYearFrom.substring(0, 4), 10) : null,
-      genres: response.genres.map((genre) => genre.name) ?? []
+      genres: response.genres.map((genre) => genre.name) ?? [],
     };
   }
 
@@ -88,7 +88,7 @@ export default class TheMovieDatabaseMetadataProvider extends MetadataProvider {
 
     return {
       mediaType: mediaType,
-      id
+      id,
     };
   }
 }

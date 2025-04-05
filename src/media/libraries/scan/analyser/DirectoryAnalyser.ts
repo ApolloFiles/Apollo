@@ -48,7 +48,7 @@ export default class DirectoryAnalyser {
     return {
       rootDirectory: directoryPath,
       ...this.extractBasicInfoFromName(Path.basename(directoryPath)),
-      ...variantsAndExtras
+      ...variantsAndExtras,
     };
   }
 
@@ -79,7 +79,7 @@ export default class DirectoryAnalyser {
       if (potentialExtraType != null) {
         extras.push({
           type: potentialExtraType,
-          filePath: Path.join(directoryHandle.path, dirent.name)
+          filePath: Path.join(directoryHandle.path, dirent.name),
         });
         continue;
       }
@@ -87,7 +87,7 @@ export default class DirectoryAnalyser {
       const videoFilePath = Path.join(directoryHandle.path, dirent.name);
       if ((await getFileTypeUtils().getMimeType(videoFilePath))?.startsWith('video/') === true) {
         videoFiles.push({
-          filePath: videoFilePath
+          filePath: videoFilePath,
         });
       }
     }
@@ -116,8 +116,8 @@ export default class DirectoryAnalyser {
         filePath: Path.join(directoryHandle.path, dirent.name),
         tvShow: {
           season: seasonNumber,
-          episode: episodeNumber
-        }
+          episode: episodeNumber,
+        },
       });
     }
 
@@ -145,7 +145,7 @@ export default class DirectoryAnalyser {
 
       extras.push({
         type,
-        filePath: Path.join(directoryHandle.path, dirent.name)
+        filePath: Path.join(directoryHandle.path, dirent.name),
       });
     }
     return extras;
@@ -163,7 +163,7 @@ export default class DirectoryAnalyser {
 
       metaProviders.push({
         providerId,
-        mediaId: tagValue.slice(providerId.length + 1)
+        mediaId: tagValue.slice(providerId.length + 1),
       });
       name = name.substring(0, metaProviderTagMatch.index).trimEnd();
 
@@ -179,7 +179,7 @@ export default class DirectoryAnalyser {
     return {
       name: name,
       year: year ? parseInt(year, 10) : undefined,
-      metaProviders
+      metaProviders,
     };
   }
 
@@ -188,7 +188,7 @@ export default class DirectoryAnalyser {
       /Season[ ._-]?(\d+)/i,
       /Volume[ ._-]?(\d+)/i,
       /S(\d+)/i,
-      /S(\d+)[ :._-]?E\d+/i
+      /S(\d+)[ :._-]?E\d+/i,
     ];
 
     for (const seasonPattern of seasonPatterns) {
@@ -204,7 +204,7 @@ export default class DirectoryAnalyser {
     const episodePatterns = [
       /Episode[ ._-]?(\d+)/i,
       /E(\d+)/i,
-      /S\d+[ :._-]?E(\d+)/i
+      /S\d+[ :._-]?E(\d+)/i,
     ];
 
     for (const episodePattern of episodePatterns) {

@@ -36,7 +36,7 @@ export function getConfig(): ConfigFile<ApolloConfig> {
       webserver: {
         host: '0.0.0.0',
         port: 8080,
-        trustProxy: ['loopback']
+        trustProxy: ['loopback'],
       },
 
       database: {
@@ -51,22 +51,22 @@ export function getConfig(): ConfigFile<ApolloConfig> {
           database: 'apollo',
 
           ssl: true,
-          poolSize: 4
-        }
+          poolSize: 4,
+        },
       },
 
       mediaLibrary: {
         externalProviders: {
           myAnimeList: {
-            clientId: ''
+            clientId: '',
           },
           theMovieDb: {
-            apiReadAccessToken: ''
+            apiReadAccessToken: '',
           },
           theTvDb: {
-            apiKey: ''
-          }
-        }
+            apiKey: '',
+          },
+        },
       },
 
       login: {
@@ -88,8 +88,8 @@ export function getConfig(): ConfigFile<ApolloConfig> {
             accountInfo: {
               url: 'https://graph.microsoft.com/oidc/userinfo',
               idField: ['sub'],
-              nameField: ['name']
-            }
+              nameField: ['name'],
+            },
           },
           google: {
             enabled: false,
@@ -108,8 +108,8 @@ export function getConfig(): ConfigFile<ApolloConfig> {
             accountInfo: {
               url: 'https://www.googleapis.com/userinfo/v2/me',
               idField: ['id'],
-              nameField: ['name']
-            }
+              nameField: ['name'],
+            },
           },
           github: {
             enabled: false,
@@ -128,8 +128,8 @@ export function getConfig(): ConfigFile<ApolloConfig> {
             accountInfo: {
               url: 'https://api.github.com/user',
               idField: ['id'],
-              nameField: ['login']
-            }
+              nameField: ['login'],
+            },
           },
           discord: {
             enabled: false,
@@ -148,18 +148,18 @@ export function getConfig(): ConfigFile<ApolloConfig> {
             accountInfo: {
               url: 'https://discordapp.com/api/users/@me',
               idField: ['id'],
-              nameField: ['username']
-            }
-          }
-        }
+              nameField: ['username'],
+            },
+          },
+        },
       },
 
       secrets: {
         session: (() => {
           console.log('Generating session secret...');
           return Crypto.randomBytes(32).toString('hex');
-        }) as any as string
-      }
+        }) as any as string,
+      },
     });
     cfg.saveIfChanged();
   }
@@ -235,7 +235,7 @@ export function getHttpClient(): HttpClient {
 
     httpClient = new HttpClient(HttpClient.generateUserAgent(
       packageJson.name ?? 'Unknown-App-Name',
-      packageJson.version ?? 'Unknown-App-Version'
+      packageJson.version ?? 'Unknown-App-Version',
     ));
   }
 

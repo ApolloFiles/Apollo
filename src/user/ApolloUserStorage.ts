@@ -54,7 +54,7 @@ export default class ApolloUserStorage {
       id: apolloUser.id.toString(),
       displayName: apolloUser.displayName,
       oauth: {},
-      apiTokens: []
+      apiTokens: [],
     });
     Fs.mkdirSync(getAppConfigDir(), { recursive: true });
     Fs.writeFileSync(this.USERS_FILE_PATH, JSON.stringify(currentUsers));

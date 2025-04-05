@@ -123,7 +123,7 @@ export default class FrontendRenderingDataAccess {
 
     return {
       id: user.id.toString(),
-      displayName: user.displayName
+      displayName: user.displayName,
     };
   }
 
@@ -140,13 +140,13 @@ export default class FrontendRenderingDataAccess {
         id: thirdPartyKey,
         displayName: thirdParty.displayName ?? thirdPartyKey,
         //        href: `${Path.join('/login/third-party/', thirdPartyKey)}?returnTo=${encodeURIComponent(extractReturnTo(req))}`
-        href: `${Path.join('/login/third-party/', thirdPartyKey)}`
+        href: `${Path.join('/login/third-party/', thirdPartyKey)}`,
       });
     }
 
     return {
       loggedInUser: null,
-      pageData: { oAuthProvider }
+      pageData: { oAuthProvider },
     };
   }
 
@@ -174,12 +174,12 @@ export default class FrontendRenderingDataAccess {
           displayName: mediaTitle.title,
           library: {
             id: library.id,
-            displayName: library.name
+            displayName: library.name,
           },
           coverImage: {
             url: `/media/library/${library.id}/${mediaTitle.id}/assets/poster.jpg`,
-            height: 720
-          }
+            height: 720,
+          },
         });
       }
     }
@@ -190,14 +190,14 @@ export default class FrontendRenderingDataAccess {
         libraries: libraries.map(library => {
           return {
             id: library.id,
-            displayName: library.name
+            displayName: library.name,
           };
         }),
         sharedLibraries: [],
         continueWatching: [],
         recentlyAdded: [],
-        everything: everyMediaTitle
-      }
+        everything: everyMediaTitle,
+      },
     };
   }
 
@@ -227,12 +227,12 @@ export default class FrontendRenderingDataAccess {
         displayName: mediaTitle.title,
         library: {
           id: library.id,
-          displayName: library.name
+          displayName: library.name,
         },
         coverImage: {
           url: `/media/library/${library.id}/${mediaTitle.id}/assets/poster.jpg`,
-          height: 720
-        }
+          height: 720,
+        },
       });
     }
 
@@ -241,19 +241,19 @@ export default class FrontendRenderingDataAccess {
       pageData: {
         library: {
           id: library.id,
-          displayName: library.name
+          displayName: library.name,
         },
         libraries: (await libraryManager.getLibraries()).map(library => {
           return {
             id: library.id,
-            displayName: library.name
+            displayName: library.name,
           };
         }),
         sharedLibraries: [],
         continueWatching: [],
         recentlyAdded: [],
-        everything: everyMediaTitle
-      }
+        everything: everyMediaTitle,
+      },
     };
   }
 
@@ -279,8 +279,8 @@ export default class FrontendRenderingDataAccess {
       where: { mediaId: mediaTitle.id },
       orderBy: [
         { seasonNumber: 'asc' },
-        { episodeNumber: 'asc' }
-      ]
+        { episodeNumber: 'asc' },
+      ],
     });
 
     const mediaTitleSeasons: MediaTitlePageData['pageData']['mediaTitle']['mediaContent']['seasons'] = [];
@@ -289,7 +289,7 @@ export default class FrontendRenderingDataAccess {
       if (season == null) {
         mediaTitleSeasons.push(season = {
           counter: mediaItem.seasonNumber ?? 666, // FIXME: Properly support specials/misc/etc.
-          episodes: []
+          episodes: [],
         });
       }
 
@@ -298,7 +298,7 @@ export default class FrontendRenderingDataAccess {
         displayName: mediaItem.title,
         synopsis: mediaItem.synopsis ?? undefined,
         durationInSec: mediaItem.durationInSec,
-        thumbnailImageUrl: `/media/library/${library.id}/${mediaTitle.id}/${Buffer.from(mediaItem.filePath).toString('base64')}/assets/thumbnail.png`
+        thumbnailImageUrl: `/media/library/${library.id}/${mediaTitle.id}/${Buffer.from(mediaItem.filePath).toString('base64')}/assets/thumbnail.png`,
       });
     }
 
@@ -308,7 +308,7 @@ export default class FrontendRenderingDataAccess {
         mediaTitle: {
           library: {
             id: library.id,
-            displayName: library.name
+            displayName: library.name,
           },
 
           id: mediaTitle.id.toString(),
@@ -317,17 +317,17 @@ export default class FrontendRenderingDataAccess {
           thumbnailImageUrl: `/media/library/${library.id}/${mediaTitle.id}/assets/poster.jpg`,
           mediaContent: {
             type: 'series',
-            seasons: mediaTitleSeasons
-          }
+            seasons: mediaTitleSeasons,
+          },
         },
         libraries: (await libraryManager.getLibraries()).map(library => {
           return {
             id: library.id,
-            displayName: library.name
+            displayName: library.name,
           };
         }),
-        sharedLibraries: []
-      }
+        sharedLibraries: [],
+      },
     };
   }
 }

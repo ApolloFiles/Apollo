@@ -1,5 +1,5 @@
-import ChildProcess from 'node:child_process';
 import * as MimeType from 'mime-types';
+import ChildProcess from 'node:child_process';
 import ProcessBuilder from './process_manager/ProcessBuilder';
 
 export default class FileTypeUtils {
@@ -82,7 +82,7 @@ export default class FileTypeUtils {
         stdout: childProcessResult.process.bufferedStdOut.toString('utf-8'),
         stderr: childProcessResult.process.bufferedStdErr.toString('utf-8'),
         args,
-        childProcessArgs
+        childProcessArgs,
       })}`);
     }
 

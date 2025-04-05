@@ -15,11 +15,11 @@ export default class FileIndexTable {
         filesystem: file.fileSystem.getUniqueId(),
         filePath: file.path,
         isDirectory: fileStats.isDirectory(),
-        sizeBytes: fileStats.isDirectory() ? null : BigInt(fileStats.size)
+        sizeBytes: fileStats.isDirectory() ? null : BigInt(fileStats.size),
       },
       select: {
-        ownerId: true
-      }
+        ownerId: true,
+      },
     });
     return dbRes != null;
   }

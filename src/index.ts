@@ -6,7 +6,7 @@ import {
   getPrismaClient,
   getPrismaClientIfAlreadyInitialized,
   getProcessManager,
-  getUserStorageTmpRootOnSameFileSystem
+  getUserStorageTmpRootOnSameFileSystem,
 } from './Constants';
 import LibraryManager from './media/libraries/LibraryManager';
 import LibraryScanner from './media/libraries/scan/LibraryScanner';

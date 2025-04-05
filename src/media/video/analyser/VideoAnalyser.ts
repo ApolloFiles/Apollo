@@ -50,7 +50,7 @@ export default class VideoAnalyser {
           end: chapter.end,
           endTime: chapter.end_time,
 
-          tags: chapter.tags ?? {}
+          tags: chapter.tags ?? {},
         });
       }
     }
@@ -94,8 +94,8 @@ export default class VideoAnalyser {
         bitRate: rawProbeResult.format.bit_rate,
         probeScore: rawProbeResult.format.probe_score,
 
-        tags: rawProbeResult.format.tags ?? {}
-      }
+        tags: rawProbeResult.format.tags ?? {},
+      },
     };
   }
 
@@ -120,7 +120,7 @@ export default class VideoAnalyser {
 
       extraDataSize: rawStream.extradata_size,
 
-      tags: rawStream.tags ?? {}
+      tags: rawStream.tags ?? {},
     };
   }
 
@@ -147,7 +147,7 @@ export default class VideoAnalyser {
       chromaLocation: rawStream.chroma_location,
       refs: rawStream.refs,
 
-      disposition: rawStream.disposition ?? {}
+      disposition: rawStream.disposition ?? {},
     };
   }
 
@@ -164,7 +164,7 @@ export default class VideoAnalyser {
 
       bitsPerSample: rawStream.bits_per_sample,
 
-      disposition: rawStream.disposition ?? {}
+      disposition: rawStream.disposition ?? {},
     };
   }
 }

@@ -32,8 +32,8 @@ export default class LiveTranscodeMedia extends ApolloFileMedia {
         type: 'backendDebugInfo',
         data: {
           videoEncoder: transcode.videoEncoder,
-          ...metrics
-        }
+          ...metrics,
+        },
       });
     });
 
@@ -63,18 +63,18 @@ export default class LiveTranscodeMedia extends ApolloFileMedia {
             title: subtitle.title,
             language: subtitle.language,
             codecName: subtitle.codecName,
-            uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(transcodeDirName)}/_subtitles/${encodeURIComponent(subtitle.fileName)}`
+            uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(transcodeDirName)}/_subtitles/${encodeURIComponent(subtitle.fileName)}`,
           };
         }),
         fonts: subtitleFonts.map((font) => {
           return {
-            uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(transcodeDirName)}/_subtitles/fonts/${encodeURIComponent(font.fileName)}`
+            uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(transcodeDirName)}/_subtitles/fonts/${encodeURIComponent(font.fileName)}`,
           };
         }),
         audioNames: Object.fromEntries(transcode.audioNameMap),
 
-        seekThumbnailUri: this.data.metadata?.seekThumbnailUri
-      }
+        seekThumbnailUri: this.data.metadata?.seekThumbnailUri,
+      },
     };
   }
 

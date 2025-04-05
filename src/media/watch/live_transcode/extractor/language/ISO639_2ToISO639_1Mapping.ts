@@ -504,5 +504,5 @@ export const ISO639_2ToISO639_1Mapping: { [iso639_2: string]: string } = Object.
   'zul': 'zu',
   'zun': 'zun',
   'zxx': 'zxx',
-  'zza': 'zza'
+  'zza': 'zza',
 });

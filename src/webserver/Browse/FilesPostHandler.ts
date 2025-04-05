@@ -14,7 +14,7 @@ const postActionHandlers: IPostActionHandler[] = [
   new CreateFilePostActionHandler(true),
   new DeleteFilePostActionHandler(),
   new FileUploadPostActionHandler(),
-  new RenamePostActionHandler()
+  new RenamePostActionHandler(),
 ];
 
 export function filesHandlePost(req: express.Request, res: express.Response, frontendType: 'browse' | 'trash'): () => Promise<void> {
@@ -37,7 +37,7 @@ export function filesHandlePost(req: express.Request, res: express.Response, fro
         abortOnLimit: true,
         useTempFiles: true,
         tempFileDir: Path.join(user.getTmpFileSystem().getAbsolutePathOnHost(), 'uploads'),
-        preservePath: true
+        preservePath: true,
       }));
     }
     // await runMiddleware(req, res, express.json());

@@ -8,7 +8,7 @@ export default class FileStatCache {
   constructor() {
     this.cache = new NodeCache({
       stdTTL: 60 * 60,
-      useClones: false
+      useClones: false,
     });
   }
 
@@ -19,7 +19,7 @@ export default class FileStatCache {
   async clearFile(file: LocalFile): Promise<void> {
     const cacheClear = Promise.all([
       this.getCacheKey(file, 'stat').then(key => this.cache.del(key)),
-      this.getCacheKey(file, 'mimeType').then(key => this.cache.del(key))
+      this.getCacheKey(file, 'mimeType').then(key => this.cache.del(key)),
     ]);
 
     if (file.path.lastIndexOf('/') === 0) {

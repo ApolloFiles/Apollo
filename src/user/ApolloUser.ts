@@ -1,6 +1,6 @@
+import LocalFileSystem from './files/local/LocalFileSystem';
 import LocalUserFileSystem from './files/local/LocalUserFileSystem';
 import LocalUserTmpFileSystem from './files/local/LocalUserTmpFileSystem';
-import LocalFileSystem from './files/local/LocalFileSystem';
 import ApolloFileUrl from './files/url/ApolloFileUrl';
 import VirtualFile from './files/VirtualFile';
 import VirtualFileSystem from './files/VirtualFileSystem';
@@ -35,7 +35,7 @@ export default class ApolloUser {
       // TODO: read FileSystems/IDs from config/database
       new LocalUserFileSystem(1n, this, 'Trash Bin'),
       new LocalUserTmpFileSystem(2n, this, 'Temporary Files (automatically managed by Apollo)'),
-      new LocalUserFileSystem(3n, this, 'Files')
+      new LocalUserFileSystem(3n, this, 'Files'),
     ];
   }
 

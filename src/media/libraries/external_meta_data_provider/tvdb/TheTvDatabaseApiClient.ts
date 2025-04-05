@@ -68,7 +68,7 @@ export class TheTvDatabaseApiClient {
       value.overview,
       (value.translations?.overviewTranslations as any[])?.find(t => t.language === 'deu')?.overview,
       (value.translations?.overviewTranslations as any[])?.find(t => t.language === 'eng')?.overview,
-      (value.translations?.overviewTranslations as any[])?.find(t => t.isPrimary)?.overview
+      (value.translations?.overviewTranslations as any[])?.find(t => t.isPrimary)?.overview,
     ].find(o => o != null && o !== '') ?? null;
 
     return {
@@ -85,7 +85,7 @@ export class TheTvDatabaseApiClient {
       remoteIds: value.remoteIds ?? [],
 
       originalCountry: this.parseAsStringOptional(value.originalCountry),
-      originalLanguage: this.parseAsStringOptional(value.originalLanguage)
+      originalLanguage: this.parseAsStringOptional(value.originalLanguage),
     };
   }
 
@@ -96,14 +96,14 @@ export class TheTvDatabaseApiClient {
 
     return getHttpClient().get(apiUrl, {
       Accept: 'application/json',
-      Authorization: `Bearer ${this.bearerToken}`
+      Authorization: `Bearer ${this.bearerToken}`,
     });
   }
 
   private async login(): Promise<void> {
     const loginRes = await getHttpClient().post(`${this.BASE_URL}/login`, {
       Accept: 'application/json',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     }, { apikey: this.apiKey });
 
     if (loginRes.status !== 200) {

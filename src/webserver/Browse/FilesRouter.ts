@@ -10,7 +10,7 @@ export function createFilesRouter(frontendType: 'browse' | 'trash'): express.Rou
     handleRequestRestfully(req, res, next,
       {
         get: filesHandleGet(req, res, next, frontendType),
-        post: filesHandlePost(req, res, frontendType)
+        post: filesHandlePost(req, res, frontendType),
       });
   });
 

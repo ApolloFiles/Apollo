@@ -214,7 +214,7 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
         size: /*Utils.prettifyFileSize(await innerFile.getSize())*/ '-',
         mimeType: innerFileMimeType,
 
-        frontendUrl: await UrlBuilder.buildUrl(innerFile, innerFileStat)
+        frontendUrl: await UrlBuilder.buildUrl(innerFile, innerFileStat),
       });
       // responseStr += `<li><a class="${innerFileStat.isFile() ? 'hoverable' : ''}" href="${}">${innerFile.getName()}</a> (${innerFileStat.isFile() ? innerFileMimeType : 'Directory'}; ${Utils.prettifyFileSize(innerFileStat.isFile() ? innerFileStat.size : await fastDirectorySize.getDirectorySize(innerFile.getAbsolutePathOnHost() as string))})<div class="hover-box"><img width="256px" height="256px" ${innerFileStat.isFile() ? '' : 'disabled-'}src="${Path.join(req.originalUrl, encodeURIComponent(innerFile.getName()))}?type=thumbnail"></div></li>`;
     } catch (err: any) {
@@ -358,11 +358,11 @@ async function sendDirectoryView(req: express.Request, res: express.Response, ty
         lastFavoriteFiles: [],
         recentFiles: [],
         banners: totalStorageUsage >= 0 ? [
-          { type: 'info', msg: `Aktueller Gesamtverbrauch: ${totalStorageUsage}`, dismissible: false }
+          { type: 'info', msg: `Aktueller Gesamtverbrauch: ${totalStorageUsage}`, dismissible: false },
         ] : [],
         files: filesToRender,
-        breadcrumbs: requestedFile ? await generateBreadcrumbs(requestedFile) : []
-      }
+        breadcrumbs: requestedFile ? await generateBreadcrumbs(requestedFile) : [],
+      },
     ));
 
   // let responseStr = `${file.getPath() == '/' ? '' : `<a href="${Utils.encodeUriProperly(Path.dirname(Utils.decodeUriProperly(req.originalUrl)))}">Go up to ${Path.dirname(file.getPath())}</a>`}` +
@@ -382,7 +382,7 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
   }
 
   if (fileRequestType == 'thumbnail') {
-    if(!(file instanceof LocalFile)){
+    if (!(file instanceof LocalFile)) {
       res
         .status(501)
         .send('Cannot generate thumbnail for file that does not exist on the host');
@@ -475,7 +475,7 @@ async function generateBreadcrumbs(file: VirtualFile): Promise<BreadcrumbItem[]>
 
   const result: BreadcrumbItem[] = [{
     name: 'root',
-    frontendUrl: await UrlBuilder.buildUrl(file.fileSystem.getFile('/'))
+    frontendUrl: await UrlBuilder.buildUrl(file.fileSystem.getFile('/')),
   }];
 
   let currPath = '/';
@@ -484,7 +484,7 @@ async function generateBreadcrumbs(file: VirtualFile): Promise<BreadcrumbItem[]>
 
     result.push({
       name: arg,
-      frontendUrl: await UrlBuilder.buildUrl(file.fileSystem.getFile(currPath))
+      frontendUrl: await UrlBuilder.buildUrl(file.fileSystem.getFile(currPath)),
     });
   }
 

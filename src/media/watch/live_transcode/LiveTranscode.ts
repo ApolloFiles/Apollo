@@ -42,7 +42,7 @@ export default class LiveTranscode {
     const targetOptions: TargetOptions = {
       fps: this.determineTargetFps(videoStream),
       width: this.determineTargetWidth(videoStream),
-      segmentDuration: 2
+      segmentDuration: 2,
     };
 
     const videoEncoder = await this.determineEncoderToUse();
@@ -75,17 +75,17 @@ export default class LiveTranscode {
       '-var_stream_map', streamArgs.varStreamMap.join(' '),
 
       '-f', 'hls',
-      `stream_%v/manifest.m3u8`
+      `stream_%v/manifest.m3u8`,
     ];
 
     return {
       process: new FfmpegProcess(ffmpegArgs, {
         stdio: ['ignore', 'ignore', 'pipe'],
-        cwd: targetDir
+        cwd: targetDir,
       }),
       mediaDuration: parseFloat(videoStream.duration ?? videoAnalysis.file.duration),
       videoEncoder,
-      audioNameMap: streamArgs.audioNameMap
+      audioNameMap: streamArgs.audioNameMap,
     };
   }
 
@@ -175,13 +175,13 @@ export default class LiveTranscode {
         '-c:v', encoder,
         '-frames:v', '1',
         '-f', 'null',
-        '-'
+        '-',
       ],
       {
         stdio: 'ignore',
         cwd: Os.tmpdir(),
         timeout: 10_000,
-        killSignal: 'SIGKILL' // If we exceed the generous timeout, something is really wrong -> Force kill
+        killSignal: 'SIGKILL', // If we exceed the generous timeout, something is really wrong -> Force kill
       });
 
     return new Promise((resolve, reject) => {

@@ -61,9 +61,9 @@ apiRouter.use('/v1/userinfo', requireAuthMiddleware, (req, res, next) => {
         .type('application/json')
         .send({
           id: user.id.toString(),
-          displayName: user.displayName
+          displayName: user.displayName,
         });
-    }
+    },
   });
 });
 
@@ -107,7 +107,7 @@ apiRouter.use('/v1/file/list', requireAuthMiddleware, (req, res, next) => {
         files.push({
           name: file.getFileName(),
           mimeType: isDirectory ? undefined : (await file.getMimeType() ?? undefined),
-          isDirectory: isDirectory
+          isDirectory: isDirectory,
         });
       }
 
@@ -126,9 +126,9 @@ apiRouter.use('/v1/file/list', requireAuthMiddleware, (req, res, next) => {
         .type('application/json')
         .send({
           path: requestedDirectory.path,
-          files
+          files,
         });
-    }
+    },
   });
 });
 
@@ -159,7 +159,7 @@ apiRouter.use('/v1/file/get', requireAuthMiddleware, (req, res, next) => {
       }
 
       await Utils.sendFileRespectingRequestedRange(req, res, next, requestedFile, await requestedFile.getMimeType() ?? 'application/octet-stream');
-    }
+    },
   });
 });
 
@@ -189,14 +189,14 @@ apiRouter.use('/v1/video-analysis', requireAuthMiddleware, (req, res, next) => {
         const chapters = videoAnalysis.chapters.map(chapter => ({
           start: chapter.start,
           end: chapter.end,
-          tags: chapter.tags
+          tags: chapter.tags,
         }));
         const streams = videoAnalysis.streams.map(stream => ({
           index: stream.index,
           codecType: stream.codecType,
           codecNameLong: stream.codecNameLong,
           tags: stream.tags,
-          disposition: stream.disposition ?? {}
+          disposition: stream.disposition ?? {},
         }));
 
         return {
@@ -208,7 +208,7 @@ apiRouter.use('/v1/video-analysis', requireAuthMiddleware, (req, res, next) => {
 
           tags: videoAnalysis.file.tags,
           chapters,
-          streams
+          streams,
         };
       };
 
@@ -238,7 +238,7 @@ apiRouter.use('/v1/video-analysis', requireAuthMiddleware, (req, res, next) => {
         .status(200)
         .type('application/json')
         .send(result);
-    }
+    },
   });
 });
 
@@ -406,7 +406,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         file: {
           ...originalVideoAnalysis.file,
           streamCount: originalVideoAnalysis.file.streamCount - streamsToDelete.length,
-          tags: fileTags
+          tags: fileTags,
         },
         chapters: originalVideoAnalysis.chapters,
         streams: originalVideoAnalysis.streams
@@ -414,8 +414,8 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           .map(stream => ({
             ...stream,
             index: expectedResultVideoAnalysisStreamCounter++,
-            tags: streamTags[stream.index] ?? stream.tags
-          }))
+            tags: streamTags[stream.index] ?? stream.tags,
+          })),
       };
       for (const stream of expectedResultVideoAnalysis.streams) {
         (stream as any).index = streamOrder.indexOf(stream.index);
@@ -424,7 +424,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
 
       const performWriteAndValidations = async (backgroundTaskId: string): Promise<{ statusCode: number, body: unknown /* FIXME */ }> => {
         TaskStorage.setAdditionalTaskProgressInfo(backgroundTaskId, {
-          text: 'Writing changes into copy of original file…'
+          text: 'Writing changes into copy of original file…',
         });
 
         let coverJpegPath: string | null = null;
@@ -512,7 +512,7 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
 
           return {
             file: getNormalizedTags(analysis.file.tags),
-            streams: analysis.streams.map(stream => getNormalizedTags(stream.tags))
+            streams: analysis.streams.map(stream => getNormalizedTags(stream.tags)),
           };
         }
 
@@ -524,14 +524,14 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
               body: {
                 error: 'Could not verify that the cover image was attached correctly – Original file was kept unchanged.',
                 expected: getNormalizedAnalysisForCompare(expectedResultVideoAnalysis),
-                actual: getNormalizedAnalysisForCompare(actualResultVideoAnalysis)
-              }
+                actual: getNormalizedAnalysisForCompare(actualResultVideoAnalysis),
+              },
             };
           }
 
           expectedResultVideoAnalysis.streams.push({
             ...actualResultVideoAnalysis.streams.at(-1)!,
-            index: expectedResultVideoAnalysis.streams.length
+            index: expectedResultVideoAnalysis.streams.length,
           });
           ++(expectedResultVideoAnalysis.file as any).streamCount;
         }
@@ -551,8 +551,8 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
             body: {
               error: errorMessage,
               expected: normalizedExpectedAnalysisForCompare,
-              actual: normalizedActualAnalysisForCompare
-            }
+              actual: normalizedActualAnalysisForCompare,
+            },
           };
         }
 
@@ -571,8 +571,8 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
             body: {
               error: errorMessage,
               expected: normalizedExpectedTags,
-              actual: normalizedActualTags
-            }
+              actual: normalizedActualTags,
+            },
           };
         }
 
@@ -598,17 +598,17 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
               chapters: actualResultVideoAnalysis.chapters.map(chapter => ({
                 start: chapter.start,
                 end: chapter.end,
-                tags: chapter.tags
+                tags: chapter.tags,
               })),
               streams: actualResultVideoAnalysis.streams.map(stream => ({
                 index: stream.index,
                 codecType: stream.codecType,
                 codecNameLong: stream.codecNameLong,
                 tags: stream.tags,
-                disposition: stream.disposition ?? {}
-              }))
-            } satisfies VideoAnalysisResult
-          }
+                disposition: stream.disposition ?? {},
+              })),
+            } satisfies VideoAnalysisResult,
+          },
         };
       };
 
@@ -618,9 +618,9 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
         .status(202)
         .send({
           taskId: backgroundTask.taskId,
-          taskStatusUri: `/api/v1/task-status?taskId=${encodeURIComponent(backgroundTask.taskId)}`
+          taskStatusUri: `/api/v1/task-status?taskId=${encodeURIComponent(backgroundTask.taskId)}`,
         });
-    }
+    },
   });
 });
 
@@ -690,7 +690,7 @@ apiRouter.use('/v1/get-video-frames', requireAuthMiddleware, (req, res, next) =>
         .status(200)
         .type('image/jpeg')
         .sendFile(allFrames[requestedFrameIndex]);
-    }
+    },
   });
 });
 
@@ -731,7 +731,7 @@ apiRouter.use('/v1/task-status', requireAuthMiddleware, (req, res, next) => {
             taskId: backgroundTask.taskId,
             creationTime: backgroundTask.creationTime,
             finished: false,
-            progressStats: TaskStorage.getTaskProgressInfo(backgroundTask.taskId)
+            progressStats: TaskStorage.getTaskProgressInfo(backgroundTask.taskId),
           });
         return;
       }
@@ -744,9 +744,9 @@ apiRouter.use('/v1/task-status', requireAuthMiddleware, (req, res, next) => {
           creationTime: new Date(backgroundTask.creationTime).toISOString(),
           finished: true,
           progressStats: TaskStorage.getTaskProgressInfo(backgroundTask.taskId),
-          result: await backgroundTask.waitForCompletion()
+          result: await backgroundTask.waitForCompletion(),
         });
-    }
+    },
   });
 });
 
@@ -757,6 +757,6 @@ apiRouter.use('/', (req, res, next) => {
         .status(404)
         .type('application/json')
         .send({ error: 'Unknown API endpoint' });
-    }
+    },
   });
 });

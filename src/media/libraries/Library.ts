@@ -22,11 +22,11 @@ export default class Library {
   fetchTitles(): Promise<PrismaClient.MediaLibraryMedia[]> {
     return getPrismaClient()!.mediaLibraryMedia.findMany({
       where: {
-        libraryId: BigInt(this.id)
+        libraryId: BigInt(this.id),
       },
       orderBy: {
-        addedAt: 'desc'
-      }
+        addedAt: 'desc',
+      },
     });
   }
 
@@ -39,9 +39,9 @@ export default class Library {
       where: {
         mediaId_filePath: {
           mediaId: BigInt(titleId),
-          filePath: mediaFilePath
-        }
-      }
+          filePath: mediaFilePath,
+        },
+      },
     });
   }
 }

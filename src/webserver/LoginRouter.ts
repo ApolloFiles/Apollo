@@ -1,9 +1,7 @@
 import { handleRequestRestfully } from '@spraxdev/node-commons';
 import express from 'express';
-import Path from 'node:path';
 import * as querystring from 'querystring';
 import { getConfig, getHttpClient } from '../Constants';
-import { LoginTemplate, LoginTemplateData } from '../frontend/LoginTemplate';
 import { ApolloConfig } from '../global';
 import ApolloUser from '../user/ApolloUser';
 import ApolloUserStorage from '../user/ApolloUserStorage';
@@ -28,7 +26,7 @@ loginRouter.all('/', (req: express.Request, res, next) => {
 
       // Svelte should handle the request
       next();
-    }
+    },
   });
 });
 
@@ -69,7 +67,7 @@ loginRouter.all('/third-party/:thirdPartyProviderKey?', (req: express.Request, r
             .send(`Found the requested third party provider, but its type is not supported (broken configuration?).`);
           return;
       }
-    }
+    },
   });
 });
 
@@ -148,7 +146,7 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
       redirect_uri: new URL(getOriginalPath(req), getConfig().data.baseUrl).href,
       response_type: 'code',
       response_mode: 'query',
-      scope: thirdPartyProvider.scopes.join(' ')
+      scope: thirdPartyProvider.scopes.join(' '),
     }));
 
     return;
@@ -160,7 +158,7 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
     grant_type: 'authorization_code',
 
     code: req.query.code,
-    redirect_uri: new URL(getOriginalPath(req), getConfig().data.baseUrl).href
+    redirect_uri: new URL(getOriginalPath(req), getConfig().data.baseUrl).href,
   };
   let tokenRequestBody;
 
@@ -181,7 +179,7 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
   const tokenResponse = await getHttpClient().post(thirdPartyProvider.tokenUrl,
     {
       Accept: 'application/json',
-      'Content-Type': `application/${thirdPartyProvider.requestBodyContentType}`
+      'Content-Type': `application/${thirdPartyProvider.requestBodyContentType}`,
     }, tokenRequestBody);
 
   const tokenResponseBody = JSON.parse(tokenResponse.body.toString('utf-8'));
@@ -194,7 +192,7 @@ async function handleOAuth2Request(req: express.Request, res: express.Response, 
 
   const accountInfoRes = await getHttpClient().get(thirdPartyProvider.accountInfo.url, {
     Accept: 'application/json',
-    Authorization: `Bearer ${tokenResponseBody.access_token}`
+    Authorization: `Bearer ${tokenResponseBody.access_token}`,
   });
 
   if (!accountInfoRes.ok) {

@@ -32,7 +32,7 @@ export default class FontExtractor {
         `-dump_attachment:${stream.index}`,
         fontTargetPath,
 
-        '-i', videoFile
+        '-i', videoFile,
       ];
 
       await Fs.promises.mkdir(targetDir, { recursive: true });

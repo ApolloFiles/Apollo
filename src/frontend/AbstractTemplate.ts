@@ -31,7 +31,7 @@ export abstract class AbstractTemplate {
       root: Path.join(getAppResourcesDir(), 'public'),
       cache: isProduction(),
       beautify: false,
-      rmWhitespace: false
+      rmWhitespace: false,
 
       // openDelimiter: '%{',
       // closeDelimiter: '}',

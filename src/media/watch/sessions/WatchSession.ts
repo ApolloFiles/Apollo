@@ -8,7 +8,7 @@ import {
   Message,
   PlaybackState,
   SuperMasterChangeMessage,
-  WelcomeMessage
+  WelcomeMessage,
 } from './CommunicationProtocol';
 import BaseSessionMedia from './media/BaseSessionMedia';
 import SessionMedia from './media/SessionMedia';
@@ -48,8 +48,8 @@ export default class WatchSession {
       type: 'mediaChange',
       data: {
         issuerClientId,
-        media: null
-      }
+        media: null,
+      },
     });
   }
 
@@ -65,8 +65,8 @@ export default class WatchSession {
       type: 'mediaChange',
       data: {
         issuerClientId,
-        media: this.currentMedia.data
-      }
+        media: this.currentMedia.data,
+      },
     });
   }
 
@@ -80,7 +80,7 @@ export default class WatchSession {
       .map((client) => {
         return {
           clientId: client.id,
-          displayName: client.displayName
+          displayName: client.displayName,
         };
       });
     this.connectedClients.set(clientId, client);
@@ -92,16 +92,16 @@ export default class WatchSession {
         displayName: client.displayName,
         clients: welcomeClientList,
         media: this.currentMedia?.data,
-        playbackState: this.playbackState
-      }
+        playbackState: this.playbackState,
+      },
     });
 
     await this._broadcast<ClientConnectMessage>({
       type: 'clientConnect',
       data: {
         clientId,
-        displayName: client.displayName
-      }
+        displayName: client.displayName,
+      },
     }, clientId);
 
     if (this.superMasterId == null) {
@@ -110,8 +110,8 @@ export default class WatchSession {
       await client._send<SuperMasterChangeMessage>({
         type: 'superMasterChange',
         data: {
-          clientId: this.superMasterId!
-        }
+          clientId: this.superMasterId!,
+        },
       });
     }
   }
@@ -129,14 +129,14 @@ export default class WatchSession {
     await this._broadcast<ClientDisconnectMessage>({
       type: 'clientDisconnect',
       data: {
-        clientId
-      }
+        clientId,
+      },
     });
 
     if (this.connectedClients.size <= 0) {
       this.playbackState = {
         ...this.playbackState,
-        paused: true
+        paused: true,
       };
     }
   }
@@ -156,8 +156,8 @@ export default class WatchSession {
     await this._broadcast<SuperMasterChangeMessage>({
       type: 'superMasterChange',
       data: {
-        clientId: this.superMasterId
-      }
+        clientId: this.superMasterId,
+      },
     });
   }
 

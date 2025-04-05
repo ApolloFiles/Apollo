@@ -73,13 +73,13 @@ export default class PostgresFileIndex implements FileIndex {
       where: {
         AND: {
           ownerId: file.fileSystem.owner.id,
-          filesystem: file.fileSystem.getUniqueId()
+          filesystem: file.fileSystem.getUniqueId(),
         },
         OR: [
           { filePath: file.path },
-          { filePath: { startsWith: Path.join(file.path, '/') } }
-        ]
-      }
+          { filePath: { startsWith: Path.join(file.path, '/') } },
+        ],
+      },
     });
   }
 
@@ -88,13 +88,13 @@ export default class PostgresFileIndex implements FileIndex {
       where: {
         ownerId: src.fileSystem.owner.id,
         filesystem: src.fileSystem.getUniqueId(),
-        filePath: src.path
+        filePath: src.path,
       },
       data: {
         ownerId: dest.fileSystem.owner.id,
         filesystem: dest.fileSystem.getUniqueId(),
-        filePath: dest.path
-      }
+        filePath: dest.path,
+      },
     });
 
     getPrismaClient()!.$executeRaw`UPDATE user_file_index
@@ -110,8 +110,8 @@ export default class PostgresFileIndex implements FileIndex {
     await getPrismaClient()!.fileSearchIndexEntry.deleteMany({
       where: {
         ownerId: user.id,
-        filesystem: fileSystem?.getUniqueId()
-      }
+        filesystem: fileSystem?.getUniqueId(),
+      },
     });
   }
 

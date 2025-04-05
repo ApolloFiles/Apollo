@@ -43,8 +43,8 @@ export default class ApolloFileMedia extends BaseSessionMedia {
       uri: `./${encodeURIComponent(session.id)}/f/${encodeURIComponent(hardLinkFileName)}`,
 
       metadata: {
-        seekThumbnailUri: `./${encodeURIComponent(session.id)}/f/${thumbnailsDirName}/${WebVttKeyframeGenerator.VTT_FILE_NAME}`
-      }
+        seekThumbnailUri: `./${encodeURIComponent(session.id)}/f/${thumbnailsDirName}/${WebVttKeyframeGenerator.VTT_FILE_NAME}`,
+      },
     };
     await super.init(session, issuingClient);
   }

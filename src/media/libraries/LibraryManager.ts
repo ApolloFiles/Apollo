@@ -17,14 +17,14 @@ export default class LibraryManager {
         id: BigInt(libraryId),
         OR: [
           {
-            ownerId: this.user.id
+            ownerId: this.user.id,
           },
           {
             MediaLibrarySharedWith: {
-              some: { userId: this.user.id }
-            }
-          }
-        ]
+              some: { userId: this.user.id },
+            },
+          },
+        ],
       },
       select: {
         id: true,
@@ -33,10 +33,10 @@ export default class LibraryManager {
         directoryPaths: true,
         MediaLibrarySharedWith: {
           select: {
-            userId: true
-          }
-        }
-      }
+            userId: true,
+          },
+        },
+      },
     });
     if (library == null) {
       return null;
@@ -55,7 +55,7 @@ export default class LibraryManager {
       library.id.toString(),
       library.name,
       library.MediaLibrarySharedWith.map(v => Number(v.userId)),
-      this.mapLibraryPathToUserFile(library.directoryPaths)
+      this.mapLibraryPathToUserFile(library.directoryPaths),
     );
   }
 
@@ -64,14 +64,14 @@ export default class LibraryManager {
       where: {
         OR: [
           {
-            ownerId: this.user.id
+            ownerId: this.user.id,
           },
           {
             MediaLibrarySharedWith: {
-              some: { userId: this.user.id }
-            }
-          }
-        ]
+              some: { userId: this.user.id },
+            },
+          },
+        ],
       },
       select: {
         id: true,
@@ -80,10 +80,10 @@ export default class LibraryManager {
         directoryPaths: true,
         MediaLibrarySharedWith: {
           select: {
-            userId: true
-          }
-        }
-      }
+            userId: true,
+          },
+        },
+      },
     });
 
     const result: Library[] = [];
@@ -100,7 +100,7 @@ export default class LibraryManager {
         user,
         library.id.toString(),
         library.name, library.MediaLibrarySharedWith.map(v => Number(v.userId)),
-        this.mapLibraryPathToUserFile(library.directoryPaths)
+        this.mapLibraryPathToUserFile(library.directoryPaths),
       ));
     }
 

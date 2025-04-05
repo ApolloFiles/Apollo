@@ -18,9 +18,9 @@ export class SimpleTemplate extends AbstractTemplate {
         req: { body: req.method === 'GET' ? req.query : req.body ?? {} },
         apolloConfig: getConfig().data,
         HELPERS: {
-          escapeHtml: Utils.escapeHtml
-        }
-      }
+          escapeHtml: Utils.escapeHtml,
+        },
+      },
     });
   }
 }

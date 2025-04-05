@@ -21,22 +21,22 @@ export default class LibraryScanner {
         const titleRoot = directory.fileSystem.getFile('/' + Path.relative(directory.fileSystem.getAbsolutePathOnHost(), mediaAnalysis.rootDirectory)); // FIXME
         const titleId = (await getPrismaClient()!.mediaLibraryMedia.upsert({
           select: {
-            id: true
+            id: true,
           },
           where: {
             libraryId_directoryPath: {
               libraryId: BigInt(library.id),
-              directoryPath: titleRoot.path
-            }
+              directoryPath: titleRoot.path,
+            },
           },
           create: {
             libraryId: BigInt(library.id),
             directoryPath: titleRoot.path,
-            title: mediaAnalysis.name
+            title: mediaAnalysis.name,
           },
           update: {
-            title: mediaAnalysis.name
-          }
+            title: mediaAnalysis.name,
+          },
         })).id.toString();
 
         console.log(`[DEBUG] Scanning title '${mediaAnalysis.name}'...`);
@@ -53,8 +53,8 @@ export default class LibraryScanner {
             where: {
               mediaId_filePath: {
                 mediaId: BigInt(titleId),
-                filePath: apolloVideoFile.path
-              }
+                filePath: apolloVideoFile.path,
+              },
             },
             create: {
               mediaId: BigInt(titleId),
@@ -65,7 +65,7 @@ export default class LibraryScanner {
               lastScannedAt: libraryScanStart,
               addedAt: new Date(),
               durationInSec: durationInSeconds,
-              synopsis: mediaSynopsis
+              synopsis: mediaSynopsis,
             },
             update: {
               title: mediaTitle ?? Path.basename(videoFile.filePath, Path.extname(videoFile.filePath)),
@@ -73,8 +73,8 @@ export default class LibraryScanner {
               episodeNumber: videoFile.tvShow?.episode ?? null,
               lastScannedAt: new Date(),
               durationInSec: durationInSeconds,
-              synopsis: mediaSynopsis
-            }
+              synopsis: mediaSynopsis,
+            },
           });
         }
 
@@ -85,43 +85,43 @@ export default class LibraryScanner {
         where: {
           mediaId: BigInt(library.id),
           filePath: {
-            startsWith: Path.join(directory.path, '/')
+            startsWith: Path.join(directory.path, '/'),
           },
           lastScannedAt: {
-            lt: libraryScanStart
-          }
-        }
+            lt: libraryScanStart,
+          },
+        },
       });
     }
 
     await getPrismaClient()!.mediaLibraryMediaItem.deleteMany({
       where: {
         media: {
-          libraryId: BigInt(library.id)
+          libraryId: BigInt(library.id),
         },
         lastScannedAt: {
-          lt: libraryScanStart
-        }
-      }
+          lt: libraryScanStart,
+        },
+      },
     });
     await getPrismaClient()!.mediaLibraryMedia.deleteMany({
       where: {
         libraryId: BigInt(library.id),
         items: {
-          none: {}
-        }
-      }
+          none: {},
+        },
+      },
     });
   }
 
   private async fetchExternalTitleMetaDataIfNeeded(libraryId: string, titleId: string, titleRoot: VirtualFile, metaProvider: MetaProvider[]): Promise<void> {
     const existingMedia = await getPrismaClient()!.mediaLibraryMedia.findUnique({
       select: {
-        synopsis: true
+        synopsis: true,
       },
       where: {
-        id: BigInt(titleId)
-      }
+        id: BigInt(titleId),
+      },
     });
 
     const titleHasSynopsisSaved = existingMedia?.synopsis != null;
@@ -144,11 +144,11 @@ export default class LibraryScanner {
     if (!titleHasSynopsisSaved && externalMetaData.synopsis) {
       await getPrismaClient()!.mediaLibraryMedia.update({
         where: {
-          id: BigInt(titleId)
+          id: BigInt(titleId),
         },
         data: {
-          synopsis: externalMetaData.synopsis
-        }
+          synopsis: externalMetaData.synopsis,
+        },
       });
     }
 
@@ -162,7 +162,7 @@ export default class LibraryScanner {
           .resize({
             height: 1500,
             fit: 'contain',
-            withoutEnlargement: true
+            withoutEnlargement: true,
           })
           .jpeg()
           .toBuffer();

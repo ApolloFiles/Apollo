@@ -87,8 +87,8 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
               width: 400,
               height: 600,
               channels: 3,
-              background: { r: 125, g: 125, b: 125 }
-            }
+              background: { r: 125, g: 125, b: 125 },
+            },
           })
             .composite([{
               input: {
@@ -96,9 +96,9 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
                   text: `<span foreground="white">${titleStartingLetters}</span>`,
                   rgba: true,
                   width: 300,
-                  height: 400
-                }
-              }
+                  height: 400,
+                },
+              },
             }])
             .jpeg()
             .toBuffer();
@@ -134,7 +134,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           .resize({
             height: 720,
             fit: 'contain',
-            withoutEnlargement: true
+            withoutEnlargement: true,
           })
           .jpeg()
           .toBuffer();
@@ -143,7 +143,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         res
           .type('image/jpeg')
           .send(posterData);
-      }
+      },
     });
   });
 
@@ -198,13 +198,13 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         const chapters = videoAnalysis.chapters.map(chapter => ({
           start: chapter.start,
           end: chapter.end,
-          tags: chapter.tags
+          tags: chapter.tags,
         }));
         const streams = videoAnalysis.streams.map(stream => ({
           index: stream.index,
           codecType: stream.codecType,
           codecNameLong: stream.codecNameLong,
-          tags: stream.tags
+          tags: stream.tags,
         }));
 
         res.send(new MediaLibraryEditMediaTemplate().render(req, {
@@ -216,8 +216,8 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
 
             tags: videoAnalysis.file.tags,
             chapters,
-            streams
-          }
+            streams,
+          },
         }));
       },
 
@@ -307,7 +307,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
 
           fileTagsToWrite.push({
             key: tag.key.trim(),
-            value: tag.value.trim()
+            value: tag.value.trim(),
           });
         }
 
@@ -355,7 +355,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
 
           streamTags.push({
             key: tag.key.trim(),
-            value: tag.value.trim()
+            value: tag.value.trim(),
           });
         }
 
@@ -367,7 +367,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
           '-map', '0',
           '-c', 'copy',
 
-          '-map_metadata:g', '-1'
+          '-map_metadata:g', '-1',
         ];
 
         for (const streamIndex of Object.keys(streamTagsToWrite)) {
@@ -407,7 +407,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
             .status(200)
             .send({ success: true });
         });
-      }
+      },
     });
   });
 
@@ -482,7 +482,7 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         res
           .type(thumbnail.mime)
           .send(thumbnail.data);
-      }
+      },
     });
   });
 
@@ -516,12 +516,12 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
 
         const media = await getPrismaClient()!.mediaLibraryMediaItem.findMany({
           where: {
-            mediaId: BigInt(libraryTitle.id)
+            mediaId: BigInt(libraryTitle.id),
           },
           orderBy: [
             { seasonNumber: 'asc' },
-            { episodeNumber: 'asc' }
-          ]
+            { episodeNumber: 'asc' },
+          ],
         });
 
         //        const media = await MediaLibraryTable.getInstance().getLibraryMediaByTitleOrderedBySeasonAndEpisode(library.id, libraryTitle.id);
@@ -537,9 +537,9 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         res.send(new MediaLibraryTitleTemplate().render(req, {
           library,
           title: libraryTitle,
-          media: groupedMedia
+          media: groupedMedia,
         }));
-      }
+      },
     });
   });
 
@@ -565,9 +565,9 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
 
         res.send(new MediaLibraryTemplate().render(req, {
           library,
-          titles: await library.fetchTitles()
+          titles: await library.fetchTitles(),
         }));
-      }
+      },
     });
   });
 
@@ -578,9 +578,9 @@ export function createMediaRouter(webserver: WebServer, sessionMiddleware: expre
         const libraryManager = new LibraryManager(user);
 
         res.send(new MediaTemplate().render(req, {
-          libraries: await libraryManager.getLibraries()
+          libraries: await libraryManager.getLibraries(),
         }));
-      }
+      },
     });
   });
 

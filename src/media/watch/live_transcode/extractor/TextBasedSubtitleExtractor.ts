@@ -16,7 +16,7 @@ export default class TextBasedSubtitleExtractor {
   private static readonly SUPPORTED: { [codec: string]: string } = {
     'ass': 'ass',
     'ssa': 'ssa',
-    'webvtt': 'vtt'
+    'webvtt': 'vtt',
   };
 
   static async extract(videoFile: string, videoAnalysis: ExtendedVideoAnalysis, targetDir: string): Promise<ExtractedSubtitle[]> {
@@ -47,7 +47,7 @@ export default class TextBasedSubtitleExtractor {
         '-map', `0:${stream.index}`,
         '-c:s', 'copy',
 
-        subtitleTargetPath
+        subtitleTargetPath,
       ];
 
       await Fs.promises.mkdir(targetDir, { recursive: true });
@@ -60,7 +60,7 @@ export default class TextBasedSubtitleExtractor {
 
         title: streamTitle,
         language: iso639_1LanguageTag,
-        codecName: stream.codecName
+        codecName: stream.codecName,
       });
     }
 

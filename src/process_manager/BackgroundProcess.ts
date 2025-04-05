@@ -48,7 +48,7 @@ export default class BackgroundProcess<T> extends EventEmitter implements IProce
       try {
         const taskResult = this.task({
           log: (msg: string | number) => this.handleTaskLog('stdout', msg),
-          error: (msg: string | number) => this.handleTaskLog('stderr', msg)
+          error: (msg: string | number) => this.handleTaskLog('stderr', msg),
         });
 
         if (taskResult instanceof Promise) {

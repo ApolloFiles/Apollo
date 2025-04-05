@@ -17,7 +17,7 @@ export default class VideoFrameExtractor {
       '-vf', `select='eq(pict_type,PICT_TYPE_I)',scale=640:-2`,
       '-vsync', 'vfr',
 
-      'f_%01d.jpg'
+      'f_%01d.jpg',
     ];
 
     const childProcess = await new ProcessBuilder('ffmpeg', ffmpegArgs)
@@ -33,7 +33,7 @@ export default class VideoFrameExtractor {
       .sort(getFileNameCollator().compare);
     return {
       imagePaths,
-      done: (): Promise<void> => Fs.promises.rm(cwd, { recursive: true })
+      done: (): Promise<void> => Fs.promises.rm(cwd, { recursive: true }),
     };
   }
 }

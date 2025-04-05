@@ -16,7 +16,6 @@ import { adminRouter } from './AdminRouter';
 import { createAliasRouter } from './AliasRouter';
 import { apiRouter } from './Api/ApiRouter';
 import { createFilesRouter } from './Browse/FilesRouter';
-import FrontendRenderingDataAccess from '../frontend/FrontendRenderingDataAccess';
 import { generateLoginRedirectUri, loginRouter } from './LoginRouter';
 import SvelteKitMiddleware from './SvelteKitMiddleware';
 
@@ -73,7 +72,7 @@ export default class WebServer {
           maxAge: 0,
           path: cookie.path,
           sameSite: cookie.sameSite,
-          secure: cookie.secure == 'auto' ? req.secure : cookie.secure
+          secure: cookie.secure == 'auto' ? req.secure : cookie.secure,
         });
 
         res.redirect('/');
@@ -86,7 +85,7 @@ export default class WebServer {
       handleRequestRestfully(req, res, next, {
         get: () => {
           res.redirect('/browse/');
-        }
+        },
       });
     });
 
@@ -106,7 +105,11 @@ export default class WebServer {
     await startListening();
 
     // TODO: Write WebSocket abstraction to handle everything including sessions, authentication, trust-proxy-setting, etc.
-    this.webSocketServer = new WebSocketServer({server: this.server, maxPayload: 5 * 1024 * 1024 /* 5 MiB */, allowSynchronousEvents: true} as any /* FIXME: types are outdated, any cast should be removed when possible */);
+    this.webSocketServer = new WebSocketServer({
+      server: this.server,
+      maxPayload: 5 * 1024 * 1024 /* 5 MiB */,
+      allowSynchronousEvents: true,
+    } as any /* FIXME: types are outdated, any cast should be removed when possible */);
     this.webSocketServer.on('error', console.error);
     this.webSocketServer.on('connection', (client: ApolloWebSocket, request) => {
       client.apollo = { isAlive: true, pingRtt: -1, lastPingTimestamp: -1 };
@@ -126,9 +129,9 @@ export default class WebServer {
       this.webSocketServer?.clients.forEach((_client) => {
         const client: ApolloWebSocket = _client as any;
         if (client.apollo.isAlive === false) {
-//          console.error('[DEBUG] Would normally close connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
-           console.log('Closing WebSocket connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
-           return client.terminate();
+          // console.error('[DEBUG] Would normally close connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
+          console.log('Closing WebSocket connection from ' + (client as any)._socket.remoteAddress + ' due to inactivity (no pong received)');
+          return client.terminate();
         }
 
         client.apollo.isAlive = false;
@@ -195,7 +198,7 @@ export default class WebServer {
       store: new (SessionFileStore(expressSession))({
         path: sessionDirectory,
         retries: 0,
-        secret: getConfig().data.secrets.session
+        secret: getConfig().data.secrets.session,
       }),
       resave: false,
       saveUninitialized: false,
@@ -205,8 +208,8 @@ export default class WebServer {
         secure: getConfig().data.baseUrl.startsWith('https://'),
         httpOnly: true,
         sameSite: 'lax',
-        maxAge: /*getDatabase().isAvailable() ? 30 * 24 * 60 * 60 * 1000*/ /* 30d */ /*:*/ 30 * 24 * 60 * 60 * 1000 /* 14d */  // TODO
-      }
+        maxAge: /*getDatabase().isAvailable() ? 30 * 24 * 60 * 60 * 1000*/ /* 30d */ /*:*/ 30 * 24 * 60 * 60 * 1000, /* 14d */  // TODO
+      },
     });
     this.app.use(this.sessionMiddleware);
 
