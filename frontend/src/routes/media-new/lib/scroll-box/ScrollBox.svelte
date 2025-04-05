@@ -1,5 +1,5 @@
 <script lang="ts">
-  const {children} = $props();
+  const { children } = $props();
 </script>
 
 <!-- TODO: Pfeile links und rechts? Scrollbar via Drag? "Pagination"-Indikator darunter? -->

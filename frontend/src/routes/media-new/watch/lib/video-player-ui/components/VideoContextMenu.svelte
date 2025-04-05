@@ -1,10 +1,10 @@
 <script lang="ts">
-  import {onMount} from 'svelte';
+  import { onMount } from 'svelte';
 
-  const {closeOtherMenus}: { closeOtherMenus: () => void } = $props();
+  const { closeOtherMenus }: { closeOtherMenus: () => void } = $props();
 
   let showContextMenu = $state(false);
-  let contextMenuPosition = $state({x: 0, y: 0});
+  let contextMenuPosition = $state({ x: 0, y: 0 });
 
   export function isVisible(): boolean {
     return showContextMenu;
@@ -40,7 +40,7 @@
     event.preventDefault();
     closeOtherMenus();
 
-    contextMenuPosition = {x: event.clientX, y: event.clientY};
+    contextMenuPosition = { x: event.clientX, y: event.clientY };
     showContextMenu = true;
   }
 

@@ -3,14 +3,14 @@
 </svelte:head>
 
 <script lang="ts">
-  import type {LoginPageData} from '../../../../src/frontend/FrontendRenderingDataAccess';
+  import type { LoginPageData } from '../../../../src/frontend/FrontendRenderingDataAccess';
 
   const assetThirdPartyLoginLogos: Record<string, any> = import.meta.glob('$lib/assets/login/third-party/*.svg', {
     eager: true,
-    query: {enhanced: true}
+    query: { enhanced: true },
   });
 
-  const {data}: { data: LoginPageData } = $props();
+  const { data }: { data: LoginPageData } = $props();
   const oAuthProvider = data.pageData.oAuthProvider;
 
   // TODO: Mal https://smashing-freiburg-2024.netlify.app/16-user-valid/ anschauen?
@@ -32,10 +32,10 @@
             {#each oAuthProvider as provider}
               <a class="p-2 btn btn-outline-secondary" href={provider.href} role="button"><!--
              --><img
-                  src={assetThirdPartyLoginLogos[`/src/lib/assets/login/third-party/${provider.id}.svg`].default}
-                  class="third-party-img"
-                  alt="{provider.displayName}'s logo"
-                >&nbsp;{provider.displayName}<!--
+                src={assetThirdPartyLoginLogos[`/src/lib/assets/login/third-party/${provider.id}.svg`].default}
+                class="third-party-img"
+                alt="{provider.displayName}'s logo"
+              >&nbsp;{provider.displayName}<!--
            --></a>
             {/each}
           </div>

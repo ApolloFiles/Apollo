@@ -1,5 +1,5 @@
 <script>
-  const {children} = $props();
+  const { children } = $props();
 </script>
 
 <header class="py-3 border-bottom">

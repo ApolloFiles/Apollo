@@ -1,9 +1,9 @@
 <!-- FIXME: As the name suggests, this might be better suited as a +layout file -->
 <script lang="ts">
-  import type {MediaOverviewPageData} from '../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type { MediaOverviewPageData } from '../../../../../src/frontend/FrontendRenderingDataAccess';
   import MediaSidebar from './MediaSidebar.svelte';
 
-  const {children, pageData}: {
+  const { children, pageData }: {
     children: any,
     pageData: Pick<MediaOverviewPageData['pageData'], 'libraries' | 'sharedLibraries'>
   } = $props();
@@ -23,7 +23,7 @@
 </style>
 
 <div class="wrapper">
-  <MediaSidebar pageData={pageData}/>
+  <MediaSidebar pageData={pageData} />
 
   <main class="content d-flex flex-row flex-wrap">
     {@render children()}

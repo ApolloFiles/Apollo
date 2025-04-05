@@ -1,12 +1,12 @@
 <script lang="ts">
-  import {onMount} from 'svelte';
-  import type {MediaWatchPageData} from '../../../../../../../src/frontend/FrontendRenderingDataAccess';
+  import { onMount } from 'svelte';
+  import type { MediaWatchPageData } from '../../../../../../../src/frontend/FrontendRenderingDataAccess';
   import type VideoPlayer from '../client-side/VideoPlayer.svelte';
   import VideoContextMenu from './components/VideoContextMenu.svelte';
   import ControlsBottomBar from './layout/ControlsBottomBar.svelte';
   import ControlsTopBar from './layout/ControlsTopBar.svelte';
 
-  const {mediaInfo, videoPlayer, showCustomControls = true}: {
+  const { mediaInfo, videoPlayer, showCustomControls = true }: {
     mediaInfo: MediaWatchPageData['pageData']['media'],
     videoPlayer: VideoPlayer,
     showCustomControls: boolean
@@ -78,10 +78,12 @@
 
   onMount(() => {
     mainElement = document.querySelector('main.watch-main');
-    if (!mainElement) return;
+    if (!mainElement) {
+      return;
+    }
 
     mainElement.addEventListener('mousemove', handleMouseMove);
-    mainElement.addEventListener('mouseleave', handleMouseLeave, {passive: true});
+    mainElement.addEventListener('mouseleave', handleMouseLeave, { passive: true });
 
     const handleVideoContainerClick = (event: MouseEvent) => {
       if (!showCustomControls) {
@@ -158,8 +160,8 @@
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown, {passive: true});
-    mainElement.querySelector<HTMLDivElement>('.video-container')!.addEventListener('click', handleVideoContainerClick, {passive: true});
+    document.addEventListener('keydown', handleKeyDown, { passive: true });
+    mainElement.querySelector<HTMLDivElement>('.video-container')!.addEventListener('click', handleVideoContainerClick, { passive: true });
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -181,7 +183,7 @@
 
 <VideoContextMenu
   bind:this={videoContextMenuRef}
-  closeOtherMenus={closeOtherMenusRef}/>
+  closeOtherMenus={closeOtherMenusRef} />
 {#if showCustomControls}
   <div
     class="controls-overlay"
@@ -190,7 +192,7 @@
     role="region"
     aria-label="Video player controls"
   >
-    <ControlsTopBar mediaInfo={mediaInfo}/>
+    <ControlsTopBar mediaInfo={mediaInfo} />
     <ControlsBottomBar
       bind:this={playerControlsBottomRef}
       mediaInfo={mediaInfo}

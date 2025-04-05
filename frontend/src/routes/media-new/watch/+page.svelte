@@ -3,20 +3,20 @@
 </svelte:head>
 
 <script lang="ts">
-  import {onMount} from 'svelte';
-  import type {MediaWatchPageData} from '../../../../../src/frontend/FrontendRenderingDataAccess';
+  import { onMount } from 'svelte';
+  import type { MediaWatchPageData } from '../../../../../src/frontend/FrontendRenderingDataAccess';
   import HtmlVideoPlayerBackend from './lib/client-side/backends/HtmlVideoPlayerBackend';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte';
   import VideoPlayerUI from './lib/video-player-ui/VideoPlayerUI.svelte';
 
-  const {data}: { data: MediaWatchPageData } = $props();
+  const { data }: { data: MediaWatchPageData } = $props();
 
   const episodeTitlePrefix = data.pageData.media.episode ? `S${data.pageData.media.episode.season.toString().padStart(2, '0')}E${data.pageData.media.episode.episode.toString().padStart(2, '0')} • ` : '';
   let videoContainerRef: HTMLDivElement;
 
   async function createVideoPlayer() {
-    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, {backend: {src: '/_dev/BigBuckBunny_320x180.mp4'}});
-    // const backend = await YouTubePlayerBackend.create(videoContainerRef, {backend: {videoUrlOrId: 'https://youtu.be/0PHJfOzWV3w'}});
+    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, { backend: { src: '/_dev/BigBuckBunny_320x180.mp4' } });
+    // const backend = await YouTubePlayerBackend.create(videoContainerRef, { backend: { videoUrlOrId: 'https://youtu.be/0PHJfOzWV3w' } });
     return new VideoPlayer(backend);
   }
 
@@ -42,7 +42,7 @@
     {#if videoPlayer}
       <VideoPlayerUI mediaInfo={data.pageData.media}
                      videoPlayer={videoPlayer}
-                     showCustomControls={videoPlayer.$shouldShowCustomControls}/>
+                     showCustomControls={videoPlayer.$shouldShowCustomControls} />
     {:else}
       <div class="loading-container">
         <span class="spinner">0</span>

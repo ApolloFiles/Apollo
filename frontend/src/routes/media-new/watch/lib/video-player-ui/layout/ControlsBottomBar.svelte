@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type {MediaWatchPageData} from '../../../../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type { MediaWatchPageData } from '../../../../../../../../src/frontend/FrontendRenderingDataAccess';
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
   import BottomMenuBox from '../components/BottomMenuBox.svelte';
   import FullscreenButton from '../components/FullscreenButton.svelte';
   import VideoProgressBar from '../components/progress-bar/VideoProgressBar.svelte';
   import VolumeControl from '../components/VolumeControl.svelte';
 
-  const {mediaInfo, videoPlayer}: {
+  const { mediaInfo, videoPlayer }: {
     mediaInfo: MediaWatchPageData['pageData']['media'],
     videoPlayer: VideoPlayer
   } = $props();
@@ -30,7 +30,7 @@
 </script>
 
 <div class="control-bar">
-  <VideoProgressBar videoPlayer={videoPlayer}/>
+  <VideoProgressBar videoPlayer={videoPlayer} />
 
   <div class="buttons-row">
     <div class="left-controls">
@@ -60,7 +60,7 @@
         onMenuOpen={() => closeAllMenus()}
       />
 
-      <FullscreenButton bind:this={fullscreenRef}/>
+      <FullscreenButton bind:this={fullscreenRef} />
     </div>
   </div>
 </div>

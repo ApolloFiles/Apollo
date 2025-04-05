@@ -6,9 +6,9 @@
 </style>
 
 <script lang="ts">
-  import type {MediaOverviewPageData} from '../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type { MediaOverviewPageData } from '../../../../../src/frontend/FrontendRenderingDataAccess';
 
-  const {pageData}: { pageData: Pick<MediaOverviewPageData['pageData'], 'libraries' | 'sharedLibraries'> } = $props();
+  const { pageData }: { pageData: Pick<MediaOverviewPageData['pageData'], 'libraries' | 'sharedLibraries'> } = $props();
 </script>
 
 <!-- TODO: Statt die sidebar zu verstecken, irwie in einen Button wandeln, der das ding dann ein und aus blendet -->

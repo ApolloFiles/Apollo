@@ -4,7 +4,7 @@
     mediaSubheading,
     mediaThumbnailSrc,
     mediaThumbnailWidth = '',
-    mediaThumbnailHeight = ''
+    mediaThumbnailHeight = '',
   }: {
     mediaHeading: string,
     mediaSubheading: string,

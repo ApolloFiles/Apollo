@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {onMount} from 'svelte';
+  import { onMount } from 'svelte';
 
   let isFullscreen = $state(typeof document !== 'undefined' && document.fullscreenElement != null);
 
@@ -20,7 +20,7 @@
   }
 
   onMount(() => {
-    document.addEventListener('fullscreenchange', handleFullscreenChange, {passive: true});
+    document.addEventListener('fullscreenchange', handleFullscreenChange, { passive: true });
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import {onMount} from 'svelte';
+  import { onMount } from 'svelte';
   import type VideoPlayer from '../../../client-side/VideoPlayer.svelte.js';
   import ProgressBars from './ProgressBars.svelte';
+  import { initializeSeekHandler } from './seekHandler';
   import SeekPreview from './SeekPreview.svelte';
-  import {initializeSeekHandler} from './seekHandler';
 
-  const {videoPlayer}: { videoPlayer: VideoPlayer } = $props();
+  const { videoPlayer }: { videoPlayer: VideoPlayer } = $props();
 
   let seekHandleRef: HTMLDivElement;
   let progressBarContainerRef: HTMLDivElement;
@@ -59,20 +59,20 @@
       onSeekEnd: () => {
         usingSeekHandle = false;
         activateSeekPreview = false;
-      }
+      },
     });
 
     progressBarContainerRef.addEventListener('mousemove', (event) => {
       if (!usingSeekHandle) {
         handleSeekPreview(event.clientX);
       }
-    }, {passive: true});
+    }, { passive: true });
 
     progressBarContainerRef.addEventListener('mouseleave', () => {
       if (!usingSeekHandle) {
         activateSeekPreview = false;
       }
-    }, {passive: true});
+    }, { passive: true });
 
     return cleanup;
   });

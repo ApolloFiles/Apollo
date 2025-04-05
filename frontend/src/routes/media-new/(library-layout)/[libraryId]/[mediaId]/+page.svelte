@@ -3,10 +3,10 @@
 </svelte:head>
 
 <script lang="ts">
-  import type {MediaTitlePageData} from '../../../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type { MediaTitlePageData } from '../../../../../../../src/frontend/FrontendRenderingDataAccess';
   import MediaPageLayout from '../../../lib/MediaPageLayout.svelte';
 
-  const {data}: { data: MediaTitlePageData } = $props();
+  const { data }: { data: MediaTitlePageData } = $props();
 </script>
 
 <!-- TODO: Add Breadcrumbs -->
@@ -78,16 +78,16 @@
                       <!-- TODO: add link to vide player -->
                       <a href=""><span class="material-icons" style="font-size: 36px">play_circle</span></a>
                       <!-- TODO: add additional icons -->
-<!--                      <span class="material-icons" style="font-size: 36px">group</span>-->
-<!--                      <span class="material-icons" style="font-size: 36px">playlist_add</span>-->
-<!--                      <a href="/nuxt-frontend/index.html?initPath=<%= encodeURIComponent(media.filePath) %>" target="_blank"><span class="material-icons" style="font-size: 36px">edit</span></a>-->
+                      <!-- <span class="material-icons" style="font-size: 36px">group</span> -->
+                      <!-- <span class="material-icons" style="font-size: 36px">playlist_add</span> -->
+                      <!-- <a href="/nuxt-frontend/index.html?initPath=<%= encodeURIComponent(media.filePath) %>" target="_blank"><span class="material-icons" style="font-size: 36px">edit</span></a> -->
                     </div>
                     <div class="col-auto text-end">
                       {episode.durationInSec <= 60 ? `${episode.durationInSec} sec.` : `${(episode.durationInSec / 60).toFixed(0)} min.`}
                       <!-- TODO: introduce badges to show special meta data or dub/sub languages -->
-<!--                      <br>-->
-<!--                      <span class="badge bg-primary">4K</span>-->
-<!--                      <span class="badge bg-primary">CC</span>-->
+                      <!-- <br> -->
+                      <!-- <span class="badge bg-primary">4K</span> -->
+                      <!-- <span class="badge bg-primary">CC</span> -->
                     </div>
                   </div>
                 </li>

@@ -9,10 +9,10 @@ const codeToInject = `
 
 let handlerJs = Fs.readFileSync(handlerJsPath, 'utf-8');
 if (!handlerJs.includes(injectAfter)) {
-    throw new Error(`Unable to inject Apollo into ${handlerJsPath} (not found)`);
+  throw new Error(`Unable to inject Apollo into ${handlerJsPath} (not found)`);
 }
 if (handlerJs.indexOf(injectAfter) !== handlerJs.lastIndexOf(injectAfter)) {
-    throw new Error(`Unable to inject Apollo into ${handlerJsPath} (multiple occurrences)`);
+  throw new Error(`Unable to inject Apollo into ${handlerJsPath} (multiple occurrences)`);
 }
 
 handlerJs = handlerJs.replace(injectAfter, injectAfter + codeToInject);

@@ -5,7 +5,7 @@
     videoWatchProgressPercentage = 0,
     videoThumbnailSrc,
     videoThumbnailWidth = '',
-    videoThumbnailHeight = ''
+    videoThumbnailHeight = '',
   }: {
     videoHeading: string,
     videoSubheading: string,

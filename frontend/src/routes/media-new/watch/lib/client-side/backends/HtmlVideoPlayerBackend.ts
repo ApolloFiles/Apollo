@@ -67,7 +67,7 @@ export default class HtmlVideoPlayerBackend extends VideoPlayerBackend {
     return Array.from(this.videoElement.textTracks).map(track => {
       return {
         id: track.id,
-        label: track.label
+        label: track.label,
       };
     });
   }
@@ -79,7 +79,7 @@ export default class HtmlVideoPlayerBackend extends VideoPlayerBackend {
     for (let i = 0; i < currentlyBuffered.length; ++i) {
       bufferedRanges.push({
         start: currentlyBuffered.start(i),
-        end: currentlyBuffered.end(i)
+        end: currentlyBuffered.end(i),
       });
     }
     return bufferedRanges;

@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ locals, params, request }): Promise
   return {
     loggedInUser: {
       id: '22',
-      displayName: 'Dev-User'
+      displayName: 'Dev-User',
     },
     pageData: {
       media: {
@@ -20,21 +20,21 @@ export const load: PageServerLoad = async ({ locals, params, request }): Promise
         episode: {
           season: 1,
           episode: 1,
-          title: 'The journey begins'
+          title: 'The journey begins',
         },
         thumbnailImageUrl: videoThumbnailImageUrl.default,
         audioTracks: [
           'Deutsch (Dolby 5.1)', 'Deutsch (Stereo)',
-          'English (Dolby 5.1)', 'English (Stereo)'
+          'English (Dolby 5.1)', 'English (Stereo)',
         ],
         subtitleTracks: [
           'Deutsch', 'Deutsch (Signs only)',
           'English', 'English (Signs only)',
           'Spanish', 'Spanish (Signs only)',
           'French', 'French (Signs only)',
-          'Japanese', 'Japanese (Signs only)'
-        ]
-      }
-    }
+          'Japanese', 'Japanese (Signs only)',
+        ],
+      },
+    },
   };
 };

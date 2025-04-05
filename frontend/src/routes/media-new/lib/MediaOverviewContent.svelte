@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type {MediaOverviewPageData} from '../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type { MediaOverviewPageData } from '../../../../../src/frontend/FrontendRenderingDataAccess';
   import MediaItem from './scroll-box/MediaItem.svelte';
   import ScrollBox from './scroll-box/ScrollBox.svelte';
   import ScrollBoxVideoItem from './scroll-box/ScrollBoxVideoItem.svelte';
 
-  const {pageData, h1}: { pageData: MediaOverviewPageData['pageData'], h1: string } = $props();
+  const { pageData, h1 }: { pageData: MediaOverviewPageData['pageData'], h1: string } = $props();
 </script>
 
 <h1 class="pb-1">{h1}</h1>

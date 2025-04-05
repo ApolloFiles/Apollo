@@ -1,5 +1,5 @@
 <script lang="ts">
-  const {visible, position, time}: { visible: boolean, position: number, time: number } = $props();
+  const { visible, position, time }: { visible: boolean, position: number, time: number } = $props();
 
   function formatTime(seconds: number): string {
     const minutes = Math.floor(seconds / 60);

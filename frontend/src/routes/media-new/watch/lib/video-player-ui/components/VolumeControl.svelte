@@ -1,5 +1,5 @@
 <script lang="ts">
-  let {volume = $bindable(), muted = $bindable()}: { volume: number, muted: boolean } = $props();
+  let { volume = $bindable(), muted = $bindable() }: { volume: number, muted: boolean } = $props();
 
   let sliderRef: HTMLDivElement;
   let isDragging = $state(false);

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import {onMount} from 'svelte';
+  import { onMount } from 'svelte';
 
-  let {buttonLabel, menuVisible = $bindable(), menuItems, activeItemId = $bindable(), onSelect, onMenuOpen}: {
+  let { buttonLabel, menuVisible = $bindable(), menuItems, activeItemId = $bindable(), onSelect, onMenuOpen }: {
     buttonLabel: string,
 
     menuVisible: boolean,

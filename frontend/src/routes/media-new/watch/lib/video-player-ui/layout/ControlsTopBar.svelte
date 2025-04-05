@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type {MediaWatchPageData} from '../../../../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type { MediaWatchPageData } from '../../../../../../../../src/frontend/FrontendRenderingDataAccess';
 
-  const {mediaInfo}: { mediaInfo: MediaWatchPageData['pageData']['media'] } = $props();
+  const { mediaInfo }: { mediaInfo: MediaWatchPageData['pageData']['media'] } = $props();
   const episodeTitlePrefix = mediaInfo.episode ? `S${mediaInfo.episode.season.toString().padStart(2, '0')}E${mediaInfo.episode.episode.toString().padStart(2, '0')} • ` : '';
 </script>
 

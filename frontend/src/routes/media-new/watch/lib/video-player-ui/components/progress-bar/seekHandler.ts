@@ -19,7 +19,7 @@ export function initializeSeekHandler(context: SeekHandlerContext): () => void {
   const state: SeekState = {
     wasPlayingBeforeSeek: false,
     lastSeekTime: 0,
-    usingSeekHandle: false
+    usingSeekHandle: false,
   };
 
   const handlers = createSeekHandlers(context, state);
@@ -103,14 +103,14 @@ function attachEventListeners(context: SeekHandlerContext, handlers: ReturnType<
       }
     },
     'mousemove': handleMouseMove,
-    'mouseup': handleSeekEnd
+    'mouseup': handleSeekEnd,
   };
 
   const touchEvents = {
     'touchstart': (event: TouchEvent) => handleSeekStart(event.touches[0].clientX),
     'touchmove': handleTouchMove,
     'touchend': handleSeekEnd,
-    'touchcancel': handleSeekEnd
+    'touchcancel': handleSeekEnd,
   };
 
   context.seekHandle.addEventListener('mousedown', mouseEvents.mousedown, { passive: false });

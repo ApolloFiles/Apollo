@@ -213,7 +213,7 @@ export default class YouTubePlayerBackend extends VideoPlayerBackend {
           disablekb: 0, // disable keyboard controls
           hl: 'en',
           rel: 0,
-          start: startSeconds
+          start: startSeconds,
         },
         events: {
           onReady: () => {
@@ -221,8 +221,8 @@ export default class YouTubePlayerBackend extends VideoPlayerBackend {
           },
           onError: (event: { data: any }) => {
             reject(event.data);
-          }
-        }
+          },
+        },
       });
     });
   }
