@@ -79,14 +79,14 @@ describe('URI encoding and decoding', () => {
     ['/foo%23bar', '/foo#bar'],
     ['/foo/', '/foo/'],
     ['/foo/bar/', '/foo/bar/'],
-    ['/foo/bar/test%23file.txt', '/foo/bar/test#file.txt']
+    ['/foo/bar/test%23file.txt', '/foo/bar/test#file.txt'],
   ];
 
   test.each([
     ...commonTestCases,
     ['/foo%2Fbar', '/foo/bar'],
     ['/foo/bar/test%23file.txt?foo=bar', '/foo/bar/test#file.txt?foo=bar'],
-    ['/foo/bar/test%23file.txt?foo=bar#test', '/foo/bar/test#file.txt?foo=bar#test']
+    ['/foo/bar/test%23file.txt?foo=bar#test', '/foo/bar/test#file.txt?foo=bar#test'],
   ])('#decodeUriProperly with %s', (encodedUri, expectedDecodedUri) => {
     expect(Utils.decodeUriProperly(encodedUri)).toBe(expectedDecodedUri);
   });
@@ -94,7 +94,7 @@ describe('URI encoding and decoding', () => {
   test.each([
     ...commonTestCases,
     ['/foo/bar/test%23file.txt%3Ffoo%3Dbar', '/foo/bar/test#file.txt?foo=bar'],
-    ['/foo/bar/test%23file.txt%3Ffoo%3Dbar%23test', '/foo/bar/test#file.txt?foo=bar#test']
+    ['/foo/bar/test%23file.txt%3Ffoo%3Dbar%23test', '/foo/bar/test#file.txt?foo=bar#test'],
   ])('#encodeUriProperly with %s', (expectedEncodedUri, decodedUri) => {
     expect(Utils.encodeUriProperly(decodedUri)).toBe(expectedEncodedUri);
   });
@@ -105,7 +105,7 @@ describe('URI encoding and decoding', () => {
     ['/foo/bar', ['foo', 'bar']],
     ['/foo/bar/', ['foo', 'bar']],
     ['/foo/bar/test%23file.txt', ['foo', 'bar', 'test#file.txt']],
-    ['/foo%2Fbar', ['foo/bar']]
+    ['/foo%2Fbar', ['foo/bar']],
   ])('#decodeUriIntoItsComponents with %s', (encodedUri, expectedDecodedComponents) => {
     expect(Utils.decodeUriIntoItsComponents(encodedUri)).toEqual(expectedDecodedComponents);
   });

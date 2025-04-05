@@ -34,7 +34,7 @@ describe('Test file search', () => {
     ['dir', 2],
     ['dir1', 1],
     ['dir2', 1],
-    ['dir3', 0]
+    ['dir3', 0],
   ])('Test file search in default file system for %O', async (query, expectedLength) => {
     const searchResult = await FileSearch.searchFile(user.getDefaultFileSystem().getFile('/'), query);
 
@@ -48,7 +48,7 @@ describe('Test file search', () => {
 
   test.each([
     [() => user.getDefaultFileSystem(), 6],
-    [() => user.getTrashBinFileSystem(), 3]
+    [() => user.getTrashBinFileSystem(), 3],
   ])('Search in file systems with empty string', async (fileSystemProvider, expectedLength) => {
     const searchResult = await FileSearch.searchFile(fileSystemProvider().getFile('/'), '');
 

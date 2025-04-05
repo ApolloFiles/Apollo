@@ -15,7 +15,7 @@ describe('Valid URL with different paths', () => {
     ['/Hello world.txt', 'Hello world.txt', ['Hello world.txt']],
     ['/Hello%20world.txt', 'Hello world.txt', ['Hello world.txt']],
     ['/Hello+world.txt', 'Hello+world.txt', ['Hello+world.txt']],
-    ['/encoded%2Fslash', 'encoded/slash', ['encoded/slash']]
+    ['/encoded%2Fslash', 'encoded/slash', ['encoded/slash']],
   ])('Path: %s', (urlSuffix: string, expectedUrlPrefix: string, expectedPathSegments: string[]) => {
     const url = new ApolloUrl(`apollo://${urlSuffix}`);
     expect(url.apolloUrlPrefix).toBe(expectedUrlPrefix);

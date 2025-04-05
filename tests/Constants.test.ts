@@ -24,7 +24,7 @@ describe('#isProduction', () => {
     ['development', false],
     ['test', false],
     ['', false],
-    [undefined, false]
+    [undefined, false],
   ])('process.env.NODE_ENV set to %s', (env, expected) => {
     if (env == null) {
       delete process.env.NODE_ENV;
@@ -45,7 +45,7 @@ describe('path getters', () => {
     Constants.getAppResourcesDir,
     Constants.getUserStorageRoot,
     Constants.getAppTmpDir,
-    Constants.getUserStorageTmpRoot
+    Constants.getUserStorageTmpRoot,
   ])('Test for %O', (getterFunction: Function) => {
     const path = getterFunction();
 
@@ -152,7 +152,7 @@ describe('HttpClient User-Agent', () => {
 
   test.each([
     [null],
-    [{ name: 'apollo-jest-test', version: '1.2.3-JEST' }]
+    [{ name: 'apollo-jest-test', version: '1.2.3-JEST' }],
   ])('For package.json %O', (packageJson) => {
     const Fs = require('node:fs') as jest.Mocked<typeof import('fs')>;
     Fs.existsSync.mockImplementation((path: Fs.PathLike) => {

@@ -25,7 +25,7 @@ describe('Constructor input validation', () => {
 describe('#getFile', () => {
   test.each([
     '/test.txt', '/Test.txt',
-    '/dir', '/dir/Sub:!', '/C:\\\\Users\\Jester\\'
+    '/dir', '/dir/Sub:!', '/C:\\\\Users\\Jester\\',
   ])('UserFile constructor inputs unmodified', (path) => {
     const userFile = user.getDefaultFileSystem().getFile(path);
 

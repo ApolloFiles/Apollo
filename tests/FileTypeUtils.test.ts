@@ -21,7 +21,7 @@ describe('FileTypeUtils with and without file executable', () => {
   test.each([
     [true, 'text/html'],
     [false, 'text/plain'],
-    [undefined, 'text/html']
+    [undefined, 'text/html'],
   ])('Simple HTML file (useFileApp=%s)', async (useFileApp, expectedMimeType) => {
     const filePath = Path.join(tmpDir, 'hello.txt');
     Fs.writeFileSync(filePath, '<html><body>Hello Jester!</body></html>');
@@ -43,7 +43,7 @@ describe('FileTypeUtils with and without file executable', () => {
   test.each([
     [true, 'text/plain'],
     [false, null],
-    [undefined, 'text/plain']
+    [undefined, 'text/plain'],
   ])('Empty file without file extension', async (useFileApp, expectedMimeType) => {
     const filePath = Path.join(tmpDir, 'hello');
     Fs.writeFileSync(filePath, '');
