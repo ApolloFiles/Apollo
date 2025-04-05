@@ -1,4 +1,4 @@
-import type VideoPlayerBackend from './VideoPlayerBackend';
+import type VideoPlayerBackend from './backends/VideoPlayerBackend';
 
 export default class VideoPlayer {
   private readonly backend: VideoPlayerBackend;

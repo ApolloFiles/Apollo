@@ -5,7 +5,7 @@
 <script lang="ts">
   import {onMount} from 'svelte';
   import type {MediaWatchPageData} from '../../../../../src/frontend/FrontendRenderingDataAccess';
-  import HtmlVideoPlayerBackend from './lib/client-side/HtmlVideoPlayerBackend';
+  import HtmlVideoPlayerBackend from './lib/client-side/backends/HtmlVideoPlayerBackend';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte';
   import VideoPlayerUI from './lib/video-player-ui/VideoPlayerUI.svelte';
 
