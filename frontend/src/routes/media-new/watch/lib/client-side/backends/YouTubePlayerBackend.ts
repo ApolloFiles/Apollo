@@ -208,7 +208,7 @@ export default class YouTubePlayerBackend extends VideoPlayerBackend {
         height: '100%',
         videoId: videoId,
         playerVars: {
-          autoplay: 0,
+          autoplay: 1,
           controls: 1,
           disablekb: 0, // disable keyboard controls
           hl: 'en',

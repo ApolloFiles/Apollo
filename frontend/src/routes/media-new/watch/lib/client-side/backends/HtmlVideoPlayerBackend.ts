@@ -15,6 +15,7 @@ export default class HtmlVideoPlayerBackend extends VideoPlayerBackend {
     super();
 
     this.videoElement = document.createElement('video');
+    this.videoElement.autoplay = true;
     this.videoElement.src = options.backend.src;
     container.appendChild(this.videoElement);
   }
