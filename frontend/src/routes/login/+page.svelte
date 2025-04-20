@@ -49,13 +49,14 @@
       <div class="first-party-login-container">
         <form method="post" enctype="application/x-www-form-urlencoded">
           <div class="form-floating mb-2">
-            <input type="email" class="form-control" id="input_email" name="email" placeholder="" required>
+            <input type="email" class="form-control" id="input_email" name="email" placeholder=""
+                   required autocomplete="username">
             <label for="input_email">Email address</label>
           </div>
 
           <div class="form-floating mb-3">
             <input type="password" class="form-control" id="input_password" name="password" placeholder=""
-                   required>
+                   required autocomplete="current-password">
             <label for="input_password">Password</label>
           </div>
 
