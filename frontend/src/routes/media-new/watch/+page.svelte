@@ -17,6 +17,7 @@
   async function createVideoPlayer() {
     const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, { backend: { src: '/_dev/BigBuckBunny_320x180.mp4' } });
     // const backend = await YouTubePlayerBackend.create(videoContainerRef, { backend: { videoUrlOrId: 'https://youtu.be/0PHJfOzWV3w' } });
+    // const backend = await HlsVideoBackend.create(videoContainerRef, { backend: { src: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8' } });
     return new VideoPlayer(backend);
   }
 

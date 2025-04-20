@@ -9,7 +9,7 @@ export interface HtmlVideoPlayerBackendOptions extends BackendOptions {
 export default class HtmlVideoPlayerBackend extends VideoPlayerBackend {
   public readonly shouldShowCustomControls = true;
 
-  private readonly videoElement: HTMLVideoElement;
+  protected readonly videoElement: HTMLVideoElement;
 
   protected constructor(container: HTMLDivElement, options: HtmlVideoPlayerBackendOptions) {
     super();
