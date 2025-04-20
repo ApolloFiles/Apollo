@@ -21,6 +21,8 @@ const config = {
         'manifest-src': ['self'],
         'connect-src': ['self'],
         'base-uri': ['none'],
+        'form-action': ['self'],
+        'frame-ancestors': ['none'],
       },
     },
   },
