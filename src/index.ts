@@ -1,5 +1,7 @@
+import './container-init';
 import ChildProcess from 'node:child_process';
 import Fs from 'node:fs';
+import { container } from 'tsyringe';
 import {
   getAppTmpDir,
   getConfig,
@@ -95,6 +97,8 @@ function shutdownHook(): void {
     } finally {
       console.log('ProcessManager shut down.');
     }
+
+    await container.dispose();
 
     process.exit();
   };
