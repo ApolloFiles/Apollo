@@ -31,13 +31,18 @@ export default class VideoPlayer {
     this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
 
     this.setupEventListeners();
-    this.intervalId = window.setInterval(() => {
-      if (this.$isPlaying) {
-        return;
-      }
 
-      this.localBufferedRanges = this.backend.getBufferedRanges();
-    }, 250);
+    if (this.shouldShowCustomControls) {
+      this.intervalId = window.setInterval(() => {
+        if (this.$isPlaying) {
+          return;
+        }
+
+        this.localBufferedRanges = this.backend.getBufferedRanges();
+      }, 250);
+    } else {
+      this.intervalId = -1;
+    }
   }
 
   get $shouldShowCustomControls(): boolean {
