@@ -1,5 +1,14 @@
 <script lang="ts">
-  const { visible, position, time }: { visible: boolean, position: number, time: number } = $props();
+  import type VideoPlayerExtras from '../../../client-side/VideoPlayerExtras.svelte';
+
+  const { visible, position, time, playerExtras }: {
+    visible: boolean,
+    position: number,
+    time: number,
+    playerExtras: VideoPlayerExtras
+  } = $props();
+
+  let seekThumbnail = $derived(playerExtras.seekThumbnails?.getCue(time) ?? null);
 
   function formatTime(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
@@ -12,7 +21,14 @@
      style:display="{visible ? 'block' : 'none'}"
      style:left="clamp(5px, {position}px, calc(100% - 5px))"
 >
-  <img src="example.png" alt="Preview" class="seek-preview-thumbnail">
+  {#if seekThumbnail}
+    <div class="seek-preview-thumbnail"
+         style:background-image="url({seekThumbnail.uri})"
+         style:width={seekThumbnail.width ? `${seekThumbnail.width}px` : ''}
+         style:height={seekThumbnail.height ? `${seekThumbnail.height}px` : ''}
+         style:background-position="-{seekThumbnail.x ?? 0}px -{seekThumbnail.y ?? 0}px"
+    ></div>
+  {/if}
   <div class="seek-preview-time">{formatTime(time)}</div>
 </div>
 

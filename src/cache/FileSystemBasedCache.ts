@@ -20,10 +20,19 @@ export default class FileSystemBasedCache {
   async getUserAssociatedCachedFile(user: ApolloUser, cacheSubKey: string): Promise<Buffer | null> {
     const cacheFilePath = this.generateUserAssociatedCacheFilePath(user, cacheSubKey);
 
-    if (!Fs.existsSync(cacheFilePath)) {
-      return null;
+    try {
+      return await Fs.promises.readFile(cacheFilePath);
+    } catch (err: any) {
+      if (err instanceof Error && (err as any).code === 'ENOENT') {
+        return null;
+      }
+      throw err;
     }
-    return Fs.promises.readFile(cacheFilePath);
+  }
+
+  async userAssociatedCachedFileExists(user: ApolloUser, cacheSubKey: string): Promise<boolean> {
+    const cacheFilePath = this.generateUserAssociatedCacheFilePath(user, cacheSubKey);
+    return Fs.existsSync(cacheFilePath);
   }
 
   private generateUserAssociatedCacheFilePath(user: ApolloUser, cacheSubKey: string): string {

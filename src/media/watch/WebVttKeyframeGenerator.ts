@@ -6,9 +6,13 @@ import FfmpegProcess from './live_transcode/FfmpegProcess';
 
 export default class WebVttKeyframeGenerator {
   public static readonly VTT_FILE_NAME = 'keyframes.vtt';
-  private static readonly GRID_SIZE = 8;
+  private static readonly GRID_SIZE = 9;
 
-  async generate(inputFile: string, targetDir: string): Promise<void> {
+  async generate(
+    inputFile: string,
+    targetDir: string,
+    keyframeImageUrlGenerator: (frameIndex: number, fileName: string) => string = (_, fileName) => fileName,
+  ): Promise<{ vttFile: string, frameFiles: string[] }> {
     const frameTimes = await this.runFrameExtraction(inputFile, targetDir);
 
     const frameFiles = (await Fs.promises.readdir(targetDir))
@@ -16,14 +20,18 @@ export default class WebVttKeyframeGenerator {
       .map((fileName) => Path.join(targetDir, fileName));
     frameFiles.sort(getFileNameCollator().compare);
 
+    const vttFilePath = Path.join(targetDir, WebVttKeyframeGenerator.VTT_FILE_NAME);
     const vttFileStream = await Fs.promises.open(Path.join(targetDir, WebVttKeyframeGenerator.VTT_FILE_NAME), 'w');
     try {
-      await this.generateVttFile(vttFileStream, frameFiles, frameTimes);
+      await this.generateVttFile(vttFileStream, frameFiles, frameTimes, keyframeImageUrlGenerator);
     } finally {
       await vttFileStream.close();
     }
 
-    return {} as any;
+    return {
+      vttFile: vttFilePath,
+      frameFiles,
+    };
   }
 
   private async runFrameExtraction(inputFile: string, targetDir: string): Promise<number[]> {
@@ -81,16 +89,22 @@ export default class WebVttKeyframeGenerator {
     return frameTimes;
   }
 
-  private async generateVttFile(fileStream: Fs.promises.FileHandle, frameFiles: string[], frameTimes: number[]): Promise<void> {
+  private async generateVttFile(
+    fileStream: Fs.promises.FileHandle,
+    frameFiles: string[],
+    frameTimes: number[],
+    keyframeImageUrlGenerator: (frameIndex: number, fileName: string) => string,
+  ): Promise<void> {
     const frameDimensions = await this.determineFrameDimensions(frameFiles[0]);
 
     await fileStream.write('WEBVTT\n\n');
 
     let processedFrames = 0;
-    for (const frameFile of frameFiles) {
+    for (let frameIndex = 0; frameIndex < frameFiles.length; ++frameIndex) {
+      const frameFile = frameFiles[frameIndex];
       const framesInThisFile = Math.min(WebVttKeyframeGenerator.GRID_SIZE * WebVttKeyframeGenerator.GRID_SIZE, frameTimes.length - processedFrames);
 
-      for (let i = 0; i < framesInThisFile; i++) {
+      for (let i = 0; i < framesInThisFile; ++i) {
         const x = (i % WebVttKeyframeGenerator.GRID_SIZE) * frameDimensions.width;
         const y = Math.floor(i / WebVttKeyframeGenerator.GRID_SIZE) * frameDimensions.height;
 
@@ -98,7 +112,7 @@ export default class WebVttKeyframeGenerator {
         const endTime = frameTimes[processedFrames + i + 1] || startTime + 1; // If there's no next frame, assume 1 second duration
 
         const vttLine = `${this.toWebVttTime(startTime)} --> ${this.toWebVttTime(endTime)}\n`;
-        const vttSprite = `${Path.basename(frameFile)}#xywh=${x},${y},${frameDimensions.width},${frameDimensions.height}\n\n`;
+        const vttSprite = `${keyframeImageUrlGenerator(frameIndex, Path.basename(frameFile))}#xywh=${x},${y},${frameDimensions.width},${frameDimensions.height}\n\n`;
 
         await fileStream.write(vttLine + vttSprite);
       }

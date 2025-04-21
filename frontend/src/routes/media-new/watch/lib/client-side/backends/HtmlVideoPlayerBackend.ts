@@ -6,13 +6,15 @@ export interface HtmlVideoPlayerBackendOptions extends BackendOptions {
   };
 }
 
-export default class HtmlVideoPlayerBackend extends VideoPlayerBackend {
+export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOptions = HtmlVideoPlayerBackendOptions> extends VideoPlayerBackend<T> {
   public readonly shouldShowCustomControls = true;
+  public readonly backendOptions: T;
 
   protected readonly videoElement: HTMLVideoElement;
 
-  protected constructor(container: HTMLDivElement, options: HtmlVideoPlayerBackendOptions) {
+  protected constructor(container: HTMLDivElement, options: T) {
     super();
+    this.backendOptions = options;
 
     this.videoElement = document.createElement('video');
     this.videoElement.autoplay = true;

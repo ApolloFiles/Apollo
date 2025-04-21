@@ -15,6 +15,7 @@ import ApolloUserStorage from '../user/ApolloUserStorage';
 import { adminRouter } from './AdminRouter';
 import { createAliasRouter } from './AliasRouter';
 import { apiRouter } from './Api/ApiRouter';
+import { v0ApiRouter } from './Api/v0';
 import { createFilesRouter } from './Browse/FilesRouter';
 import { generateLoginRedirectUri, loginRouter } from './LoginRouter';
 import SvelteKitMiddleware from './SvelteKitMiddleware';
@@ -48,6 +49,7 @@ export default class WebServer {
 
     this.app.use('/admin', WebServer.requireValidLogin, adminRouter);
 
+    this.app.use('/api/v0', WebServer.requireValidLogin, v0ApiRouter);  // FIXME: This should not redirect to login page!
     this.app.use('/api', apiRouter);
     this.app.use('/browse', WebServer.requireValidLogin, createFilesRouter('browse'));
     this.app.use('/trash', WebServer.requireValidLogin, createFilesRouter('trash'));

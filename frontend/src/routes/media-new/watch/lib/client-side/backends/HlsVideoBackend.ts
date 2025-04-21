@@ -7,12 +7,12 @@ export interface HlsVideoBackendOptions extends HtmlVideoPlayerBackendOptions {
   };
 }
 
-export default class HlsVideoBackend extends HtmlVideoPlayerBackend {
+export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideoBackendOptions> extends HtmlVideoPlayerBackend<T> {
   public readonly shouldShowCustomControls = true;
 
   protected readonly hls: Hls;
 
-  protected constructor(container: HTMLDivElement, options: HlsVideoBackendOptions) {
+  protected constructor(container: HTMLDivElement, options: T) {
     super(container, options);
 
     this.hls = new Hls(options.backend.hls);

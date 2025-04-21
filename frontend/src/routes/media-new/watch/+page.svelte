@@ -7,6 +7,7 @@
   import type { MediaWatchPageData } from '../../../../../src/frontend/FrontendRenderingDataAccess';
   import HtmlVideoPlayerBackend from './lib/client-side/backends/HtmlVideoPlayerBackend';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte';
+  import VideoPlayerExtras from './lib/client-side/VideoPlayerExtras.svelte';
   import VideoPlayerUI from './lib/video-player-ui/VideoPlayerUI.svelte';
 
   const { data }: { data: MediaWatchPageData } = $props();
@@ -15,9 +16,18 @@
   let videoContainerRef: HTMLDivElement;
 
   async function createVideoPlayer() {
-    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, { backend: { src: '/_dev/BigBuckBunny_320x180.mp4' } });
+    //    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, { backend: { src: '/_dev/BigBuckBunny_320x180.mp4' }, apollo: {fileUrl: ''} });
+    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, {
+      backend: {
+        src: `http://localhost:8080/api/v0/media/raw-file?file=${encodeURIComponent('apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4')}`,
+      },
+      apollo: {
+        fileUrl: 'apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4',
+      },
+    });
     // const backend = await YouTubePlayerBackend.create(videoContainerRef, { backend: { videoUrlOrId: 'https://youtu.be/0PHJfOzWV3w' } });
     // const backend = await HlsVideoBackend.create(videoContainerRef, { backend: { src: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8' } });
+
     return new VideoPlayer(backend);
   }
 

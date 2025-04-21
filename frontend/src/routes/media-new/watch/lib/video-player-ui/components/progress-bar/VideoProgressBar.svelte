@@ -106,6 +106,7 @@
       visible={showSeekPreview}
       position={seekPreviewLeftPosition}
       time={seekTimePosition}
+      playerExtras={videoPlayer.playerExtras}
     />
   </div>
 

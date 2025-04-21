@@ -1,7 +1,9 @@
 import type VideoPlayerBackend from './backends/VideoPlayerBackend';
+import VideoPlayerExtras from './VideoPlayerExtras.svelte';
 
 export default class VideoPlayer {
   private readonly backend: VideoPlayerBackend;
+  private readonly _playerExtras: VideoPlayerExtras;
   private readonly intervalId: number;
 
   private shouldShowCustomControls = $state(true);
@@ -28,6 +30,7 @@ export default class VideoPlayer {
   // TODO: make private?
   constructor(backend: VideoPlayerBackend) {
     this.backend = backend;
+    this._playerExtras = new VideoPlayerExtras(backend);
     this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
 
     this.setupEventListeners();
@@ -43,6 +46,10 @@ export default class VideoPlayer {
     } else {
       this.intervalId = -1;
     }
+  }
+
+  get playerExtras(): VideoPlayerExtras {
+    return this._playerExtras;
   }
 
   get $shouldShowCustomControls(): boolean {
@@ -116,6 +123,7 @@ export default class VideoPlayer {
   destroy(): void {
     window.clearInterval(this.intervalId);
     this.backend.destroy();
+    this.playerExtras.destroy();
   }
 
   private setupEventListeners(): void {

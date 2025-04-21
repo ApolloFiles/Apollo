@@ -15,7 +15,7 @@ const config = {
         'script-src': ['self', 'https://www.youtube.com/'],
         'style-src': ['self', 'unsafe-inline'],
         'font-src': ['self'],
-        'img-src': ['self', 'data:'],
+        'img-src': ['self', 'data:', 'blob:'],
         'media-src': ['self'],
         'frame-src': ['https://www.youtube.com/embed/'],
         'manifest-src': ['self'],

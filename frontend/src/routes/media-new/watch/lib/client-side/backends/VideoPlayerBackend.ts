@@ -1,5 +1,9 @@
 export interface BackendOptions {
   backend?: any;
+
+  apollo?: {
+    fileUrl: string;
+  };
 }
 
 export type PlayerEvent = 'loadedmetadata'
@@ -17,8 +21,9 @@ export type PlayerEvent = 'loadedmetadata'
                           | 'seeking'
                           | 'seeked';
 
-export default abstract class VideoPlayerBackend {
+export default abstract class VideoPlayerBackend<T extends BackendOptions = BackendOptions> {
   abstract readonly shouldShowCustomControls: boolean;
+  abstract readonly backendOptions: T;
 
   abstract currentTime: number;
   abstract volume: number;
