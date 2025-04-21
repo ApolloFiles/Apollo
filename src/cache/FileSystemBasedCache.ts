@@ -30,9 +30,9 @@ export default class FileSystemBasedCache {
     const cacheFileName = Crypto
       .createHash('sha256')
       .update(cacheSubKey)
-      .digest('base64');
+      .digest('hex');
 
-    return Path.join(getAppTmpDir(), 'fileSystemBasedCache', user.id.toString(), cacheFileName);
+    return Path.join(getAppTmpDir(), 'fileSystemBasedCache', user.id.toString() + '/', cacheFileName);
   }
 
   static getInstance(): FileSystemBasedCache {
