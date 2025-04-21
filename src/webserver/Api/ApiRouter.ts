@@ -158,7 +158,7 @@ apiRouter.use('/v1/file/get', requireAuthMiddleware, (req, res, next) => {
         return;
       }
 
-      await Utils.sendFileRespectingRequestedRange(req, res, next, requestedFile, await requestedFile.getMimeType() ?? 'application/octet-stream');
+      await Utils.sendFileRespectingRequestedRange(req, res, requestedFile, await requestedFile.getMimeType() ?? 'application/octet-stream');
     },
   });
 });

@@ -67,7 +67,7 @@ export function createWatchRouter(webserver: WebServer, sessionMiddleware: expre
         }
 
         const mimeType = await getFileTypeUtils().getMimeType(requestedFilePathOnHost);
-        await Utils.sendFileRespectingRequestedRange(req, res, next, requestedFilePathOnHost, mimeType ?? 'application/octet-stream');
+        await Utils.sendFileRespectingRequestedRange(req, res, requestedFilePathOnHost, mimeType ?? 'application/octet-stream');
       },
     });
   });

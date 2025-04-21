@@ -1,10 +1,10 @@
-import express from 'express';
+import type express from 'express';
 import Fs from 'node:fs';
 import Path from 'node:path';
 import VirtualFile from './user/files/VirtualFile';
 
 export default class Utils {
-  static async sendFileRespectingRequestedRange(req: express.Request, res: express.Response, next: express.NextFunction, file: string | VirtualFile, mimeType: string, sendAsAttachment: boolean = false): Promise<void> {
+  static async sendFileRespectingRequestedRange(req: express.Request, res: express.Response, file: string | VirtualFile, mimeType: string, sendAsAttachment: boolean = false): Promise<void> {
     let fileStat: Fs.Stats;
 
     if (typeof file === 'string') {

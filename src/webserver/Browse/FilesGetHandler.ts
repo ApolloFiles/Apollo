@@ -417,7 +417,7 @@ async function handleFileRequest(req: express.Request, res: express.Response, ne
   }
 
   console.log(`User '${user.displayName}' requested file '${file.path}'`);
-  await Utils.sendFileRespectingRequestedRange(req, res, next, file, await file.getMimeType() ?? 'text/plain', fileRequestType == 'download');
+  await Utils.sendFileRespectingRequestedRange(req, res, file, await file.getMimeType() ?? 'text/plain', fileRequestType == 'download');
 }
 
 const webVttThumbnailCache: { [key: string]: string } = {};
