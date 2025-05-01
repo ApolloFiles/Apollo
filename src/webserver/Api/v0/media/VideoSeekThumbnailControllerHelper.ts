@@ -27,9 +27,10 @@ export default class VideoSeekThumbnailControllerHelper {
     req: express.Request,
     res: express.Response,
     inputs: RequestInputs,
+    useIfModifiedSinceHeader: boolean,
   ): Promise<void> {
     // TODO: Refactor
-    if (req.headers['if-modified-since'] != null && Date.parse(req.headers['if-modified-since']) >= Date.parse((await inputs.file.stat()).mtime.toISOString())) {
+    if (useIfModifiedSinceHeader && req.headers['if-modified-since'] != null && Date.parse(req.headers['if-modified-since']) >= Date.parse((await inputs.file.stat()).mtime.toISOString())) {
       res
         .status(304)
         .send();
@@ -72,9 +73,13 @@ export default class VideoSeekThumbnailControllerHelper {
     res
       .status(200)
       .type(inputs.thumbnailIndex === -1 ? 'text/vtt' : 'image/jpeg')
-      .setHeader('Cache-Control', 'private, no-cache')
-      .setHeader('Last-Modified', (await inputs.file.stat()).mtime.toUTCString())
-      .send(responseBody);
+      .setHeader('Cache-Control', 'private, no-cache');
+
+    if (useIfModifiedSinceHeader) {
+      res.setHeader('Last-Modified', (await inputs.file.stat()).mtime.toUTCString());
+    }
+
+    res.send(responseBody);
   }
 
   parseRequestedThumbnailIndex(req: express.Request, res: express.Response): number | null {

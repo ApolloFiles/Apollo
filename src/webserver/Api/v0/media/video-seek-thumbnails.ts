@@ -10,5 +10,5 @@ export async function handleGetVideoSeekThumbnails(req: express.Request, res: ex
     return;
   }
 
-  await videoSeekThumbnailControllerHelper.handleResponse(req, res, inputs);
+  await videoSeekThumbnailControllerHelper.handleResponse(req, res, inputs, true);
 }

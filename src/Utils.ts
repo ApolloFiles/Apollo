@@ -18,7 +18,7 @@ export default class Utils {
     }
 
     const fileSize = fileStat.size;
-    const parsedRange = req.range(fileSize);
+    const parsedRange = req.range(fileSize, { combine: true });
 
     let bytesStart = undefined;
     let bytesEnd = undefined;

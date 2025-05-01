@@ -35,5 +35,6 @@ export async function handleGetVideoSeekThumbnails(req: express.Request, res: ex
     req,
     res,
     { file: currentFile, thumbnailIndex },
+    false,
   );
 }
