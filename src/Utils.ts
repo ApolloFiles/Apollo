@@ -63,6 +63,8 @@ export default class Utils {
       res.setHeader('Content-Range', `bytes ${bytesStart}-${bytesEnd}/${fileSize}`);
     }
 
+    res.locals.timings?.setHttpHeader(res);
+
     fileReadStream.pipe(res);
   }
 

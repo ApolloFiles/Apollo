@@ -220,7 +220,7 @@ export default class WebServer {
         req.user = await new ApolloUserStorage().findById(BigInt(req.session.userId));
       }
 
-      res.locals.timings?.startNext('sessionEnd');
+      res.locals.timings?.startNext('continue-req-handling');
 
       next();
     });
