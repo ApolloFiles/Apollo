@@ -76,7 +76,7 @@
                     </div>
                     <div class="col-auto d-flex align-items-center gap-2 ps-5 pe-5">
                       <!-- TODO: add link to vide player -->
-                      <a href=""><span class="material-icons" style="font-size: 36px">play_circle</span></a>
+                      <a href="/api/v0/media/player-session/start-watching?mediaItem={episode.id}&startOffset=0"><span class="material-icons" style="font-size: 36px">play_circle</span></a>
                       <!-- TODO: add additional icons -->
                       <!-- <span class="material-icons" style="font-size: 36px">group</span> -->
                       <!-- <span class="material-icons" style="font-size: 36px">playlist_add</span> -->

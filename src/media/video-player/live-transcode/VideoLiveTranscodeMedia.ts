@@ -1,6 +1,7 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import LocalFile from '../../../user/files/local/LocalFile';
+import { StartPlaybackResponse } from '../../../webserver/Api/v0/media/player-session/change-media';
 import TemporaryDirectory from '../player-session/TemporaryDirectory';
 import { LiveTranscodeHandle } from './launcher/LiveTranscodeLauncher';
 
@@ -21,6 +22,7 @@ export default class VideoLiveTranscodeMedia {
     private readonly tmpDir: TemporaryDirectory,
     private readonly subDirName: string,
     private readonly subtitleMetadata: SubtitleMetadata,
+    public readonly mediaMetadata: StartPlaybackResponse['mediaMetadata'],
   ) {
   }
 

@@ -1,14 +1,18 @@
 import type express from 'express';
 import { container } from 'tsyringe';
+import VideoLiveTranscodeMedia from '../../../../../media/video-player/live-transcode/VideoLiveTranscodeMedia';
 import PlayerSession from '../../../../../media/video-player/player-session/PlayerSession';
 import Utils from '../../../../../Utils';
+import WebServer from '../../../../WebServer';
 import VideoSeekThumbnailControllerHelper from '../VideoSeekThumbnailControllerHelper';
+import { findMediaItem } from './start-watching';
 
 export type StartPlaybackResponse = {
   hlsManifest: string,
   totalDurationInSeconds: number,
   startOffsetInSeconds: number,
   mediaMetadata: {
+    mediaItemId: string,
     title: string,
     episode?: {
       season: number,
@@ -22,7 +26,6 @@ const videoSeekThumbnailControllerHelper = container.resolve(VideoSeekThumbnailC
 
 export async function handleChangeMedia(req: express.Request, res: express.Response, playerSession: PlayerSession): Promise<void> {
   const releaseStartPlaybackLock = await videoSeekThumbnailControllerHelper.acquireStartPlaybackLockNonBlocking(playerSession);
-
   if (releaseStartPlaybackLock === false) {
     res
       .status(423)
@@ -33,32 +36,57 @@ export async function handleChangeMedia(req: express.Request, res: express.Respo
     return;
   }
 
-  const startOffset = parseUserInputInt(res, req.body?.startOffset, 0);
-  if (startOffset == null) {
-    return;
-  }
+  let videoLiveTranscodeMedia: VideoLiveTranscodeMedia;
 
-  const file = await videoSeekThumbnailControllerHelper.parseRequestedFile(req, res, req.body?.file);
-  if (file == null) {
-    return;
-  }
+  try {
+    const startOffset = parseUserInputInt(res, req.body?.startOffset, 0);
+    if (startOffset == null) {
+      return;
+    }
 
-  res.locals.timings?.startNext('start-transcode');
-  const videoLiveTranscodeMedia = await playerSession.startLiveTranscode(file, startOffset);
+    const mediaItemId = parseUserInputBigInt(req.body?.mediaItemId, 0n);
+    if (mediaItemId > 0) {
+      const loggedInUser = WebServer.getUser(req);
+      const mediaItem = await findMediaItem(mediaItemId, loggedInUser.id);
+      if (mediaItem == null) {
+        return;
+      }
+
+      res.locals.timings?.startNext('start-transcode');
+      videoLiveTranscodeMedia = await playerSession.startLiveTranscode(loggedInUser.getDefaultFileSystem().getFile(mediaItem.filePath), startOffset, {
+        mediaItemId: mediaItemId.toString(),
+        title: mediaItem.title,
+        episode: ((mediaItem.seasonNumber != null && mediaItem.episodeNumber != null) ? {
+          title: mediaItem.title,
+          season: mediaItem.seasonNumber,
+          episode: mediaItem.episodeNumber,
+        } : undefined),
+      });
+    } else {
+      const file = await videoSeekThumbnailControllerHelper.parseRequestedFile(req, res, req.body?.file);
+      if (file == null) {
+        return;
+      }
+
+      res.locals.timings?.startNext('start-transcode');
+      videoLiveTranscodeMedia = await playerSession.startLiveTranscode(file, startOffset, {
+        mediaItemId: '0',
+        title: file.getFileName(),
+      });
+    }
+  } finally {
+    releaseStartPlaybackLock();
+  }
 
   res.locals.timings?.startNext('respond');
-  releaseStartPlaybackLock();
-
   res
     .status(200)
     .type('application/json')
     .send({
       hlsManifest: `/api/v0/media/player-session/file/${Utils.encodeUriProperly(videoLiveTranscodeMedia.relativePublicPathToHlsManifest)}`,
       totalDurationInSeconds: videoLiveTranscodeMedia.totalDurationInSeconds,
-      startOffsetInSeconds: startOffset,
-      mediaMetadata: {
-        title: playerSession.getCurrentFile()?.getFileName() ?? '', // TODO: provide a pretty name
-      },
+      startOffsetInSeconds: videoLiveTranscodeMedia.startOffset,
+      mediaMetadata: videoLiveTranscodeMedia.mediaMetadata,
     } satisfies StartPlaybackResponse);
 }
 
@@ -76,4 +104,19 @@ function parseUserInputInt(res: express.Response, userInput: unknown, defaultVal
     .type('application/json')
     .send({ error: `Parameter 'startOffset' needs to be a positive integer` });
   return null;
+}
+
+function parseUserInputBigInt(userInput: unknown, defaultValue: bigint): bigint {
+  if (typeof userInput === 'bigint' && userInput >= 0n) {
+    return userInput;
+  }
+  if (typeof userInput === 'number' && userInput >= 0) {
+    return BigInt(userInput);
+  }
+
+  if (typeof userInput === 'string' && /^[0-9]+$/.test(userInput) && BigInt(userInput) >= 0) {
+    return BigInt(userInput);
+  }
+
+  return defaultValue;
 }

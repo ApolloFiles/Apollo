@@ -17,61 +17,75 @@
 
   let videoContainerRef: HTMLDivElement;
 
-  async function createVideoPlayer(startOffset: number = 0, initialAudioTrack?: number, initialSubtitleTrack?: number) {
-    const startPlaybackResponse = await fetch(`http://localhost:8080/api/v0/media/player-session/change-media`, {
+  let transcodeRestartInProgress = false;
+
+  async function createVideoPlayer(playbackStatus: StartPlaybackResponse, initialAudioTrack?: number, initialSubtitleTrack?: number): Promise<VideoPlayer> {
+    const backend = await VideoLiveTranscodeBackend.create(videoContainerRef, {
+      backend: {
+        src: playbackStatus.hlsManifest,
+        initialAudioTrack,
+        initialSubtitleTrack,
+
+        totalDurationInSeconds: playbackStatus.totalDurationInSeconds,
+        startOffset: playbackStatus.startOffsetInSeconds,
+        restartTranscode: (startOffset, activeAudioTrack, activeSubtitleTrack) => {
+          if (transcodeRestartInProgress) {
+            return;
+          }
+
+          transcodeRestartInProgress = true;
+
+          videoPlayerPromise?.then((videoPlayer) => videoPlayer.destroy());
+          videoPlayerPromise = restartVideoLiveTranscode(playbackStatus.mediaMetadata.mediaItemId, startOffset, activeAudioTrack, activeSubtitleTrack)
+            .finally(() => {
+              transcodeRestartInProgress = false;
+            });
+        },
+      },
+    });
+
+    mediaTitle = playbackStatus.mediaMetadata.title;
+    episodeTitlePrefix = playbackStatus.mediaMetadata.episode ? `S${playbackStatus.mediaMetadata.episode.season.toString()
+      .padStart(2, '0')}E${playbackStatus.mediaMetadata.episode.episode.toString().padStart(2, '0')} • ` : '';
+
+    return new VideoPlayer(backend, playbackStatus.mediaMetadata);
+  }
+
+  async function restartVideoLiveTranscode(mediaItemId: string, startOffset: number, initialAudioTrack: number, initialSubtitleTrack: number): Promise<VideoPlayer> {
+    const changeMediaResponse = await fetch('/api/v0/media/player-session/change-media', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json; charset=utf-8',
       },
       body: JSON.stringify({
-        //        file: 'apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4',
-        file: 'apollo:///f/1/3/_S01E01 – Katrielle und das geheimnisvolle Haus.mkv',
+        mediaItemId,
         startOffset,
       }),
     });
-    if (!startPlaybackResponse.ok) {
-      throw new Error(`change-media endpoint responded with Status ${startPlaybackResponse.status}: ${await startPlaybackResponse.text()}`);
+
+    const changeMediaBody: StartPlaybackResponse = await changeMediaResponse.json();
+    return createVideoPlayer(changeMediaBody, initialAudioTrack, initialSubtitleTrack);
+  }
+
+  async function initVideoPlayer() {
+    const playbackStatusResponse = await fetch(`/api/v0/media/player-session/playback-status`, { headers: { Accept: 'application/json' } });
+    if (!playbackStatusResponse.ok) {
+      throw new Error(`change-media endpoint responded with Status ${playbackStatusResponse.status}: ${await playbackStatusResponse.text()}`);
     }
 
-    const startPlaybackBody: StartPlaybackResponse = await startPlaybackResponse.json();
+    if (playbackStatusResponse.status === 204) {
+      // TODO: Show info to user that there is nothing to play (maybe with link to media library)
+    }
 
-    //    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, { backend: { src: '/_dev/BigBuckBunny_320x180.mp4' }, apollo: {fileUrl: ''} });
-    //    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, {
-    //      backend: {
-    //        src: `http://localhost:8080/api/v0/media/raw-file?file=${encodeURIComponent('apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4')}`,
-    //      },
-    //      apollo: {
-    //        fileUrl: 'apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4',
-    //      },
-    //    });
-    // const backend = await YouTubePlayerBackend.create(videoContainerRef, { backend: { videoUrlOrId: 'https://youtu.be/0PHJfOzWV3w' } });
-    const backend = await VideoLiveTranscodeBackend.create(videoContainerRef, {
-      backend: {
-        src: startPlaybackBody.hlsManifest,
-        initialAudioTrack,
-        initialSubtitleTrack,
-
-        totalDurationInSeconds: startPlaybackBody.totalDurationInSeconds,
-        startOffset: startPlaybackBody.startOffsetInSeconds,
-        restartTranscode: (startOffset, activeAudioTrack, activeSubtitleTrack) => {
-          videoPlayerPromise?.then((videoPlayer) => videoPlayer.destroy());
-          videoPlayerPromise = createVideoPlayer(startOffset, activeAudioTrack, activeSubtitleTrack);
-        },
-      },
-    });
-
-    mediaTitle = startPlaybackBody.mediaMetadata.title;
-    episodeTitlePrefix = startPlaybackBody.mediaMetadata.episode ? `S${startPlaybackBody.mediaMetadata.episode.season.toString()
-      .padStart(2, '0')}E${startPlaybackBody.mediaMetadata.episode.episode.toString().padStart(2, '0')} • ` : '';
-
-    return new VideoPlayer(backend, startPlaybackBody.mediaMetadata);
+    const playbackStatusBody: StartPlaybackResponse = await playbackStatusResponse.json();
+    return createVideoPlayer(playbackStatusBody);
   }
 
   let videoPlayerPromise: Promise<VideoPlayer> | undefined = $state(undefined);
 
   onMount(() => {
-    videoPlayerPromise = createVideoPlayer();
+    videoPlayerPromise = initVideoPlayer();
 
     return () => {
       videoPlayerPromise?.then((videoPlayer) => videoPlayer.destroy());

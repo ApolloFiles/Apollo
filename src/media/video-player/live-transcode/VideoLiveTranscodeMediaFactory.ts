@@ -3,6 +3,7 @@ import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import LocalFile from '../../../user/files/local/LocalFile';
 import Utils from '../../../Utils';
+import { StartPlaybackResponse } from '../../../webserver/Api/v0/media/player-session/change-media';
 import VideoAnalyser from '../../video/analyser/VideoAnalyser';
 import FontExtractor, { ExtractedFont } from '../../watch/live_transcode/extractor/FontExtractor';
 import TextBasedSubtitleExtractor from '../../watch/live_transcode/extractor/TextBasedSubtitleExtractor';
@@ -17,7 +18,7 @@ export default class VideoLiveTranscodeMediaFactory {
   ) {
   }
 
-  async create(tmpDir: TemporaryDirectory, file: LocalFile, startOffsetInSeconds: number): Promise<VideoLiveTranscodeMedia> {
+  async create(tmpDir: TemporaryDirectory, file: LocalFile, startOffsetInSeconds: number, mediaMetadata: StartPlaybackResponse['mediaMetadata']): Promise<VideoLiveTranscodeMedia> {
     const [targetPublicDir, targetWorkDir, randomDirName] = await this.createTargetDirs(tmpDir);
     const videoFilePath = await this.createAnonymizedFileLink(file, targetWorkDir);
 
@@ -80,7 +81,9 @@ export default class VideoLiveTranscodeMediaFactory {
             uri: `${randomDirName}/_subtitles/fonts/${encodeURIComponent(font.fileName)}`,
           };
         }),
-      });
+      },
+      mediaMetadata,
+    );
   }
 
   private async createAnonymizedFileLink(file: LocalFile, targetDir: string): Promise<string> {
