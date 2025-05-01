@@ -81,12 +81,12 @@ RUN npm ci && \
     npm cache clean --force
 
 COPY resources/ ./resources/
-COPY --from=builder /app/frontend/build/ ./frontend/build/
 COPY --from=builder /app/frontend/package.json ./frontend/package.json
+COPY --from=builder /app/frontend/build/ ./frontend/build/
+# FIXME: Somehow fix the need for the node_modules/ for server-side-rendering :( (hls.js)
+COPY --from=builder /app/frontend/node_modules/ ./frontend/node_modules/
 COPY --from=builder /app/dist/ ./dist/
 COPY --from=builder /app/resources/public/static/frontend/dist/ ./resources/public/static/frontend/dist/
 COPY --from=builder /app/resources/public/static/nuxt-frontend/.output/public/ ./resources/public/static/nuxt-frontend/
 
-# TODO: remove debug APOLLO_GST_TARGET_FPS env
-# ENV APOLLO_GST_TARGET_FPS=60
 CMD ["node", "--enable-source-maps", "dist/index.js"]
