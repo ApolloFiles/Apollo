@@ -4,7 +4,7 @@ import { container } from 'tsyringe';
 import PlayerSessionStorage from '../../../../media/video-player/player-session/PlayerSessionStorage';
 import WebServer from '../../../WebServer';
 import { handleGetPublicFile } from './player-session/file';
-import { handleStartPlayback } from './player-session/start-playback';
+import { handleChangeMedia } from './player-session/change-media';
 import { handleGetVideoSeekThumbnails } from './player-session/video-seek-thumbnails';
 
 export const playerSessionApiRouter = express.Router();
@@ -20,11 +20,11 @@ playerSessionApiRouter.use('/video-seek-thumbnails', (req, res, next) => {
   });
 });
 
-playerSessionApiRouter.use('/start-playback', express.json(), (req, res, next) => {
+playerSessionApiRouter.use('/change-media', express.json(), (req, res, next) => {
   handleRequestRestfully(req, res, next, {
     post: () => {
       const playerSession = playerSessionStorage.findOrCreateBySessionCookie(WebServer.getUser(req), req.session.id);
-      return handleStartPlayback(req, res, playerSession);
+      return handleChangeMedia(req, res, playerSession);
     },
   });
 });

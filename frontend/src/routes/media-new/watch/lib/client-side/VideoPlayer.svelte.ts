@@ -1,4 +1,4 @@
-import type { StartPlaybackResponse } from '../../../../../../../src/webserver/Api/v0/media/player-session/start-playback';
+import type { StartPlaybackResponse } from '../../../../../../../src/webserver/Api/v0/media/player-session/change-media';
 import type VideoPlayerBackend from './backends/VideoPlayerBackend';
 import VideoPlayerExtras from './VideoPlayerExtras.svelte';
 

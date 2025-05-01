@@ -5,7 +5,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { AuthenticatedPageRequestData } from '../../../../../src/frontend/FrontendRenderingDataAccess';
-  import type { StartPlaybackResponse } from '../../../../../src/webserver/Api/v0/media/player-session/start-playback';
+  import type { StartPlaybackResponse } from '../../../../../src/webserver/Api/v0/media/player-session/change-media';
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte';
   import VideoPlayerUI from './lib/video-player-ui/VideoPlayerUI.svelte';
@@ -18,7 +18,7 @@
   let videoContainerRef: HTMLDivElement;
 
   async function createVideoPlayer(startOffset: number = 0, initialAudioTrack?: number, initialSubtitleTrack?: number) {
-    const startPlaybackResponse = await fetch(`http://localhost:8080/api/v0/media/player-session/start-playback`, {
+    const startPlaybackResponse = await fetch(`http://localhost:8080/api/v0/media/player-session/change-media`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -31,7 +31,7 @@
       }),
     });
     if (!startPlaybackResponse.ok) {
-      throw new Error(`start-playback endpoint responded with Status ${startPlaybackResponse.status}: ${await startPlaybackResponse.text()}`);
+      throw new Error(`change-media endpoint responded with Status ${startPlaybackResponse.status}: ${await startPlaybackResponse.text()}`);
     }
 
     const startPlaybackBody: StartPlaybackResponse = await startPlaybackResponse.json();
