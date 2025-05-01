@@ -21,13 +21,15 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
     this.hls.attachMedia(this.videoElement);
 
     this.hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, () => this.onAudioTrackSwitched());
-    this.hls.on(Hls.Events.MANIFEST_LOADED, () => {
+    this.hls.once(Hls.Events.MANIFEST_LOADED, () => {
       if (options.backend.initialAudioTrack != null) {
         this.hls.audioTrack = options.backend.initialAudioTrack;
       }
       if (options.backend.initialSubtitleTrack != null) {
         this.hls.subtitleTrack = options.backend.initialSubtitleTrack;
       }
+
+      this.hls.startLoad(0);
     });
 
     this.hls.loadSource(options.backend.src);
