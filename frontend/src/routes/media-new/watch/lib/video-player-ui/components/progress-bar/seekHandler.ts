@@ -125,6 +125,8 @@ function attachEventListeners(context: SeekHandlerContext, handlers: ReturnType<
   document.addEventListener('touchcancel', touchEvents.touchcancel, { passive: true });
 
   return (): void => {
+    handleSeekEnd();
+
     document.removeEventListener('mousemove', mouseEvents.mousemove);
     document.removeEventListener('mouseup', mouseEvents.mouseup);
     document.removeEventListener('touchmove', touchEvents.touchmove);

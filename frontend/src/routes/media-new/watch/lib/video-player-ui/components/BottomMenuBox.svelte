@@ -6,7 +6,7 @@
 
     menuVisible: boolean,
     menuItems: { id: string, label: string }[],
-    activeItemId?: string,
+    activeItemId?: string | null,
 
     onSelect: (id: string) => void,
     onMenuOpen: () => void,

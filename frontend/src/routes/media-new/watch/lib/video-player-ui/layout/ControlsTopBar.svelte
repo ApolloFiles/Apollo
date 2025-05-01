@@ -1,17 +1,19 @@
 <script lang="ts">
-  import type { MediaWatchPageData } from '../../../../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
 
-  const { mediaInfo }: { mediaInfo: MediaWatchPageData['pageData']['media'] } = $props();
-  const episodeTitlePrefix = mediaInfo.episode ? `S${mediaInfo.episode.season.toString().padStart(2, '0')}E${mediaInfo.episode.episode.toString().padStart(2, '0')} • ` : '';
+  const { episodeTitlePrefix, mediaMetadata }: {
+    episodeTitlePrefix: string,
+    mediaMetadata: VideoPlayer['mediaMetadata']
+  } = $props();
 </script>
 
 <div class="top-bar">
   <div class="left-section">
     <button class="back-button">←</button>
     <div class="video-title-container">
-      <h1 class="video-title">{mediaInfo.title}</h1>
-      {#if mediaInfo.episode}
-        <h2 class="episode-title">{episodeTitlePrefix}{mediaInfo.episode.title}</h2>
+      <h1 class="video-title">{mediaMetadata.title}</h1>
+      {#if mediaMetadata.episode}
+        <h2 class="episode-title">{episodeTitlePrefix}{mediaMetadata.episode.title}</h2>
       {/if}
     </div>
   </div>

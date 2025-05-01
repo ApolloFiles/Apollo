@@ -2,7 +2,7 @@ export interface BackendOptions {
   backend?: any;
 
   apollo?: {
-    fileUrl: string;
+    fileUrl: string;   // TODO: Do we still need this?
   };
 }
 
@@ -38,7 +38,12 @@ export default abstract class VideoPlayerBackend<T extends BackendOptions = Back
 
   abstract fastSeek(time: number): void;
 
+  abstract getActiveAudioTrackId(): string | null;
+  abstract setActiveAudioTrack(id: string): void;
   abstract getAudioTracks(): { id: string, label: string }[];
+
+  abstract getActiveSubtitleTrackId(): string | null;
+  abstract setActiveSubtitleTrack(id: string | null): void ;
   abstract getSubtitleTracks(): { id: string, label: string }[];
 
   abstract getBufferedRanges(): { start: number, end: number }[];

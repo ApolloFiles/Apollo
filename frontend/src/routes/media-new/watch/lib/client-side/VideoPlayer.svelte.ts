@@ -1,8 +1,12 @@
+import type { StartPlaybackResponse } from '../../../../../../../src/webserver/Api/v0/media/player-session/start-playback';
 import type VideoPlayerBackend from './backends/VideoPlayerBackend';
 import VideoPlayerExtras from './VideoPlayerExtras.svelte';
 
+type MediaMetadata = StartPlaybackResponse['mediaMetadata'];
+
 export default class VideoPlayer {
   private readonly backend: VideoPlayerBackend;
+  public readonly mediaMetadata: MediaMetadata;
   private readonly _playerExtras: VideoPlayerExtras;
   private readonly intervalId: number;
 
@@ -13,7 +17,9 @@ export default class VideoPlayer {
   private volume = $state(1);
   private muted = $state(false);
   private isPlaying = $state(false);
+  private activeAutoTrackId: string | null = $state(null);
   private audioTracks = $state<{ id: string, label: string }[]>([]);
+  private activeSubtitleTrackId: string | null = $state(null);
   private subtitleTracks = $state<{ id: string, label: string }[]>([]);
   private localBufferedRanges = $state<{ start: number, end: number }[]>([]);
   private remoteBufferedRange = $state<{ start: number, end: number } | null>(null);
@@ -28,9 +34,11 @@ export default class VideoPlayer {
   });
 
   // TODO: make private?
-  constructor(backend: VideoPlayerBackend) {
+  constructor(backend: VideoPlayerBackend, mediaMetadata: MediaMetadata) {
     this.backend = backend;
+    this.mediaMetadata = mediaMetadata;
     this._playerExtras = new VideoPlayerExtras(backend);
+
     this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
 
     this.setupEventListeners();
@@ -84,8 +92,24 @@ export default class VideoPlayer {
     return this.isPlaying;
   }
 
+  get $activeAudioTrackId(): string | null {
+    return this.activeAutoTrackId;
+  }
+
+  set $activeAudioTrackId(trackId: string) {
+    this.backend.setActiveAudioTrack(trackId);
+  }
+
   get $audioTracks(): { id: string, label: string }[] {
     return this.audioTracks;
+  }
+
+  get $activeSubtitleTrackId(): string | null {
+    return this.activeSubtitleTrackId;
+  }
+
+  set $activeSubtitleTrackId(trackId: string | null) {
+    this.backend.setActiveSubtitleTrack(trackId);
   }
 
   get $subtitleTracks(): { id: string; label: string }[] {
@@ -134,6 +158,9 @@ export default class VideoPlayer {
 
       this.audioTracks = this.backend.getAudioTracks();
       this.subtitleTracks = this.backend.getSubtitleTracks();
+
+      this.activeAutoTrackId = this.backend.getActiveAudioTrackId();
+      this.activeSubtitleTrackId = this.backend.getActiveSubtitleTrackId();
     });
     this.backend.addPassiveEventListener('durationchange', () => {
       this.duration = this.backend.duration;
@@ -152,6 +179,9 @@ export default class VideoPlayer {
 
       this.localBufferedRanges = this.backend.getBufferedRanges();
       this.remoteBufferedRange = this.backend.getRemotelyBufferedRange();
+
+      this.activeAutoTrackId = this.backend.getActiveAudioTrackId();
+      this.activeSubtitleTrackId = this.backend.getActiveSubtitleTrackId();
     });
     this.backend.addPassiveEventListener('volumechange', () => {
       this.volume = this.backend.volume;

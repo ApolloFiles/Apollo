@@ -1,0 +1,25 @@
+import Crypto from 'node:crypto';
+import { singleton } from 'tsyringe';
+import ApolloUser from '../../../user/ApolloUser';
+import PlayerSession from './PlayerSession';
+
+@singleton()
+export default class PlayerSessionStorage {
+  private readonly sessions: Map<string, PlayerSession> = new Map();
+
+  findOrCreateBySessionCookie(user: ApolloUser, sessionCookieValue: string): PlayerSession {
+    const sessionId = this.generatePlayerSessionIdBySessionCookie(sessionCookieValue);
+
+    if (!this.sessions.has(sessionId)) {
+      this.sessions.set(sessionId, new PlayerSession(sessionId, user));
+    }
+    return this.sessions.get(sessionId)!;
+  }
+
+  private generatePlayerSessionIdBySessionCookie(sessionCookieValue: string): string {
+    return Crypto
+      .createHash('sha1')
+      .update(sessionCookieValue)
+      .digest('hex');
+  }
+}

@@ -1,15 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { MediaWatchPageData } from '../../../../../../../src/frontend/FrontendRenderingDataAccess';
   import type VideoPlayer from '../client-side/VideoPlayer.svelte';
   import VideoContextMenu from './components/VideoContextMenu.svelte';
   import ControlsBottomBar from './layout/ControlsBottomBar.svelte';
   import ControlsTopBar from './layout/ControlsTopBar.svelte';
 
-  const { mediaInfo, videoPlayer, showCustomControls = true }: {
-    mediaInfo: MediaWatchPageData['pageData']['media'],
+  const { videoPlayer, showCustomControls = true, episodeTitlePrefix }: {
     videoPlayer: VideoPlayer,
-    showCustomControls: boolean
+    showCustomControls: boolean,
+    episodeTitlePrefix: string
   } = $props();
 
   let videoContextMenuRef: VideoContextMenu;
@@ -192,10 +191,11 @@
     role="region"
     aria-label="Video player controls"
   >
-    <ControlsTopBar mediaInfo={mediaInfo} />
+    <ControlsTopBar
+      mediaMetadata={videoPlayer.mediaMetadata}
+      episodeTitlePrefix={episodeTitlePrefix} />
     <ControlsBottomBar
       bind:this={playerControlsBottomRef}
-      mediaInfo={mediaInfo}
       videoPlayer={videoPlayer}
     />
   </div>

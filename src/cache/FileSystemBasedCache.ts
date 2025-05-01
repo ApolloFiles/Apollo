@@ -1,15 +1,12 @@
 import Crypto from 'node:crypto';
 import Fs from 'node:fs';
 import Path from 'node:path';
+import { container, singleton } from 'tsyringe';
 import { getAppTmpDir } from '../Constants';
 import ApolloUser from '../user/ApolloUser';
 
+@singleton()
 export default class FileSystemBasedCache {
-  private static INSTANCE: FileSystemBasedCache;
-
-  protected constructor() {
-  }
-
   async setUserAssociatedCachedFile(user: ApolloUser, cacheSubKey: string, data: Buffer): Promise<void> {
     const cacheFilePath = this.generateUserAssociatedCacheFilePath(user, cacheSubKey);
 
@@ -32,7 +29,16 @@ export default class FileSystemBasedCache {
 
   async userAssociatedCachedFileExists(user: ApolloUser, cacheSubKey: string): Promise<boolean> {
     const cacheFilePath = this.generateUserAssociatedCacheFilePath(user, cacheSubKey);
-    return Fs.existsSync(cacheFilePath);
+
+    try {
+      await Fs.promises.stat(cacheFilePath);
+      return true;
+    } catch (err: any) {
+      if (err instanceof Error && (err as any).code === 'ENOENT') {
+        return false;
+      }
+      throw err;
+    }
   }
 
   private generateUserAssociatedCacheFilePath(user: ApolloUser, cacheSubKey: string): string {
@@ -44,10 +50,10 @@ export default class FileSystemBasedCache {
     return Path.join(getAppTmpDir(), 'fileSystemBasedCache', user.id.toString() + '/', cacheFileName);
   }
 
+  /**
+   * @deprecated Use dependency container
+   */
   static getInstance(): FileSystemBasedCache {
-    if (!FileSystemBasedCache.INSTANCE) {
-      FileSystemBasedCache.INSTANCE = new FileSystemBasedCache();
-    }
-    return FileSystemBasedCache.INSTANCE;
+    return container.resolve(FileSystemBasedCache);
   }
 }

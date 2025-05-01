@@ -13,6 +13,33 @@ export default class FileTypeUtils {
     this.useFileApp = useFileApp ?? FileTypeUtils.isFileAppAvailable();
   }
 
+  async getMimeTypeTrustExtension(path: string): Promise<string | null> {
+    let fileMimeType: string | null = null;
+
+    const lookUpByExtension = MimeType.lookup(path);
+
+    if (lookUpByExtension) {
+      fileMimeType = lookUpByExtension;
+    }
+
+    if (this.useFileApp &&
+      (fileMimeType == null ||
+        fileMimeType == 'inode/x-empty' ||
+        fileMimeType == 'application/octet-stream')) {
+
+      try {
+        fileMimeType = await this.getMimeTypeFromFileApp(path);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (fileMimeType == 'inode/x-empty') {
+      return 'text/plain';
+    }
+    return fileMimeType;
+  }
+
   // TODO: add support für path array
   async getMimeType(path: string): Promise<string | null> {
     let fileMimeType: string | null = null;

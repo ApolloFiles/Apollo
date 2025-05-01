@@ -8,7 +8,7 @@ export interface HtmlVideoPlayerBackendOptions extends BackendOptions {
 
 export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOptions = HtmlVideoPlayerBackendOptions> extends VideoPlayerBackend<T> {
   public readonly shouldShowCustomControls = true;
-  public readonly backendOptions: T;
+  public readonly backendOptions: T;  // TODO: Should we really have this field? Maybe the layer that needs it should just take it themselves from the constructor
 
   protected readonly videoElement: HTMLVideoElement;
 
@@ -62,8 +62,24 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
     this.videoElement.currentTime = time;
   }
 
+  getActiveAudioTrackId(): string | null {
+    return null;
+  }
+
+  setActiveAudioTrack(id: string): void {
+    // TODO
+  }
+
   getAudioTracks(): { id: string, label: string }[] {
     return [{ id: '1', label: 'Default' }];
+  }
+
+  getActiveSubtitleTrackId(): string | null {
+    return null;
+  }
+
+  setActiveSubtitleTrack(id: string | null): void {
+    // TODO
   }
 
   getSubtitleTracks(): { id: string, label: string }[] {

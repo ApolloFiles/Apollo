@@ -1,21 +1,19 @@
 <script lang="ts">
-  import type { MediaWatchPageData } from '../../../../../../../../src/frontend/FrontendRenderingDataAccess';
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
   import BottomMenuBox from '../components/BottomMenuBox.svelte';
   import FullscreenButton from '../components/FullscreenButton.svelte';
   import VideoProgressBar from '../components/progress-bar/VideoProgressBar.svelte';
   import VolumeControl from '../components/VolumeControl.svelte';
 
-  const { mediaInfo, videoPlayer }: {
-    mediaInfo: MediaWatchPageData['pageData']['media'],
+  const { videoPlayer }: {
     videoPlayer: VideoPlayer
   } = $props();
 
   let fullscreenRef: FullscreenButton;
   export const toggleFullscreen = () => fullscreenRef.toggleFullscreen();
 
-  let activeSubtitleTrack = $state('');
-  let activeAudioTrack = $state(mediaInfo.audioTracks[0]);
+  let activeSubtitleTrack = $derived(videoPlayer.$activeSubtitleTrackId);
+  let activeAudioTrack = $derived(videoPlayer.$activeAudioTrackId);
   let showSubtitleTrackMenu = $state(false);
   let showAudioTrackMenu = $state(false);
 
@@ -47,16 +45,16 @@
         buttonLabel="CC"
         bind:menuVisible={showSubtitleTrackMenu}
         bind:activeItemId={activeSubtitleTrack}
-        menuItems={[{id: '', label: 'None' }, ...mediaInfo.subtitleTracks.map(track => ({ id: track, label: track }))]}
-        onSelect={(id) => activeSubtitleTrack = id}
+        menuItems={[{id: '', label: 'None' }, ...videoPlayer.$subtitleTracks]}
+        onSelect={(id) => videoPlayer.$activeSubtitleTrackId = id}
         onMenuOpen={() => closeAllMenus()}
       />
       <BottomMenuBox
         buttonLabel="🔊"
         bind:menuVisible={showAudioTrackMenu}
         bind:activeItemId={activeAudioTrack}
-        menuItems={mediaInfo.audioTracks.map(track => ({ id: track, label: track }))}
-        onSelect={(id) => activeSubtitleTrack = id}
+        menuItems={videoPlayer.$audioTracks}
+        onSelect={(id) => videoPlayer.$activeAudioTrackId = id}
         onMenuOpen={() => closeAllMenus()}
       />
 

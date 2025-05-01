@@ -1,34 +1,71 @@
 <svelte:head>
-  <title>{episodeTitlePrefix}{data.pageData.media.title}</title>
+  <title>{episodeTitlePrefix}{mediaTitle}</title>
 </svelte:head>
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { MediaWatchPageData } from '../../../../../src/frontend/FrontendRenderingDataAccess';
-  import HtmlVideoPlayerBackend from './lib/client-side/backends/HtmlVideoPlayerBackend';
+  import type { AuthenticatedPageRequestData } from '../../../../../src/frontend/FrontendRenderingDataAccess';
+  import type { StartPlaybackResponse } from '../../../../../src/webserver/Api/v0/media/player-session/start-playback';
+  import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte';
-  import VideoPlayerExtras from './lib/client-side/VideoPlayerExtras.svelte';
   import VideoPlayerUI from './lib/video-player-ui/VideoPlayerUI.svelte';
 
-  const { data }: { data: MediaWatchPageData } = $props();
+  const { data }: { data: AuthenticatedPageRequestData } = $props();
 
-  const episodeTitlePrefix = data.pageData.media.episode ? `S${data.pageData.media.episode.season.toString().padStart(2, '0')}E${data.pageData.media.episode.episode.toString().padStart(2, '0')} • ` : '';
+  let mediaTitle = $state('');
+  let episodeTitlePrefix = $state('');
+
   let videoContainerRef: HTMLDivElement;
 
-  async function createVideoPlayer() {
-    //    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, { backend: { src: '/_dev/BigBuckBunny_320x180.mp4' }, apollo: {fileUrl: ''} });
-    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, {
-      backend: {
-        src: `http://localhost:8080/api/v0/media/raw-file?file=${encodeURIComponent('apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4')}`,
+  async function createVideoPlayer(startOffset: number = 0, initialAudioTrack?: number, initialSubtitleTrack?: number) {
+    const startPlaybackResponse = await fetch(`http://localhost:8080/api/v0/media/player-session/start-playback`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
       },
-      apollo: {
-        fileUrl: 'apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4',
+      body: JSON.stringify({
+        //        file: 'apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4',
+        file: 'apollo:///f/1/3/_S01E01 – Katrielle und das geheimnisvolle Haus.mkv',
+        startOffset,
+      }),
+    });
+    if (!startPlaybackResponse.ok) {
+      throw new Error(`start-playback endpoint responded with Status ${startPlaybackResponse.status}: ${await startPlaybackResponse.text()}`);
+    }
+
+    const startPlaybackBody: StartPlaybackResponse = await startPlaybackResponse.json();
+
+    //    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, { backend: { src: '/_dev/BigBuckBunny_320x180.mp4' }, apollo: {fileUrl: ''} });
+    //    const backend = await HtmlVideoPlayerBackend.create(videoContainerRef, {
+    //      backend: {
+    //        src: `http://localhost:8080/api/v0/media/raw-file?file=${encodeURIComponent('apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4')}`,
+    //      },
+    //      apollo: {
+    //        fileUrl: 'apollo:///f/1/3/【ORIGINAL MV】PLAY DICE! _ HAKOS BAELZ/transcoded.mp4',
+    //      },
+    //    });
+    // const backend = await YouTubePlayerBackend.create(videoContainerRef, { backend: { videoUrlOrId: 'https://youtu.be/0PHJfOzWV3w' } });
+    const backend = await VideoLiveTranscodeBackend.create(videoContainerRef, {
+      backend: {
+        src: startPlaybackBody.hlsManifest,
+        initialAudioTrack,
+        initialSubtitleTrack,
+
+        totalDurationInSeconds: startPlaybackBody.totalDurationInSeconds,
+        startOffset: startPlaybackBody.startOffsetInSeconds,
+        restartTranscode: (startOffset, activeAudioTrack, activeSubtitleTrack) => {
+          videoPlayerPromise?.then((videoPlayer) => videoPlayer.destroy());
+          videoPlayerPromise = createVideoPlayer(startOffset, activeAudioTrack, activeSubtitleTrack);
+        },
       },
     });
-    // const backend = await YouTubePlayerBackend.create(videoContainerRef, { backend: { videoUrlOrId: 'https://youtu.be/0PHJfOzWV3w' } });
-    // const backend = await HlsVideoBackend.create(videoContainerRef, { backend: { src: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8' } });
 
-    return new VideoPlayer(backend);
+    mediaTitle = startPlaybackBody.mediaMetadata.title;
+    episodeTitlePrefix = startPlaybackBody.mediaMetadata.episode ? `S${startPlaybackBody.mediaMetadata.episode.season.toString()
+      .padStart(2, '0')}E${startPlaybackBody.mediaMetadata.episode.episode.toString().padStart(2, '0')} • ` : '';
+
+    return new VideoPlayer(backend, startPlaybackBody.mediaMetadata);
   }
 
   let videoPlayerPromise: Promise<VideoPlayer> | undefined = $state(undefined);
@@ -42,7 +79,7 @@
   });
 </script>
 
-<main class="watch-main" id="_tmp_id_watch_main">
+<main class="watch-main">
   <div class="video-container" bind:this={videoContainerRef}></div>
 
   {#await videoPlayerPromise}
@@ -51,9 +88,11 @@
     </div>
   {:then videoPlayer}
     {#if videoPlayer}
-      <VideoPlayerUI mediaInfo={data.pageData.media}
-                     videoPlayer={videoPlayer}
-                     showCustomControls={videoPlayer.$shouldShowCustomControls} />
+      <VideoPlayerUI
+        videoPlayer={videoPlayer}
+        showCustomControls={videoPlayer.$shouldShowCustomControls}
+        episodeTitlePrefix={episodeTitlePrefix}
+      />
     {:else}
       <div class="loading-container">
         <span class="spinner">0</span>

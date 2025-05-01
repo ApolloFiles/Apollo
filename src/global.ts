@@ -99,5 +99,6 @@ export interface ApolloConfig {
 
   readonly secrets: {
     readonly session: string;
+    readonly tokenSalt: string;
   };
 }

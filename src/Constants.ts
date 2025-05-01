@@ -159,6 +159,10 @@ export function getConfig(): ConfigFile<ApolloConfig> {
           console.log('Generating session secret...');
           return Crypto.randomBytes(32).toString('hex');
         }) as any as string,
+        tokenSalt: (() => {
+          console.log('Generating tokenSalt secret...');
+          return Crypto.randomBytes(32).toString('hex');
+        }) as any as string,
       },
     });
     cfg.saveIfChanged();
