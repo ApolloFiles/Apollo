@@ -1,5 +1,6 @@
 import type express from 'express';
 import { singleton } from 'tsyringe';
+import PlayerSession from '../../../../media/video-player/player-session/PlayerSession';
 import SeekThumbnailProvider from '../../../../media/video-player/seek-thumbnails/SeekThumbnailProvider';
 import ApolloUser from '../../../../user/ApolloUser';
 import LocalFile from '../../../../user/files/local/LocalFile';
@@ -121,15 +122,19 @@ export default class VideoSeekThumbnailControllerHelper {
     };
   }
 
-  async acquireGenerationLock(apolloFileUrl: ApolloFileUrl): Promise<() => void> {
-    await this.requestLocks.get(apolloFileUrl.toString());
+
+  async acquireStartPlaybackLockNonBlocking(playerSession: PlayerSession): Promise<false | (() => void)> {
+    const existingLock = this.requestLocks.get(playerSession.id);
+    if (existingLock !== undefined) {
+      return false;
+    }
 
     // TODO: Use `Promise.withResolvers()` when available in future Node.js versions
     return new Promise((resolve) => {
-      this.requestLocks.set(apolloFileUrl.toString(), new Promise(releaseGenerationLock => {
+      this.requestLocks.set(playerSession.id, new Promise(releaseStartPlaybackLock => {
         resolve(() => {
-          this.requestLocks.delete(apolloFileUrl.toString());
-          releaseGenerationLock();
+          this.requestLocks.delete(playerSession.id);
+          releaseStartPlaybackLock();
         });
       }));
     });
@@ -153,6 +158,20 @@ export default class VideoSeekThumbnailControllerHelper {
     }
 
     return requestedFile;
+  }
+
+  private async acquireGenerationLock(apolloFileUrl: ApolloFileUrl): Promise<() => void> {
+    await this.requestLocks.get(apolloFileUrl.toString());
+
+    // TODO: Use `Promise.withResolvers()` when available in future Node.js versions
+    return new Promise((resolve) => {
+      this.requestLocks.set(apolloFileUrl.toString(), new Promise(releaseGenerationLock => {
+        resolve(() => {
+          this.requestLocks.delete(apolloFileUrl.toString());
+          releaseGenerationLock();
+        });
+      }));
+    });
   }
 
   private parseApolloFileUrl(res: express.Response, userInput: string): ApolloFileUrl | null {

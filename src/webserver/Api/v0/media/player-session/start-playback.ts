@@ -21,6 +21,18 @@ export type StartPlaybackResponse = {
 const videoSeekThumbnailControllerHelper = container.resolve(VideoSeekThumbnailControllerHelper);
 
 export async function handleStartPlayback(req: express.Request, res: express.Response, playerSession: PlayerSession): Promise<void> {
+  const releaseStartPlaybackLock = await videoSeekThumbnailControllerHelper.acquireStartPlaybackLockNonBlocking(playerSession);
+
+  if (releaseStartPlaybackLock === false) {
+    res
+      .status(423)
+      .type('application/json')
+      .send({
+        error: 'Another /start-playback request is currently running for that PlayerSession – Try again in a couple of seconds',
+      });
+    return;
+  }
+
   const startOffset = parseUserInputInt(res, req.body?.startOffset, 0);
   if (startOffset == null) {
     return;
@@ -35,6 +47,8 @@ export async function handleStartPlayback(req: express.Request, res: express.Res
   const videoLiveTranscodeMedia = await playerSession.startLiveTranscode(file, startOffset);
 
   res.locals.timings?.startNext('respond');
+  releaseStartPlaybackLock();
+
   res
     .status(200)
     .type('application/json')
