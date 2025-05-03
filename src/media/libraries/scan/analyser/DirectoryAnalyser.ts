@@ -107,6 +107,10 @@ export default class DirectoryAnalyser {
         continue;
       }
 
+      if ((await getFileTypeUtils().getMimeType(Path.join(directoryHandle.path, dirent.name)))?.startsWith('video/') !== true) {
+        continue;
+      }
+
       const episodeNumber = this.extractEpisodeFromFileName(dirent.name);
       if (episodeNumber == null) {
         continue;

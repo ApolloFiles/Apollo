@@ -47,7 +47,7 @@ export default class LibraryScanner {
           const videoAnalysis = await VideoAnalyser.analyze(videoFile.filePath, true);
           const mediaTitle = (this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title')) ?? videoFile.title;
           const mediaSynopsis = this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'synopsis-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'synopsis');
-          const durationInSeconds = parseInt(videoAnalysis.file.duration, 10);
+          const durationInSeconds = parseInt(videoAnalysis.file.duration ?? '0', 10);
 
           await getPrismaClient()!.mediaLibraryMediaItem.upsert({
             where: {
