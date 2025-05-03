@@ -43,6 +43,7 @@ export default class StreamArgumentsBuilder {
         // ISO 639-2 language code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)
         // FIXME: audio stream names do not work
         varStreamMap.push(`a:${outputStreamCounter.audio++},agroup:${audioGroupName},name:${audioGroupName}_${outputStreamCounter.audio},language:${this.stripNonSafeCharacters(stream.tags.language ?? '') || 'und'},default:${outputStreamCounter.audio === 1 ? 'yes' : 'no'}`);
+        // TODO: if no title is available, map the language to a full name and ultimately fallback to 'Audio #1' etc.
         audioNameMap.set(`audio_${outputStreamCounter.audio}`, `${(stream.tags.title ?? stream.tags.language) || 'und'}`);
         continue;
       }

@@ -21,6 +21,30 @@ export async function handleGetPublicFile(req: express.Request, res: express.Res
     return;
   }
 
+  const currentMedia = playerSession.getCurrentMedia();
+  if (currentMedia != null) {
+    res.locals.timings?.startNext('rewrite-hls-audio-stream-names');
+
+    const liveTranscodeManifestPathOnHost = Path.join(playerSession.tmpDir.publicSubDirPath, currentMedia.relativePublicPathToHlsManifest);
+    if (requestedFilePathOnHost === liveTranscodeManifestPathOnHost) {
+      let liveTranscodeManifest = await Fs.promises.readFile(liveTranscodeManifestPathOnHost, 'utf-8');
+
+      const audioStreamPrefix = `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME=`;
+      for (const [streamName, displayName] of currentMedia.audioStreamNames.entries()) {
+        const currentSubstring = `${audioStreamPrefix}${JSON.stringify(streamName)},`;
+        const newSubstring = `${audioStreamPrefix}${JSON.stringify(displayName)},`;
+
+        liveTranscodeManifest = liveTranscodeManifest.replace(currentSubstring, newSubstring);
+      }
+
+      res
+        .status(200)
+        .type('application/vnd.apple.mpegurl')
+        .send(liveTranscodeManifest);
+      return;
+    }
+  }
+
   res.locals.timings?.startNext('mime-type-detection');
   const mimeType = await getFileTypeUtils().getMimeTypeTrustExtension(requestedFilePathOnHost);
   res.locals.timings?.startNext('respond');

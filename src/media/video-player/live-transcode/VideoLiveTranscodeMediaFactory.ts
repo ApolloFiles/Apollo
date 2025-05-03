@@ -83,6 +83,7 @@ export default class VideoLiveTranscodeMediaFactory {
         }),
       },
       mediaMetadata,
+      transcodeHandle.audioNameMap,
     );
   }
 

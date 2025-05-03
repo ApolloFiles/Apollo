@@ -23,6 +23,7 @@ export default class VideoLiveTranscodeMedia {
     private readonly subDirName: string,
     private readonly subtitleMetadata: SubtitleMetadata,
     public readonly mediaMetadata: StartPlaybackResponse['mediaMetadata'],
+    public readonly audioStreamNames: Map<string, string>,
   ) {
   }
 
