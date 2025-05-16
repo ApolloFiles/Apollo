@@ -1,8 +1,8 @@
 diff --git a/node_modules/@sveltejs/enhanced-img/src/index.js b/node_modules/@sveltejs/enhanced-img/src/index.js
-index 793d665..884a176 100644
+index 485a8a3..dfcce12 100644
 --- a/node_modules/@sveltejs/enhanced-img/src/index.js
 +++ b/node_modules/@sveltejs/enhanced-img/src/index.js
-@@ -82,7 +82,8 @@ function imagetools_plugin() {
+@@ -46,7 +46,8 @@ function imagetools_plugin() {
  				...(kind === 'x' && !qs.has('w') && { basePixels: widths[0].toString() })
  			});
  		},
