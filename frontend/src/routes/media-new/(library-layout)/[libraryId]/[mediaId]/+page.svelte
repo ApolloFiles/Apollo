@@ -3,6 +3,7 @@
 </svelte:head>
 
 <script lang="ts">
+  import IconPlay from 'virtual:icons/tabler/player-play-filled';
   import type { MediaTitlePageData } from '../../../../../../../src/frontend/FrontendRenderingDataAccess';
   import MediaPageLayout from '../../../lib/MediaPageLayout.svelte';
 
@@ -75,12 +76,7 @@
                       {#if episode.synopsis != null}<p>{episode.synopsis}</p>{/if}
                     </div>
                     <div class="col-auto d-flex align-items-center gap-2 ps-5 pe-5">
-                      <!-- TODO: add link to vide player -->
-                      <a href="/api/v0/media/player-session/start-watching?mediaItem={episode.id}&startOffset=0"><span class="material-icons" style="font-size: 36px">play_circle</span></a>
-                      <!-- TODO: add additional icons -->
-                      <!-- <span class="material-icons" style="font-size: 36px">group</span> -->
-                      <!-- <span class="material-icons" style="font-size: 36px">playlist_add</span> -->
-                      <!-- <a href="/nuxt-frontend/index.html?initPath=<%= encodeURIComponent(media.filePath) %>" target="_blank"><span class="material-icons" style="font-size: 36px">edit</span></a> -->
+                      <a href="/api/v0/media/player-session/start-watching?mediaItem={episode.id}&startOffset=0" title="Play this episode/movie"><IconPlay style="font-size: 28px" role="presentation" /></a>
                     </div>
                     <div class="col-auto text-end">
                       {episode.durationInSec <= 60 ? `${episode.durationInSec} sec.` : `${(episode.durationInSec / 60).toFixed(0)} min.`}
