@@ -16,6 +16,7 @@
   let closeOtherMenusRef = $derived(() => playerControlsBottomRef?.closeAllMenus);
 
   let controlsVisible = $state(true);
+  let videoPlayerIsInFullscreen = $state(document.fullscreenElement != null);
   let hideTimeout: number | undefined;
   let mainElement: HTMLElement | null = null;
 
@@ -83,6 +84,10 @@
 
     mainElement.addEventListener('mousemove', handleMouseMove);
     mainElement.addEventListener('mouseleave', handleMouseLeave, { passive: true });
+
+    const handleFullscreenChange = () => {
+      videoPlayerIsInFullscreen = document.fullscreenElement != null;
+    };
 
     const handleVideoContainerClick = (event: MouseEvent) => {
       if (!showCustomControls) {
@@ -162,8 +167,11 @@
     document.addEventListener('keydown', handleKeyDown, { passive: true });
     mainElement.querySelector<HTMLDivElement>('.video-container')!.addEventListener('click', handleVideoContainerClick, { passive: true });
 
+    document.addEventListener('fullscreenchange', handleFullscreenChange, { passive: true });
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
 
       if (hideTimeout) {
         clearTimeout(hideTimeout);
@@ -180,28 +188,43 @@
   });
 </script>
 
-<VideoContextMenu
-  bind:this={videoContextMenuRef}
-  closeOtherMenus={closeOtherMenusRef} />
-{#if showCustomControls}
-  <div
-    class="controls-overlay"
-    class:fade-out={!controlsVisible}
-    onmouseenter={showControls}
-    role="region"
-    aria-label="Video player controls"
-  >
-    <ControlsTopBar
-      mediaMetadata={videoPlayer.mediaMetadata}
-      episodeTitlePrefix={episodeTitlePrefix} />
-    <ControlsBottomBar
-      bind:this={playerControlsBottomRef}
-      videoPlayer={videoPlayer}
-    />
-  </div>
-{/if}
+<div class="video-player-ui-container" class:fullscreen={videoPlayerIsInFullscreen}>
+  <VideoContextMenu
+    bind:this={videoContextMenuRef}
+    closeOtherMenus={closeOtherMenusRef} />
+  {#if showCustomControls}
+    <div
+      class="controls-overlay"
+      class:fade-out={!controlsVisible}
+      onmouseenter={showControls}
+      role="region"
+      aria-label="Video player controls"
+    >
+      <ControlsTopBar
+        mediaMetadata={videoPlayer.mediaMetadata}
+        episodeTitlePrefix={episodeTitlePrefix} />
+      <ControlsBottomBar
+        bind:this={playerControlsBottomRef}
+        videoPlayer={videoPlayer}
+      />
+    </div>
+  {/if}
+</div>
 
 <style>
+  .video-player-ui-container {
+    position: absolute;
+    top:      56px;
+    left:     0;
+    right:    0;
+    bottom:   0;
+    pointer-events: none;
+  }
+
+  .fullscreen {
+    top: 0;
+  }
+
   .controls-overlay {
     position:        absolute;
     top:             0;

@@ -168,6 +168,10 @@ function attachWebSocketConnectionHandler(webserver: WebServer, sessionMiddlewar
     websocketServer.on('connection', async (client: ApolloWebSocket, request): Promise<void> => {
       client.on('error', console.error);
 
+      if (request.url?.startsWith('/_ws/media-new/watch/')) {
+        // Ignore requests for the other listener
+        return;
+      }
       if (!request.url?.startsWith(mountRoot)) {
         client.close(WS_CLOSE_PROTOCOL_ERROR, 'Invalid path');
         return;

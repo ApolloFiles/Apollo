@@ -1,14 +1,20 @@
 import { handleRequestRestfully, StringUtils } from '@spraxdev/node-commons';
 import express from 'express';
+import session from 'express-session';
 import expressSession from 'express-session';
 import Fs from 'node:fs';
 import Http from 'node:http';
 import Path from 'node:path';
 import SessionFileStore from 'session-file-store';
+import { container } from 'tsyringe';
 import { WebSocketServer } from 'ws';
 import { getAppConfigDir, getAppResourcesDir, getConfig, isProduction } from '../Constants';
 import { ApolloWebSocket } from '../global';
 import { createMediaRouter } from '../media/MediaRouter';
+import PlayerSessionStorage from '../media/video-player/player-session/PlayerSessionStorage';
+import { WS_CLOSE_PROTOCOL_ERROR } from '../media/watch/sessions/WatchSessionClient';
+import WatchSessionStorage from '../media/watch/sessions/WatchSessionStorage';
+import WebSocketDataBuilder from '../media/watch/websocket/WebSocketDataBuilder';
 import { ServerTiming } from '../ServerTiming';
 import ApolloUser from '../user/ApolloUser';
 import ApolloUserStorage from '../user/ApolloUserStorage';
@@ -91,9 +97,67 @@ export default class WebServer {
       });
     });
 
+    this.registerMediaNewWebSocketListener();
     SvelteKitMiddleware.register(this.app);
 
     this.setupErrorHandling();
+  }
+
+  private registerMediaNewWebSocketListener(): void {
+    const mountRoot = '/_ws/media-new/watch/';
+
+    const playerSessionStorage = container.resolve(PlayerSessionStorage);
+
+    const sessionMiddleware = this.sessionMiddleware;
+    async function callSessionMiddleware(req: express.Request): Promise<void> {
+      return new Promise((resolve) => sessionMiddleware!(req, {} as express.Response, () => resolve()));
+    }
+
+    this.addListenEventHandler(() => {
+      const websocketServer = this.getWebSocketServer();
+      if (websocketServer == null) {
+        throw new Error('WebSocket server not initialized');
+      }
+
+      websocketServer.on('connection', async (client: ApolloWebSocket, request): Promise<void> => {
+        client.on('error', console.error);
+
+        if (request.url?.startsWith('/_ws/media/watch/')) {
+          // Ignore requests for the other listener
+          return;
+        }
+        if (!request.url?.startsWith(mountRoot)) {
+          client.close(WS_CLOSE_PROTOCOL_ERROR, 'Invalid path');
+          return;
+        }
+
+        // TODO: allow anonymous access
+        await callSessionMiddleware(request as any);
+        const sessionUserId = (request as any).session?.userId;
+
+        let user: ApolloUser | null = null;
+        if (typeof sessionUserId === 'string') {
+          user = await new ApolloUserStorage().findById(BigInt(sessionUserId));
+        }
+        if (user == null) {
+          client.close(WS_CLOSE_PROTOCOL_ERROR, 'Not logged into Apollo');
+          return;
+        }
+        client.apollo.user = user;
+
+        const sessionIdAndPotentialGetParams = request.url.substring(mountRoot.length);
+        const sessionId = sessionIdAndPotentialGetParams.split('?')[0];
+
+        const playerSession = playerSessionStorage.findById(sessionId);
+        if (playerSession == null || !playerSession.checkAccessForUser(user)) {
+          client.close(WS_CLOSE_PROTOCOL_ERROR, 'Invalid session ID or missing permissions');
+          return;
+        }
+
+        client.apollo.playerSessionId = playerSession.id;
+        playerSession.handleNewWebSocketConnection(client);
+      });
+    });
   }
 
   async listen(port: number, host?: string): Promise<void> {

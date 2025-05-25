@@ -1,0 +1,4 @@
+export enum MESSAGE_TYPE {
+  SESSION_INFO = 1,
+  MEDIA_CHANGED = 2,
+}

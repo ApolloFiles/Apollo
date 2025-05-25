@@ -1,4 +1,5 @@
 import { WebSocket } from 'ws';
+import PlayerSession from './media/video-player/player-session/PlayerSession';
 import { ServerTiming } from './ServerTiming';
 import ApolloUser from './user/ApolloUser';
 
@@ -17,6 +18,7 @@ declare module 'express' {
 export interface ApolloWebSocket extends WebSocket {
   apollo: {
     user?: ApolloUser;
+    playerSessionId?: PlayerSession['id'];
     isAlive: boolean;
 
     pingRtt: number;

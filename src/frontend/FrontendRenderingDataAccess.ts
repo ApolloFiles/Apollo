@@ -100,7 +100,8 @@ export default class FrontendRenderingDataAccess {
       throw new Error('User is not logged in (No injected user id found in URL)');
     }
 
-    const user = await new ApolloUserStorage().findById(BigInt(userId));
+    const parsedUserId = BigInt(userId);
+    const user = await new ApolloUserStorage().findById(parsedUserId);
     if (user == null) {
       throw new Error('User is not logged in (User not found in database)');
     }
