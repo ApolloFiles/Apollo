@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@iconify-json/logos": "^1.2.4",
+    "@iconify-json/tabler": "^1.2.18",
     "bootstrap": "^5.3.6",
     "hls.js": "^1.6.2",
     "material-design-icons-iconfont": "^6.7.0"

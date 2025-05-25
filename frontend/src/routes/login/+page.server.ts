@@ -7,20 +7,31 @@ export const load: PageServerLoad = async ({ locals }): Promise<LoginPageData> =
     return locals.apollo.frontendRenderingDataAccess.getLoginData();
   }
 
+  function createProvider(name: string) {
+    return { id: name.toLowerCase(), displayName: name, href: '' };
+  }
+
   return {
     loggedInUser: null,
     pageData: {
       oAuthProvider: [
+        createProvider('Apple'),
+        createProvider('Bluesky'),
+        createProvider('Discord'),
+        createProvider('Facebook'),
+        createProvider('GitHub'),
+        createProvider('GitLab'),
+        createProvider('Google'),
+        createProvider('Mastodon'),
+        createProvider('Microsoft'),
+        createProvider('Reddit'),
+        createProvider('Telegram'),
         {
-          id: 'microsoft',
-          displayName: 'Microsoft',
-          href: 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize',
+          id: 'x',
+          displayName: 'X (Twitter)',
+          href: '',
         },
-        {
-          id: 'github',
-          displayName: 'GitHub',
-          href: 'https://github.com/login/oauth/authorize',
-        },
+        createProvider('Generic OpenID Connect'),
       ],
     },
   };
