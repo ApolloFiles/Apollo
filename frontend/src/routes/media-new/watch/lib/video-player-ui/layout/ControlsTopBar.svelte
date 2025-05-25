@@ -1,4 +1,7 @@
 <script lang="ts">
+  import IconArrowBack from 'virtual:icons/tabler/arrow-back-up';
+  import IconPlayerSkipForward from 'virtual:icons/tabler/player-skip-forward';
+  import IconPlayerSkipBack from 'virtual:icons/tabler/player-skip-back';
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
 
   const { episodeTitlePrefix, mediaMetadata }: {
@@ -9,7 +12,7 @@
 
 <div class="top-bar">
   <div class="left-section">
-    <button class="back-button">←</button>
+    <button class="back-button"><IconArrowBack /></button>
     <div class="video-title-container">
       <h1 class="video-title">{mediaMetadata.title}</h1>
       {#if mediaMetadata.episode}
@@ -18,8 +21,8 @@
     </div>
   </div>
   <div class="right-section">
-    <button class="control-button">⏮</button>
-    <button class="control-button">⏭</button>
+    <button class="control-button"><IconPlayerSkipBack /></button>
+    <button class="control-button"><IconPlayerSkipForward /></button>
   </div>
 </div>
 

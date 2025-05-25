@@ -1,4 +1,8 @@
 <script lang="ts">
+  import IconPause from 'virtual:icons/tabler/player-pause';
+  import IconPlay from 'virtual:icons/tabler/player-play';
+  import IconHeadphones from 'virtual:icons/tabler/headphones';
+  import IconSubtitles from 'virtual:icons/tabler/badge-cc';
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
   import BottomMenuBox from '../components/BottomMenuBox.svelte';
   import FullscreenButton from '../components/FullscreenButton.svelte';
@@ -33,7 +37,13 @@
   <div class="buttons-row">
     <div class="left-controls">
       <button class="control-button play-button"
-              onclick={() => videoPlayer.$isPlaying ? videoPlayer.pause() : videoPlayer.play()}>{videoPlayer.$isPlaying ? '⏸' : '▶'}</button>
+              onclick={() => videoPlayer.$isPlaying ? videoPlayer.pause() : videoPlayer.play()}>
+        {#if videoPlayer.$isPlaying}
+          <IconPause />
+        {:else}
+          <IconPlay />
+        {/if}
+      </button>
       <VolumeControl
         bind:volume={videoPlayer.$volume}
         bind:muted={videoPlayer.$muted}
@@ -42,21 +52,19 @@
 
     <div class="right-controls">
       <BottomMenuBox
-        buttonLabel="CC"
         bind:menuVisible={showSubtitleTrackMenu}
         bind:activeItemId={activeSubtitleTrack}
         menuItems={[{id: '', label: 'None' }, ...videoPlayer.$subtitleTracks]}
         onSelect={(id) => videoPlayer.$activeSubtitleTrackId = id}
         onMenuOpen={() => closeAllMenus()}
-      />
+      ><IconSubtitles /></BottomMenuBox>
       <BottomMenuBox
-        buttonLabel="🔊"
         bind:menuVisible={showAudioTrackMenu}
         bind:activeItemId={activeAudioTrack}
         menuItems={videoPlayer.$audioTracks}
         onSelect={(id) => videoPlayer.$activeAudioTrackId = id}
         onMenuOpen={() => closeAllMenus()}
-      />
+      ><IconHeadphones /></BottomMenuBox>
 
       <FullscreenButton bind:this={fullscreenRef} />
     </div>

@@ -1,4 +1,9 @@
 <script lang="ts">
+  import IconVolumeFull from 'virtual:icons/tabler/volume';
+  import IconVolume50 from 'virtual:icons/tabler/volume-2';
+  import IconVolume0 from 'virtual:icons/tabler/volume-3';
+  import IconVolumeOff from 'virtual:icons/tabler/volume-off';
+
   let { volume = $bindable(), muted = $bindable() }: { volume: number, muted: boolean } = $props();
 
   let sliderRef: HTMLDivElement;
@@ -52,7 +57,15 @@
 <button class="control-button"
         onclick={toggleMute}
         aria-label={muted ? "Unmute" : "Mute"}>
-  {muted ? '🔇' : '🔊'}
+  {#if muted}
+    <IconVolumeOff />
+  {:else if volume > 0.5}
+    <IconVolumeFull />
+  {:else if volume > 0}
+    <IconVolume50 />
+  {:else}
+    <IconVolume0 />
+  {/if}
 </button>
 <div class="volume-slider-container">
   <div class="volume-slider"

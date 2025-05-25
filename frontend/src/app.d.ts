@@ -1,6 +1,7 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 
+import 'unplugin-icons/types/svelte';
 import type FrontendRenderingDataAccess from '../../src/frontend/FrontendRenderingDataAccess';
 
 declare global {

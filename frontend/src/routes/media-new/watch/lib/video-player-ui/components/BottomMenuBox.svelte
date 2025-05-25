@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
 
-  let { buttonLabel, menuVisible = $bindable(), menuItems, activeItemId = $bindable(), onSelect, onMenuOpen }: {
-    buttonLabel: string,
+  let { children, menuVisible = $bindable(), menuItems, activeItemId = $bindable(), onSelect, onMenuOpen }: {
+    children: Snippet,
 
     menuVisible: boolean,
     menuItems: { id: string, label: string }[],
@@ -50,7 +50,7 @@
     class="menu-button"
     onclick={toggleMenu}
   >
-    {buttonLabel}
+    {@render children()}
   </button>
 
   {#if menuVisible}

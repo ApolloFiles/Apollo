@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import IconArrowsMaximize from 'virtual:icons/tabler/arrows-maximize';
+  import IconArrowsMinimize from 'virtual:icons/tabler/arrows-minimize';
 
   let isFullscreen = $state(typeof document !== 'undefined' && document.fullscreenElement != null);
 
@@ -29,9 +31,12 @@
 </script>
 
 <button class="fullscreen-button" onclick={toggleFullscreen}>
-  {isFullscreen ? '↙' : '⛶'}
+  {#if isFullscreen}
+    <IconArrowsMinimize />
+  {:else}
+    <IconArrowsMaximize />
+  {/if}
 </button>
-
 
 <style>
   .fullscreen-button {
