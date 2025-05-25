@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import IconVolumeFull from 'virtual:icons/tabler/volume';
   import IconVolume50 from 'virtual:icons/tabler/volume-2';
   import IconVolume0 from 'virtual:icons/tabler/volume-3';
@@ -8,6 +9,8 @@
 
   let sliderRef: HTMLDivElement;
   let isDragging = $state(false);
+
+  let storeStateInLocalStorageDebounceTimeout: number | null = null;
 
   function preventSelection(event: Event): void {
     event.preventDefault();
@@ -20,6 +23,8 @@
     if (muted && newVolume > 0) {
       muted = false;
     }
+
+    storeStateInLocalStorageDebounced();
   }
 
   function handleMouseDown(event: MouseEvent) {
@@ -51,7 +56,45 @@
 
   function toggleMute() {
     muted = !muted;
+    storeStateInLocalStorageDebounced();
   }
+
+  function storeStateInLocalStorage() {
+    localStorage.setItem('apollo-video-player-volume', JSON.stringify({ volume, muted }));
+  }
+
+  function storeStateInLocalStorageDebounced() {
+    if (storeStateInLocalStorageDebounceTimeout != null) {
+      clearTimeout(storeStateInLocalStorageDebounceTimeout);
+    }
+    storeStateInLocalStorageDebounceTimeout = window.setTimeout(storeStateInLocalStorage, 500);
+  }
+
+  function restoreStateFromLocalStorage() {
+    try {
+      const storedVolumeData = JSON.parse(localStorage.getItem('apollo-video-player-volume') ?? '{}');
+      if (typeof storedVolumeData.volume === 'number' && storedVolumeData.volume >= 0 && storedVolumeData.volume <= 1) {
+        volume = storedVolumeData.volume;
+      }
+      if (typeof storedVolumeData.muted === 'boolean') {
+        muted = storedVolumeData.muted;
+      }
+    } catch (error) {
+      console.error('Failed to restore volume state from localStorage:', error);
+      localStorage.removeItem('apollo-video-player-volume');
+    }
+  }
+
+  onMount(() => {
+    restoreStateFromLocalStorage();
+
+    return () => {
+      if (storeStateInLocalStorageDebounceTimeout != null) {
+        clearTimeout(storeStateInLocalStorageDebounceTimeout);
+        storeStateInLocalStorage();
+      }
+    };
+  });
 </script>
 
 <button class="control-button"
