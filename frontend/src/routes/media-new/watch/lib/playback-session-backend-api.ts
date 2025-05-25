@@ -52,6 +52,12 @@ export async function fetchPlaybackSessionInfo(): Promise<PlayerSessionInfoRespo
 export async function regenerateJoinToken(sessionId: string): Promise<RegenerateJoinTokenResponse> {
   if (dev) {
     console.warn('Generating mock join token in development mode.');
+
+    function sleep(ms: number): Promise<void> {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    await sleep(1500);
+
     const joinToken = `regenerated-${Date.now()}`;
     return {
       shareUrl: `${location.protocol}//${location.host}/join?token=${encodeURIComponent(joinToken)}`,
