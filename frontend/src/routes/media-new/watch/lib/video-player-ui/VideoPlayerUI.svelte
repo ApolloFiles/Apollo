@@ -233,10 +233,10 @@
     bottom:          0;
     background:      linear-gradient(
                        to bottom,
-                       rgba(0, 0, 0, 0.75) 0%,
-                       transparent 20%,
-                       transparent 80%,
-                       rgba(0, 0, 0, 0.75) 100%
+                       rgba(0, 0, 0, 1) 0%,
+                       rgba(0, 0, 0, 0) 25%,
+                       rgba(0, 0, 0, 0) 75%,
+                       rgba(0, 0, 0, 1) 100%
                      );
     display:         flex;
     flex-direction:  column;
