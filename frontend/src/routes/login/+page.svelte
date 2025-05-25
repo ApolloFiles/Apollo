@@ -132,7 +132,7 @@
     <div class="col-right">
       <enhanced:img
         src="$lib/assets/login/background.jpg?w=1920;1280;640;320"
-        alt="gray wood beam near body of water surrounded by mountain ranges during daytime"
+        alt="Close-up view of a wooden dock extending over a lake, with misty mountains and forested hills reflected in the still water under a clear blue sky"
         class="login-background-image"
         sizes="(min-width: 1200px) 50vw, (min-width: 800px) 75vw, 100vw"
         aria-hidden="true"
