@@ -1,9 +1,12 @@
 import Utils from '../../../Utils';
 import { StartPlaybackResponse } from '../../../webserver/Api/v0/media/player-session/change-media';
 import { PlayerSessionInfoResponse } from '../../../webserver/Api/v0/media/player-session/info';
-import VideoLiveTranscodeMedia from '../../video-player/live-transcode/VideoLiveTranscodeMedia';
-import PlayerSession from '../../video-player/player-session/PlayerSession';
+import VideoLiveTranscodeMedia from '../live-transcode/VideoLiveTranscodeMedia';
+import PlayerSession from '../player-session/PlayerSession';
 import { MESSAGE_TYPE } from './WebSocketDataMessageType';
+
+// TODO: Können wir die keys in der Message noch kürzen irgendwie?
+// TODO: Können wir statt "JSON Object" ein Array schicken mit [typeId, data]? Spart bestimmt auch 4free bissl?
 
 export type WebSocketMessage = {
   type: MESSAGE_TYPE;

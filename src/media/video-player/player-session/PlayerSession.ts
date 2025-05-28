@@ -6,7 +6,7 @@ import LocalFile from '../../../user/files/local/LocalFile';
 import VirtualFile from '../../../user/files/VirtualFile';
 import { StartPlaybackResponse } from '../../../webserver/Api/v0/media/player-session/change-media';
 import { WS_CLOSE_NORMAL } from '../../watch/sessions/WatchSessionClient';
-import WebSocketDataBuilder from '../../watch/websocket/WebSocketDataBuilder';
+import WebSocketDataBuilder from '../websocket/WebSocketDataBuilder';
 import VideoLiveTranscodeMedia from '../live-transcode/VideoLiveTranscodeMedia';
 import VideoLiveTranscodeMediaFactory from '../live-transcode/VideoLiveTranscodeMediaFactory';
 import TemporaryDirectory from './TemporaryDirectory';

@@ -14,7 +14,7 @@ import { createMediaRouter } from '../media/MediaRouter';
 import PlayerSessionStorage from '../media/video-player/player-session/PlayerSessionStorage';
 import { WS_CLOSE_PROTOCOL_ERROR } from '../media/watch/sessions/WatchSessionClient';
 import WatchSessionStorage from '../media/watch/sessions/WatchSessionStorage';
-import WebSocketDataBuilder from '../media/watch/websocket/WebSocketDataBuilder';
+import WebSocketDataBuilder from '../media/video-player/websocket/WebSocketDataBuilder';
 import { ServerTiming } from '../ServerTiming';
 import ApolloUser from '../user/ApolloUser';
 import ApolloUserStorage from '../user/ApolloUserStorage';

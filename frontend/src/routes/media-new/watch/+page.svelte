@@ -9,8 +9,8 @@
     type MediaChangedMessage,
     type SessionInfoMessage,
     type WebSocketMessage,
-  } from '../../../../../src/media/watch/websocket/WebSocketDataBuilder';
-  import { MESSAGE_TYPE } from '../../../../../src/media/watch/websocket/WebSocketDataMessageType';
+  } from '../../../../../src/media/video-player/websocket/WebSocketDataBuilder';
+  import { MESSAGE_TYPE } from '../../../../../src/media/video-player/websocket/WebSocketDataMessageType';
   import type { StartPlaybackResponse } from '../../../../../src/webserver/Api/v0/media/player-session/change-media';
   import type { PlayerSessionInfoResponse } from '../../../../../src/webserver/Api/v0/media/player-session/info';
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
