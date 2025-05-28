@@ -6,7 +6,7 @@ import Os from 'node:os';
 import Path from 'node:path';
 import FileStatCache from './cache/FileStatCache';
 import FileTypeUtils from './FileTypeUtils';
-import { ApolloConfig } from './global';
+import type { ApolloConfig } from './global';
 import ProcessManager from './process_manager/ProcessManager';
 
 const IS_PRODUCTION = process.env.NODE_ENV?.toLowerCase() === 'production';

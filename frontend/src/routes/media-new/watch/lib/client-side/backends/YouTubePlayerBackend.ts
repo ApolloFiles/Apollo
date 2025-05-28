@@ -6,16 +6,18 @@ export interface YouTubePlayerBackendOptions extends BackendOptions {
   };
 }
 
-export default class YouTubePlayerBackend extends VideoPlayerBackend {
+export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions = YouTubePlayerBackendOptions> extends VideoPlayerBackend<T> {
   private static youTubeIframeApiLoaded = false;
 
   public readonly shouldShowCustomControls = false;
+  public readonly backendOptions: T;
 
   private readonly backendReadyPromise: Promise<void>;
   private ytPlayer?: any;
 
-  protected constructor(container: HTMLDivElement, options: YouTubePlayerBackendOptions) {
+  protected constructor(container: HTMLDivElement, options: T) {
     super();
+    this.backendOptions = options;
 
     container = container.appendChild(document.createElement('div'));
 
@@ -77,8 +79,24 @@ export default class YouTubePlayerBackend extends VideoPlayerBackend {
     this.ytPlayer.seekTo(time, true);
   }
 
+  getActiveAudioTrackId(): string | null {
+    return '1';
+  }
+
+  setActiveAudioTrack(id: string): void {
+    // no-op
+  }
+
   getAudioTracks(): { id: string, label: string }[] {
     return [{ id: '1', label: 'Default' }];
+  }
+
+  getActiveSubtitleTrackId(): string | null {
+    return null;
+  }
+
+  setActiveSubtitleTrack(id: string | null): void {
+    // no-op
   }
 
   getSubtitleTracks(): { id: string, label: string }[] {

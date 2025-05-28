@@ -1,6 +1,5 @@
 import { handleRequestRestfully, StringUtils } from '@spraxdev/node-commons';
 import express from 'express';
-import session from 'express-session';
 import expressSession from 'express-session';
 import Fs from 'node:fs';
 import Http from 'node:http';
@@ -13,8 +12,6 @@ import { ApolloWebSocket } from '../global';
 import { createMediaRouter } from '../media/MediaRouter';
 import PlayerSessionStorage from '../media/video-player/player-session/PlayerSessionStorage';
 import { WS_CLOSE_PROTOCOL_ERROR } from '../media/watch/sessions/WatchSessionClient';
-import WatchSessionStorage from '../media/watch/sessions/WatchSessionStorage';
-import WebSocketDataBuilder from '../media/video-player/websocket/WebSocketDataBuilder';
 import { ServerTiming } from '../ServerTiming';
 import ApolloUser from '../user/ApolloUser';
 import ApolloUserStorage from '../user/ApolloUserStorage';
@@ -140,7 +137,7 @@ export default class WebServer {
           user = await new ApolloUserStorage().findById(BigInt(sessionUserId));
         }
         if (user == null) {
-          client.close(WS_CLOSE_PROTOCOL_ERROR, 'Not logged into Apollo');
+          client.close(3000, 'Not logged into Apollo');
           return;
         }
         client.apollo.user = user;
@@ -155,6 +152,7 @@ export default class WebServer {
         }
 
         client.apollo.playerSessionId = playerSession.id;
+        client.apollo.connectionId = playerSession.getNextConnectionId();
         playerSession.handleNewWebSocketConnection(client);
       });
     });

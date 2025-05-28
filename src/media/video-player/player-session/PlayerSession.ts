@@ -1,14 +1,17 @@
 import Crypto from 'node:crypto';
 import { container } from 'tsyringe';
-import { ApolloWebSocket } from '../../../global';
-import ApolloUser from '../../../user/ApolloUser';
-import LocalFile from '../../../user/files/local/LocalFile';
-import VirtualFile from '../../../user/files/VirtualFile';
-import { StartPlaybackResponse } from '../../../webserver/Api/v0/media/player-session/change-media';
-import { WS_CLOSE_NORMAL } from '../../watch/sessions/WatchSessionClient';
-import WebSocketDataBuilder from '../websocket/WebSocketDataBuilder';
-import VideoLiveTranscodeMedia from '../live-transcode/VideoLiveTranscodeMedia';
+import type { RawData } from 'ws';
+import type { ApolloWebSocket } from '../../../global';
+import type ApolloUser from '../../../user/ApolloUser';
+import type LocalFile from '../../../user/files/local/LocalFile';
+import type VirtualFile from '../../../user/files/VirtualFile';
+import type { StartPlaybackResponse } from '../../../webserver/Api/v0/media/player-session/change-media';
+import { WS_CLOSE_NORMAL, WS_CLOSE_PROTOCOL_ERROR } from '../../watch/sessions/WatchSessionClient';
+import type VideoLiveTranscodeMedia from '../live-transcode/VideoLiveTranscodeMedia';
 import VideoLiveTranscodeMediaFactory from '../live-transcode/VideoLiveTranscodeMediaFactory';
+import { MESSAGE_TYPE } from '../websocket/WebSocketDataMessageType';
+import WebSocketMessageBuilder from '../websocket/WebSocketMessageBuilder';
+import { type WebSocketMessage, WebSocketMessageValidator } from '../websocket/WebSocketMessages';
 import TemporaryDirectory from './TemporaryDirectory';
 
 type Token = {
@@ -30,6 +33,8 @@ export default class PlayerSession {
   //  private readonly anonymousParticipants: ClientAccessToken[] = []; // TODO: Use/support this
   private _joinToken: Token | null = null;
   private readonly clientConnections: ApolloWebSocket[] = [];
+  private referencePlayerClient: ApolloWebSocket | null = null;
+  private lastConnectionId = 0;
 
   private currentMedia: VideoLiveTranscodeMedia | null = null;
   private playerState: { lastUpdated: Date, data: { currentTime: number } } | null = null;  // TODO
@@ -125,32 +130,127 @@ export default class PlayerSession {
         this.clientConnections.splice(index, 1);
       }
 
+      if (client === this.referencePlayerClient) {
+        this.referencePlayerClient = null;
+        this.determineReferencePlayerIfNeeded();
+      }
+
       this.broadcastSessionInfo();
     });
 
-    this.broadcastSessionInfo();
+    client.on('message', (data) => {
+      function parseMessage(data: RawData): WebSocketMessage {
+        let message;
+        try {
+          message = JSON.parse(data.toString('utf-8'));
+        } catch (err) {
+          throw new Error('Invalid JSON in message');
+        }
+
+        if (!WebSocketMessageValidator.isWebSocketMessage(message)) {
+          throw new Error('Invalid message content');
+        }
+        return message;
+      }
+
+      try {
+        const message = parseMessage(data);
+
+        switch (message.type) {
+          case MESSAGE_TYPE.PLAYER_STATE_UPDATE:
+            if (!WebSocketMessageValidator.isPlayerStateUpdateMessageStrictCheck(message)) {
+              throw new Error('Invalid PlayerStateUpdateMessage format');
+            }
+
+            if (message.data.connectionId !== client.apollo.connectionId) {
+              throw new Error('Connection ID mismatch in PlayerStateUpdateMessage');
+            }
+
+            this.broadcastMessage(JSON.stringify(message), client);
+            break;
+
+          default:
+            throw new Error(`Received unexpected message: ${JSON.stringify(message)}`);
+        }
+      } catch (err) {
+        console.error('Error in handling incoming message:', err);
+        client.close(WS_CLOSE_PROTOCOL_ERROR, 'Invalid data received');
+        return;
+      }
+    });
+
+    client.send(WebSocketMessageBuilder.buildWelcome(client.apollo.connectionId!, client.apollo.user!.id.toString()), (err) => {
+      if (err) {
+        console.error('Error sending session info message:', err);
+        client.close(1011, 'Internal Server Error');
+        return;
+      }
+
+      if (!this.determineReferencePlayerIfNeeded()) {
+        this.sendMessage(client, WebSocketMessageBuilder.buildReferencePlayerChanged(
+          this.referencePlayerClient!.apollo.connectionId!,
+          this.referencePlayerClient!.apollo.user!.id.toString(),
+        ));
+      }
+
+      this.broadcastSessionInfo();
+    });
+  }
+
+  private determineReferencePlayerIfNeeded(): boolean {
+    if (this.referencePlayerClient != null) {
+      return false;
+    }
+    if (this.clientConnections.length === 0) {
+      return false;
+    }
+
+    // TODO: Maybe determine the reference player a bit smarten (and re-elect based on these criteria)
+    this.referencePlayerClient = this.clientConnections[0];
+    this.broadcastReferencePlayerChanged();
+    return true;
   }
 
   private broadcastSessionInfo(): void {
-    for (const client of this.clientConnections) {
-      client.send(WebSocketDataBuilder.buildSessionInfo(this, client.apollo.user!.id.toString()), (err) => {
-        if (err) {
-          console.error('Error sending session info message:', err);
-          client.terminate();
-        }
-      });
-    }
+    this.broadcastMessage(WebSocketMessageBuilder.buildSessionInfo(this));
   }
 
   private broadcastMediaChanged(): void {
-    for (const client of this.clientConnections) {
-      client.send(WebSocketDataBuilder.buildMediaChanged(this.currentMedia), (err) => {
-        if (err) {
-          console.error('Error sending media changed message:', err);
-          client.terminate();
-        }
-      });
+    this.broadcastMessage(WebSocketMessageBuilder.buildMediaChanged(this.currentMedia));
+  }
+
+  private broadcastReferencePlayerChanged(): void {
+    if (this.referencePlayerClient == null) {
+      throw new Error('Cannot broadcast reference player change when referenceConnectionId is null');
     }
+
+    this.broadcastMessage(WebSocketMessageBuilder.buildReferencePlayerChanged(
+      this.referencePlayerClient.apollo.connectionId!,
+      this.referencePlayerClient.apollo.user!.id.toString(),
+    ));
+  }
+
+  private broadcastMessage(message: string, clientToExclude?: ApolloWebSocket): void {
+    for (const client of this.clientConnections) {
+      if (client === clientToExclude) {
+        continue;
+      }
+
+      this.sendMessage(client, message);
+    }
+  }
+
+  private sendMessage(client: ApolloWebSocket, message: string): void {
+    client.send(message, (err) => {
+      if (err) {
+        console.error('Error sending message to WebSocket-Client:', err);
+        client.close(1011, 'Internal Server Error');
+      }
+    });
+  }
+
+  getNextConnectionId(): number {
+    return ++this.lastConnectionId;
   }
 
   // TODO: I don't think this method should be in here

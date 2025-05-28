@@ -7,6 +7,7 @@ type MediaMetadata = StartPlaybackResponse['mediaMetadata'];
 export default class VideoPlayer {
   private readonly backend: VideoPlayerBackend;
   public readonly mediaMetadata: MediaMetadata;
+  private readonly updatePlayerStateForBroadcast: (player: VideoPlayer, forceSend: boolean) => void;
   private readonly _playerExtras: VideoPlayerExtras;
   private readonly intervalId: number;
 
@@ -34,9 +35,10 @@ export default class VideoPlayer {
   });
 
   // TODO: make private?
-  constructor(backend: VideoPlayerBackend, mediaMetadata: MediaMetadata) {
+  constructor(backend: VideoPlayerBackend, mediaMetadata: MediaMetadata, updatePlayerStateForBroadcast: (player: VideoPlayer, forceSend: boolean) => void) {
     this.backend = backend;
     this.mediaMetadata = mediaMetadata;
+    this.updatePlayerStateForBroadcast = updatePlayerStateForBroadcast;
     this._playerExtras = new VideoPlayerExtras(backend);
 
     this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
@@ -170,9 +172,11 @@ export default class VideoPlayer {
     });
     this.backend.addPassiveEventListener('play', () => {
       this.isPlaying = true;
+      this.updatePlayerStateForBroadcast(this, true);
     });
     this.backend.addPassiveEventListener('pause', () => {
       this.isPlaying = false;
+      this.updatePlayerStateForBroadcast(this, true);
     });
     this.backend.addPassiveEventListener('timeupdate', () => {
       this.currentTime = this.backend.currentTime;
@@ -182,6 +186,8 @@ export default class VideoPlayer {
 
       this.activeAutoTrackId = this.backend.getActiveAudioTrackId();
       this.activeSubtitleTrackId = this.backend.getActiveSubtitleTrackId();
+
+      this.updatePlayerStateForBroadcast(this, false);
     });
     this.backend.addPassiveEventListener('volumechange', () => {
       this.volume = this.backend.volume;

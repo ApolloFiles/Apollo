@@ -1,20 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import IconRefreshCheck from 'virtual:icons/tabler/circle-dashed-check';
   import IconClipboard from 'virtual:icons/tabler/clipboard';
   import IconClipboardCheck from 'virtual:icons/tabler/clipboard-check';
-  import IconRefreshCheck from 'virtual:icons/tabler/circle-dashed-check';
   import IconRefresh from 'virtual:icons/tabler/refresh';
   import IconUserGroup from 'virtual:icons/tabler/users-group';
+  import IconNorthStar from 'virtual:icons/tabler/north-star';
   import type { PlayerSessionInfoResponse } from '../../../../../../src/webserver/Api/v0/media/player-session/info';
+  import WebSocketClient, { type WebSocketSelfInfo } from './client-side/WebSocketClient.svelte';
   import { regenerateJoinToken } from './playback-session-backend-api';
 
   let {
     sessionId = $bindable(),
-    sessionInfo = $bindable(),
+    webSocketClient = $bindable(),
   }: {
     sessionId: string | null,
-    sessionInfo: PlayerSessionInfoResponse['session'] | null,
+    webSocketClient: WebSocketClient | undefined,
   } = $props();
+
+  let sessionInfo: Omit<PlayerSessionInfoResponse['session'], 'yourId'> | null | undefined = $derived.by(() => webSocketClient?.$sessionInfo);
+  let selfInfo: WebSocketSelfInfo | null | undefined = $derived.by(() => webSocketClient?.$selfInfo);
 
   let menuVisible = $state(false);
   let shareUrl: string | null = $state(null);
@@ -110,8 +115,15 @@
                    loading="lazy" alt="" />
               <span class="connected-indicator" class:connected={sessionInfo.participants.owner.connected}
                     title={sessionInfo.participants.owner.connected ? 'Connected' : 'Disconnected'}></span>
+              {#if webSocketClient?.$referencePlayerUserId === sessionInfo.participants.owner.id}
+                <span title="This user is used for synchronizing video playback"><IconNorthStar /></span>
+              {/if}
               <span
-                class="flex-grow-1">{sessionInfo.participants.owner.displayName + (sessionInfo.participants.owner.id === sessionInfo.yourId ? ' (You)' : '')}</span>
+                class="flex-grow-1">{sessionInfo.participants.owner.displayName + (sessionInfo.participants.owner.id === selfInfo?.userId ? ' (You)' : '')}</span>
+              {#if sessionInfo.participants.owner.id !== selfInfo?.userId && webSocketClient?.$userPlaybackState.has(sessionInfo.participants.owner.id)}
+                  <span
+                    class="flex-grow-1">{webSocketClient?.$userPlaybackState.get(sessionInfo.participants.owner.id)?.currentTime?.toFixed(0) ?? ''}</span>
+              {/if}
             </li>
 
             {#each sessionInfo.participants.otherParticipants as participant}
@@ -120,8 +132,15 @@
                      loading="lazy" alt="" />
                 <span class="connected-indicator" class:connected={participant.connected}
                       title={participant.connected ? 'Connected' : 'Disconnected'}></span>
+                {#if webSocketClient?.$referencePlayerUserId === participant.id}
+                  <span title="This user is used for synchronizing video playback"><IconNorthStar /></span>
+                {/if}
                 <span
-                  class="flex-grow-1">{participant.displayName + (participant.id === sessionInfo.yourId ? ' (You)' : '')}</span>
+                  class="flex-grow-1">{participant.displayName + (participant.id === selfInfo?.userId ? ' (You)' : '')}</span>
+                {#if participant.id !== selfInfo?.userId && webSocketClient?.$userPlaybackState.has(participant.id)}
+                  <span
+                    class="flex-grow-1">{webSocketClient?.$userPlaybackState.get(participant.id)?.currentTime?.toFixed(0) ?? ''}</span>
+                {/if}
                 <button class="btn btn-sm btn-outline-danger px-2 py-0" title="Remove participant"
                         onclick={() => removeParticipant(participant.id)}>x
                 </button>
@@ -131,7 +150,7 @@
         </ul>
       </div>
 
-      {#if sessionInfo != null && sessionInfo.participants.owner.id === sessionInfo.yourId}
+      {#if sessionInfo != null && sessionInfo.participants.owner.id === selfInfo?.userId}
         <div class="share-link-section">
           <div class="fw-semibold mb-2">Share Link</div>
           {#if shareUrl != null}

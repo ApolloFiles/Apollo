@@ -2,8 +2,8 @@ import Path from 'node:path';
 import { getConfig, getPrismaClient } from '../Constants';
 import LibraryManager from '../media/libraries/LibraryManager';
 import ApolloUserStorage from '../user/ApolloUserStorage';
-import { SvelteKitRequest } from '../webserver/SvelteKitMiddleware';
-import { LoginTemplateData } from './LoginTemplate';
+import type { SvelteKitRequest } from '../webserver/SvelteKitMiddleware';
+import type { LoginTemplateData } from './LoginTemplate';
 
 // TODO: Split into multiple files?
 // TODO: Use generics for pageData-type instead of extending everytime

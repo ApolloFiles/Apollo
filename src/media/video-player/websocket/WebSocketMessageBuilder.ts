@@ -1,37 +1,34 @@
 import Utils from '../../../Utils';
-import { StartPlaybackResponse } from '../../../webserver/Api/v0/media/player-session/change-media';
-import { PlayerSessionInfoResponse } from '../../../webserver/Api/v0/media/player-session/info';
-import VideoLiveTranscodeMedia from '../live-transcode/VideoLiveTranscodeMedia';
-import PlayerSession from '../player-session/PlayerSession';
+import type VideoLiveTranscodeMedia from '../live-transcode/VideoLiveTranscodeMedia';
+import type PlayerSession from '../player-session/PlayerSession';
 import { MESSAGE_TYPE } from './WebSocketDataMessageType';
+import type {
+  MediaChangedMessage,
+  ReferencePlayerChangedMessage,
+  SessionInfoMessage,
+  WebSocketMessage,
+  WelcomeMessage,
+} from './WebSocketMessages';
 
 // TODO: Können wir die keys in der Message noch kürzen irgendwie?
 // TODO: Können wir statt "JSON Object" ein Array schicken mit [typeId, data]? Spart bestimmt auch 4free bissl?
 
-export type WebSocketMessage = {
-  type: MESSAGE_TYPE;
-  data: Record<string, unknown>;
-}
+export default class WebSocketMessageBuilder {
+  static buildWelcome(connectionId: number, userId: string): string {
+    return this.asString({
+      type: MESSAGE_TYPE.WELCOME,
+      data: {
+        connectionId,
+        userId,
+      },
+    } satisfies WelcomeMessage);
+  }
 
-export interface SessionInfoMessage extends WebSocketMessage {
-  type: MESSAGE_TYPE.SESSION_INFO,
-  data: PlayerSessionInfoResponse['session']
-}
-
-export interface MediaChangedMessage extends WebSocketMessage {
-  type: MESSAGE_TYPE.MEDIA_CHANGED,
-  data: {
-    media: StartPlaybackResponse | null,
-  };
-}
-
-export default class WebSocketDataBuilder {
-  static buildSessionInfo(playerSession: PlayerSession, clientId: string): string {
+  static buildSessionInfo(playerSession: PlayerSession): string {
     return this.asString({
       type: MESSAGE_TYPE.SESSION_INFO,
       data: {
         id: playerSession.id,
-        yourId: clientId,
         participants: {
           total: playerSession.participants.length + 1,
           owner: {
@@ -66,7 +63,17 @@ export default class WebSocketDataBuilder {
     } satisfies MediaChangedMessage);
   }
 
-  private static asString(data: Record<string, unknown>): string {
+  static buildReferencePlayerChanged(connectionId: number, userId: string): string {
+    return this.asString({
+      type: MESSAGE_TYPE.REFERENCE_PLAYER_CHANGED,
+      data: {
+        connectionId,
+        userId,
+      },
+    } satisfies ReferencePlayerChangedMessage);
+  }
+
+  private static asString(data: WebSocketMessage): string {
     return JSON.stringify(data);
   }
 }
