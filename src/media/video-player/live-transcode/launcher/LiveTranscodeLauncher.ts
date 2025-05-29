@@ -1,7 +1,7 @@
 import { StringUtils } from '@spraxdev/node-commons';
 import Os from 'node:os';
 import { singleton } from 'tsyringe';
-import { ExtendedVideoAnalysis, VideoStream } from '../../../video/analyser/VideoAnalyser.Types';
+import { ExtendedVideoAnalysis, Stream, VideoStream } from '../../../video/analyser/VideoAnalyser.Types';
 import FfmpegProcess from '../../../watch/live_transcode/FfmpegProcess';
 import StreamArgumentsBuilder from '../ffmpeg/arguments-builder/StreamArgumentsBuilder';
 import VideoStreamArgumentsBuilder from '../ffmpeg/arguments-builder/VideoStreamArgumentsBuilder';
@@ -82,6 +82,7 @@ export default class LiveTranscodeLauncher {
       '-var_stream_map', streamArgs.varStreamMap.join(' '),
 
       '-f', 'hls',
+      '-shortest',
       `stream_%v/manifest.m3u8`,
     ];
 
@@ -93,11 +94,28 @@ export default class LiveTranscodeLauncher {
         cwd: targetDir,
       }),
       masterHlsFileName: 'master.m3u8',
-      mediaDuration: parseFloat(videoStream.duration ?? videoAnalysis.file.duration),
+      mediaDuration: this.determineOutputTotalDuration(streamsToTranscode, videoAnalysis),
       startOffset: startOffsetInSeconds,
       selectedVideoEncoder: videoEncoder,
       audioNameMap: streamArgs.audioNameMap,
     };
+  }
+
+  private determineOutputTotalDuration(streamsToTranscode: Stream[], videoAnalysis: ExtendedVideoAnalysis): number {
+    let duration = parseFloat(videoAnalysis.file.duration);
+    for (const stream of streamsToTranscode) {
+      if (stream.codecType !== 'video' && stream.codecType !== 'audio') {
+        continue;
+      }
+
+      if (stream.duration != null) {
+        const streamDuration = parseFloat(stream.duration);
+        if (streamDuration > 0 && streamDuration < duration) {
+          duration = streamDuration;
+        }
+      }
+    }
+    return duration;
   }
 
   private determineTargetFps(videoStream: VideoStream): number {
