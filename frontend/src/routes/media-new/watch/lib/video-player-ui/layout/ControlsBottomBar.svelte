@@ -37,7 +37,7 @@
   <div class="buttons-row">
     <div class="left-controls">
       <button class="control-button play-button"
-              onclick={() => videoPlayer.$isPlaying ? videoPlayer.pause() : videoPlayer.play()}>
+              onclick={() => videoPlayer.$isPlaying ? videoPlayer.pause(true) : videoPlayer.play(true)}>
         {#if videoPlayer.$isPlaying}
           <IconPause />
         {:else}

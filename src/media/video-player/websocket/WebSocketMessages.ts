@@ -58,6 +58,20 @@ export interface ClockSyncMessage extends WebSocketMessage {
   },
 }
 
+export interface RequestStateChangePlayingMessage extends WebSocketMessage {
+  type: MESSAGE_TYPE.REQUEST_STATE_CHANGE_PLAYING,
+  data: {
+    paused: boolean,
+  },
+}
+
+export interface RequestStateChangeTimeMessage extends WebSocketMessage {
+  type: MESSAGE_TYPE.REQUEST_STATE_CHANGE_TIME,
+  data: {
+    time: number,
+  },
+}
+
 export class WebSocketMessageValidator {
   static isPlayerStateUpdateMessageStrictCheck(message: WebSocketMessage): message is PlayerStateUpdateMessage {
     return Object.keys(message).length === 2 &&
@@ -77,6 +91,26 @@ export class WebSocketMessageValidator {
       typeof (message.data.state as any).paused === 'boolean' &&
       typeof (message.data.state as any).currentTime === 'number' &&
       typeof (message.data.state as any).playbackRate === 'number';
+  }
+
+  static isRequestStateChangePlayingMessageStrictCheck(message: WebSocketMessage): message is RequestStateChangePlayingMessage {
+    return Object.keys(message).length === 2 &&
+      message.type === MESSAGE_TYPE.REQUEST_STATE_CHANGE_PLAYING &&
+
+      typeof message.data === 'object' && message.data != null &&
+      Object.keys(message.data).length === 1 &&
+
+      typeof message.data.paused === 'boolean';
+  }
+
+  static isRequestStateChangeTimeMessageStrictCheck(message: WebSocketMessage): message is RequestStateChangeTimeMessage {
+    return Object.keys(message).length === 2 &&
+      message.type === MESSAGE_TYPE.REQUEST_STATE_CHANGE_TIME &&
+
+      typeof message.data === 'object' && message.data != null &&
+      Object.keys(message.data).length === 1 &&
+
+      typeof message.data.time === 'number';
   }
 
   static isWebSocketMessage(message: unknown): message is WebSocketMessage {

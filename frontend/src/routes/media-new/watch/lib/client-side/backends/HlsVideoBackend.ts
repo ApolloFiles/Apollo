@@ -96,11 +96,11 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
 
     // Seeking is required to flush the low-level playback buffers
     if (this.currentTime < 1) {
-      this.currentTime -= 0.001;
-      this.currentTime += 0.001;
+      this.seek(this.currentTime - 0.001, false);
+      this.seek(this.currentTime + 0.001, false);
     } else {
-      this.currentTime += 0.001;
-      this.currentTime -= 0.001;
+      this.seek(this.currentTime + 0.001, false);
+      this.seek(this.currentTime - 0.001, false);
     }
   }
 

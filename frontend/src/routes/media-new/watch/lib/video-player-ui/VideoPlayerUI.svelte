@@ -107,10 +107,10 @@
       // TODO: add double-click support to toggle fullscreen
 
       if (videoPlayer.$isPlaying) {
-        videoPlayer.pause();
+        videoPlayer.pause(true);
         showControls();
       } else {
-        videoPlayer.play();
+        videoPlayer.play(true);
       }
     };
 
@@ -129,10 +129,10 @@
         case 'k':
           if (!event.repeat) {
             if (videoPlayer.$isPlaying) {
-              videoPlayer.pause();
+              videoPlayer.pause(true);
               showControls();
             } else {
-              videoPlayer.play();
+              videoPlayer.play(true);
               scheduleHide();
             }
           }
@@ -147,13 +147,13 @@
           break;
 
         case 'j':
-          videoPlayer.seek(videoPlayer.$currentTime - 5);
+          videoPlayer.seek(videoPlayer.$currentTime - 5, false, true);
           showControls();
           scheduleHide();
           break;
 
         case 'l':
-          videoPlayer.seek(videoPlayer.$currentTime + 5);
+          videoPlayer.seek(videoPlayer.$currentTime + 5, false, true);
           showControls();
           scheduleHide();
           break;

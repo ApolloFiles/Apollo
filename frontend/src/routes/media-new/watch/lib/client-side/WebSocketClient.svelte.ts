@@ -4,6 +4,8 @@ import {
   type ClockSyncMessage,
   type MediaChangedMessage,
   type PlayerStateUpdateMessage,
+  type RequestStateChangePlayingMessage,
+  type RequestStateChangeTimeMessage,
   type SessionInfoMessage,
   WebSocketMessageValidator,
   type WelcomeMessage,
@@ -73,14 +75,12 @@ export default class WebSocketClient {
     return this.referencePlayerState;
   }
 
-  setVideoPlayer(videoPlayer: VideoPlayer | null): void {
-    this.videoPlayer = videoPlayer;
+  isReferencePlayerSelf(): boolean {
+    return this.referencePlayerUserId != null && this.referencePlayerUserId === this.selfInfo?.userId;
   }
 
-  // TODO: Can we get rid of this? Worst-case move storing of the sessionInfo somewhere else?
-  setSessionInfo(sessionInfo: SessionInfoMessage['data']): void {
-    this.sessionInfo = sessionInfo;
-    console.log('Session info updated (EXTERNALLY):', sessionInfo);
+  setVideoPlayer(videoPlayer: VideoPlayer | null): void {
+    this.videoPlayer = videoPlayer;
   }
 
   updatePlaybackState(player: VideoPlayer, seeked: boolean, forceSend: boolean): void {
@@ -88,7 +88,7 @@ export default class WebSocketClient {
       seeked,
       paused: !player.$isPlaying,
       currentTime: player.$currentTime,
-      playbackRate: 1.0, // FIXME: Get actual playback rate
+      playbackRate: player.$playbackRate,
     };
 
     if (forceSend) {
@@ -120,6 +120,30 @@ export default class WebSocketClient {
         state: this.lastOwnPlayerState,
       },
     } satisfies PlayerStateUpdateMessage));
+  }
+
+  sendRequestStateChangePlaying(paused: boolean): void {
+    if (!this.connection) {
+      console.warn('WebSocket connection is not established, cannot request state change playing');
+      return;
+    }
+
+    this.connection.send(JSON.stringify({
+      type: MESSAGE_TYPE.REQUEST_STATE_CHANGE_PLAYING,
+      data: { paused },
+    } satisfies RequestStateChangePlayingMessage));
+  }
+
+  sendRequestStateChangeTime(time: number): void {
+    if (!this.connection) {
+      console.warn('WebSocket connection is not established, cannot request state change seek');
+      return;
+    }
+
+    this.connection.send(JSON.stringify({
+      type: MESSAGE_TYPE.REQUEST_STATE_CHANGE_TIME,
+      data: { time },
+    } satisfies RequestStateChangeTimeMessage));
   }
 
   private reconnect(): void {
@@ -198,7 +222,6 @@ export default class WebSocketClient {
             this.videoPlayer?.forceStateSynchronization(this.referencePlayerState.state);
           }
         }
-
         break;
 
       case MESSAGE_TYPE.REFERENCE_PLAYER_CHANGED:
@@ -221,8 +244,22 @@ export default class WebSocketClient {
           newOffset: newServerTimeOffset,
         });
         this.serverTimeOffset = newServerTimeOffset;
-
         break;
+
+      case MESSAGE_TYPE.REQUEST_STATE_CHANGE_PLAYING:
+        const requestStateChangeData = message.data as RequestStateChangePlayingMessage['data'];
+        if (requestStateChangeData.paused) {
+          this.videoPlayer?.pause();
+        } else {
+          this.videoPlayer?.play();
+        }
+        break;
+
+      case MESSAGE_TYPE.REQUEST_STATE_CHANGE_TIME:
+        const requestStateChangeTimeData = message.data as RequestStateChangeTimeMessage['data'];
+        this.videoPlayer?.seek(requestStateChangeTimeData.time);
+        break;
+
       default:
         if (this.selfInfo == null) {
           console.warn('Received unknown message before WELCOME message, ignoring');

@@ -10,6 +10,8 @@ export default class VideoPlayer {
   public readonly mediaMetadata: MediaMetadata;
   private readonly updatePlayerStateForBroadcast: (player: VideoPlayer, seeked: boolean, forceSend: boolean) => void;
   private readonly getReferencePlayerState: () => ReferencePlayerState | null;
+  private readonly requestStateChangePlayingIfNeeded: (paused: boolean) => void;
+  private readonly requestStateChangeTimeIfNeeded: (time: number) => void;
   private readonly _playerExtras: VideoPlayerExtras;
   private readonly localBufferedRangesIntervalId: number;
   private readonly referencePlayerSyncIntervalId: number;
@@ -43,13 +45,18 @@ export default class VideoPlayer {
     backend: VideoPlayerBackend,
     mediaMetadata: MediaMetadata,
     sessionId: string,
+    // TODO: All these methods essentially just call a WebSocketClient-method – Get rid of these here
     updatePlayerStateForBroadcast: (player: VideoPlayer, seeked: boolean, forceSend: boolean) => void,
     getReferencePlayerState: () => ReferencePlayerState | null,
+    requestStateChangePlayingIfNeeded: (paused: boolean) => void,
+    requestStateChangeTimeIfNeeded: (time: number) => void,
   ) {
     this.backend = backend;
     this.mediaMetadata = mediaMetadata;
     this.updatePlayerStateForBroadcast = updatePlayerStateForBroadcast;
     this.getReferencePlayerState = getReferencePlayerState;
+    this.requestStateChangePlayingIfNeeded = requestStateChangePlayingIfNeeded;
+    this.requestStateChangeTimeIfNeeded = requestStateChangeTimeIfNeeded;
     this._playerExtras = new VideoPlayerExtras(sessionId);
 
     this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
@@ -154,15 +161,27 @@ export default class VideoPlayer {
     return this.remoteBufferedRange;
   }
 
-  async play(): Promise<void> {
+  async play(userInput = false): Promise<void> {
+    if (userInput) {
+      this.requestStateChangePlayingIfNeeded(false);
+    }
+
     await this.backend.play();
   }
 
-  pause(): void {
+  pause(userInput = false): void {
+    if (userInput) {
+      this.requestStateChangePlayingIfNeeded(true);
+    }
+
     this.backend.pause();
   }
 
-  seek(time: number, stillSeeking = false): void {
+  seek(time: number, stillSeeking = false, userInput = false): void {
+    if (userInput && !stillSeeking) {
+      this.requestStateChangeTimeIfNeeded(time);
+    }
+
     this.backend.seek(time, stillSeeking);
   }
 

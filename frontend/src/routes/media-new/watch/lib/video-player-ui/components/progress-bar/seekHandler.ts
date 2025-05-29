@@ -61,7 +61,7 @@ function createSeekHandlers(context: SeekHandlerContext, state: SeekState) {
     document.body.classList.remove('seeking');
     context.seekHandle.classList.remove('seeking');
 
-    context.videoPlayer.seek(state.lastSeekTime);
+    context.videoPlayer.seek(state.lastSeekTime, false, true);
     if (state.wasPlayingBeforeSeek) {
       context.videoPlayer.play();
     }

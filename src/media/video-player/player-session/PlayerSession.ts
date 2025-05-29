@@ -179,6 +179,30 @@ export default class PlayerSession {
             this.broadcastMessage(JSON.stringify(message), client);
             break;
 
+          case MESSAGE_TYPE.REQUEST_STATE_CHANGE_PLAYING:
+            if (!WebSocketMessageValidator.isRequestStateChangePlayingMessageStrictCheck(message)) {
+              throw new Error('Invalid RequestStateChangePlayingMessage format');
+            }
+            if (this.referencePlayerClient === client) {
+              console.warn('Reference player tried to request a state change (playing), ignoring');
+              return;
+            }
+
+            this.sendMessage(this.referencePlayerClient!, JSON.stringify(message));
+            break;
+
+          case MESSAGE_TYPE.REQUEST_STATE_CHANGE_TIME:
+            if (!WebSocketMessageValidator.isRequestStateChangeTimeMessageStrictCheck(message)) {
+              throw new Error('Invalid RequestStateChangeTimeMessage format');
+            }
+            if (this.referencePlayerClient === client) {
+              console.warn('Reference player tried to request a state change (seek), ignoring');
+              return;
+            }
+
+            this.sendMessage(this.referencePlayerClient!, JSON.stringify(message));
+            break;
+
           default:
             throw new Error(`Received unexpected message: ${JSON.stringify(message)}`);
         }

@@ -37,7 +37,7 @@
           if (transcodeRestartInProgress) {
             return;
           }
-          if (webSocketClient != null && webSocketClient.$referencePlayerUserId !== webSocketClient.$selfInfo?.userId) {
+          if (webSocketClient != null && !webSocketClient.isReferencePlayerSelf()) {
             // Only the reference player should restart (we just have to wait)
             return;
           }
@@ -72,6 +72,16 @@
       () => {
         return webSocketClient?.$referencePlayerState ?? null;
       },
+      (paused) => {
+        if (!webSocketClient?.isReferencePlayerSelf()) {
+          webSocketClient?.sendRequestStateChangePlaying(paused);
+        }
+      },
+      (time) => {
+        if (!webSocketClient?.isReferencePlayerSelf()) {
+          webSocketClient?.sendRequestStateChangeTime(time);
+        }
+      },
     );
   }
 
@@ -99,7 +109,6 @@
   async function initVideoPlayer(): Promise<VideoPlayer | null> {
     const playbackStatusResponse = await fetchPlaybackSessionInfo();
     sessionId = playbackStatusResponse.session.id;
-    webSocketClient?.setSessionInfo(playbackStatusResponse.session);
 
     //    return new VideoPlayer(await HtmlVideoPlayerBackend.create(videoContainerRef, { backend: { src: '/_dev/BigBuckBunny_320x180.mp4' } }), {
     //      mediaItemId: '',
@@ -130,6 +139,7 @@
         }
 
         videoPlayerPromise = createVideoPlayer(media);
+        videoPlayerPromise.then((videoPlayer) => webSocketClient?.setVideoPlayer(videoPlayer));
       },
     );
     webSocketClient.setVideoPlayer(videoPlayer);
