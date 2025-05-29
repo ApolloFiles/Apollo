@@ -162,12 +162,12 @@ export default class VideoPlayer {
     this.backend.pause();
   }
 
-  seek(time: number): void {
-    this.backend.currentTime = time;
+  seek(time: number, stillSeeking = false): void {
+    this.backend.seek(time, stillSeeking);
   }
 
-  fastSeek(time: number): void {
-    this.backend.fastSeek(time);
+  fastSeek(time: number, stillSeeking = false): void {
+    this.backend.fastSeek(time, stillSeeking);
   }
 
   destroy(): void {

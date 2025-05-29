@@ -35,7 +35,7 @@ function createSeekHandlers(context: SeekHandlerContext, state: SeekState) {
     context.onSeekMove(position, percentage * 100, time);
 
     requestAnimationFrame(() => {
-      context.videoPlayer.fastSeek(time);
+      context.videoPlayer.fastSeek(time, true);
     });
   };
 

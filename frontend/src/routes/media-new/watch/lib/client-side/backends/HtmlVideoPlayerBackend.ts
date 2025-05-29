@@ -22,13 +22,6 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
     container.appendChild(this.videoElement);
   }
 
-  get currentTime(): number {
-    return this.videoElement.currentTime;
-  }
-
-  set currentTime(value: number) {
-    this.videoElement.currentTime = value;
-  }
 
   get playbackRate(): number {
     return this.videoElement.playbackRate;
@@ -54,6 +47,10 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
     this.videoElement.muted = value;
   }
 
+  get currentTime(): number {
+    return this.videoElement.currentTime;
+  }
+
   get duration(): number {
     return this.videoElement.duration;
   }
@@ -70,7 +67,11 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
     this.videoElement.pause();
   }
 
-  fastSeek(time: number): void {
+  seek(time: number, _stillSeeking: boolean): void {
+    this.videoElement.currentTime = time;
+  }
+
+  fastSeek(time: number, _stillSeeking: boolean): void {
     this.videoElement.currentTime = time;
   }
 

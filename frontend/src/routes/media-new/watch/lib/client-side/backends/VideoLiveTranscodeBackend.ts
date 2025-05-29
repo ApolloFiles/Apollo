@@ -23,23 +23,23 @@ export default class VideoLiveTranscodeBackend<T extends VideoLiveTranscodeBacke
     return super.currentTime + this.backendOptions.backend.startOffset;
   }
 
-  set currentTime(value: number) {
+  seek(time: number, stillSeeking = false): void {
     // waiting a bit for the stream to catch up should be way faster than waiting for the transcode to restart
     const SEEK_INTO_FUTURE_TOLERANCE = 5;
     const maxPossibleTime = this.backendOptions.backend.startOffset + super.duration + SEEK_INTO_FUTURE_TOLERANCE;
 
-    value = Math.max(0, Math.min(value, this.backendOptions.backend.totalDurationInSeconds));
+    time = Math.max(0, Math.min(time, this.backendOptions.backend.totalDurationInSeconds));
 
-    if (value < this.backendOptions.backend.startOffset || value > maxPossibleTime) {
-      this.backendOptions.backend.restartTranscode(Math.floor(value), this.hls.audioTrack, this.hls.subtitleTrack);
+    if (!stillSeeking && (time < this.backendOptions.backend.startOffset || time > maxPossibleTime)) {
+      this.backendOptions.backend.restartTranscode(Math.floor(time), this.hls.audioTrack, this.hls.subtitleTrack);
       return;
     }
 
-    super.currentTime = value - this.backendOptions.backend.startOffset;
+    super.seek(time - this.backendOptions.backend.startOffset, stillSeeking);
   }
 
-  fastSeek(time: number): void {
-    this.currentTime = time;
+  fastSeek(time: number, stillSeeking = false): void {
+    this.seek(time, stillSeeking);
   }
 
   getBufferedRanges(): { start: number; end: number }[] {

@@ -25,10 +25,10 @@ export default abstract class VideoPlayerBackend<T extends BackendOptions = Back
   abstract readonly shouldShowCustomControls: boolean;
   abstract readonly backendOptions: T;
 
-  abstract currentTime: number;
   abstract playbackRate: number;
   abstract volume: number;
   abstract muted: boolean;
+  abstract get currentTime(): number;
   abstract get duration(): number;
   abstract get isSeeking(): boolean;
 
@@ -38,7 +38,8 @@ export default abstract class VideoPlayerBackend<T extends BackendOptions = Back
   abstract play(): Promise<void>;
   abstract pause(): void;
 
-  abstract fastSeek(time: number): void;
+  abstract seek(time: number, stillSeeking: boolean): void;
+  abstract fastSeek(time: number, stillSeeking: boolean): void;
 
   abstract getActiveAudioTrackId(): string | null;
   abstract setActiveAudioTrack(id: string): void;

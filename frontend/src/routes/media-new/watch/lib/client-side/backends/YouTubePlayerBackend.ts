@@ -34,14 +34,6 @@ export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions 
     });
   }
 
-  get currentTime(): number {
-    return this.ytPlayer?.getCurrentTime() ?? 0;
-  }
-
-  set currentTime(value: number) {
-    this.ytPlayer.seekTo(value, true);
-  }
-
   get playbackRate(): number {
     return this.ytPlayer?.getPlaybackRate() ?? 1;
   }
@@ -71,6 +63,10 @@ export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions 
     this.ytPlayer.unMute();
   }
 
+  get currentTime(): number {
+    return this.ytPlayer?.getCurrentTime() ?? 0;
+  }
+
   get duration(): number {
     return this.ytPlayer?.getDuration() ?? 0;
   }
@@ -87,7 +83,11 @@ export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions 
     this.ytPlayer.pauseVideo();
   }
 
-  fastSeek(time: number): void {
+  seek(time: number, _stillSeeking = false): void {
+    this.ytPlayer.seekTo(time, true);
+  }
+
+  fastSeek(time: number, _stillSeeking = false): void {
     this.ytPlayer.seekTo(time, true);
   }
 
