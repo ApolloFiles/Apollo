@@ -21,9 +21,6 @@ export default class SvelteKitMiddleware {
 
   static register(app: Express.Application): void {
     const svelteKitMiddleware = new SvelteKitMiddleware();
-    app.use((req, res, next) => {
-      console.log('Letting Svelte handle the request:', req.originalUrl);
-      svelteKitMiddleware.handle(req, res, next);
-    });
+    app.use((req, res, next) => svelteKitMiddleware.handle(req, res, next));
   }
 }
