@@ -86,6 +86,12 @@
     }
   }
 
+  function formatTime(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+
   onMount(() => {
     return () => {
       sessionInfo = null;
@@ -122,7 +128,7 @@
                 class="flex-grow-1">{sessionInfo.participants.owner.displayName + (sessionInfo.participants.owner.id === selfInfo?.userId ? ' (You)' : '')}</span>
               {#if sessionInfo.participants.owner.id !== selfInfo?.userId && webSocketClient?.$userPlaybackState.has(sessionInfo.participants.owner.id)}
                   <span
-                    class="flex-grow-1">{webSocketClient?.$userPlaybackState.get(sessionInfo.participants.owner.id)?.currentTime?.toFixed(0) ?? ''}</span>
+                    class="flex-grow-1">{formatTime(webSocketClient.$userPlaybackState.get(sessionInfo.participants.owner.id).currentTime) ?? ''}</span>
               {/if}
             </li>
 
@@ -139,7 +145,7 @@
                   class="flex-grow-1">{participant.displayName + (participant.id === selfInfo?.userId ? ' (You)' : '')}</span>
                 {#if participant.id !== selfInfo?.userId && webSocketClient?.$userPlaybackState.has(participant.id)}
                   <span
-                    class="flex-grow-1">{webSocketClient?.$userPlaybackState.get(participant.id)?.currentTime?.toFixed(0) ?? ''}</span>
+                    class="flex-grow-1">{formatTime(webSocketClient.$userPlaybackState.get(participant.id).currentTime) ?? ''}</span>
                 {/if}
                 <button class="btn btn-sm btn-outline-danger px-2 py-0" title="Remove participant"
                         onclick={() => removeParticipant(participant.id)}>x

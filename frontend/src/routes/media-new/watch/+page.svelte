@@ -106,6 +106,30 @@
     return createVideoPlayer(changeMediaBody, initialAudioTrack, initialSubtitleTrack);
   }
 
+  async function initiateMediaChange(mediaItemId: string, startOffset: number): Promise<void> {
+    if (sessionId == null) {
+      throw new Error('Session ID is not set, cannot restart video live transcode');
+    }
+
+    const changeMediaResponse = await fetch(`/api/v0/media/player-session/${encodeURIComponent(sessionId)}/change-media`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify({
+        mediaItemId,
+        startOffset,
+      }),
+    });
+
+    const changeMediaBody: StartPlaybackResponse = await changeMediaResponse.json();
+
+    videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
+    videoPlayerPromise = createVideoPlayer(changeMediaBody);
+    videoPlayerPromise.then((videoPlayer) => webSocketClient?.setVideoPlayer(videoPlayer));
+  }
+
   async function initVideoPlayer(): Promise<VideoPlayer | null> {
     const playbackStatusResponse = await fetchPlaybackSessionInfo();
     sessionId = playbackStatusResponse.session.id;
@@ -189,6 +213,7 @@
         videoPlayer={videoPlayer}
         showCustomControls={videoPlayer.$shouldShowCustomControls}
         episodeTitlePrefix={episodeTitlePrefix}
+        initiateMediaChange={initiateMediaChange}
       />
     {:else}
       <div class="loading-container">

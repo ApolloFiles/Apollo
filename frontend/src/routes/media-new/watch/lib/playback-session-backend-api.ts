@@ -42,7 +42,7 @@ export async function fetchPlaybackSessionInfo(): Promise<PlayerSessionInfoRespo
     };
   }
 
-  const playbackStatusResponse = await fetch(`/api/v0/media/player-session/info?session=${sessionId ?? ''}`, { headers: { Accept: 'application/json' } });
+  const playbackStatusResponse = await fetch(`/api/v0/media/player-session/info${sessionId ? `?session=${encodeURIComponent(sessionId)}` : ''}`, { headers: { Accept: 'application/json' } });
   if (!playbackStatusResponse.ok) {
     throw new Error(`player-session/info endpoint responded with Status ${playbackStatusResponse.status}: ${await playbackStatusResponse.text()}`);
   }

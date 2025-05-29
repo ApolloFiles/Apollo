@@ -12,7 +12,9 @@ export default class SvelteKitMiddleware {
   }
 
   handle(req: Express.Request, res: Express.Response, next: Express.NextFunction): void {
-    req.headers['x-apollo-logged-in-user-id'] = req.session.userId;
+    if (req.session.userId) {
+      req.headers['x-apollo-logged-in-user-id'] = req.session.userId;
+    }
 
     this.svelteHandler
       .then((svelteKitAdapter) => svelteKitAdapter.handler(req, res, next))

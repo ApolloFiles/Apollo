@@ -1,8 +1,8 @@
 <script lang="ts">
+  import IconSubtitles from 'virtual:icons/tabler/badge-cc';
+  import IconHeadphones from 'virtual:icons/tabler/headphones';
   import IconPause from 'virtual:icons/tabler/player-pause';
   import IconPlay from 'virtual:icons/tabler/player-play';
-  import IconHeadphones from 'virtual:icons/tabler/headphones';
-  import IconSubtitles from 'virtual:icons/tabler/badge-cc';
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
   import BottomMenuBox from '../components/BottomMenuBox.svelte';
   import FullscreenButton from '../components/FullscreenButton.svelte';
@@ -32,7 +32,9 @@
 </script>
 
 <div class="control-bar">
-  <VideoProgressBar videoPlayer={videoPlayer} />
+  {#key videoPlayer}
+    <VideoProgressBar videoPlayer={videoPlayer} />
+  {/key}
 
   <div class="buttons-row">
     <div class="left-controls">

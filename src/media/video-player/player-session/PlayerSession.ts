@@ -215,7 +215,7 @@ export default class PlayerSession {
 
     client.send(WebSocketMessageBuilder.buildWelcome(client.apollo.connectionId!, client.apollo.user!.id.toString()), (err) => {
       if (err) {
-        if (!err.message.includes('WebSocket is not open: readyState 3 (CLOSED)')) {
+        if (!err.message.includes('WebSocket is not open: readyState 3 (CLOSED)') && !err.message.includes('WebSocket is not open: readyState 2 (CLOSING)')) {
           console.error('Error sending session info message:', err);
           client.close(1011, 'Internal Server Error');
         }
@@ -286,8 +286,10 @@ export default class PlayerSession {
   private sendMessage(client: ApolloWebSocket, message: string): void {
     client.send(message, (err) => {
       if (err) {
-        console.error('Error sending message to WebSocket-Client:', err);
-        client.close(1011, 'Internal Server Error');
+        if (!err.message.includes('WebSocket is not open: readyState 3 (CLOSED)') && !err.message.includes('WebSocket is not open: readyState 2 (CLOSING)')) {
+          console.error('Error sending session info message:', err);
+          client.close(1011, 'Internal Server Error');
+        }
       }
     });
   }

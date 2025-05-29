@@ -95,13 +95,11 @@ export interface MediaTitlePageData extends AuthenticatedPageRequestData {
 export default class FrontendRenderingDataAccess {
   async getLoggedInUser(request: SvelteKitRequest): Promise<LoggedInUserData> {
     const userId = request.headers.get('x-apollo-logged-in-user-id') || null;
-
     if (userId == null) {
       throw new Error('User is not logged in (No injected user id found in URL)');
     }
 
-    const parsedUserId = BigInt(userId);
-    const user = await new ApolloUserStorage().findById(parsedUserId);
+    const user = await new ApolloUserStorage().findById(BigInt(userId));
     if (user == null) {
       throw new Error('User is not logged in (User not found in database)');
     }

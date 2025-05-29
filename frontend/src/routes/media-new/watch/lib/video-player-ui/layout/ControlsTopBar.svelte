@@ -4,10 +4,14 @@
   import IconPlayerSkipBack from 'virtual:icons/tabler/player-skip-back';
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
 
-  const { episodeTitlePrefix, mediaMetadata }: {
+  const { episodeTitlePrefix, mediaMetadata, initiateMediaChange }: {
     episodeTitlePrefix: string,
-    mediaMetadata: VideoPlayer['mediaMetadata']
+    mediaMetadata: VideoPlayer['mediaMetadata'],
+    initiateMediaChange: (mediaItemId: string, startOffset: number) => Promise<void>,
   } = $props();
+
+  const previousMediaItem = $derived(mediaMetadata.episode?.previousMedia);
+  const nextMediaItem = $derived(mediaMetadata.episode?.nextMedia);
 </script>
 
 <div class="top-bar">
@@ -21,8 +25,18 @@
     </div>
   </div>
   <div class="right-section">
-    <button class="control-button"><IconPlayerSkipBack /></button>
-    <button class="control-button"><IconPlayerSkipForward /></button>
+    <button class="control-button"
+            title={previousMediaItem ? `S${previousMediaItem.episode.season.toString().padStart(2, '0')}E${previousMediaItem.episode.episode.toString().padStart(2, '0')} • ${previousMediaItem.title}` : 'No previous episode found'}
+            disabled={previousMediaItem == null}
+            onclick={() => previousMediaItem != null ? initiateMediaChange(previousMediaItem.mediaItemId, 0) : undefined}
+    >
+      <IconPlayerSkipBack />
+    </button>
+    <button class="control-button"
+            title={nextMediaItem ? `S${nextMediaItem.episode.season.toString().padStart(2, '0')}E${nextMediaItem.episode.episode.toString().padStart(2, '0')} • ${nextMediaItem.title}` : 'No next episode found'}
+            disabled={nextMediaItem == null}
+            onclick={() => nextMediaItem != null ? initiateMediaChange(nextMediaItem.mediaItemId, 0) : undefined}
+    ><IconPlayerSkipForward /></button>
   </div>
 </div>
 

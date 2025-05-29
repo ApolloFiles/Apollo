@@ -5,7 +5,7 @@ import PlayerSession from '../../../../../media/video-player/player-session/Play
 import Utils from '../../../../../Utils';
 import WebServer from '../../../../WebServer';
 import VideoSeekThumbnailControllerHelper from '../VideoSeekThumbnailControllerHelper';
-import { findMediaItem } from './start-watching';
+import { findMediaItem, findNextMediaItem, findPreviousMediaItem } from './start-watching';
 
 export type StartPlaybackResponse = {
   hlsManifest: string,
@@ -18,6 +18,25 @@ export type StartPlaybackResponse = {
       season: number,
       episode: number,
       title: string,
+
+      nextMedia?: {
+        mediaItemId: string,
+        title: string,
+        episode: {
+          season: number,
+          episode: number,
+          title: string,
+        },
+      },
+      previousMedia?: {
+        mediaItemId: string,
+        title: string,
+        episode: {
+          season: number,
+          episode: number,
+          title: string,
+        },
+      },
     }
   },
 }
@@ -52,6 +71,13 @@ export async function handleChangeMedia(req: express.Request, res: express.Respo
         return;
       }
 
+      const nextMediaItem = (mediaItem.episodeNumber != null && mediaItem.seasonNumber != null) ?
+        await findNextMediaItem(mediaItem.mediaId, mediaItem.episodeNumber, mediaItem.seasonNumber, loggedInUser.id)
+        : null;
+      const previousMediaItem = (mediaItem.episodeNumber != null && mediaItem.seasonNumber != null) ?
+        await findPreviousMediaItem(mediaItem.mediaId, mediaItem.episodeNumber, mediaItem.seasonNumber, loggedInUser.id)
+        : null;
+
       res.locals.timings?.startNext('start-transcode');
       videoLiveTranscodeMedia = await playerSession.startLiveTranscode(loggedInUser.getDefaultFileSystem().getFile(mediaItem.filePath), startOffset, {
         mediaItemId: mediaItemId.toString(),
@@ -60,6 +86,25 @@ export async function handleChangeMedia(req: express.Request, res: express.Respo
           title: mediaItem.title,
           season: mediaItem.seasonNumber,
           episode: mediaItem.episodeNumber,
+
+          nextMedia: nextMediaItem ? {
+            mediaItemId: nextMediaItem.id.toString(),
+            title: nextMediaItem.title,
+            episode: {
+              season: nextMediaItem.seasonNumber,
+              episode: nextMediaItem.episodeNumber,
+              title: nextMediaItem.title,
+            },
+          } : undefined,
+          previousMedia: previousMediaItem ? {
+            mediaItemId: previousMediaItem.id.toString(),
+            title: previousMediaItem.title,
+            episode: {
+              season: previousMediaItem.seasonNumber,
+              episode: previousMediaItem.episodeNumber,
+              title: previousMediaItem.title,
+            },
+          } : undefined,
         } : undefined),
       });
     } else {
@@ -70,7 +115,7 @@ export async function handleChangeMedia(req: express.Request, res: express.Respo
 
       res.locals.timings?.startNext('start-transcode');
       videoLiveTranscodeMedia = await playerSession.startLiveTranscode(file, startOffset, {
-        mediaItemId: '0',
+        mediaItemId: '0', // FIXME
         title: file.getFileName(),
       });
     }

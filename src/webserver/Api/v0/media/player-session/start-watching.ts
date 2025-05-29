@@ -46,6 +46,13 @@ export async function handleStartWatching(req: express.Request, res: express.Res
       return;
     }
 
+    const nextMediaItem = (mediaItem.episodeNumber != null && mediaItem.seasonNumber != null) ?
+      await findNextMediaItem(mediaItem.mediaId, mediaItem.episodeNumber, mediaItem.seasonNumber, loggedInUser.id)
+      : null;
+    const previousMediaItem = (mediaItem.episodeNumber != null && mediaItem.seasonNumber != null) ?
+      await findPreviousMediaItem(mediaItem.mediaId, mediaItem.episodeNumber, mediaItem.seasonNumber, loggedInUser.id)
+      : null;
+
     const apolloFile = loggedInUser.getDefaultFileSystem().getFile(mediaItem?.filePath);
 
     res.locals.timings?.startNext('start-transcode');
@@ -56,6 +63,25 @@ export async function handleStartWatching(req: express.Request, res: express.Res
         title: mediaItem.title,
         season: mediaItem.seasonNumber,
         episode: mediaItem.episodeNumber,
+
+        nextMedia: nextMediaItem ? {
+          mediaItemId: nextMediaItem.id.toString(),
+          title: nextMediaItem.title,
+          episode: {
+            season: nextMediaItem.seasonNumber,
+            episode: nextMediaItem.episodeNumber,
+            title: nextMediaItem.title,
+          },
+        } : undefined,
+        previousMedia: previousMediaItem ? {
+          mediaItemId: previousMediaItem.id.toString(),
+          title: previousMediaItem.title,
+          episode: {
+            season: previousMediaItem.seasonNumber,
+            episode: previousMediaItem.episodeNumber,
+            title: previousMediaItem.title,
+          },
+        } : undefined,
       } : undefined),
     });
   } finally {
@@ -69,6 +95,7 @@ export async function handleStartWatching(req: express.Request, res: express.Res
 // FIXME: Use LibraryManager or some kind of other abstraction with central/proper permission handling etc.
 export async function findMediaItem(mediaItemId: bigint, expectedOwner: bigint): Promise<{
                                                                                            id: bigint,
+                                                                                           mediaId: bigint,
                                                                                            filePath: string,
                                                                                            title: string,
                                                                                            episodeNumber: number | null,
@@ -81,6 +108,7 @@ export async function findMediaItem(mediaItemId: bigint, expectedOwner: bigint):
     where: { id: mediaItemId },
     select: {
       id: true,
+      mediaId: true,
       filePath: true,
       title: true,
       episodeNumber: true,
@@ -105,6 +133,118 @@ export async function findMediaItem(mediaItemId: bigint, expectedOwner: bigint):
   }
 
   return mediaItem;
+}
+
+export async function findNextMediaItem(mediaId: bigint, episodeNumber: number, seasonNumber: number, expectedOwner: bigint): Promise<{
+                                                                                                                                        id: bigint,
+                                                                                                                                        title: string,
+                                                                                                                                        episodeNumber: number,
+                                                                                                                                        seasonNumber: number,
+                                                                                                                                        media: {
+                                                                                                                                          title: string,
+                                                                                                                                        }
+                                                                                                                                      } | null> {
+  const mediaItems = await getPrismaClient()!.mediaLibraryMediaItem.findMany({
+    where: { mediaId },
+    select: {
+      id: true,
+      title: true,
+      episodeNumber: true,
+      seasonNumber: true,
+
+      media: {
+        select: {
+          title: true,
+
+          library: {
+            select: {
+              ownerId: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      { seasonNumber: 'asc' },
+      { episodeNumber: 'asc' },
+    ],
+  });
+
+  const originalMediaItemIndex = mediaItems.findIndex(item => item.seasonNumber === seasonNumber && item.episodeNumber === episodeNumber);
+  const mediaItem = mediaItems[originalMediaItemIndex + 1] ?? null;
+
+  if (mediaItem == null) {
+    return null;
+  }
+
+  if (mediaItem.media.library.ownerId !== expectedOwner) {
+    throw new Error(`User ${expectedOwner.toString()} tried to request a media item he doesn't own`);
+  }
+  if (mediaItem.episodeNumber == null || mediaItem.seasonNumber == null) {
+    throw new Error(`episodeNumber and seasonNumber cannot be null for a next or previous media item`);
+  }
+
+  return {
+    ...mediaItem,
+    episodeNumber: mediaItem.episodeNumber,
+    seasonNumber: mediaItem.seasonNumber,
+  };
+}
+
+export async function findPreviousMediaItem(mediaId: bigint, episodeNumber: number, seasonNumber: number, expectedOwner: bigint): Promise<{
+                                                                                                                                            id: bigint,
+                                                                                                                                            title: string,
+                                                                                                                                            episodeNumber: number,
+                                                                                                                                            seasonNumber: number,
+                                                                                                                                            media: {
+                                                                                                                                              title: string,
+                                                                                                                                            }
+                                                                                                                                          } | null> {
+  const mediaItems = await getPrismaClient()!.mediaLibraryMediaItem.findMany({
+    where: { mediaId },
+    select: {
+      id: true,
+      title: true,
+      episodeNumber: true,
+      seasonNumber: true,
+
+      media: {
+        select: {
+          title: true,
+
+          library: {
+            select: {
+              ownerId: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      { seasonNumber: 'asc' },
+      { episodeNumber: 'asc' },
+    ],
+  });
+
+  const originalMediaItemIndex = mediaItems.findIndex(item => item.seasonNumber === seasonNumber && item.episodeNumber === episodeNumber);
+  const mediaItem = mediaItems[originalMediaItemIndex - 1] ?? null;
+
+  if (mediaItem == null) {
+    return null;
+  }
+
+  if (mediaItem.media.library.ownerId !== expectedOwner) {
+    throw new Error(`User ${expectedOwner.toString()} tried to request a media item he doesn't own`);
+  }
+  if (mediaItem.episodeNumber == null || mediaItem.seasonNumber == null) {
+    throw new Error(`episodeNumber and seasonNumber cannot be null for a next or previous media item`);
+  }
+
+  return {
+    ...mediaItem,
+    episodeNumber: mediaItem.episodeNumber,
+    seasonNumber: mediaItem.seasonNumber,
+  };
 }
 
 function parseUserInputInt(res: express.Response, userInput: unknown, defaultValue: number): number | null {

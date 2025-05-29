@@ -5,10 +5,11 @@
   import ControlsBottomBar from './layout/ControlsBottomBar.svelte';
   import ControlsTopBar from './layout/ControlsTopBar.svelte';
 
-  const { videoPlayer, showCustomControls = true, episodeTitlePrefix }: {
+  const { videoPlayer, showCustomControls = true, episodeTitlePrefix, initiateMediaChange }: {
     videoPlayer: VideoPlayer,
     showCustomControls: boolean,
-    episodeTitlePrefix: string
+    episodeTitlePrefix: string,
+    initiateMediaChange: (mediaItemId: string, startOffset: number) => Promise<void>
   } = $props();
 
   let videoContextMenuRef: VideoContextMenu;
@@ -202,7 +203,9 @@
     >
       <ControlsTopBar
         mediaMetadata={videoPlayer.mediaMetadata}
-        episodeTitlePrefix={episodeTitlePrefix} />
+        episodeTitlePrefix={episodeTitlePrefix}
+        initiateMediaChange={initiateMediaChange}
+      />
       <ControlsBottomBar
         bind:this={playerControlsBottomRef}
         videoPlayer={videoPlayer}
@@ -213,11 +216,11 @@
 
 <style>
   .video-player-ui-container {
-    position: absolute;
-    top:      56px;
-    left:     0;
-    right:    0;
-    bottom:   0;
+    position:       absolute;
+    top:            56px;
+    left:           0;
+    right:          0;
+    bottom:         0;
     pointer-events: none;
   }
 
