@@ -1,19 +1,23 @@
 import type { StartPlaybackResponse } from '../../../../../../../src/webserver/Api/v0/media/player-session/change-media';
 import type VideoPlayerBackend from './backends/VideoPlayerBackend';
 import VideoPlayerExtras from './VideoPlayerExtras.svelte';
+import type { ReferencePlayerState } from './WebSocketClient.svelte';
 
 type MediaMetadata = StartPlaybackResponse['mediaMetadata'];
 
 export default class VideoPlayer {
   private readonly backend: VideoPlayerBackend;
   public readonly mediaMetadata: MediaMetadata;
-  private readonly updatePlayerStateForBroadcast: (player: VideoPlayer, forceSend: boolean) => void;
+  private readonly updatePlayerStateForBroadcast: (player: VideoPlayer, seeked: boolean, forceSend: boolean) => void;
+  private readonly getReferencePlayerState: () => ReferencePlayerState | null;
   private readonly _playerExtras: VideoPlayerExtras;
-  private readonly intervalId: number;
+  private readonly localBufferedRangesIntervalId: number;
+  private readonly referencePlayerSyncIntervalId: number;
 
   private shouldShowCustomControls = $state(true);
 
   private currentTime = $state(0);
+  private playbackRate = $state(1);
   private duration = $state(0);
   private volume = $state(1);
   private muted = $state(false);
@@ -39,19 +43,26 @@ export default class VideoPlayer {
     backend: VideoPlayerBackend,
     mediaMetadata: MediaMetadata,
     sessionId: string,
-    updatePlayerStateForBroadcast: (player: VideoPlayer, forceSend: boolean) => void,
+    updatePlayerStateForBroadcast: (player: VideoPlayer, seeked: boolean, forceSend: boolean) => void,
+    getReferencePlayerState: () => ReferencePlayerState | null,
   ) {
     this.backend = backend;
     this.mediaMetadata = mediaMetadata;
     this.updatePlayerStateForBroadcast = updatePlayerStateForBroadcast;
+    this.getReferencePlayerState = getReferencePlayerState;
     this._playerExtras = new VideoPlayerExtras(sessionId);
 
     this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
 
     this.setupEventListeners();
 
+    this.referencePlayerSyncIntervalId = window.setInterval(() => {
+      this.updatePlayerStateForBroadcast(this, false, false);
+      this.tickSynchronizationWithReferencePlayer();
+    }, 1000);
+
     if (this.shouldShowCustomControls) {
-      this.intervalId = window.setInterval(() => {
+      this.localBufferedRangesIntervalId = window.setInterval(() => {
         if (this.$isPlaying) {
           return;
         }
@@ -59,7 +70,7 @@ export default class VideoPlayer {
         this.localBufferedRanges = this.backend.getBufferedRanges();
       }, 250);
     } else {
-      this.intervalId = -1;
+      this.localBufferedRangesIntervalId = -1;
     }
   }
 
@@ -73,6 +84,14 @@ export default class VideoPlayer {
 
   get $currentTime(): number {
     return this.currentTime;
+  }
+
+  get $playbackRate(): number {
+    return this.playbackRate;
+  }
+
+  set $playbackRate(rate: number) {
+    this.backend.playbackRate = rate;
   }
 
   get $duration(): number {
@@ -152,9 +171,91 @@ export default class VideoPlayer {
   }
 
   destroy(): void {
-    window.clearInterval(this.intervalId);
+    window.clearInterval(this.localBufferedRangesIntervalId);
+    window.clearInterval(this.referencePlayerSyncIntervalId);
     this.backend.destroy();
     this.playerExtras.destroy();
+  }
+
+  resetPlayerSynchronization(playbackRate: number): void {
+    if (this.playbackRate !== playbackRate) {
+      this.playbackRate = playbackRate;
+    }
+  }
+
+  forceStateSynchronization(state: ReferencePlayerState['state']): void {
+    if (state.paused && this.$isPlaying) {
+      this.pause();
+    }
+
+    if (this.$playbackRate !== state.playbackRate) {
+      this.$playbackRate = state.playbackRate;
+    }
+
+    if (this.currentTime !== state.currentTime) {
+      this.seek(state.currentTime);
+    }
+
+    if (!state.paused && !this.$isPlaying) {
+      this.play().catch(console.error);
+    }
+  }
+
+  private tickSynchronizationWithReferencePlayer(): void {
+    if (this.backend.isSeeking) {
+      return;
+    }
+
+    const referenceState = this.getReferencePlayerState();
+    if (referenceState == null) {
+      return;
+    }
+
+    if (referenceState.state.paused) {
+      this.forceStateSynchronization(referenceState.state);
+      return;
+    }
+
+    const timeElapsed = Date.now() - referenceState.updated;
+    const referenceTime = referenceState.state.currentTime + (timeElapsed / 1000);
+    const currentAbsoluteTimeDifference = Math.abs(this.currentTime - referenceTime);
+
+    if (currentAbsoluteTimeDifference > 10) {
+      console.debug('Playback too far out-of-sync – Seeking...', {
+        currentTime: this.currentTime,
+        referenceTime,
+        currentAbsoluteTimeDifference,
+      });
+      this.forceStateSynchronization({
+        ...referenceState.state,
+        currentTime: referenceTime,
+      });
+      return;
+    }
+
+    let targetPlaybackRate = referenceState.state.playbackRate;
+
+    const currentlyHasASyncingRate = this.$playbackRate !== targetPlaybackRate;
+    const deSyncThresholdForApplyingSyncingRate = currentlyHasASyncingRate ? 0.15 : 0.75;
+
+    if (currentAbsoluteTimeDifference > deSyncThresholdForApplyingSyncingRate) {
+      const rateOffset = currentAbsoluteTimeDifference > 5 ? 0.05 : 0.03;
+      if (this.currentTime > referenceTime) {
+        targetPlaybackRate -= rateOffset;
+      } else {
+        targetPlaybackRate += rateOffset;
+      }
+    }
+
+    if (this.$playbackRate !== targetPlaybackRate) {
+      console.debug('Adjusting playback rate... (Playback slightly out-of-sync?)', {
+        currentAbsoluteTimeDifference,
+        oldRate: this.$playbackRate,
+        newRate: targetPlaybackRate,
+      });
+      this.$playbackRate = targetPlaybackRate;
+    }
+    this.play().catch(console.error);
   }
 
   private setupEventListeners(): void {
@@ -177,11 +278,14 @@ export default class VideoPlayer {
     });
     this.backend.addPassiveEventListener('play', () => {
       this.isPlaying = true;
-      this.updatePlayerStateForBroadcast(this, true);
+      this.updatePlayerStateForBroadcast(this, false, true);
     });
     this.backend.addPassiveEventListener('pause', () => {
       this.isPlaying = false;
-      this.updatePlayerStateForBroadcast(this, true);
+      this.updatePlayerStateForBroadcast(this, false, true);
+    });
+    this.backend.addPassiveEventListener('ratechange', () => {
+      this.playbackRate = this.backend.playbackRate;
     });
     this.backend.addPassiveEventListener('timeupdate', () => {
       this.currentTime = this.backend.currentTime;
@@ -192,7 +296,7 @@ export default class VideoPlayer {
       this.activeAutoTrackId = this.backend.getActiveAudioTrackId();
       this.activeSubtitleTrackId = this.backend.getActiveSubtitleTrackId();
 
-      this.updatePlayerStateForBroadcast(this, false);
+      this.updatePlayerStateForBroadcast(this, false, false);
     });
     this.backend.addPassiveEventListener('volumechange', () => {
       this.volume = this.backend.volume;
@@ -201,6 +305,9 @@ export default class VideoPlayer {
     this.backend.addPassiveEventListener('progress', () => {
       this.localBufferedRanges = this.backend.getBufferedRanges();
       this.remoteBufferedRange = this.backend.getRemotelyBufferedRange();
+    });
+    this.backend.addPassiveEventListener('seeked', () => {
+      this.updatePlayerStateForBroadcast(this, true, true);
     });
   }
 }

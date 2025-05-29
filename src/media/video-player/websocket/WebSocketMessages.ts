@@ -12,6 +12,7 @@ export interface WelcomeMessage extends WebSocketMessage {
   data: {
     connectionId: number,
     userId: string,
+    serverTime: number,
   },
 }
 
@@ -32,7 +33,9 @@ export interface PlayerStateUpdateMessage extends WebSocketMessage {
   data: {
     connectionId: number,
     userId: string,
+    timestamp: number,
     state: {
+      seeked: boolean,
       paused: boolean,
       currentTime: number,
       playbackRate: number,
@@ -48,20 +51,29 @@ export interface ReferencePlayerChangedMessage extends WebSocketMessage {
   },
 }
 
+export interface ClockSyncMessage extends WebSocketMessage {
+  type: MESSAGE_TYPE.CLOCK_SYNC,
+  data: {
+    serverTime: number,
+  },
+}
+
 export class WebSocketMessageValidator {
   static isPlayerStateUpdateMessageStrictCheck(message: WebSocketMessage): message is PlayerStateUpdateMessage {
     return Object.keys(message).length === 2 &&
       message.type === MESSAGE_TYPE.PLAYER_STATE_UPDATE &&
 
       typeof message.data === 'object' && message.data != null &&
-      Object.keys(message.data).length === 3 &&
+      Object.keys(message.data).length === 4 &&
 
       typeof message.data.connectionId === 'number' &&
       typeof message.data.userId === 'string' &&
+      typeof message.data.timestamp === 'number' &&
 
       typeof message.data.state === 'object' && message.data.state != null &&
-      Object.keys(message.data.state).length === 3 &&
+      Object.keys(message.data.state).length === 4 &&
 
+      typeof (message.data.state as any).seeked === 'boolean' &&
       typeof (message.data.state as any).paused === 'boolean' &&
       typeof (message.data.state as any).currentTime === 'number' &&
       typeof (message.data.state as any).playbackRate === 'number';

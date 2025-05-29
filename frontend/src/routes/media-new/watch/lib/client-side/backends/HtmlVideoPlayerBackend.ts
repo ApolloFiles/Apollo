@@ -30,6 +30,14 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
     this.videoElement.currentTime = value;
   }
 
+  get playbackRate(): number {
+    return this.videoElement.playbackRate;
+  }
+
+  set playbackRate(value: number) {
+    this.videoElement.playbackRate = value;
+  }
+
   get volume(): number {
     return this.videoElement.volume;
   }
@@ -48,6 +56,10 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
 
   get duration(): number {
     return this.videoElement.duration;
+  }
+
+  get isSeeking(): boolean {
+    return this.videoElement.seeking;
   }
 
   async play(): Promise<void> {

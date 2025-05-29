@@ -3,6 +3,7 @@ import type VideoLiveTranscodeMedia from '../live-transcode/VideoLiveTranscodeMe
 import type PlayerSession from '../player-session/PlayerSession';
 import { MESSAGE_TYPE } from './WebSocketDataMessageType';
 import type {
+  ClockSyncMessage,
   MediaChangedMessage,
   ReferencePlayerChangedMessage,
   SessionInfoMessage,
@@ -20,6 +21,7 @@ export default class WebSocketMessageBuilder {
       data: {
         connectionId,
         userId,
+        serverTime: Date.now(),
       },
     } satisfies WelcomeMessage);
   }
@@ -71,6 +73,15 @@ export default class WebSocketMessageBuilder {
         userId,
       },
     } satisfies ReferencePlayerChangedMessage);
+  }
+
+  static buildClockSync(serverTime: number): string {
+    return this.asString({
+      type: MESSAGE_TYPE.CLOCK_SYNC,
+      data: {
+        serverTime,
+      },
+    } satisfies ClockSyncMessage);
   }
 
   private static asString(data: WebSocketMessage): string {

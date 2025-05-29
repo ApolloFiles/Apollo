@@ -4,4 +4,5 @@ export enum MESSAGE_TYPE {
   SESSION_INFO = 3,
   MEDIA_CHANGED = 4,
   PLAYER_STATE_UPDATE = 5,
+  CLOCK_SYNC = 6,
 }

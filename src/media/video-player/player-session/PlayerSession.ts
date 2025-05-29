@@ -45,6 +45,10 @@ export default class PlayerSession {
     this.owner = owner;
 
     this.tmpDir = TemporaryDirectory.create(this.id);
+
+    // TODO: Maybe have a smarter way so not every session has their own interval?
+    // TODO: When implementing destroying sessions, also clear the interval
+    setInterval(() => this.broadcastClockSync(), 60_000);
   }
 
   get ownerConnected(): boolean {
@@ -166,6 +170,12 @@ export default class PlayerSession {
               throw new Error('Connection ID mismatch in PlayerStateUpdateMessage');
             }
 
+            if (Math.abs(Date.now() - message.data.timestamp) > 15_000) {
+              console.error('PlayerStateUpdateMessage timestamp is over 15 seconds out of sync');
+              client.close(WS_CLOSE_PROTOCOL_ERROR, 'Your clock is out of sync');
+              return;
+            }
+
             this.broadcastMessage(JSON.stringify(message), client);
             break;
 
@@ -174,15 +184,17 @@ export default class PlayerSession {
         }
       } catch (err) {
         console.error('Error in handling incoming message:', err);
-        client.close(WS_CLOSE_PROTOCOL_ERROR, 'Invalid data received');
+        client.close(WS_CLOSE_PROTOCOL_ERROR, 'Invalid/Malformed data received');
         return;
       }
     });
 
     client.send(WebSocketMessageBuilder.buildWelcome(client.apollo.connectionId!, client.apollo.user!.id.toString()), (err) => {
       if (err) {
-        console.error('Error sending session info message:', err);
-        client.close(1011, 'Internal Server Error');
+        if (!err.message.includes('WebSocket is not open: readyState 3 (CLOSED)')) {
+          console.error('Error sending session info message:', err);
+          client.close(1011, 'Internal Server Error');
+        }
         return;
       }
 
@@ -217,6 +229,13 @@ export default class PlayerSession {
 
   private broadcastMediaChanged(): void {
     this.broadcastMessage(WebSocketMessageBuilder.buildMediaChanged(this.id, this.currentMedia));
+  }
+
+  private broadcastClockSync(): void {
+    const serverTime = Date.now();
+    for (const client of this.clientConnections) {
+      this.sendMessage(client, WebSocketMessageBuilder.buildClockSync(serverTime));
+    }
   }
 
   private broadcastReferencePlayerChanged(): void {

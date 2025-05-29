@@ -42,6 +42,14 @@ export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions 
     this.ytPlayer.seekTo(value, true);
   }
 
+  get playbackRate(): number {
+    return this.ytPlayer?.getPlaybackRate() ?? 1;
+  }
+
+  set playbackRate(value: number) {
+    this.ytPlayer.setPlaybackRate(value);
+  }
+
   get volume(): number {
     return this.ytPlayer?.getVolume() ?? 1;
   }
@@ -65,6 +73,10 @@ export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions 
 
   get duration(): number {
     return this.ytPlayer?.getDuration() ?? 0;
+  }
+
+  get isSeeking(): boolean {
+    return false;
   }
 
   async play(): Promise<void> {

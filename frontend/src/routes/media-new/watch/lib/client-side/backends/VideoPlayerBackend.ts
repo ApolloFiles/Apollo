@@ -26,9 +26,11 @@ export default abstract class VideoPlayerBackend<T extends BackendOptions = Back
   abstract readonly backendOptions: T;
 
   abstract currentTime: number;
+  abstract playbackRate: number;
   abstract volume: number;
   abstract muted: boolean;
   abstract get duration(): number;
+  abstract get isSeeking(): boolean;
 
   protected constructor() {
   }

@@ -37,6 +37,10 @@
           if (transcodeRestartInProgress) {
             return;
           }
+          if (webSocketClient != null && webSocketClient.$referencePlayerUserId !== webSocketClient.$selfInfo?.userId) {
+            // Only the reference player should restart (we just have to wait)
+            return;
+          }
 
           transcodeRestartInProgress = true;
 
@@ -45,6 +49,7 @@
             .finally(() => {
               transcodeRestartInProgress = false;
             });
+          videoPlayerPromise.then((videoPlayer) => webSocketClient?.setVideoPlayer(videoPlayer));
         },
       },
     });
@@ -61,8 +66,11 @@
       backend,
       playbackStatus.mediaMetadata,
       sessionId,
-      (player, forceSend) => {
-        webSocketClient?.updatePlaybackState(player, forceSend);
+      (player, seeked, forceSend) => {
+        webSocketClient?.updatePlaybackState(player, seeked, forceSend);
+      },
+      () => {
+        return webSocketClient?.$referencePlayerState ?? null;
       },
     );
   }
@@ -104,7 +112,9 @@
     return null;
   }
 
-  function initWebSocket(): void {
+  let videoPlayerPromise: Promise<VideoPlayer | null> | undefined = $state(undefined);
+
+  function initWebSocket(videoPlayer: VideoPlayer | null): void {
     if (sessionId == null) {
       throw new Error('Session ID is not set, cannot initialize WebSocket');
     }
@@ -112,6 +122,8 @@
     webSocketClient = new WebSocketClient(
       sessionId,
       (media) => {
+        videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
+
         if (media == null) {
           videoPlayerPromise = Promise.resolve(null);
           return;
@@ -120,13 +132,12 @@
         videoPlayerPromise = createVideoPlayer(media);
       },
     );
+    webSocketClient.setVideoPlayer(videoPlayer);
   }
-
-  let videoPlayerPromise: Promise<VideoPlayer | null> | undefined = $state(undefined);
 
   onMount(() => {
     videoPlayerPromise = initVideoPlayer();
-    videoPlayerPromise.then(() => initWebSocket());
+    videoPlayerPromise.then((videoPlayer) => initWebSocket(videoPlayer));
 
     return () => {
       videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
