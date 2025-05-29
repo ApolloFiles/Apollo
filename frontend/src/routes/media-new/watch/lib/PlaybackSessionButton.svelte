@@ -3,9 +3,9 @@
   import IconRefreshCheck from 'virtual:icons/tabler/circle-dashed-check';
   import IconClipboard from 'virtual:icons/tabler/clipboard';
   import IconClipboardCheck from 'virtual:icons/tabler/clipboard-check';
+  import IconNorthStar from 'virtual:icons/tabler/north-star';
   import IconRefresh from 'virtual:icons/tabler/refresh';
   import IconUserGroup from 'virtual:icons/tabler/users-group';
-  import IconNorthStar from 'virtual:icons/tabler/north-star';
   import type { PlayerSessionInfoResponse } from '../../../../../../src/webserver/Api/v0/media/player-session/info';
   import WebSocketClient, { type WebSocketSelfInfo } from './client-side/WebSocketClient.svelte';
   import { regenerateJoinToken } from './playback-session-backend-api';
@@ -161,6 +161,7 @@
                 class:btn-outline-light={!visualizeCopyToClipboard}
                 class:btn-outline-success={visualizeCopyToClipboard}
                 type="button"
+                disabled={shareUrl == null || shareUrl.length === 0}
                 onclick={copyShareUrl}
               >
                 {#if visualizeCopyToClipboard}
