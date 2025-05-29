@@ -69,7 +69,7 @@ export async function regenerateJoinToken(sessionId: string): Promise<Regenerate
   }
 
   const playbackStatusResponse = await fetch(
-    `/api/v0/media/player-session/regenerate-join-token?session=${sessionId}`, {
+    `/api/v0/media/player-session/${encodeURIComponent(sessionId)}/regenerate-join-token`, {
       method: 'POST',
       headers: { Accept: 'application/json' },
     });

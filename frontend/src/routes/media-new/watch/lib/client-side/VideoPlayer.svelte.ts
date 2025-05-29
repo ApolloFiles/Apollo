@@ -35,11 +35,16 @@ export default class VideoPlayer {
   });
 
   // TODO: make private?
-  constructor(backend: VideoPlayerBackend, mediaMetadata: MediaMetadata, updatePlayerStateForBroadcast: (player: VideoPlayer, forceSend: boolean) => void) {
+  constructor(
+    backend: VideoPlayerBackend,
+    mediaMetadata: MediaMetadata,
+    sessionId: string,
+    updatePlayerStateForBroadcast: (player: VideoPlayer, forceSend: boolean) => void,
+  ) {
     this.backend = backend;
     this.mediaMetadata = mediaMetadata;
     this.updatePlayerStateForBroadcast = updatePlayerStateForBroadcast;
-    this._playerExtras = new VideoPlayerExtras(backend);
+    this._playerExtras = new VideoPlayerExtras(sessionId);
 
     this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
 

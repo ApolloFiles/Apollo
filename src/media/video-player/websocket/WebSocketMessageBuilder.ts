@@ -42,7 +42,7 @@ export default class WebSocketMessageBuilder {
     } satisfies SessionInfoMessage);
   }
 
-  static buildMediaChanged(media: VideoLiveTranscodeMedia | null): string {
+  static buildMediaChanged(sessionId: string, media: VideoLiveTranscodeMedia | null): string {
     if (media == null) {
       return this.asString({
         type: MESSAGE_TYPE.MEDIA_CHANGED,
@@ -54,7 +54,7 @@ export default class WebSocketMessageBuilder {
       type: MESSAGE_TYPE.MEDIA_CHANGED,
       data: {
         media: {
-          hlsManifest: `/api/v0/media/player-session/file/${Utils.encodeUriProperly(media.relativePublicPathToHlsManifest)}`,
+          hlsManifest: `/api/v0/media/player-session/${encodeURIComponent(sessionId)}/file/${Utils.encodeUriProperly(media.relativePublicPathToHlsManifest)}`,
           totalDurationInSeconds: media.totalDurationInSeconds,
           startOffsetInSeconds: media.startOffset,
           mediaMetadata: media.mediaMetadata,

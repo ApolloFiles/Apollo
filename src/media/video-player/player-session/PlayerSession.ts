@@ -216,7 +216,7 @@ export default class PlayerSession {
   }
 
   private broadcastMediaChanged(): void {
-    this.broadcastMessage(WebSocketMessageBuilder.buildMediaChanged(this.currentMedia));
+    this.broadcastMessage(WebSocketMessageBuilder.buildMediaChanged(this.id, this.currentMedia));
   }
 
   private broadcastReferencePlayerChanged(): void {

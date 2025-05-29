@@ -83,7 +83,7 @@ export async function handleChangeMedia(req: express.Request, res: express.Respo
     .status(200)
     .type('application/json')
     .send({
-      hlsManifest: `/api/v0/media/player-session/file/${Utils.encodeUriProperly(videoLiveTranscodeMedia.relativePublicPathToHlsManifest)}`,
+      hlsManifest: `/api/v0/media/player-session/${encodeURIComponent(playerSession.id)}/file/${Utils.encodeUriProperly(videoLiveTranscodeMedia.relativePublicPathToHlsManifest)}`,
       totalDurationInSeconds: videoLiveTranscodeMedia.totalDurationInSeconds,
       startOffsetInSeconds: videoLiveTranscodeMedia.startOffset,
       mediaMetadata: videoLiveTranscodeMedia.mediaMetadata,

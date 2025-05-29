@@ -17,7 +17,7 @@
 
   let mediaTitle = $state('');
   let episodeTitlePrefix = $state('');
-  let sessionId: string | null = $state(null);
+  let sessionId: string | null = $state(null);  // TODO: Can we determine the sessionId server-side and not have it nullable?
   let webSocketClient: WebSocketClient | undefined = $state(undefined);
 
   let videoContainerRef: HTMLDivElement;
@@ -53,9 +53,14 @@
     episodeTitlePrefix = playbackStatus.mediaMetadata.episode ? `S${playbackStatus.mediaMetadata.episode.season.toString()
       .padStart(2, '0')}E${playbackStatus.mediaMetadata.episode.episode.toString().padStart(2, '0')} • ` : '';
 
+    if (sessionId == null) {
+      throw new Error('Session ID is not set, cannot create VideoPlayer');
+    }
+
     return new VideoPlayer(
       backend,
       playbackStatus.mediaMetadata,
+      sessionId,
       (player, forceSend) => {
         webSocketClient?.updatePlaybackState(player, forceSend);
       },
@@ -63,7 +68,11 @@
   }
 
   async function restartVideoLiveTranscode(mediaItemId: string, startOffset: number, initialAudioTrack: number, initialSubtitleTrack: number): Promise<VideoPlayer> {
-    const changeMediaResponse = await fetch('/api/v0/media/player-session/change-media', {
+    if (sessionId == null) {
+      throw new Error('Session ID is not set, cannot restart video live transcode');
+    }
+
+    const changeMediaResponse = await fetch(`/api/v0/media/player-session/${encodeURIComponent(sessionId)}/change-media`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',

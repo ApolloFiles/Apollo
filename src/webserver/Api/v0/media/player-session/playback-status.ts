@@ -19,7 +19,7 @@ export async function handlePlaybackStatus(req: express.Request, res: express.Re
     .status(200)
     .type('application/json')
     .send({
-      hlsManifest: `/api/v0/media/player-session/file/${Utils.encodeUriProperly(currentMedia.relativePublicPathToHlsManifest)}`,
+      hlsManifest: `/api/v0/media/player-session/${encodeURIComponent(playerSession.id)}/file/${Utils.encodeUriProperly(currentMedia.relativePublicPathToHlsManifest)}`,
       totalDurationInSeconds: currentMedia.totalDurationInSeconds,
       startOffsetInSeconds: currentMedia.startOffset,
       mediaMetadata: currentMedia.mediaMetadata,

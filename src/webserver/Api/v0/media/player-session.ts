@@ -16,7 +16,7 @@ import { handleGetVideoSeekThumbnails } from './player-session/video-seek-thumbn
 export const playerSessionApiRouter = express.Router();
 const playerSessionStorage = container.resolve(PlayerSessionStorage);
 
-function findPlayerSession(req: express.Request, res: express.Response): PlayerSession | null {
+function findPlayerSessionByQueryParamOrSessionCookie(req: express.Request, res: express.Response): PlayerSession | null {
   const loggedInUser = req.user;
   if (loggedInUser == null) {
     res
@@ -51,31 +51,22 @@ function findPlayerSession(req: express.Request, res: express.Response): PlayerS
   return playerSession;
 }
 
-playerSessionApiRouter.use('/info', (req, res, next) => {
-  handleRequestRestfully(req, res, next, {
-    get: () => {
-      const playerSession = findPlayerSession(req, res);
-      if (playerSession == null) {
-        return;
-      }
+function findPlayerSessionFromPath(req: express.Request, res: express.Response): PlayerSession | null {
+  if (!('sessionId' in req.params)) {
+    throw new Error(`Route does not seem to have a sessionId parameter`);
+  }
 
-      return handleInfo(req, res, playerSession);
-    },
-  });
-});
+  const playerSession = playerSessionStorage.findById(req.params.sessionId);
+  if (playerSession == null || !playerSession.checkAccessForUser(WebServer.getUser(req))) {
+    res
+      .status(404)
+      .type('text/plain')
+      .send('Player session not found or you do not have access to it');
+    return null;
+  }
 
-playerSessionApiRouter.use('/playback-status', (req, res, next) => {
-  handleRequestRestfully(req, res, next, {
-    get: () => {
-      const playerSession = findPlayerSession(req, res);
-      if (playerSession == null) {
-        return;
-      }
-
-      return handlePlaybackStatus(req, res, playerSession);
-    },
-  });
-});
+  return playerSession;
+}
 
 playerSessionApiRouter.use('/join', (req, res, next) => {
   handleRequestRestfully(req, res, next, {
@@ -109,7 +100,7 @@ playerSessionApiRouter.use('/join', (req, res, next) => {
 playerSessionApiRouter.use('/start-watching', (req, res, next) => {
   handleRequestRestfully(req, res, next, {
     get: () => {
-      const playerSession = findPlayerSession(req, res);
+      const playerSession = findPlayerSessionByQueryParamOrSessionCookie(req, res);
       if (playerSession == null) {
         return;
       }
@@ -119,10 +110,36 @@ playerSessionApiRouter.use('/start-watching', (req, res, next) => {
   });
 });
 
-playerSessionApiRouter.use('/change-media', express.json(), (req, res, next) => {
+playerSessionApiRouter.use('/info', (req, res, next) => {
+  handleRequestRestfully(req, res, next, {
+    get: () => {
+      const playerSession = findPlayerSessionByQueryParamOrSessionCookie(req, res);
+      if (playerSession == null) {
+        return;
+      }
+
+      return handleInfo(req, res, playerSession);
+    },
+  });
+});
+
+playerSessionApiRouter.use('/:sessionId/playback-status', (req, res, next) => {
+  handleRequestRestfully(req, res, next, {
+    get: () => {
+      const playerSession = findPlayerSessionFromPath(req, res);
+      if (playerSession == null) {
+        return;
+      }
+
+      return handlePlaybackStatus(req, res, playerSession);
+    },
+  });
+});
+
+playerSessionApiRouter.use('/:sessionId/change-media', express.json(), (req, res, next) => {
   handleRequestRestfully(req, res, next, {
     post: () => {
-      const playerSession = findPlayerSession(req, res);
+      const playerSession = findPlayerSessionFromPath(req, res);
       if (playerSession == null) {
         return;
       }
@@ -132,10 +149,10 @@ playerSessionApiRouter.use('/change-media', express.json(), (req, res, next) => 
   });
 });
 
-playerSessionApiRouter.use('/file/', (req, res, next) => {
+playerSessionApiRouter.use('/:sessionId/file/', (req, res, next) => {
   handleRequestRestfully(req, res, next, {
     get: () => {
-      const playerSession = findPlayerSession(req, res);
+      const playerSession = findPlayerSessionFromPath(req, res);
       if (playerSession == null) {
         return;
       }
@@ -145,10 +162,10 @@ playerSessionApiRouter.use('/file/', (req, res, next) => {
   });
 });
 
-playerSessionApiRouter.use('/video-seek-thumbnails', (req, res, next) => {
+playerSessionApiRouter.use('/:sessionId/video-seek-thumbnails', (req, res, next) => {
   handleRequestRestfully(req, res, next, {
     get: () => {
-      const playerSession = findPlayerSession(req, res);
+      const playerSession = findPlayerSessionFromPath(req, res);
       if (playerSession == null) {
         return;
       }
@@ -158,20 +175,12 @@ playerSessionApiRouter.use('/video-seek-thumbnails', (req, res, next) => {
   });
 });
 
-playerSessionApiRouter.use('/regenerate-join-token', (req, res, next) => {
+playerSessionApiRouter.use('/:sessionId/regenerate-join-token', (req, res, next) => {
   handleRequestRestfully(req, res, next, {
     post: () => {
       const loggedInUser = WebServer.getUser(req);
-      const inputSessionId = req.query.session;
-      if (typeof inputSessionId !== 'string' || inputSessionId.trim() === '') {
-        res
-          .status(400)
-          .type('text/plain')
-          .send('Invalid session ID format');
-        return;
-      }
 
-      const playerSession = playerSessionStorage.findById(inputSessionId);
+      const playerSession = findPlayerSessionFromPath(req, res);
       if (playerSession?.owner.id !== loggedInUser.id) {
         res
           .status(403)
