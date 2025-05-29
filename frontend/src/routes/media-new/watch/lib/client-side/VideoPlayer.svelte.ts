@@ -8,6 +8,7 @@ type MediaMetadata = StartPlaybackResponse['mediaMetadata'];
 export default class VideoPlayer {
   private readonly backend: VideoPlayerBackend;
   public readonly mediaMetadata: MediaMetadata;
+  private readonly onPlaybackEnded: () => void;
   private readonly updatePlayerStateForBroadcast: (player: VideoPlayer, seeked: boolean, forceSend: boolean) => void;
   private readonly getReferencePlayerState: () => ReferencePlayerState | null;
   private readonly requestStateChangePlayingIfNeeded: (paused: boolean) => void;
@@ -45,6 +46,7 @@ export default class VideoPlayer {
     backend: VideoPlayerBackend,
     mediaMetadata: MediaMetadata,
     sessionId: string,
+    onPlaybackEnded: () => void,
     // TODO: All these methods essentially just call a WebSocketClient-method – Get rid of these here
     updatePlayerStateForBroadcast: (player: VideoPlayer, seeked: boolean, forceSend: boolean) => void,
     getReferencePlayerState: () => ReferencePlayerState | null,
@@ -53,6 +55,7 @@ export default class VideoPlayer {
   ) {
     this.backend = backend;
     this.mediaMetadata = mediaMetadata;
+    this.onPlaybackEnded = onPlaybackEnded;
     this.updatePlayerStateForBroadcast = updatePlayerStateForBroadcast;
     this.getReferencePlayerState = getReferencePlayerState;
     this.requestStateChangePlayingIfNeeded = requestStateChangePlayingIfNeeded;
@@ -327,6 +330,9 @@ export default class VideoPlayer {
     });
     this.backend.addPassiveEventListener('seeked', () => {
       this.updatePlayerStateForBroadcast(this, true, true);
+    });
+    this.backend.addPassiveEventListener('ended', () => {
+      this.onPlaybackEnded();
     });
   }
 }

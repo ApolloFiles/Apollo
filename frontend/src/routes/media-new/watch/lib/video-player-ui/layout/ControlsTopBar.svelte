@@ -1,17 +1,31 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import IconArrowBack from 'virtual:icons/tabler/arrow-back-up';
   import IconPlayerSkipForward from 'virtual:icons/tabler/player-skip-forward';
   import IconPlayerSkipBack from 'virtual:icons/tabler/player-skip-back';
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
 
-  const { episodeTitlePrefix, mediaMetadata, initiateMediaChange }: {
+  let { episodeTitlePrefix, mediaMetadata, initiateMediaChange, autoPlayEnabled = $bindable() }: {
     episodeTitlePrefix: string,
     mediaMetadata: VideoPlayer['mediaMetadata'],
     initiateMediaChange: (mediaItemId: string, startOffset: number) => Promise<void>,
+    autoPlayEnabled: boolean,
   } = $props();
 
   const previousMediaItem = $derived(mediaMetadata.episode?.previousMedia);
   const nextMediaItem = $derived(mediaMetadata.episode?.nextMedia);
+
+  function storeStateInLocalStorage() {
+    localStorage.setItem('apollo-video-player-auto-play', autoPlayEnabled ? '1' : '0');
+  }
+
+  function restoreStateFromLocalStorage() {
+    autoPlayEnabled = localStorage.getItem('apollo-video-player-auto-play') === '1';
+  }
+
+  onMount(() => {
+    restoreStateFromLocalStorage();
+  })
 </script>
 
 <div class="top-bar">
@@ -25,6 +39,17 @@
     </div>
   </div>
   <div class="right-section">
+    <div class="form-check form-switch" title="When enabled, the next episode will automatically start playing after the current one finishes">
+      <input type="checkbox"
+             bind:checked={autoPlayEnabled}
+             class="form-check-input"
+             role="switch"
+             id="auto-play-switch"
+             onchange={storeStateInLocalStorage}
+      >
+      <label class="form-check-label" for="auto-play-switch">Autoplay</label>
+    </div>
+
     <button class="control-button"
             title={previousMediaItem ? `S${previousMediaItem.episode.season.toString().padStart(2, '0')}E${previousMediaItem.episode.episode.toString().padStart(2, '0')} • ${previousMediaItem.title}` : 'No previous episode found'}
             disabled={previousMediaItem == null}

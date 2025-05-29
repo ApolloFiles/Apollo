@@ -5,11 +5,18 @@
   import ControlsBottomBar from './layout/ControlsBottomBar.svelte';
   import ControlsTopBar from './layout/ControlsTopBar.svelte';
 
-  const { videoPlayer, showCustomControls = true, episodeTitlePrefix, initiateMediaChange }: {
+  let {
+    videoPlayer,
+    showCustomControls = true,
+    episodeTitlePrefix,
+    initiateMediaChange,
+    autoPlayEnabled = $bindable(),
+  }: {
     videoPlayer: VideoPlayer,
     showCustomControls: boolean,
     episodeTitlePrefix: string,
-    initiateMediaChange: (mediaItemId: string, startOffset: number) => Promise<void>
+    initiateMediaChange: (mediaItemId: string, startOffset: number) => Promise<void>,
+    autoPlayEnabled: boolean,
   } = $props();
 
   let videoContextMenuRef: VideoContextMenu;
@@ -202,6 +209,7 @@
       aria-label="Video player controls"
     >
       <ControlsTopBar
+        bind:autoPlayEnabled={autoPlayEnabled}
         mediaMetadata={videoPlayer.mediaMetadata}
         episodeTitlePrefix={episodeTitlePrefix}
         initiateMediaChange={initiateMediaChange}

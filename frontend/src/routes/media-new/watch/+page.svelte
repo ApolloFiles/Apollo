@@ -19,6 +19,7 @@
   let episodeTitlePrefix = $state('');
   let sessionId: string | null = $state(null);  // TODO: Can we determine the sessionId server-side and not have it nullable?
   let webSocketClient: WebSocketClient | undefined = $state(undefined);
+  let autoPlayEnabled = $state(false);
 
   let videoContainerRef: HTMLDivElement;
 
@@ -66,6 +67,19 @@
       backend,
       playbackStatus.mediaMetadata,
       sessionId,
+      (): void => {
+        if (!autoPlayEnabled) {
+          return;
+        }
+
+        videoPlayerPromise?.then((videoPlayer) => {
+          if (videoPlayer?.mediaMetadata.episode?.nextMedia) {
+            initiateMediaChange(videoPlayer.mediaMetadata.episode.nextMedia.mediaItemId, 0);
+          } else {
+            console.info('Autoplay is enabled, but no next episode found');
+          }
+        });
+      },
       (player, seeked, forceSend) => {
         webSocketClient?.updatePlaybackState(player, seeked, forceSend);
       },
@@ -210,6 +224,7 @@
   {:then videoPlayer}
     {#if videoPlayer}
       <VideoPlayerUI
+        bind:autoPlayEnabled={autoPlayEnabled}
         videoPlayer={videoPlayer}
         showCustomControls={videoPlayer.$shouldShowCustomControls}
         episodeTitlePrefix={episodeTitlePrefix}
