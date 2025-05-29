@@ -19,7 +19,7 @@
 
 <div class="seek-preview"
      style:display="{visible ? 'block' : 'none'}"
-     style:left="clamp(5px, {position}px, calc(100% - 5px))"
+     style:left="clamp({((seekThumbnail?.width ?? 0) / 4) + 5}px, {position}px, calc(100% - {((seekThumbnail?.width ?? 0) / 4) + 5}px))"
 >
   {#if seekThumbnail}
     <div class="seek-preview-thumbnail"
