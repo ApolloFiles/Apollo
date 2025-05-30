@@ -41,6 +41,18 @@ export async function handleInfo(req: express.Request, res: express.Response, pl
         totalDurationInSeconds: currentMedia.totalDurationInSeconds,
         startOffsetInSeconds: currentMedia.startOffset,
         mediaMetadata: currentMedia.mediaMetadata,
+
+        additionalStreams: {
+          subtitles: currentMedia.subtitleMetadata.subtitles.map(stream => ({
+            title: stream.title,
+            language: stream.language,
+            codecName: stream.codecName,
+            uri: `/api/v0/media/player-session/${encodeURIComponent(playerSession.id)}/file/${Utils.encodeUriProperly(stream.uri)}`,
+            fonts: currentMedia.subtitleMetadata.fonts.map(font => ({
+              uri: `/api/v0/media/player-session/${encodeURIComponent(playerSession.id)}/file/${Utils.encodeUriProperly(font.uri)}`,
+            })),
+          })),
+        },
       } : null,
     } satisfies PlayerSessionInfoResponse);
 }

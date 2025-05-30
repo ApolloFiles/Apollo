@@ -1,8 +1,13 @@
+import type { StartPlaybackResponse } from '../../../../../../../../src/webserver/Api/v0/media/player-session/change-media';
+import AssSubtitleTrack from './subtitles/AssSubtitleTrack';
+import NativeSubtitleTrack from './subtitles/NativeSubtitleTrack';
+import type SubtitleTrack from './subtitles/SubtitleTrack';
 import VideoPlayerBackend, { type BackendOptions, type PlayerEvent } from './VideoPlayerBackend';
 
 export interface HtmlVideoPlayerBackendOptions extends BackendOptions {
   backend: {
-    src: string
+    src: string,
+    subtitles?: StartPlaybackResponse['additionalStreams']['subtitles'],
   };
 }
 
@@ -11,6 +16,8 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
   public readonly backendOptions: T;  // TODO: Should we really have this field? Maybe the layer that needs it should just take it themselves from the constructor
 
   protected readonly videoElement: HTMLVideoElement;
+  protected readonly subtitleTracks: SubtitleTrack[] = [];
+  protected activeSubtitleTrack: SubtitleTrack | null = null;
 
   protected constructor(container: HTMLDivElement, options: T) {
     super();
@@ -20,8 +27,25 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
     this.videoElement.autoplay = true;
     this.videoElement.src = options.backend.src;
     container.appendChild(this.videoElement);
-  }
 
+    if (options.backend.subtitles) {
+      for (let i = 0; i < options.backend.subtitles.length; ++i) {
+        const subtitleId = i.toString();
+        const subtitle = options.backend.subtitles[i];
+
+        if (subtitle.codecName === 'webvtt') {
+          this.addSubtitleTrack(new NativeSubtitleTrack(subtitleId, subtitle.title, subtitle.language, subtitle.uri, this.videoElement));
+          continue;
+        }
+        if (subtitle.codecName === 'ass' || subtitle.codecName === 'ssa') {
+          this.addSubtitleTrack(new AssSubtitleTrack(subtitleId, subtitle.title, subtitle.language, subtitle.uri, subtitle.fonts, this.videoElement));
+          continue;
+        }
+
+        console.warn('Ignoring subtitle with unsupported codecName:', subtitle);
+      }
+    }
+  }
 
   get playbackRate(): number {
     return this.videoElement.playbackRate;
@@ -87,21 +111,36 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
     return [{ id: '1', label: 'Default' }];
   }
 
-  getActiveSubtitleTrackId(): string | null {
-    return null;
+  getSubtitleTracks(): ReadonlyArray<SubtitleTrack> {
+    return this.subtitleTracks;
   }
 
-  setActiveSubtitleTrack(id: string | null): void {
-    // TODO
+  addSubtitleTrack(subtitleTrack: SubtitleTrack): void {
+    if (this.subtitleTracks.some((track) => track.id === subtitleTrack.id)) {
+      console.error('Subtitle track with the same ID already exists (ignoring it):', subtitleTrack.id);
+      return;
+    }
+
+    this.subtitleTracks.push(subtitleTrack);
   }
 
-  getSubtitleTracks(): { id: string, label: string }[] {
-    return Array.from(this.videoElement.textTracks).map(track => {
-      return {
-        id: track.id,
-        label: track.label,
-      };
-    });
+  getActiveSubtitleTrack(): SubtitleTrack | null {
+    return this.activeSubtitleTrack;
+  }
+
+  setActiveSubtitleTrack(subtitleTrackId: string | null): void {
+    this.activeSubtitleTrack?.deactivate();
+    this.activeSubtitleTrack = null;
+
+    if (subtitleTrackId != null) {
+      const subtitleTrack = this.subtitleTracks.find((track) => track.id === subtitleTrackId);
+      if (subtitleTrack) {
+        this.activeSubtitleTrack = subtitleTrack;
+        subtitleTrack.activate();
+      } else {
+        console.error('No subtitle track found with ID:', subtitleTrackId);
+      }
+    }
   }
 
   getBufferedRanges(): { start: number, end: number }[] {
@@ -122,6 +161,7 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
   }
 
   destroy(): void {
+    this.activeSubtitleTrack?.deactivate();
     this.videoElement.remove();
   }
 

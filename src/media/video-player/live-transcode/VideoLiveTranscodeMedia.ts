@@ -21,7 +21,7 @@ export default class VideoLiveTranscodeMedia {
     private readonly handle: LiveTranscodeHandle,
     private readonly tmpDir: TemporaryDirectory,
     private readonly subDirName: string,
-    private readonly subtitleMetadata: SubtitleMetadata,
+    public readonly subtitleMetadata: SubtitleMetadata,
     public readonly mediaMetadata: StartPlaybackResponse['mediaMetadata'],
     public readonly audioStreamNames: Map<string, string>,
   ) {

@@ -1,3 +1,5 @@
+import type SubtitleTrack from './subtitles/SubtitleTrack';
+
 export interface BackendOptions {
   backend?: any;
 
@@ -45,9 +47,10 @@ export default abstract class VideoPlayerBackend<T extends BackendOptions = Back
   abstract setActiveAudioTrack(id: string): void;
   abstract getAudioTracks(): { id: string, label: string }[];
 
-  abstract getActiveSubtitleTrackId(): string | null;
-  abstract setActiveSubtitleTrack(id: string | null): void ;
-  abstract getSubtitleTracks(): { id: string, label: string }[];
+  abstract getSubtitleTracks(): ReadonlyArray<SubtitleTrack>;
+  abstract addSubtitleTrack(subtitleTrack: SubtitleTrack): void;
+  abstract getActiveSubtitleTrack(): SubtitleTrack | null;
+  abstract setActiveSubtitleTrack(subtitleTrackId: string | null): void;
 
   abstract getBufferedRanges(): { start: number, end: number }[];
   abstract getRemotelyBufferedRange(): { start: number, end: number } | null;

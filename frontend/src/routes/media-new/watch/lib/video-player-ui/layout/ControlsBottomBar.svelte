@@ -16,7 +16,7 @@
   let fullscreenRef: FullscreenButton;
   export const toggleFullscreen = () => fullscreenRef.toggleFullscreen();
 
-  let activeSubtitleTrack = $derived(videoPlayer.$activeSubtitleTrackId);
+  let activeSubtitleTrack = $derived(videoPlayer.$activeSubtitleTrack);
   let activeAudioTrack = $derived(videoPlayer.$activeAudioTrackId);
   let showSubtitleTrackMenu = $state(false);
   let showAudioTrackMenu = $state(false);
@@ -55,9 +55,9 @@
     <div class="right-controls">
       <BottomMenuBox
         bind:menuVisible={showSubtitleTrackMenu}
-        bind:activeItemId={activeSubtitleTrack}
+        bind:activeItem={activeSubtitleTrack}
         menuItems={[{id: '', label: 'None' }, ...videoPlayer.$subtitleTracks]}
-        onSelect={(id) => videoPlayer.$activeSubtitleTrackId = id}
+        onSelect={(id) => id === '' ? (videoPlayer.$activeSubtitleTrackId = null) : (videoPlayer.$activeSubtitleTrackId = id)}
         onMenuOpen={() => closeAllMenus()}
       ><IconSubtitles /></BottomMenuBox>
       <BottomMenuBox

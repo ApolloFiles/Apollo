@@ -60,6 +60,18 @@ export default class WebSocketMessageBuilder {
           totalDurationInSeconds: media.totalDurationInSeconds,
           startOffsetInSeconds: media.startOffset,
           mediaMetadata: media.mediaMetadata,
+
+          additionalStreams: {
+            subtitles: media.subtitleMetadata.subtitles.map(stream => ({
+              title: stream.title,
+              language: stream.language,
+              codecName: stream.codecName,
+              uri: `/api/v0/media/player-session/${encodeURIComponent(sessionId)}/file/${Utils.encodeUriProperly(stream.uri)}`,
+              fonts: media.subtitleMetadata.fonts.map(font => ({
+                uri: `/api/v0/media/player-session/${encodeURIComponent(sessionId)}/file/${Utils.encodeUriProperly(font.uri)}`,
+              })),
+            })),
+          },
         },
       },
     } satisfies MediaChangedMessage);

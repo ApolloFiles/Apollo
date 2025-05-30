@@ -29,6 +29,7 @@
     const backend = await VideoLiveTranscodeBackend.create(videoContainerRef, {
       backend: {
         src: playbackStatus.hlsManifest,
+        subtitles: playbackStatus.additionalStreams.subtitles,
         initialAudioTrack,
         initialSubtitleTrack,
 

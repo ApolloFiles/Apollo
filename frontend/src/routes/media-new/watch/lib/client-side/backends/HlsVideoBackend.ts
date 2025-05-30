@@ -1,5 +1,6 @@
 import Hls, { type HlsConfig } from 'hls.js';
 import HtmlVideoPlayerBackend, { type HtmlVideoPlayerBackendOptions } from './HtmlVideoPlayerBackend';
+import HlsSubtitleTrack from './subtitles/HlsSubtitleTrack';
 
 export interface HlsVideoBackendOptions extends HtmlVideoPlayerBackendOptions {
   backend: HtmlVideoPlayerBackendOptions['backend'] & {
@@ -31,6 +32,12 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
 
       this.hls.startLoad(0);
     });
+    this.hls.once(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
+      for (const track of this.hls.subtitleTracks) {
+        const label = track.name || `${track.type.toLowerCase()}${track.lang ? ` (${track.lang})` : ''}`;
+        this.addSubtitleTrack(new HlsSubtitleTrack(track.id, label, track.lang ?? 'und', this.hls));
+      }
+    });
 
     this.hls.loadSource(options.backend.src);
   }
@@ -51,31 +58,6 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
 
   getAudioTracks(): { id: string, label: string }[] {
     return this.hls.audioTracks
-      .map((track) => ({
-        id: track.id.toString(),
-        label: track.name || `${track.type.toLowerCase()}${track.lang ? ` (${track.lang})` : ''}`,
-      }));
-  }
-
-  getActiveSubtitleTrackId(): string | null {
-    if (!this.hls.subtitleDisplay) {
-      return null;
-    }
-    return this.hls.subtitleTrack.toString();
-  }
-
-  setActiveSubtitleTrack(id: string | null): void {
-    if (id == null) {
-      this.hls.subtitleDisplay = false;
-      return;
-    }
-
-    this.hls.subtitleTrack = parseInt(id, 10);
-    this.hls.subtitleDisplay = true;
-  }
-
-  getSubtitleTracks(): { id: string; label: string }[] {
-    return this.hls.subtitleTracks
       .map((track) => ({
         id: track.id.toString(),
         label: track.name || `${track.type.toLowerCase()}${track.lang ? ` (${track.lang})` : ''}`,

@@ -19,7 +19,8 @@
     "@iconify-json/logos": "^1.2.4",
     "@iconify-json/tabler": "^1.2.18",
     "bootstrap": "^5.3.6",
-    "hls.js": "^1.6.2"
+    "hls.js": "^1.6.2",
+    "jassub": "^1.8.4"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.2.12",

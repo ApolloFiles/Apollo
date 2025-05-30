@@ -1,11 +1,21 @@
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
+  import type SubtitleTrack from '../../client-side/backends/subtitles/SubtitleTrack';
 
-  let { children, menuVisible = $bindable(), menuItems, activeItemId = $bindable(), onSelect, onMenuOpen }: {
+  let {
+    children,
+    menuVisible = $bindable(),
+    menuItems,
+    activeItem = $bindable(),
+    activeItemId = $bindable(),
+    onSelect,
+    onMenuOpen,
+  }: {
     children: Snippet,
 
     menuVisible: boolean,
     menuItems: { id: string, label: string }[],
+    activeItem?: SubtitleTrack | null,
     activeItemId?: string | null,
 
     onSelect: (id: string) => void,
@@ -14,7 +24,11 @@
 
   function handleSelect(id: string): void {
     menuVisible = false;
-    activeItemId = id;
+    if (activeItem !== undefined) {
+      activeItem = (menuItems.find(item => item.id === id) || null) as any; // FIXME
+    } else {
+      activeItemId = id;
+    }
     onSelect(id);
   }
 
@@ -60,7 +74,7 @@
           type="button"
           role="menuitem"
           class="menu-box-item"
-          class:active={menuItem.id === activeItemId}
+          class:active={activeItem ? (menuItem.id === activeItem.id) : (menuItem.id === activeItemId)}
           onclick={() => handleSelect(menuItem.id)}
         >
           {menuItem.label}

@@ -1,4 +1,5 @@
 import type { StartPlaybackResponse } from '../../../../../../../src/webserver/Api/v0/media/player-session/change-media';
+import type SubtitleTrack from './backends/subtitles/SubtitleTrack';
 import type VideoPlayerBackend from './backends/VideoPlayerBackend';
 import VideoPlayerExtras from './VideoPlayerExtras.svelte';
 import type { ReferencePlayerState } from './WebSocketClient.svelte';
@@ -27,8 +28,8 @@ export default class VideoPlayer {
   private isPlaying = $state(false);
   private activeAutoTrackId: string | null = $state(null);
   private audioTracks = $state<{ id: string, label: string }[]>([]);
-  private activeSubtitleTrackId: string | null = $state(null);
-  private subtitleTracks = $state<{ id: string, label: string }[]>([]);
+  private activeSubtitleTrack: SubtitleTrack | null = $state(null);
+  private subtitleTracks = $state<ReadonlyArray<SubtitleTrack>>([]);
   private localBufferedRanges = $state<{ start: number, end: number }[]>([]);
   private remoteBufferedRange = $state<{ start: number, end: number } | null>(null);
 
@@ -140,15 +141,15 @@ export default class VideoPlayer {
     return this.audioTracks;
   }
 
-  get $activeSubtitleTrackId(): string | null {
-    return this.activeSubtitleTrackId;
+  get $activeSubtitleTrack(): SubtitleTrack | null {
+    return this.activeSubtitleTrack;
   }
 
   set $activeSubtitleTrackId(trackId: string | null) {
     this.backend.setActiveSubtitleTrack(trackId);
   }
 
-  get $subtitleTracks(): { id: string; label: string }[] {
+  get $subtitleTracks(): ReadonlyArray<SubtitleTrack> {
     return this.subtitleTracks;
   }
 
@@ -290,7 +291,7 @@ export default class VideoPlayer {
       this.subtitleTracks = this.backend.getSubtitleTracks();
 
       this.activeAutoTrackId = this.backend.getActiveAudioTrackId();
-      this.activeSubtitleTrackId = this.backend.getActiveSubtitleTrackId();
+      this.activeSubtitleTrack = this.backend.getActiveSubtitleTrack();
     });
     this.backend.addPassiveEventListener('durationchange', () => {
       this.duration = this.backend.duration;
@@ -316,7 +317,7 @@ export default class VideoPlayer {
       this.remoteBufferedRange = this.backend.getRemotelyBufferedRange();
 
       this.activeAutoTrackId = this.backend.getActiveAudioTrackId();
-      this.activeSubtitleTrackId = this.backend.getActiveSubtitleTrackId();
+      this.activeSubtitleTrack = this.backend.getActiveSubtitleTrack();
 
       this.updatePlayerStateForBroadcast(this, false, false);
     });

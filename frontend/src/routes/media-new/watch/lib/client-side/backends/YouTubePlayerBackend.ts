@@ -1,3 +1,4 @@
+import type SubtitleTrack from './subtitles/SubtitleTrack';
 import VideoPlayerBackend, { type BackendOptions, type PlayerEvent } from './VideoPlayerBackend';
 
 export interface YouTubePlayerBackendOptions extends BackendOptions {
@@ -100,19 +101,23 @@ export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions 
   }
 
   getAudioTracks(): { id: string, label: string }[] {
-    return [{ id: '1', label: 'Default' }];
+    return [{ id: 'default', label: 'Default' }];
   }
 
-  getActiveSubtitleTrackId(): string | null {
-    return null;
+  getSubtitleTracks(): ReadonlyArray<SubtitleTrack> {
+    return [];
   }
 
-  setActiveSubtitleTrack(id: string | null): void {
+  addSubtitleTrack(subtitleTrack: SubtitleTrack): void {
     // no-op
   }
 
-  getSubtitleTracks(): { id: string, label: string }[] {
-    return [];
+  getActiveSubtitleTrack(): SubtitleTrack | null {
+    return null;
+  }
+
+  setActiveSubtitleTrack(subtitleTrackId: string | null): void {
+    // no-op
   }
 
   getBufferedRanges(): { start: number, end: number }[] {

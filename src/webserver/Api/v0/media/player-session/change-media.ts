@@ -7,6 +7,8 @@ import WebServer from '../../../../WebServer';
 import VideoSeekThumbnailControllerHelper from '../VideoSeekThumbnailControllerHelper';
 import { findMediaItem, findNextMediaItem, findPreviousMediaItem } from './start-watching';
 
+// TODO: Maybe rename? It's not really the whole playback stuff but only limited to media
+// FIXME: Limited to LiveTranscode right now
 export type StartPlaybackResponse = {
   hlsManifest: string,
   totalDurationInSeconds: number,
@@ -39,6 +41,16 @@ export type StartPlaybackResponse = {
       },
     }
   },
+  // TODO: Make additionalStreams optional (or all its keys)
+  additionalStreams: {
+    subtitles: {
+      title: string,
+      language: string,
+      codecName: string,
+      uri: string,
+      fonts: { uri: string }[]
+    }[]
+  }
 }
 
 const videoSeekThumbnailControllerHelper = container.resolve(VideoSeekThumbnailControllerHelper);
@@ -132,6 +144,18 @@ export async function handleChangeMedia(req: express.Request, res: express.Respo
       totalDurationInSeconds: videoLiveTranscodeMedia.totalDurationInSeconds,
       startOffsetInSeconds: videoLiveTranscodeMedia.startOffset,
       mediaMetadata: videoLiveTranscodeMedia.mediaMetadata,
+
+      additionalStreams: {
+        subtitles: videoLiveTranscodeMedia.subtitleMetadata.subtitles.map(stream => ({
+          title: stream.title,
+          language: stream.language,
+          codecName: stream.codecName,
+          uri: `/api/v0/media/player-session/${encodeURIComponent(playerSession.id)}/file/${Utils.encodeUriProperly(stream.uri)}`,
+          fonts: videoLiveTranscodeMedia.subtitleMetadata.fonts.map(font => ({
+            uri: `/api/v0/media/player-session/${encodeURIComponent(playerSession.id)}/file/${Utils.encodeUriProperly(font.uri)}`,
+          })),
+        })),
+      },
     } satisfies StartPlaybackResponse);
 }
 
