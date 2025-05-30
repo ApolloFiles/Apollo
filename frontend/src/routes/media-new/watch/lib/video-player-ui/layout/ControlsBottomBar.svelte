@@ -46,10 +46,12 @@
           <IconPlay />
         {/if}
       </button>
-      <VolumeControl
-        bind:volume={videoPlayer.$volume}
-        bind:muted={videoPlayer.$muted}
-      />
+      {#key videoPlayer}
+        <VolumeControl
+          bind:volume={videoPlayer.$volume}
+          bind:muted={videoPlayer.$muted}
+        />
+      {/key}
     </div>
 
     <div class="right-controls">

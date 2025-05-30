@@ -67,7 +67,10 @@
     if (storeStateInLocalStorageDebounceTimeout != null) {
       clearTimeout(storeStateInLocalStorageDebounceTimeout);
     }
-    storeStateInLocalStorageDebounceTimeout = window.setTimeout(storeStateInLocalStorage, 500);
+    storeStateInLocalStorageDebounceTimeout = window.setTimeout(() => {
+      storeStateInLocalStorage();
+      storeStateInLocalStorageDebounceTimeout = null;
+    }, 500);
   }
 
   function restoreStateFromLocalStorage() {
