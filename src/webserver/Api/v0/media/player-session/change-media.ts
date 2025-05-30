@@ -93,7 +93,7 @@ export async function handleChangeMedia(req: express.Request, res: express.Respo
       res.locals.timings?.startNext('start-transcode');
       videoLiveTranscodeMedia = await playerSession.startLiveTranscode(loggedInUser.getDefaultFileSystem().getFile(mediaItem.filePath), startOffset, {
         mediaItemId: mediaItemId.toString(),
-        title: mediaItem.title,
+        title: mediaItem.media.title,
         episode: ((mediaItem.seasonNumber != null && mediaItem.episodeNumber != null) ? {
           title: mediaItem.title,
           season: mediaItem.seasonNumber,
