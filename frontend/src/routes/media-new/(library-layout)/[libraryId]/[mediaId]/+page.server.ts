@@ -4,7 +4,7 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params, request }): Promise<MediaTitlePageData> => {
   if (!dev) {
-    return locals.apollo.frontendRenderingDataAccess.getMediaTitleData(request, params.libraryId, params.mediaId);
+    return locals.apollo.frontendRenderingDataAccess.getLibraryMediaDetailData(request, params.libraryId, params.mediaId);
   }
 
   const videoThumbnailImageUrl = await import('/_dev/video-thumbnail.png');

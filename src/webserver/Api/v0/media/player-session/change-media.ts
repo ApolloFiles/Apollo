@@ -1,11 +1,15 @@
 import type express from 'express';
 import { container } from 'tsyringe';
+import MediaLibraryMediaFinder from '../../../../../media/library-new/MediaLibraryMedia/MediaLibraryMediaFinder';
+import MediaLibraryMediaItemFinder
+  from '../../../../../media/library-new/MediaLibraryMediaItem/MediaLibraryMediaItemFinder';
 import VideoLiveTranscodeMedia from '../../../../../media/video-player/live-transcode/VideoLiveTranscodeMedia';
 import PlayerSession from '../../../../../media/video-player/player-session/PlayerSession';
+import ApolloUserStorage from '../../../../../user/ApolloUserStorage';
 import Utils from '../../../../../Utils';
 import WebServer from '../../../../WebServer';
 import VideoSeekThumbnailControllerHelper from '../VideoSeekThumbnailControllerHelper';
-import { findMediaItem, findNextMediaItem, findPreviousMediaItem } from './start-watching';
+import { findMediaItem } from './start-watching';
 
 // TODO: Maybe rename? It's not really the whole playback stuff but only limited to media
 // FIXME: Limited to LiveTranscode right now
@@ -78,43 +82,55 @@ export async function handleChangeMedia(req: express.Request, res: express.Respo
     const mediaItemId = parseUserInputBigInt(req.body?.mediaItemId, 0n);
     if (mediaItemId > 0) {
       const loggedInUser = WebServer.getUser(req);
-      const mediaItem = await findMediaItem(mediaItemId, loggedInUser.id);
+      const mediaItem = await findMediaItem(mediaItemId, loggedInUser);
       if (mediaItem == null) {
         return;
       }
+      if (!mediaItem.canRead(loggedInUser)) {
+        throw new Error('The requested media file does not exist or you do not have permission to read it');
+      }
 
-      const nextMediaItem = (mediaItem.episodeNumber != null && mediaItem.seasonNumber != null) ?
-        await findNextMediaItem(mediaItem.mediaId, mediaItem.episodeNumber, mediaItem.seasonNumber, loggedInUser.id)
-        : null;
-      const previousMediaItem = (mediaItem.episodeNumber != null && mediaItem.seasonNumber != null) ?
-        await findPreviousMediaItem(mediaItem.mediaId, mediaItem.episodeNumber, mediaItem.seasonNumber, loggedInUser.id)
-        : null;
+      const libraryMediaFinder = container.resolve(MediaLibraryMediaFinder);
+      const libraryMediaItemFinder = container.resolve(MediaLibraryMediaItemFinder);
+
+      const libraryMedia = await libraryMediaFinder.find(mediaItem.libraryMediaId);
+      if (libraryMedia == null) {
+        throw new Error('Unable to find the LibraryMedia for the MediaItem (this should never happen)');
+      }
+
+      const surroundingMediaItems = await libraryMediaItemFinder.findSurroundingMediaItems(mediaItem.id, mediaItem.libraryMediaId);
+
+
+      const owningUser = await new ApolloUserStorage().findById(mediaItem.libraryOwnerId);
+      if (owningUser == null) {
+        throw new Error('The owning user of the MediaItem does not exist');  // TODO: show 404 page
+      }
 
       res.locals.timings?.startNext('start-transcode');
-      videoLiveTranscodeMedia = await playerSession.startLiveTranscode(loggedInUser.getDefaultFileSystem().getFile(mediaItem.filePath), startOffset, {
+      videoLiveTranscodeMedia = await playerSession.startLiveTranscode(owningUser.getDefaultFileSystem().getFile(mediaItem.filePath), startOffset, {
         mediaItemId: mediaItemId.toString(),
-        title: mediaItem.media.title,
+        title: libraryMedia.title,
         episode: ((mediaItem.seasonNumber != null && mediaItem.episodeNumber != null) ? {
           title: mediaItem.title,
           season: mediaItem.seasonNumber,
           episode: mediaItem.episodeNumber,
 
-          nextMedia: nextMediaItem ? {
-            mediaItemId: nextMediaItem.id.toString(),
-            title: nextMediaItem.title,
+          nextMedia: surroundingMediaItems.next ? {
+            mediaItemId: surroundingMediaItems.next.id.toString(),
+            title: surroundingMediaItems.next.title,
             episode: {
-              season: nextMediaItem.seasonNumber,
-              episode: nextMediaItem.episodeNumber,
-              title: nextMediaItem.title,
+              season: surroundingMediaItems.next.seasonNumber!,
+              episode: surroundingMediaItems.next.episodeNumber!,
+              title: surroundingMediaItems.next.title,
             },
           } : undefined,
-          previousMedia: previousMediaItem ? {
-            mediaItemId: previousMediaItem.id.toString(),
-            title: previousMediaItem.title,
+          previousMedia: surroundingMediaItems.previous ? {
+            mediaItemId: surroundingMediaItems.previous.id.toString(),
+            title: surroundingMediaItems.previous.title,
             episode: {
-              season: previousMediaItem.seasonNumber,
-              episode: previousMediaItem.episodeNumber,
-              title: previousMediaItem.title,
+              season: surroundingMediaItems.previous.seasonNumber!,
+              episode: surroundingMediaItems.previous.episodeNumber!,
+              title: surroundingMediaItems.previous.title,
             },
           } : undefined,
         } : undefined),

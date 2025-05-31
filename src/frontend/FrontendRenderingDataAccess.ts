@@ -1,6 +1,10 @@
 import Path from 'node:path';
-import { getConfig, getPrismaClient } from '../Constants';
-import LibraryManager from '../media/libraries/LibraryManager';
+import { container } from 'tsyringe';
+import { getConfig } from '../Constants';
+import MediaLibrary from '../media/library-new/MediaLibrary/MediaLibrary';
+import MediaLibraryFinder from '../media/library-new/MediaLibrary/MediaLibraryFinder';
+import MediaLibraryMediaFinder from '../media/library-new/MediaLibraryMedia/MediaLibraryMediaFinder';
+import MediaLibraryMediaItemFinder from '../media/library-new/MediaLibraryMediaItem/MediaLibraryMediaItemFinder';
 import ApolloUserStorage from '../user/ApolloUserStorage';
 import type { SvelteKitRequest } from '../webserver/SvelteKitMiddleware';
 import type { LoginTemplateData } from './LoginTemplate';
@@ -133,87 +137,56 @@ export default class FrontendRenderingDataAccess {
     };
   }
 
-  async getMediaOverviewData(request: SvelteKitRequest): Promise<MediaOverviewPageData> {
+  async getLibraryMediaOverviewData(request: SvelteKitRequest, libraryIdToFilterBy: string): Promise<MediaOverviewByLibraryPageData>;
+  async getLibraryMediaOverviewData(request: SvelteKitRequest, libraryIdToFilterBy: null): Promise<MediaOverviewPageData>;
+  async getLibraryMediaOverviewData(request: SvelteKitRequest, libraryIdToFilterBy: string | null): Promise<MediaOverviewPageData | MediaOverviewByLibraryPageData> {
     const loggedInUser = await this.getLoggedInUser(request);
 
     const apolloUser = await new ApolloUserStorage().findById(BigInt(loggedInUser.id));
     if (apolloUser == null) {
       throw new Error('Logged in user does not exist');
     }
-    const libraryManager = new LibraryManager(apolloUser);
-    const libraries = await libraryManager.getLibraries();
 
-    const everyMediaTitle: {
-      id: string,
-      displayName: string,
-      library: { id: string, displayName: string },
-      coverImage: { url: string, width?: number, height?: number }
-    }[] = [];
-    for (const library of libraries) {
-      const mediaTitles = await library.fetchTitles();
-      for (const mediaTitle of mediaTitles) {
-        everyMediaTitle.push({
-          id: mediaTitle.id.toString(),
-          displayName: mediaTitle.title,
-          library: {
-            id: library.id,
-            displayName: library.name,
-          },
-          coverImage: {
-            url: `/media/library/${library.id}/${mediaTitle.id}/assets/poster.jpg`,
-            height: 720,
-          },
-        });
+    const libraryFinder = container.resolve(MediaLibraryFinder);
+
+    let library: MediaLibrary | null = null;
+    if (libraryIdToFilterBy != null) {
+      library = await libraryFinder.find(BigInt(libraryIdToFilterBy));
+      if (library == null || !library.canRead(apolloUser)) {
+        throw new Error('Library does not exist or you do not have permission to read it');  // TODO: show 404 page
       }
     }
 
-    return {
-      loggedInUser: loggedInUser,
-      pageData: {
-        libraries: libraries.map(library => {
-          return {
-            id: library.id,
-            displayName: library.name,
-          };
-        }),
-        sharedLibraries: [],
-        continueWatching: [],
-        recentlyAdded: [],
-        everything: everyMediaTitle,
-      },
-    };
-  }
+    const [ownedLibraries, sharedLibraries] = await Promise.all([
+      libraryFinder.findOwnedBy(apolloUser.id),
+      libraryFinder.findSharedWith(apolloUser.id),
+    ]);
+    const allLibraries = [...ownedLibraries, ...sharedLibraries];
 
-  async getMediaOverviewDataForLibrary(request: SvelteKitRequest, libraryId: string): Promise<MediaOverviewByLibraryPageData> {
-    const loggedInUser = await this.getLoggedInUser(request);
-
-    const apolloUser = await new ApolloUserStorage().findById(BigInt(loggedInUser.id));
-    if (apolloUser == null) {
-      throw new Error('Logged in user does not exist');
-    }
-    const libraryManager = new LibraryManager(apolloUser);
-    const library = await libraryManager.getLibrary(libraryId);
-    if (library == null) {
-      throw new Error('Library does not exist');  // TODO: show 404 page
-    }
-
-    const everyMediaTitle: {
+    const everyMediaItem: {
       id: string,
       displayName: string,
       library: { id: string, displayName: string },
       coverImage: { url: string, width?: number, height?: number }
     }[] = [];
-    const mediaTitles = await library.fetchTitles();
-    for (const mediaTitle of mediaTitles) {
-      everyMediaTitle.push({
-        id: mediaTitle.id.toString(),
-        displayName: mediaTitle.title,
+
+    const libraryMediaFinder = container.resolve(MediaLibraryMediaFinder);
+    const allLibraryMedia = await (
+      libraryIdToFilterBy != null ?
+        libraryMediaFinder.findByLibraryId(BigInt(libraryIdToFilterBy)) :
+        libraryMediaFinder.findByLibraryIds([...ownedLibraries, ...sharedLibraries].map(l => l.id))
+    );
+
+    for (const libraryMedia of allLibraryMedia) {
+      everyMediaItem.push({
+        id: libraryMedia.id.toString(),
+        displayName: libraryMedia.title,
         library: {
-          id: library.id,
-          displayName: library.name,
+          id: libraryMedia.libraryId.toString(),
+          displayName: allLibraries.find(l => l.id === libraryMedia.libraryId)!.name,
         },
         coverImage: {
-          url: `/media/library/${library.id}/${mediaTitle.id}/assets/poster.jpg`,
+          url: `/media/library/${libraryMedia.libraryId}/${libraryMedia.id}/assets/poster.jpg`,
           height: 720,
         },
       });
@@ -222,52 +195,55 @@ export default class FrontendRenderingDataAccess {
     return {
       loggedInUser: loggedInUser,
       pageData: {
-        library: {
-          id: library.id,
+        library: library != null ? {
+          id: library.id.toString(),
           displayName: library.name,
-        },
-        libraries: (await libraryManager.getLibraries()).map(library => {
+        } : undefined,
+        libraries: ownedLibraries.map(library => {
           return {
-            id: library.id,
+            id: library.id.toString(),
             displayName: library.name,
           };
         }),
-        sharedLibraries: [],
+        sharedLibraries: sharedLibraries.map(library => {
+          return {
+            id: library.id.toString(),
+            displayName: library.name,
+          };
+        }),
         continueWatching: [],
         recentlyAdded: [],
-        everything: everyMediaTitle,
+        everything: everyMediaItem,
       },
     };
   }
 
-  async getMediaTitleData(request: SvelteKitRequest, libraryId: string, mediaId: string): Promise<MediaTitlePageData> {
+  async getLibraryMediaDetailData(request: SvelteKitRequest, libraryId: string, mediaId: string): Promise<MediaTitlePageData> {
     const loggedInUser = await this.getLoggedInUser(request);
 
     const apolloUser = await new ApolloUserStorage().findById(BigInt(loggedInUser.id));
     if (apolloUser == null) {
       throw new Error('Logged in user does not exist');
     }
-    const libraryManager = new LibraryManager(apolloUser);
-    const library = await libraryManager.getLibrary(libraryId);
-    if (library == null) {
-      throw new Error('Library does not exist');  // TODO: show 404 page
+
+    const libraryFinder = container.resolve(MediaLibraryFinder);
+    const libraryMediaFinder = container.resolve(MediaLibraryMediaFinder);
+    const libraryMediaItemFinder = container.resolve(MediaLibraryMediaItemFinder);
+
+    const library = await libraryFinder.find(BigInt(libraryId));
+    if (library == null || !library.canRead(apolloUser)) {
+      throw new Error('Library does not exist or you do not have permission to read it');  // TODO: show 404 page
     }
 
-    const mediaTitle = await library.fetchTitle(mediaId);
-    if (mediaTitle == null) {
-      throw new Error('MediaTitle does not exist');  // TODO: show 404 page
+    const libraryMedia = await libraryMediaFinder.find(BigInt(mediaId));
+    if (libraryMedia == null || !libraryMedia.canRead(apolloUser)) {
+      throw new Error('Media does not exist or you do not have permission to read it');  // TODO: show 404 page
     }
 
-    const media = await getPrismaClient()!.mediaLibraryMediaItem.findMany({
-      where: { mediaId: mediaTitle.id },
-      orderBy: [
-        { seasonNumber: 'asc' },
-        { episodeNumber: 'asc' },
-      ],
-    });
+    const mediaItems = await libraryMediaItemFinder.findByMediaId(libraryMedia.id);
 
     const mediaTitleSeasons: MediaTitlePageData['pageData']['mediaTitle']['mediaContent']['seasons'] = [];
-    for (const mediaItem of media) {
+    for (const mediaItem of mediaItems) {
       let season = mediaTitleSeasons.find(s => s.counter === (mediaItem.seasonNumber ?? 666)); // FIXME: Properly support specials/misc/etc.
       if (season == null) {
         mediaTitleSeasons.push(season = {
@@ -280,36 +256,46 @@ export default class FrontendRenderingDataAccess {
         id: mediaItem.id.toString(),
         displayName: mediaItem.title,
         synopsis: mediaItem.synopsis ?? undefined,
-        durationInSec: mediaItem.durationInSec,
-        thumbnailImageUrl: `/media/library/${library.id}/${mediaTitle.id}/${Buffer.from(mediaItem.filePath).toString('base64')}/assets/thumbnail.png`,
+        durationInSec: mediaItem.durationInSeconds,
+        thumbnailImageUrl: `/media/library/${library.id}/${libraryMedia.id}/${Buffer.from(mediaItem.filePath).toString('base64')}/assets/thumbnail.png`,
       });
     }
+
+    const [ownedLibraries, sharedLibraries] = await Promise.all([
+      libraryFinder.findOwnedBy(apolloUser.id),
+      libraryFinder.findSharedWith(apolloUser.id),
+    ]);
 
     return {
       loggedInUser: loggedInUser,
       pageData: {
         mediaTitle: {
           library: {
-            id: library.id,
+            id: library.id.toString(),
             displayName: library.name,
           },
 
-          id: mediaTitle.id.toString(),
-          displayName: mediaTitle.title,
-          synopsis: mediaTitle.synopsis ?? undefined,
-          thumbnailImageUrl: `/media/library/${library.id}/${mediaTitle.id}/assets/poster.jpg`,
+          id: libraryMedia.id.toString(),
+          displayName: libraryMedia.title,
+          synopsis: libraryMedia.synopsis ?? undefined,
+          thumbnailImageUrl: `/media/library/${library.id}/${libraryMedia.id}/assets/poster.jpg`,
           mediaContent: {
             type: 'series',
             seasons: mediaTitleSeasons,
           },
         },
-        libraries: (await libraryManager.getLibraries()).map(library => {
+        libraries: ownedLibraries.map(library => {
           return {
-            id: library.id,
+            id: library.id.toString(),
             displayName: library.name,
           };
         }),
-        sharedLibraries: [],
+        sharedLibraries: sharedLibraries.map(library => {
+          return {
+            id: library.id.toString(),
+            displayName: library.name,
+          };
+        }),
       },
     };
   }
