@@ -38,6 +38,7 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
 
+    "podman:build": "podman build --pull --rm --target dev --tag apollo:dev .",
     "docker:build": "docker build --pull --rm --target dev --tag apollo:dev .",
     "docker:dev": "npm run docker:build && (docker stop apollo;docker rm apollo;echo '') && docker run --name apollo --cpus 2 --memory 1G --volume apollo-dev:/app/storage/ apollo:dev",
 
