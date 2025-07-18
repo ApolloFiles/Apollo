@@ -1,6 +1,8 @@
+import type PrismaClient from '@prisma/client';
 import Crypto from 'node:crypto';
 import { container } from 'tsyringe';
 import type { RawData } from 'ws';
+import { getPrismaClient } from '../../../Constants';
 import type { ApolloWebSocket } from '../../../global';
 import type ApolloUser from '../../../user/ApolloUser';
 import type LocalFile from '../../../user/files/local/LocalFile';
@@ -40,6 +42,8 @@ export default class PlayerSession {
   private playerState: { lastUpdated: Date, data: { currentTime: number } } | null = null;  // TODO
   public readonly tmpDir: TemporaryDirectory;
 
+  public readonly watchProgressToUpdate: PrismaClient.Prisma.MediaLibraryUserWatchProgressUpsertArgs[] = [];
+
   constructor(id: string, owner: ApolloUser) {
     this.id = id;
     this.owner = owner;
@@ -49,6 +53,25 @@ export default class PlayerSession {
     // TODO: Maybe have a smarter way so not every session has their own interval?
     // TODO: When implementing destroying sessions, also clear the interval
     setInterval(() => this.broadcastClockSync(), 60_000);
+
+    setInterval(async () => {
+      if (this.watchProgressToUpdate.length > 0) {
+        const prismaClient = getPrismaClient()!;
+
+        const tasks = Array.from(this.watchProgressToUpdate
+          // Remove duplicates and only keep the last ones (with 'highest' index)
+          .reduce((map, v) => {
+            const key = `${v.where.userId_mediaItemId!.userId}_${v.where.userId_mediaItemId!.mediaItemId}`;
+            map.set(key, v);
+            return map;
+          }, new Map<string, typeof this.watchProgressToUpdate[0]>())
+          .values())
+          .map(v => prismaClient.mediaLibraryUserWatchProgress.upsert(v));
+        this.watchProgressToUpdate.length = 0;
+
+        await prismaClient.$transaction(tasks);
+      }
+    }, 6_000);
   }
 
   get ownerConnected(): boolean {
@@ -174,6 +197,31 @@ export default class PlayerSession {
               console.error('PlayerStateUpdateMessage timestamp is over 15 seconds out of sync');
               client.close(WS_CLOSE_PROTOCOL_ERROR, 'Your clock is out of sync');
               return;
+            }
+
+            if (client.apollo.user != null && this.currentMedia != null) {
+              const userId = client.apollo.user.id;
+              const mediaItemId = BigInt(this.currentMedia.mediaMetadata.mediaItemId);
+              const durationInSec = message.data.state.currentTime;
+
+              if (durationInSec >= 0 && durationInSec <= this.currentMedia.totalDurationInSeconds) {
+                this.watchProgressToUpdate.push({
+                  where: {
+                    userId_mediaItemId: {
+                      userId,
+                      mediaItemId,
+                    },
+                  },
+                  update: {
+                    durationInSec,
+                  },
+                  create: {
+                    userId,
+                    mediaItemId,
+                    durationInSec,
+                  },
+                });
+              }
             }
 
             this.broadcastMessage(JSON.stringify(message), client);

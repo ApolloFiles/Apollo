@@ -1,6 +1,6 @@
 import Path from 'node:path';
 import { container } from 'tsyringe';
-import { getConfig } from '../Constants';
+import { getConfig, getPrismaClient } from '../Constants';
 import MediaLibrary from '../media/library-new/MediaLibrary/MediaLibrary';
 import MediaLibraryFinder from '../media/library-new/MediaLibrary/MediaLibraryFinder';
 import MediaLibraryMediaFinder from '../media/library-new/MediaLibraryMedia/MediaLibraryMediaFinder';
@@ -75,7 +75,8 @@ type MediaTitlePageData_MediaContent_Series = {
       durationInSec: number,
       synopsis?: string,
       thumbnailImageUrl: string,
-    }[]
+      watchProgressPercentage: number,
+    }[],
   }[]
 };
 
@@ -252,12 +253,22 @@ export default class FrontendRenderingDataAccess {
         });
       }
 
+      const watchProgress = await getPrismaClient()!.mediaLibraryUserWatchProgress.findUnique({
+        select: { durationInSec: true },
+        where: {
+          userId_mediaItemId: {
+            userId: apolloUser.id,
+            mediaItemId: mediaItem.id,
+          },
+        },
+      });
       season.episodes.push({
         id: mediaItem.id.toString(),
         displayName: mediaItem.title,
         synopsis: mediaItem.synopsis ?? undefined,
         durationInSec: mediaItem.durationInSeconds,
         thumbnailImageUrl: `/media/library/${library.id}/${libraryMedia.id}/${Buffer.from(mediaItem.filePath).toString('base64')}/assets/thumbnail.png`,
+        watchProgressPercentage: (watchProgress?.durationInSec ?? 0) / mediaItem.durationInSeconds * 100,
       });
     }
 
@@ -284,6 +295,7 @@ export default class FrontendRenderingDataAccess {
             seasons: mediaTitleSeasons,
           },
         },
+
         libraries: ownedLibraries.map(library => {
           return {
             id: library.id.toString(),

@@ -70,7 +70,16 @@
                 <li class="list-group-item">
                   <div class="row">
                     <div class="col-auto d-flex align-items-center">{episodeIndex != null ? episodeIndex + 1 : '?'}</div>
-                    <div class="col-2 video-thumbnail"><img src={episode.thumbnailImageUrl} width="500" height="416" loading="lazy" alt=""></div>
+                    <div class="col-2 video-thumbnail">
+                      <img src={episode.thumbnailImageUrl} width="500" height="416" loading="lazy" alt="">
+                      {#if episode.watchProgressPercentage > 0}
+                        <div style="width: 100%;height: 4px;background: #eee">
+                          <div
+                            style="height: 100%; background: #e53935"
+                            style:width="{Math.min(100, Math.max(0, episode.watchProgressPercentage))}%"></div>
+                        </div>
+                      {/if}
+                    </div>
                     <div class="col">
                       <h2>{episode.displayName}</h2>
                       {#if episode.synopsis != null}<p>{episode.synopsis}</p>{/if}
