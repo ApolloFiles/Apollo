@@ -32,7 +32,7 @@ describe('', () => {
     await expect(fileSystemRoot.isFile()).resolves.toBe(false);
     await expect(fileSystemRoot.exists()).resolves.toBe(true);
 
-    await expect(fileSystemRoot.read()).rejects.toThrowError();
+    await expect(fileSystemRoot.read()).rejects.toThrow();
 
     await expect(fileSystemRoot.getMimeType()).resolves.toBeNull();
     expect(mockFileTypeUtils).toHaveBeenCalledTimes(0);
@@ -51,7 +51,7 @@ describe('', () => {
     await expect(fileSystemRoot.isFile()).resolves.toBe(true);
     await expect(fileSystemRoot.exists()).resolves.toBe(true);
 
-    await expect(fileSystemRoot.getFiles()).rejects.toThrowError('/test.txt is not a directory');
+    await expect(fileSystemRoot.getFiles()).rejects.toThrow('/test.txt is not a directory');
 
     await expect(fileSystemRoot.read()).resolves.toEqual(Buffer.of());
 
@@ -67,9 +67,9 @@ describe('', () => {
     await expect(fileSystemRoot.isFile()).resolves.toBe(false);
     await expect(fileSystemRoot.exists()).resolves.toBe(false);
 
-    await expect(fileSystemRoot.getFiles()).rejects.toThrowError('/undefined is not a directory');
+    await expect(fileSystemRoot.getFiles()).rejects.toThrow('/undefined is not a directory');
 
-    await expect(fileSystemRoot.read()).rejects.toThrowError();
+    await expect(fileSystemRoot.read()).rejects.toThrow();
 
     await expect(fileSystemRoot.getMimeType()).resolves.toBeNull();
     expect(mockFileTypeUtils).toHaveBeenCalledTimes(0);

@@ -11,11 +11,11 @@ beforeEach(async () => {
 
 describe('Constructor input validation', () => {
   test('Instantiate with relative path', () => {
-    expect(() => new LocalFileSystem(123n, user, 'LocalFileSystemTest', 'test')).toThrowError('pathOnHost must be an absolute path');
+    expect(() => new LocalFileSystem(123n, user, 'LocalFileSystemTest', 'test')).toThrow('pathOnHost must be an absolute path');
   });
 
   test('Instantiate with absolute path', async () => {
-    expect(() => new LocalFileSystem(123n, user, 'LocalFileSystemTest', user.getDefaultFileSystem().getAbsolutePathOnHost())).not.toThrowError();
+    expect(() => new LocalFileSystem(123n, user, 'LocalFileSystemTest', user.getDefaultFileSystem().getAbsolutePathOnHost())).not.toThrow();
 
     const fileSystem = new LocalFileSystem(123n, user, 'LocalFileSystemTest', Path.join(user.getDefaultFileSystem().getAbsolutePathOnHost(), 'non-existing'));
     await expect(fileSystem.getFile('/').exists()).resolves.toBe(true);
@@ -35,7 +35,7 @@ describe('#getFile', () => {
   });
 
   test('#getFile with relative path', () => {
-    expect(() => user.getDefaultFileSystem().getFile('test')).toThrowError('Path must be absolute');
+    expect(() => user.getDefaultFileSystem().getFile('test')).toThrow('Path must be absolute');
   });
 
   test('#getFile with trailing slash', () => {
@@ -61,11 +61,11 @@ describe('List files for a given path', () => {
   });
 
   test('For non existing path', async () => {
-    await expect(user.getDefaultFileSystem().getFile('/sub-non-existing/').getFiles()).rejects.toThrowError();
+    await expect(user.getDefaultFileSystem().getFile('/sub-non-existing/').getFiles()).rejects.toThrow();
   });
 
   test('For existing text file', async () => {
-    await expect(user.getDefaultFileSystem().getFile('/root.txt').getFiles()).rejects.toThrowError();
+    await expect(user.getDefaultFileSystem().getFile('/root.txt').getFiles()).rejects.toThrow();
   });
 });
 

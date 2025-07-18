@@ -43,7 +43,7 @@ describe('Test file search', () => {
 
   test('Test for non directory start file', async () => {
     const searchResult = FileSearch.searchFile(user.getDefaultFileSystem().getFile('/img1.png'), '.png');
-    await expect(searchResult).rejects.toThrowError('File is not a directory');
+    await expect(searchResult).rejects.toThrow('File is not a directory');
   });
 
   test.each([

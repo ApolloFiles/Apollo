@@ -3,6 +3,7 @@
   "compilerOptions": {
     "sourceMap": true,
     "outDir": "./dist/",
+    "isolatedModules": true,
 
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true

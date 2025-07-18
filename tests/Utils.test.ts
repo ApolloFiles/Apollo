@@ -40,23 +40,23 @@ describe('#prettifyFileSize', () => {
   });
 
   test('With negative bytes', () => {
-    expect(() => Utils.prettifyFileSize(-1)).toThrowError(expectedErrorMessage);
-    expect(() => Utils.prettifyFileSize(Number.MIN_SAFE_INTEGER)).toThrowError(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(-1)).toThrow(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(Number.MIN_SAFE_INTEGER)).toThrow(expectedErrorMessage);
 
-    expect(() => Utils.prettifyFileSize(-1, true)).toThrowError(expectedErrorMessage);
-    expect(() => Utils.prettifyFileSize(Number.MIN_SAFE_INTEGER, true)).toThrowError(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(-1, true)).toThrow(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(Number.MIN_SAFE_INTEGER, true)).toThrow(expectedErrorMessage);
   });
 
   test('With invalid values for bytes', () => {
-    expect(() => Utils.prettifyFileSize(Number.NaN)).toThrowError(expectedErrorMessage);
-    expect(() => Utils.prettifyFileSize(undefined as any)).toThrowError(expectedErrorMessage);
-    expect(() => Utils.prettifyFileSize(null as any)).toThrowError(expectedErrorMessage);
-    expect(() => Utils.prettifyFileSize('10' as any)).toThrowError(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(Number.NaN)).toThrow(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(undefined as any)).toThrow(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(null as any)).toThrow(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize('10' as any)).toThrow(expectedErrorMessage);
 
-    expect(() => Utils.prettifyFileSize(Number.NaN, true)).toThrowError(expectedErrorMessage);
-    expect(() => Utils.prettifyFileSize(undefined as any, true)).toThrowError(expectedErrorMessage);
-    expect(() => Utils.prettifyFileSize(null as any, true)).toThrowError(expectedErrorMessage);
-    expect(() => Utils.prettifyFileSize('10' as any, true)).toThrowError(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(Number.NaN, true)).toThrow(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(undefined as any, true)).toThrow(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize(null as any, true)).toThrow(expectedErrorMessage);
+    expect(() => Utils.prettifyFileSize('10' as any, true)).toThrow(expectedErrorMessage);
   });
 });
 

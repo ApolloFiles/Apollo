@@ -115,7 +115,7 @@ describe('Correct working dir detected', () => {
   test('For default test environment', () => {
     const workingRoot = require('../src/Constants').getWorkingRoot();
 
-    expect(consoleWarnMock).toBeCalledTimes(0);
+    expect(consoleWarnMock).toHaveBeenCalledTimes(0);
     expect(workingRoot.startsWith(Os.tmpdir())).toBe(true);
     expect(workingRoot.endsWith('/')).toBe(true);
   });
@@ -129,7 +129,7 @@ describe('Correct working dir detected', () => {
 
     const workingRoot = require('../src/Constants').getWorkingRoot();
 
-    expect(consoleWarnMock).toBeCalledTimes(1);
+    expect(consoleWarnMock).toHaveBeenCalledTimes(1);
     expect(consoleWarnMock.mock.calls[0][0].indexOf('APOLLO_WORKING_ROOT')).not.toBe(-1);
     expect(consoleWarnMock.mock.calls[0][0].indexOf(Os.homedir())).not.toBe(-1);
     expect(workingRoot.startsWith(Os.homedir())).toBe(true);
