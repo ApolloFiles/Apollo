@@ -18,7 +18,7 @@
 
 <article class="video-thumbnail-card">
   <div class="card">
-    <img src={mediaThumbnailSrc} width={mediaThumbnailWidth} height={mediaThumbnailHeight} alt="">
+    <img src={mediaThumbnailSrc} width={mediaThumbnailWidth} height={mediaThumbnailHeight} alt="" loading="lazy">
     <div class="card-body">
       <h5 class="card-title mb-0">{mediaHeading}</h5>
       <p class="card-text"><small class="text-body-secondary">{mediaSubheading}</small></p>
