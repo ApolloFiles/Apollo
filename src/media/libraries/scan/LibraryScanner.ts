@@ -45,8 +45,8 @@ export default class LibraryScanner {
           const apolloVideoFile = directory.fileSystem.getFile('/' + Path.relative(directory.fileSystem.getAbsolutePathOnHost(), videoFile.filePath)); // FIXME
 
           const videoAnalysis = await VideoAnalyser.analyze(videoFile.filePath, true);
-          const mediaTitle = (this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title')) ?? videoFile.title;
-          const mediaSynopsis = this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'synopsis-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'synopsis');
+          const mediaTitle = (this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title-eng') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title')) ?? videoFile.title;
+          const mediaSynopsis = this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'synopsis-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'synopsis-eng') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'synopsis');
           const durationInSeconds = parseInt(videoAnalysis.file.duration ?? '0', 10);
 
           await getPrismaClient()!.mediaLibraryMediaItem.upsert({
