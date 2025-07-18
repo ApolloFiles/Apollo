@@ -67,7 +67,6 @@ model MediaLibraryMediaItem {
 model MediaLibraryUserWatchProgress {
   userId        BigInt   @map("user_id")
   mediaItemId   BigInt   @map("media_item_id")
-  lastWatched   DateTime @default(now()) @map("last_watched") @db.Timestamptz()
   durationInSec Int      @map("duration_in_sec")
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
