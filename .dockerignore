@@ -16,6 +16,3 @@ resources/public/static/frontend/node_modules/
 frontend/node_modules/
 frontend/build/
 frontend/.svelte-kit/
-
-# TODO: remove the debug line below
-!apollo_g_streamer

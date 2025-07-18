@@ -2,9 +2,6 @@
 /dist/
 /.env
 
-# FIXME: Temporary hack for the docker build
-/apollo_g_streamer
-
 
 # npm and other dependencies
 /node_modules/
