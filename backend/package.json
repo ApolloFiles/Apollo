@@ -1,0 +1,60 @@
+{
+  "name": "apollo-backend",
+  "version": "0.0.1-SNAPSHOT",
+  "private": true,
+  "description": "",
+  "homepage": "https://github.com/ApolloFiles/Apollo#readme",
+  "license": "GPL-3.0-or-later",
+  "keywords": [],
+  "author": {
+    "name": "Christian Koop",
+    "url": "https://github.com/SpraxDev"
+  },
+  "contributors": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ApolloFiles/Apollo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ApolloFiles/Apollo/issues"
+  },
+  "main": "src/main.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+
+    "test": "npm run type-check && vitest --run",
+    "test:watch": "vitest",
+    "test:coverage": "npm run test -- --coverage",
+    "test:ci": "npm run test:coverage -- --reporter github-actions",
+    "type-check": "tsc --noEmit",
+
+    "dev": "node --watch --env-file .env --loader ts-node/esm --enable-source-maps src/main.ts",
+
+    "prisma:generate": "prisma generate --no-engine --schema ./prisma",
+    "prisma:migrate:dev": "prisma migrate dev --schema ./prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema ./prisma",
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "@sentry/node": "^10.15.0",
+    "fastify": "^5.6.1",
+    "fastify-plugin": "^5.0.1",
+    "reflect-metadata": "^0.2.2",
+    "tsyringe": "^4.10.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.1",
+    "@types/node": "^24.5.2",
+    "@vitest/coverage-v8": "^3.2.4",
+    "prisma": "^6.16.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4",
+    "vitest-mock-extended": "^3.1.0"
+  }
+}

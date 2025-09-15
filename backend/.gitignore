@@ -1,0 +1,11 @@
+## Project
+/dist/
+/.env
+
+## npm and other dependencies
+/node_modules/
+/coverage/
+
+## JetBrains IDEs
+/.idea/*
+!/.idea/icon.svg

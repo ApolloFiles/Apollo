@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    pull_policy: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: apollo
+      POSTGRES_PASSWORD: apollo
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+
+volumes:
+  postgres-data:
