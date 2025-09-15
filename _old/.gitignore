@@ -1,0 +1,9 @@
+# Project
+/dist/
+/.env
+
+
+# npm and other dependencies
+/node_modules/
+/coverage/
+/reports/
