@@ -457,6 +457,8 @@ apiRouter.use('/v1/write-video-tags', requireAuthMiddleware, express.json(), (re
           delete result.file.fileName;
           delete result.file.size;
 
+          delete result.chapters;
+
           // No idea but ffmpeg changes bitRate/duration sometimes (maybe it 'knows better'?)
           delete result.file.bitRate;
           delete result.file.duration;

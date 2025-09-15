@@ -29,7 +29,7 @@
     "build": "tsc",
 
     "test": "jest --coverage",
-    "dev": "nodemon --ext ts --watch ./src --exec \"ts-node src/index.ts\"",
+    "dev": "nodemon --ext ts,js --watch ./src --watch ./frontend/build --exec \"ts-node src/index.ts\"",
 
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",

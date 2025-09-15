@@ -228,21 +228,25 @@ function addMissingCommonFileTagsToSelectedFiles(): void {
 
 function deleteStatisticsTagsRelatedTagsFromSelectedFiles(): void {
   for (const selectedFile of selectedFiles.value) {
-    for (const streamId of selectedFile.streamMeta.keys()) {
-      const statisticsTags = selectedFile.getStreamTagValue(streamId, '_STATISTICS_TAGS-eng');
-      if (statisticsTags == null) {
-        continue;
-      }
+      selectedFile.removeFileTag('encoder');
 
-      for (const tagKeyToRemove of statisticsTags.split(' ')) {
-        if (tagKeyToRemove.trim().length > 0) {
-          selectedFile.removeStreamTag(streamId, `${tagKeyToRemove}-eng`);
+    for (const tagSuffix of ['', '-eng']) {
+      for (const streamId of selectedFile.streamMeta.keys()) {
+        const statisticsTags = selectedFile.getStreamTagValue(streamId, `_STATISTICS_TAGS${tagSuffix}`);
+        if (statisticsTags == null) {
+          continue;
         }
-      }
 
-      selectedFile.removeStreamTag(streamId, '_STATISTICS_TAGS-eng');
-      selectedFile.removeStreamTag(streamId, '_STATISTICS_WRITING_APP-eng');
-      selectedFile.removeStreamTag(streamId, '_STATISTICS_WRITING_DATE_UTC-eng');
+        for (const tagKeyToRemove of statisticsTags.split(' ')) {
+          if (tagKeyToRemove.trim().length > 0) {
+            selectedFile.removeStreamTag(streamId, `${tagKeyToRemove}${tagSuffix}`);
+          }
+        }
+
+        selectedFile.removeStreamTag(streamId, `_STATISTICS_TAGS${tagSuffix}`);
+        selectedFile.removeStreamTag(streamId, `_STATISTICS_WRITING_APP${tagSuffix}`);
+        selectedFile.removeStreamTag(streamId, `_STATISTICS_WRITING_DATE_UTC${tagSuffix}`);
+      }
     }
   }
 }
@@ -455,7 +459,7 @@ function _collectAllSelectedFileTagKeys(): string[] {
             color="orange"
             :disabled="selectedFiles.length === 0"
             @click="() => deleteStatisticsTagsRelatedTagsFromSelectedFiles()"
-          >Delete <code>_STATISTICS_TAGS-eng</code> related tags
+          >Delete <code>_STATISTICS_TAGS</code> related tags
           </UButton>
         </UTooltip>
 
