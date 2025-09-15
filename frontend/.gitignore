@@ -1,0 +1,9 @@
+/node_modules/
+
+# Output
+/.svelte-kit/
+/dist/
+
+# Paraglide
+/src/lib/paraglide/
+/project.inlang/cache/
