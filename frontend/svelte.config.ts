@@ -23,7 +23,7 @@ const config: Config = {
         'media-src': ['self'],
         'frame-src': ['https://www.youtube.com/embed/'],
         'manifest-src': ['self'],
-        'connect-src': ['self', ...(isDevMode ? ['http://localhost:8081'] satisfies Csp.Sources : [])],
+        'connect-src': ['self', ...(isDevMode ? [] satisfies Csp.Sources : [])],
         'base-uri': ['none'],
         'form-action': ['self'],
         'frame-ancestors': ['none'],

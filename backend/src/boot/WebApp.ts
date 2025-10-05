@@ -2,7 +2,7 @@ import { container } from 'tsyringe';
 import AppConfiguration from '../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../constants.js';
 import DatabaseClient from '../database/DatabaseClient.js';
-import FastifyWebServer from '../webserver/FastifyWebServer.js';
+import FastifyWebServer from '../webserver/server/FastifyWebServer.js';
 import type App from './App.js';
 
 export default class WebApp implements App {

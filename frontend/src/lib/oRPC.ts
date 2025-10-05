@@ -7,7 +7,7 @@ import type { oRpcRouter } from '../../../backend/src/utils/orpc/oRpcRouter';
 type ClientContext = { cookies: Cookies, fetch: typeof fetch };
 
 export const rpcClient: RouterClient<typeof oRpcRouter, ClientContext> = createORPCClient(new RPCLink<ClientContext>({
-  url: 'http://localhost:8081/api/_frontend/oRPC',  // TODO: Do not hard-code the URL
+  url: 'http://localhost:8081/api/_frontend/oRPC/',  // TODO: Do not hard-code the URL
   headers: ({ context }) => {
     let cookieHeaderValue = '';
     for (const cookie of context.cookies.getAll()) {

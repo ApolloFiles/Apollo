@@ -1,3 +1,6 @@
+import { container } from 'tsyringe';
+import AppConfiguration from '../../config/AppConfiguration.js';
+import { IS_PRODUCTION } from '../../constants.js';
 import { auth } from '../auth.js';
 import * as oRpcBuilder from './oRpcRouteBuilder.js';
 import type { BackendConfig, FullUserProfile } from './RouteTypes.js';
@@ -5,9 +8,11 @@ import type { BackendConfig, FullUserProfile } from './RouteTypes.js';
 const tmpBackendConfig = oRpcBuilder
   .base
   .handler(async (): Promise<BackendConfig> => {
+    const appConfig = container.resolve(AppConfiguration);
+
     return {
-      appBaseUrl: 'http://localhost:5177',
-      internalBackendBaseUrl: 'http://localhost:8081',
+      appBaseUrl: appConfig.config.baseUrl,
+      internalBackendBaseUrl: IS_PRODUCTION ? appConfig.config.baseUrl : 'http://localhost:8081',
       auth: {
         providers: Object.keys(auth.options.socialProviders),
       },
@@ -34,13 +39,14 @@ const getSessionUser = oRpcBuilder
 
     return {
       user: opts.context.sessionInfo.user,
-      //      sessionToken: opts.context.sessionInfo.session.token,
     };
   });
 
 const getFullUserProfile = oRpcBuilder
   .authenticated
   .handler(async (opts): Promise<FullUserProfile> => {
+    const appConfig = container.resolve(AppConfiguration);
+
     const sessionInfo = opts.context.sessionInfo;
     if (sessionInfo == null || sessionInfo.user == null) {
       throw opts.errors.UNAUTHORIZED();
@@ -67,7 +73,7 @@ const getFullUserProfile = oRpcBuilder
         };
       }),
       availableAccountProviders: Object.keys(auth.options.socialProviders),
-      appBaseUrl: 'http://localhost:5177',  // FIXME
+      appBaseUrl: appConfig.config.baseUrl,
 
       session: {
         current: sessionInfo.session.id,

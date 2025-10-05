@@ -17,13 +17,13 @@ export default class AppConfiguration {
   public readonly config: AppConfig;
 
   constructor() {
-    const serverInterface = process.env.APOLLO_SERVER_INTERFACE ?? '0.0.0.0';
+    const serverInterface = process.env.APOLLO_SERVER_INTERFACE || '0.0.0.0';
     const serverPort = parseInt(process.env.APOLLO_SERVER_PORT ?? '', 10) || 8081;
 
     this.config = this.deepFreeze({
       serverInterface,
       serverPort,
-      baseUrl: process.env.APOLLO_BASE_URL ?? `http://${serverInterface === '0.0.0.0' ? 'localhost' : serverInterface}:${serverPort}`,
+      baseUrl: process.env.APOLLO_BASE_URL || `http://localhost:5177`,
 
       login: {
         oAuth: JSON.parse(process.env.BETTER_AUTH_OAUTH_CONFIG_JSON ?? '{}'), // TODO: Move from JSON in env to something better

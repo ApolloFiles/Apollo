@@ -6,6 +6,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import type { IncomingHttpHeaders } from 'node:http';
 import { container } from 'tsyringe';
 import AppConfiguration from '../config/AppConfiguration.js';
+import { IS_PRODUCTION } from '../constants.js';
 import DatabaseClient from '../database/DatabaseClient.js';
 
 const databaseClient = container.resolve(DatabaseClient);
@@ -28,7 +29,7 @@ export const auth = betterAuth({
     cookiePrefix: 'apollo',
   },
 
-  trustedOrigins: ['http://localhost:5177'],
+  trustedOrigins: IS_PRODUCTION ? [appConfiguration.config.baseUrl] : ['http://localhost:5177', 'http://127.0.0.1:5177'],
 
   account: {
     encryptOAuthTokens: true,
@@ -36,7 +37,7 @@ export const auth = betterAuth({
       allowDifferentEmails: true,
     },
   },
-  socialProviders: Object.entries(container.resolve(AppConfiguration).config.login.oAuth)
+  socialProviders: Object.entries(appConfiguration.config.login.oAuth)
     .reduce((acc, [providerId, config]) => {
       acc[providerId] = {
         enabled: true,
