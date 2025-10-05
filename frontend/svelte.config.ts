@@ -1,7 +1,11 @@
 import adapter from '@sveltejs/adapter-node';
 import type { Config } from '@sveltejs/kit';
+import type { Csp } from '@sveltejs/kit/src/types/private';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
+const isDevMode = process.env.NODE_ENV === 'development';
+
+//@ts-ignore
 const config: Config = {
   // Consult https://svelte.dev/docs/kit/integrations
   // for more information about preprocessors
@@ -19,11 +23,14 @@ const config: Config = {
         'media-src': ['self'],
         'frame-src': ['https://www.youtube.com/embed/'],
         'manifest-src': ['self'],
-        'connect-src': ['self'],
+        'connect-src': ['self', ...(isDevMode ? ['http://localhost:8081'] satisfies Csp.Sources : [])],
         'base-uri': ['none'],
         'form-action': ['self'],
         'frame-ancestors': ['none'],
       },
+    },
+    prerender: {
+      concurrency: 12,
     },
   },
 };

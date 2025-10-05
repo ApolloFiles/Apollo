@@ -4,6 +4,12 @@ export type AppConfig = {
   serverInterface: string;
   serverPort: number;
   baseUrl: string;
+
+  login: {
+    oAuth: {
+      [providerId: string]: { clientId: string, clientSecret: string };
+    }
+  }
 };
 
 @singleton()
@@ -18,6 +24,10 @@ export default class AppConfiguration {
       serverInterface,
       serverPort,
       baseUrl: process.env.APOLLO_BASE_URL ?? `http://${serverInterface === '0.0.0.0' ? 'localhost' : serverInterface}:${serverPort}`,
+
+      login: {
+        oAuth: JSON.parse(process.env.BETTER_AUTH_OAUTH_CONFIG_JSON ?? '{}'), // TODO: Move from JSON in env to something better
+      },
     } satisfies AppConfig);
   }
 

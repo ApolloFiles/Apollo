@@ -1,2 +1,16 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+  import type { PageProps } from './$types';
+
+  let { data }: PageProps = $props();
+</script>
+
+<div>
+  <pre>{JSON.stringify(data.loggedInUser, null, 2)}</pre>
+
+  <a href="/profile">
+    <button>Profile</button>
+  </a>
+  <a href="/logout" data-sveltekit-reload>
+    <button>Log out</button>
+  </a>
+</div>
