@@ -2,6 +2,7 @@ import { container } from 'tsyringe';
 import AppConfiguration from '../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../constants.js';
 import DatabaseClient from '../database/DatabaseClient.js';
+import StartupCleaner from '../files/StartupCleaner.js';
 import FastifyWebServer from '../webserver/server/FastifyWebServer.js';
 import type App from './App.js';
 
@@ -12,6 +13,10 @@ export default class WebApp implements App {
     if (IS_PRODUCTION) {
       await container.resolve(DatabaseClient).runDatabaseMigrations();
     }
+
+    console.time('StartupCleaner#cleanUp');
+    await container.resolve(StartupCleaner).cleanUp();
+    console.timeEnd('StartupCleaner#cleanUp');
 
     const appConfig = container.resolve(AppConfiguration);
     this.webServer = container.resolve(FastifyWebServer);
