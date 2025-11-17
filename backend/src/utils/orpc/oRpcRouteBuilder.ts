@@ -9,7 +9,9 @@ export type ORPCInitialContext = {
 export const base = os
   .errors({
     UNAUTHORIZED: {},
+    REQUESTED_ENTITY_NOT_FOUND: {},
   });
+
 
 export const authenticated = base
   .$context<ORPCInitialContext>()

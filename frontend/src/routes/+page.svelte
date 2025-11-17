@@ -7,6 +7,9 @@
 <div>
   <pre>{JSON.stringify(data.loggedInUser, null, 2)}</pre>
 
+  <a href="/browse/">
+    <button>Browse files</button>
+  </a>
   <a href="/profile">
     <button>Profile</button>
   </a>

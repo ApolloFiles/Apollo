@@ -36,3 +36,11 @@ export type BackendConfig = {
     providers: string[];
   }
 }
+
+export type VirtualFileSystemFileList = {
+  files: {
+    name: string;
+    isDirectory: boolean;
+    path: string;
+  }[];
+}

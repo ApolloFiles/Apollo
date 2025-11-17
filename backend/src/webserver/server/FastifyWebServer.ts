@@ -60,6 +60,18 @@ export default class FastifyWebServer {
           .send(err.createResponseBody());
       }
 
+      if ((err as any).code === 'FST_ERR_VALIDATION') {
+        return reply
+          .code(400)
+          .send({
+            error: 'Bad Request (Validation Error)',
+            validation: {
+              context: (err as any).validationContext,
+              errors: (err as any).validation,
+            },
+          });
+      }
+
       console.error(err);
       return reply
         .code(500)

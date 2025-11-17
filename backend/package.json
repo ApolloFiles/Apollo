@@ -48,7 +48,8 @@
     "fastify": "^5.6.1",
     "fastify-plugin": "^5.1.0",
     "reflect-metadata": "^0.2.2",
-    "tsyringe": "^4.10.0"
+    "tsyringe": "^4.10.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.1",
