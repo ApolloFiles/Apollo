@@ -4,6 +4,9 @@ import { container } from 'tsyringe';
 import type App from './boot/App.js';
 import WebApp from './boot/WebApp.js';
 import { IS_PRODUCTION } from './constants.js';
+import LibraryManager from './plugins/official/media/_old/libraries/LibraryManager.js';
+import LibraryScanner from './plugins/official/media/_old/libraries/scan/LibraryScanner.js';
+import UserProvider from './user/UserProvider.js';
 import SentrySdk from './utils/SentrySdk.js';
 
 // main
@@ -23,6 +26,23 @@ async function bootstrap(): Promise<void> {
 
   app = new WebApp();
   await app.boot();
+
+  // TODO: remove debug
+  (async () => {
+    const users = await container.resolve(UserProvider).findAll();
+    for (const user of users) {
+      const libraries = await new LibraryManager(user).getLibraries();
+      for (const library of libraries) {
+        try {
+          await container.resolve(LibraryScanner).scanLibrary(library);
+          console.log(`Done scanning library ${library.name} (id: ${library.id}, owner: ${user.displayName})`);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
+  })()
+    .catch(console.error);
 }
 
 function registerShutdownHooks(): void {

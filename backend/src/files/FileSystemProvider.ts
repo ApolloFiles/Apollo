@@ -13,7 +13,7 @@ import type VirtualFileSystem from './VirtualFileSystem.js';
 //       (e.g. /_google-drive/ is kind-of a symlink to another VFS but everything else is a local FS)
 
 type FileSystemResponse = {
-  trashBin: VirtualFileSystem,
+//  trashBin: VirtualFileSystem,
   tmp: VirtualFileSystem,
   user: VirtualFileSystem[],
 }
@@ -29,7 +29,7 @@ export default class FileSystemProvider {
     const fileSystemBaseDir = this.apolloDirectoryProvider.getUserFileSystemDirectory(user.id);
 
     return {
-      trashBin: new LocalFileSystem('_trash', user, Path.join(fileSystemBaseDir, '_trash')),
+//      trashBin: new LocalFileSystem('_trash', user, Path.join(fileSystemBaseDir, '_trash')),
       tmp: new LocalFileSystem('_tmp', user, Path.join(fileSystemBaseDir, '_tmp')),
       user: await this.findLocalFileSystems(user, fileSystemBaseDir),
     };

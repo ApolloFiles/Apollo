@@ -1,0 +1,69 @@
+model MediaLibrary {
+  id             BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_id_seq'::text)"))
+  ownerId        String   @map("owner_id")
+  name           String   @db.VarChar(256)
+  directoryPaths String[] @map("directory_paths")
+
+  media                  MediaLibraryMedia[]
+  MediaLibrarySharedWith MediaLibrarySharedWith[]
+
+  @@map("media_libraries")
+  @@schema("public")
+}
+
+model MediaLibrarySharedWith {
+  libraryId BigInt @map("library_id")
+  userId    String @map("user_id")
+
+  library MediaLibrary @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+
+  @@id([libraryId, userId])
+  @@map("media_libraries_shared_with")
+  @@schema("public")
+}
+
+model MediaLibraryMedia {
+  id            BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_media_id_seq'::text)"))
+  libraryId     BigInt   @map("library_id")
+  title         String
+  directoryPath String   @map("directory_path")
+  addedAt       DateTime @default(now()) @map("added_at") @db.Timestamptz()
+  synopsis      String?
+
+  library MediaLibrary            @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  items   MediaLibraryMediaItem[]
+
+  @@unique([libraryId, directoryPath])
+  @@map("media_libraries_media")
+  @@schema("public")
+}
+
+model MediaLibraryMediaItem {
+  id            BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_media_items_id_seq'::text)"))
+  mediaId       BigInt   @map("media_id")
+  filePath      String   @map("file_path")
+  title         String
+  lastScannedAt DateTime @default(now()) @map("last_scanned_at") @db.Timestamptz()
+  addedAt       DateTime @default(now()) @map("added_at") @db.Timestamptz()
+  durationInSec Int      @map("duration_in_sec")
+  episodeNumber Int?     @map("episode_number")
+  seasonNumber  Int?     @map("season_number")
+  synopsis      String?
+
+  media MediaLibraryMedia @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, filePath])
+  @@map("media_libraries_media_items")
+  @@schema("public")
+}
+
+model MediaLibraryUserWatchProgress {
+  userId        String   @map("user_id")
+  mediaItemId   BigInt   @map("media_item_id")
+  durationInSec Int      @map("duration_in_sec")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@id([userId, mediaItemId])
+  @@map("media_libraries_user_watch_progress")
+  @@schema("public")
+}

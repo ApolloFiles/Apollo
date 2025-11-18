@@ -16,6 +16,20 @@ export type AppConfig = {
       [providerId: string]: { clientId: string, clientSecret: string };
     }
   }
+
+  media: {
+    externalProviders: {
+      myAnimeList: {
+        clientId: string;
+      },
+      theMovieDb: {
+        apiReadAccessToken: string;
+      },
+      theTvDb: {
+        apiKey: string;
+      }
+    }
+  }
 };
 
 @singleton()
@@ -37,6 +51,20 @@ export default class AppConfiguration {
 
       login: {
         oAuth: JSON.parse(process.env.BETTER_AUTH_OAUTH_CONFIG_JSON ?? '{}'), // TODO: Move from JSON in env to something better
+      },
+
+      media: {
+        externalProviders: {
+          myAnimeList: {
+            clientId: process.env.APOLLO_MEDIA_MYANIMELIST_CLIENT_ID || '',
+          },
+          theMovieDb: {
+            apiReadAccessToken: process.env.APOLLO_MEDIA_TMDB_API_READ_ACCESS_TOKEN || '',
+          },
+          theTvDb: {
+            apiKey: process.env.APOLLO_MEDIA_TVDB_API_KEY || '',
+          },
+        },
       },
     } satisfies AppConfig);
   }

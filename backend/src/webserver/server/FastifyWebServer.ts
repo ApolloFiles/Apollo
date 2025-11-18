@@ -22,6 +22,10 @@ export default class FastifyWebServer {
       routerOptions: {
         ignoreDuplicateSlashes: true,
         ignoreTrailingSlash: true,
+
+        // FIXME: Remove when MediaRouter's '/:libraryId/:titleId/:mediaItemPathBase64/thumbnail.png' no longer exists
+        //        or actually... maybe come up with a sensible value (e.g. expected max file name length?)
+        maxParamLength: 10 * 1024,
       },
 
       trustProxy: false, // FIXME

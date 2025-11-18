@@ -1,0 +1,215 @@
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import sharp from 'sharp';
+import { injectable } from 'tsyringe';
+import UserByAuthProvider from '../../../../auth/UserByAuthProvider.js';
+import { ContainerTokens } from '../../../../constants.js';
+import FileSystemProvider from '../../../../files/FileSystemProvider.js';
+import LocalFile from '../../../../files/local/LocalFile.js';
+import FileTypeUtils from '../../../../plugins/official/media/_old/FileTypeUtils.js';
+import LibraryManager from '../../../../plugins/official/media/_old/libraries/LibraryManager.js';
+import ThumbnailGenerator from '../../../../plugins/official/media/_old/ThumbnailGenerator.js';
+import UserFileHelper from '../../../../plugins/official/media/_old/UserFileHelper.js';
+import type { default as Router, RouteReturn } from '../../Router.js';
+
+// TODO: Refactor this
+@injectable({ token: ContainerTokens.ROUTER })
+export default class MediaRouter implements Router {
+  constructor(
+    private readonly userByAuthProvider: UserByAuthProvider,
+    private readonly fileSystemProvider: FileSystemProvider,
+    private readonly fileTypeUtils: FileTypeUtils,
+    private readonly thumbnailGenerator: ThumbnailGenerator,
+  ) {
+  }
+
+  getRoutePrefix(): string {
+    return '/api/_frontend/media';
+  }
+
+  register(server: FastifyInstance): void {
+    server.get('/:libraryId/:titleId/:mediaItemPathBase64/thumbnail.png', async (request: FastifyRequest<{ Params: { libraryId: string, titleId: string, mediaItemPathBase64: string } }>, reply): Promise<RouteReturn> => {
+      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
+      if (apolloUser == null) {
+        return reply
+          .status(401)
+          .send({ error: 'Unauthorized' });
+      }
+
+      const requestedLibraryId = request.params.libraryId;
+      const requestedTitleId = request.params.titleId;
+      const requestedMediaFilePathBase64 = request.params.mediaItemPathBase64;
+      const requestedFileName = 'thumbnail.png';
+
+      const library = await new LibraryManager(apolloUser).getLibrary(requestedLibraryId);
+
+      if (library == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Library with id '${requestedLibraryId}' not found!`);
+      }
+
+      const requestedMediaFilePath = Buffer.from(requestedMediaFilePathBase64, 'base64').toString('utf8');
+      const libraryTitleMedia = await library.fetchMedia(requestedTitleId, requestedMediaFilePath);
+      if (libraryTitleMedia == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Media with path '${requestedMediaFilePath}' for title '${requestedTitleId}' not found in library '${library.id}'!`);
+      }
+
+      const libraryOwnerFileSystems = await this.fileSystemProvider.provideForUser(library.owner);
+      const libraryOwnerDefaultFileSystem = libraryOwnerFileSystems.user[0];
+
+      const mediaFile = await libraryOwnerDefaultFileSystem.getFile(libraryTitleMedia.filePath);
+      const mediaFileStat = await mediaFile.stat();
+      if (!mediaFileStat.isFile()) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`File '${requestedFileName}' not found!`);
+      }
+
+      //      const thumbnailCacheKey = `${req.originalUrl}${mediaFileStat.mtime.getTime()}${mediaFileStat.size}`;
+      //      const cachedThumbnail = await FileSystemBasedCache.getInstance()
+      //        .getUserAssociatedCachedFile(mediaFile.fileSystem.owner, thumbnailCacheKey);
+      //      if (cachedThumbnail != null) {
+      //        return reply
+      //          .type('image/png')
+      //          .send(cachedThumbnail);
+      //      }
+
+      if (!(mediaFile instanceof LocalFile)) {
+        throw new Error('Only LocalFile is supported in MediaRouter for thumbnail generation');
+      }
+
+      const thumbnail = await this.thumbnailGenerator.generateThumbnail(mediaFile);
+      if (thumbnail == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Unable to generate thumbnail for '${requestedFileName}'!`);
+      }
+
+      //      await FileSystemBasedCache.getInstance()
+      //        .setUserAssociatedCachedFile(mediaFile.fileSystem.owner, thumbnailCacheKey, thumbnail.data);
+      return reply
+        .type(thumbnail.mime)
+        .send(thumbnail.data);
+    });
+
+    server.get('/:libraryId/:titleId/poster.jpg', async (request: FastifyRequest<{
+      Params: { libraryId: string, titleId: string }
+    }>, reply): Promise<RouteReturn> => {
+      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
+      if (apolloUser == null) {
+        return reply
+          .status(401)
+          .send({ error: 'Unauthorized' });
+      }
+
+      const requestedLibraryId = request.params.libraryId;
+      const requestedTitleId = request.params.titleId;
+      const requestedFileName = 'poster.jpg';
+
+      const library = await new LibraryManager(apolloUser).getLibrary(requestedLibraryId);
+      if (library == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Library with id '${requestedLibraryId}' not found!`);
+      }
+
+      const libraryTitle = await library.fetchTitle(requestedTitleId);
+      if (libraryTitle == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Title with id '${requestedTitleId}' not found in library '${library.id}'!`);
+      }
+
+      const libraryOwnerFileSystems = await this.fileSystemProvider.provideForUser(library.owner);
+      const libraryOwnerDefaultFileSystem = libraryOwnerFileSystems.user[0];
+
+      const libraryTitleDirectory = await libraryOwnerDefaultFileSystem.getFile(libraryTitle.directoryPath);
+      if (!(await libraryTitleDirectory.isDirectory())) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`File '${requestedFileName}' not found!`);
+      }
+
+      const posterFile = await UserFileHelper.findFolderPoster(libraryTitleDirectory);
+      const posterFileStat = await posterFile?.stat();
+      if (posterFile == null || posterFileStat == null || !posterFileStat.isFile()) {
+        const titleStartingLetters = libraryTitle.title
+          .split(/[\s_-]/g)
+          .map(word => word.charAt(0))
+          .join('')
+          .toUpperCase();
+
+        const posterData = await sharp({
+          create: {
+            width: 400,
+            height: 600,
+            channels: 3,
+            background: { r: 125, g: 125, b: 125 },
+          },
+        })
+          .composite([{
+            input: {
+              text: {
+                text: `<span foreground="white">${titleStartingLetters}</span>`,
+                rgba: true,
+                width: 300,
+                height: 400,
+              },
+            },
+          }])
+          .jpeg()
+          .toBuffer();
+
+        return reply
+          .type('image/jpeg')
+          .send(posterData);
+      }
+
+      //      const posterCacheKey = `${request.originalUrl}${posterFileStat.mtime.getTime()}${posterFileStat.size}`;
+      //      const cachedPoster = await FileSystemBasedCache.getInstance()
+      //        .getUserAssociatedCachedFile(posterFile.fileSystem.owner, posterCacheKey);
+      //      if (cachedPoster != null) {
+      //        return reply
+      //          .type('image/jpeg')
+      //          .send(cachedPoster);
+      //      }
+
+      if (!(posterFile instanceof LocalFile)) {
+        throw new Error('Only LocalFile is supported in MediaRouter for poster files');
+      }
+
+      const posterMimeType = await this.fileTypeUtils.getMimeType(posterFile.getAbsolutePathOnHost());
+      if (posterMimeType == null || !posterMimeType.startsWith('image/')) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`File '${requestedFileName}' not available!`);
+      }
+
+      const posterData = await sharp(await posterFile.read())
+        .removeAlpha()
+        .resize({
+          height: 720,
+          fit: 'contain',
+          withoutEnlargement: true,
+        })
+        .jpeg()
+        .toBuffer();
+
+      //      await FileSystemBasedCache.getInstance()
+      //        .setUserAssociatedCachedFile(posterFile.fileSystem.owner, posterCacheKey, posterData);
+      return reply
+        .type('image/jpeg')
+        .send(posterData);
+    });
+  }
+}

@@ -41,7 +41,7 @@ export default class FileRouter implements Router {
         }
 
         const allFileSystems = await this.fileSystemProvider.provideForUser(apolloUser);
-        const fileSystem = request.query.fileSystemId === '_' ? allFileSystems.user[0] : [allFileSystems.trashBin, ...allFileSystems.user].find((fs) => fs.id === request.query.fileSystemId);
+        const fileSystem = request.query.fileSystemId === '_' ? allFileSystems.user[0] : [/*allFileSystems.trashBin,*/ ...allFileSystems.user].find((fs) => fs.id === request.query.fileSystemId);
         if (fileSystem == null) {
           return reply
             .status(404)

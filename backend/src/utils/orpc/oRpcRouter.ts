@@ -3,7 +3,14 @@ import { container } from 'tsyringe';
 import { z } from 'zod';
 import AppConfiguration from '../../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../../constants.js';
+import DatabaseClient from '../../database/DatabaseClient.js';
 import FileSystemProvider from '../../files/FileSystemProvider.js';
+import type MediaLibrary from '../../plugins/official/media/_old/library/MediaLibrary/MediaLibrary.js';
+import MediaLibraryFinder from '../../plugins/official/media/_old/library/MediaLibrary/MediaLibraryFinder.js';
+import MediaLibraryMediaFinder
+  from '../../plugins/official/media/_old/library/MediaLibraryMedia/MediaLibraryMediaFinder.js';
+import MediaLibraryMediaItemFinder
+  from '../../plugins/official/media/_old/library/MediaLibraryMediaItem/MediaLibraryMediaItemFinder.js';
 import UserProvider from '../../user/UserProvider.js';
 import { auth } from '../auth.js';
 import * as oRpcBuilder from './oRpcRouteBuilder.js';
@@ -140,7 +147,7 @@ const listFilesInOwnVirtualFileSystem = oRpcBuilder
     }
 
     const allFileSystems = await fileSystemProvider.provideForUser(apolloUser);
-    const fileSystem = opts.input.fileSystemId === '_' ? allFileSystems.user[0] : [allFileSystems.trashBin, ...allFileSystems.user].find((fs) => fs.id === opts.input.fileSystemId);
+    const fileSystem = opts.input.fileSystemId === '_' ? allFileSystems.user[0] : [/*allFileSystems.trashBin,*/ ...allFileSystems.user].find((fs) => fs.id === opts.input.fileSystemId);
     if (fileSystem == null) {
       throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
     }
@@ -171,6 +178,230 @@ const listFilesInOwnVirtualFileSystem = oRpcBuilder
     return result;
   });
 
+const fetchLegacyMedia_LibraryOverviewData = oRpcBuilder
+  .authenticated
+  .input(z.object({ libraryIdToFilterBy: z.string().optional() }))
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const libraryIdToFilterBy = opts.input.libraryIdToFilterBy;
+
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const userProvider = container.resolve(UserProvider);
+    const libraryFinder = container.resolve(MediaLibraryFinder);
+    const libraryMediaFinder = container.resolve(MediaLibraryMediaFinder);
+
+    const apolloUser = await userProvider.provideByAuthId(sessionInfo.user.id);
+    if (apolloUser == null) {
+      // TODO: Proper error handling
+      console.debug('Unable to determine ApolloUser for the current session user');
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    let library: MediaLibrary | null = null;
+    if (libraryIdToFilterBy != null) {
+      library = await libraryFinder.find(BigInt(libraryIdToFilterBy));
+      if (library == null || !library.canRead(apolloUser)) {
+        throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+      }
+    }
+
+    const [ownedLibraries, sharedLibraries] = await Promise.all([
+      libraryFinder.findOwnedBy(apolloUser.id),
+      libraryFinder.findSharedWith(apolloUser.id),
+    ]);
+    const allLibraries = [...ownedLibraries, ...sharedLibraries];
+
+    const everyMediaItem: {
+      id: string,
+      displayName: string,
+      library: { id: string, displayName: string },
+      coverImage: { url: string, width?: number, height?: number }
+    }[] = [];
+
+    const allLibraryMedia = await (
+      libraryIdToFilterBy != null ?
+        libraryMediaFinder.findByLibraryId(BigInt(libraryIdToFilterBy)) :
+        libraryMediaFinder.findByLibraryIds([...ownedLibraries, ...sharedLibraries].map(l => l.id))
+    );
+
+    for (const libraryMedia of allLibraryMedia) {
+      everyMediaItem.push({
+        id: libraryMedia.id.toString(),
+        displayName: libraryMedia.title,
+        library: {
+          id: libraryMedia.libraryId.toString(),
+          displayName: allLibraries.find(l => l.id === libraryMedia.libraryId)!.name,
+        },
+        coverImage: {
+          url: `/api/_frontend/media/${libraryMedia.libraryId}/${libraryMedia.id}/poster.jpg`,
+          height: 720,
+        },
+      });
+    }
+
+    return {
+      loggedInUser: {
+        id: apolloUser.id,
+        displayName: apolloUser.displayName,
+      },
+      pageData: {
+        library: library != null ? {
+          id: library.id.toString(),
+          displayName: library.name,
+        } : undefined,
+        libraries: ownedLibraries.map(library => {
+          return {
+            id: library.id.toString(),
+            displayName: library.name,
+          };
+        }),
+        sharedLibraries: sharedLibraries.map(library => {
+          return {
+            id: library.id.toString(),
+            displayName: library.name,
+          };
+        }),
+        continueWatching: [],
+        recentlyAdded: [],
+        everything: everyMediaItem,
+      },
+    };
+  });
+
+const fetchLegacyMedia_MediaDetailData = oRpcBuilder
+  .authenticated
+  .input(z.object({ libraryId: z.string(), mediaId: z.string() }))
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const libraryId = opts.input.libraryId;
+    const mediaId = opts.input.mediaId;
+
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const userProvider = container.resolve(UserProvider);
+    const libraryFinder = container.resolve(MediaLibraryFinder);
+    const libraryMediaFinder = container.resolve(MediaLibraryMediaFinder);
+    const libraryMediaItemFinder = container.resolve(MediaLibraryMediaItemFinder);
+    const databaseClient = container.resolve(DatabaseClient);
+
+    const apolloUser = await userProvider.provideByAuthId(sessionInfo.user.id);
+    if (apolloUser == null) {
+      // TODO: Proper error handling
+      console.debug('Unable to determine ApolloUser for the current session user');
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    //
+
+    const library = await libraryFinder.find(BigInt(libraryId));
+    if (library == null || !library.canRead(apolloUser)) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    const libraryMedia = await libraryMediaFinder.find(BigInt(mediaId));
+    if (libraryMedia == null || !libraryMedia.canRead(apolloUser)) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    const mediaItems = await libraryMediaItemFinder.findByMediaId(libraryMedia.id);
+
+    const mediaTitleSeasons: {
+      counter: number,
+      episodes: {
+        id: string,
+        displayName: string,
+        durationInSec: number,
+        synopsis?: string,
+        thumbnailImageUrl: string,
+        watchProgressPercentage: number,
+      }[],
+    }[] = [];
+    for (const mediaItem of mediaItems) {
+      let season = mediaTitleSeasons.find(s => s.counter === (mediaItem.seasonNumber ?? 666)); // FIXME: Properly support specials/misc/etc.
+      if (season == null) {
+        mediaTitleSeasons.push(season = {
+          counter: mediaItem.seasonNumber ?? 666, // FIXME: Properly support specials/misc/etc.
+          episodes: [],
+        });
+      }
+
+      const watchProgress = await databaseClient.mediaLibraryUserWatchProgress.findUnique({
+        select: { durationInSec: true },
+        where: {
+          userId_mediaItemId: {
+            userId: apolloUser.id,
+            mediaItemId: mediaItem.id,
+          },
+        },
+      });
+      season.episodes.push({
+        id: mediaItem.id.toString(),
+        displayName: mediaItem.title,
+        synopsis: mediaItem.synopsis ?? undefined,
+        durationInSec: mediaItem.durationInSeconds,
+        thumbnailImageUrl: `/api/_frontend/media/${library.id}/${libraryMedia.id}/${Buffer.from(mediaItem.filePath).toString('base64')}/thumbnail.png`,
+        watchProgressPercentage: (watchProgress?.durationInSec ?? 0) / mediaItem.durationInSeconds * 100,
+      });
+    }
+
+    const [ownedLibraries, sharedLibraries] = await Promise.all([
+      libraryFinder.findOwnedBy(apolloUser.id),
+      libraryFinder.findSharedWith(apolloUser.id),
+    ]);
+
+    return {
+      loggedInUser: {
+        id: apolloUser.id,
+        displayName: apolloUser.displayName,
+      },
+      pageData: {
+        mediaTitle: {
+          library: {
+            id: library.id.toString(),
+            displayName: library.name,
+          },
+
+          id: libraryMedia.id.toString(),
+          displayName: libraryMedia.title,
+          synopsis: libraryMedia.synopsis ?? undefined,
+          thumbnailImageUrl: `/api/_frontend/media/${library.id}/${libraryMedia.id}/poster.jpg`,
+          mediaContent: {
+            type: 'series',
+            seasons: mediaTitleSeasons,
+          },
+        },
+
+        libraries: ownedLibraries.map(library => {
+          return {
+            id: library.id.toString(),
+            displayName: library.name,
+          };
+        }),
+        sharedLibraries: sharedLibraries.map(library => {
+          return {
+            id: library.id.toString(),
+            displayName: library.name,
+          };
+        }),
+      },
+    };
+  });
+
 export const oRpcRouter = {
   tmpBackend: {
     getConfig: tmpBackendConfig,
@@ -185,6 +416,13 @@ export const oRpcRouter = {
   files: {
     browse: {
       listFilesInVirtualFileSystem: listFilesInOwnVirtualFileSystem,
+    },
+  },
+
+  media: {
+    legacy: {
+      fetchLibraryOverviewData: fetchLegacyMedia_LibraryOverviewData,
+      fetchMediaDetailData: fetchLegacyMedia_MediaDetailData,
     },
   },
 };
