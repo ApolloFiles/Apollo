@@ -3,7 +3,7 @@
   "projectOwner": "ApolloFiles",
   "repoType": "github",
   "files": [
-    "README.md"
+    "../README.md"
   ],
   "imageSize": 100,
   "commit": false,
