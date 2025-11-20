@@ -2,15 +2,15 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import NodeStream from 'node:stream';
 import sharp from 'sharp';
 import { injectable } from 'tsyringe';
-import UserByAuthProvider from '../../../../auth/UserByAuthProvider.js';
-import { ContainerTokens } from '../../../../constants.js';
-import FileSystemProvider from '../../../../files/FileSystemProvider.js';
-import LocalFile from '../../../../files/local/LocalFile.js';
-import FileTypeUtils from '../../../../plugins/official/media/_old/FileTypeUtils.js';
-import LibraryManager from '../../../../plugins/official/media/_old/libraries/LibraryManager.js';
-import ThumbnailGenerator from '../../../../plugins/official/media/_old/ThumbnailGenerator.js';
-import UserFileHelper from '../../../../plugins/official/media/_old/UserFileHelper.js';
-import type { default as Router, RouteReturn } from '../../Router.js';
+import UserByAuthProvider from '../../../../../auth/UserByAuthProvider.js';
+import { ContainerTokens } from '../../../../../constants.js';
+import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
+import LocalFile from '../../../../../files/local/LocalFile.js';
+import FileTypeUtils from '../../../../../plugins/official/media/_old/FileTypeUtils.js';
+import LibraryManager from '../../../../../plugins/official/media/_old/libraries/LibraryManager.js';
+import ThumbnailGenerator from '../../../../../plugins/official/media/_old/ThumbnailGenerator.js';
+import UserFileHelper from '../../../../../plugins/official/media/_old/UserFileHelper.js';
+import type { default as Router, RouteReturn } from '../../../Router.js';
 
 // TODO: Refactor this
 @injectable({ token: ContainerTokens.ROUTER })

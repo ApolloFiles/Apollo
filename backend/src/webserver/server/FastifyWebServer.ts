@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import FastifyWebSocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import Http from 'node:http';
 import { injectAll, singleton } from 'tsyringe';
@@ -41,6 +42,8 @@ export default class FastifyWebServer {
 
     this.registerErrorHandler();
     this.fastify.register(NotFoundHandlerPlugin);
+
+    this.fastify.register(FastifyWebSocket);
 
     this.registerDefaultHeaders();
     this.setupRouters(routers);

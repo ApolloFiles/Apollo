@@ -29,7 +29,7 @@ export default class ApolloDirectoryProvider {
         continue;
       }
 
-      tempDirs.push(Path.join(baseDir, dirent.name, '_tmp'));
+      tempDirs.push(Path.join(baseDir, dirent.name, 'fs', '_tmp'));
     }
 
     return tempDirs;

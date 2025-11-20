@@ -306,8 +306,6 @@ const fetchLegacyMedia_MediaDetailData = oRpcBuilder
       throw new Error('Unable to determine ApolloUser for the current session user');
     }
 
-    //
-
     const library = await libraryFinder.find(BigInt(libraryId));
     if (library == null || !library.canRead(apolloUser)) {
       throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
@@ -402,6 +400,34 @@ const fetchLegacyMedia_MediaDetailData = oRpcBuilder
     };
   });
 
+const fetchLegacyMedia_Profile = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const apolloUser = await container.resolve(UserProvider).provideByAuthId(sessionInfo.user.id);
+    if (apolloUser == null) {
+      // TODO: Proper error handling
+      console.debug('Unable to determine ApolloUser for the current session user');
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    return {
+      loggedInUser: {
+        id: apolloUser.id,
+        displayName: apolloUser.displayName,
+      },
+    };
+  });
+
 export const oRpcRouter = {
   tmpBackend: {
     getConfig: tmpBackendConfig,
@@ -423,6 +449,7 @@ export const oRpcRouter = {
     legacy: {
       fetchLibraryOverviewData: fetchLegacyMedia_LibraryOverviewData,
       fetchMediaDetailData: fetchLegacyMedia_MediaDetailData,
+      fetchProfile: fetchLegacyMedia_Profile,
     },
   },
 };

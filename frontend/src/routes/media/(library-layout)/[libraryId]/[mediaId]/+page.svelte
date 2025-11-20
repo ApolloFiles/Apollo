@@ -85,7 +85,11 @@
                       {#if episode.synopsis != null}<p>{episode.synopsis}</p>{/if}
                     </div>
                     <div class="col-auto d-flex align-items-center gap-2 ps-5 pe-5">
-                      <a href="/api/v0/media/player-session/start-watching?mediaItem={episode.id}&startOffset=0" title="Play this episode/movie"><IconPlay style="font-size: 28px" role="presentation" /></a>
+                      <a
+                        href="/api/_frontend/media/player-session/start-watching?mediaItem={episode.id}&startOffset=0"
+                        title="Play this episode/movie"
+                        data-sveltekit-reload
+                      ><IconPlay style="font-size: 28px" role="presentation" /></a>
                     </div>
                     <div class="col-auto text-end">
                       {episode.durationInSec <= 60 ? `${episode.durationInSec} sec.` : `${(episode.durationInSec / 60).toFixed(0)} min.`}

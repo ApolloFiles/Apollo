@@ -10,6 +10,9 @@
   <a href="/browse/">
     <button>Browse files</button>
   </a>
+  <a href="/media/">
+    <button>Media library</button>
+  </a>
   <a href="/profile">
     <button>Profile</button>
   </a>

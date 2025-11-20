@@ -10,6 +10,8 @@ export default abstract class WriteableVirtualFile<T extends VirtualFile = Virtu
   ) {
   }
 
+  abstract mkdir(): Promise<void>;
+
   abstract write(data: NodeJS.ArrayBufferView): Promise<void>;
 
   abstract move(destination: WriteableVirtualFile<T>): Promise<void>;
