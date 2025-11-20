@@ -21,7 +21,6 @@ RUN cd backend/ && \
 COPY --chown=node:node ./backend/src/ ./backend/src/
 
 RUN cd backend/ && \
-    npm run prisma:generate -- --no-hints && \
     npm run build
 
 ## Frontend
@@ -83,7 +82,6 @@ COPY --from=builder --chown=node:node /app/backend/dist/ ./backend/dist/
 
 RUN cd backend/ && \
     npm clean-install --omit dev && \
-    npm run prisma:generate -- --no-hints && \
     npm cache clean --force
 
 ## Frontend
