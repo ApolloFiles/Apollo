@@ -1,6 +1,5 @@
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
-import NodeFsUtils from '../utils/NodeFsUtils.js';
 import AppConfiguration from './AppConfiguration.js';
 
 @singleton()
@@ -10,29 +9,20 @@ export default class ApolloDirectoryProvider {
   ) {
   }
 
-  getAppTemporaryDirectory(): string {
+  getTemporaryBaseDirectory(): string {
     return Path.join(this.getApolloDataDirectory(), 'tmp');
+  }
+
+  getAppTemporaryDirectory(): string {
+    return Path.join(this.getTemporaryBaseDirectory(), 'app');
+  }
+
+  getUserTemporaryDirectory(userId: string): string {
+    return Path.join(this.getTemporaryBaseDirectory(), 'user', userId);
   }
 
   getUserFileSystemDirectory(userId: string): string {
     return Path.join(this.getUserDataDirectory(userId), 'fs');
-  }
-
-  async findAllUserTemporaryDirectories(): Promise<string[]> {
-    const tempDirs: string[] = [];
-
-    const baseDir = Path.join(this.getApolloDataDirectory(), 'users');
-
-    const dirsInBaseDir = await NodeFsUtils.readdirWithTypesIfExists(baseDir);
-    for (const dirent of dirsInBaseDir) {
-      if (!dirent.isDirectory()) {
-        continue;
-      }
-
-      tempDirs.push(Path.join(baseDir, dirent.name, 'fs', '_tmp'));
-    }
-
-    return tempDirs;
   }
 
   private getUserDataDirectory(userId: string): string {

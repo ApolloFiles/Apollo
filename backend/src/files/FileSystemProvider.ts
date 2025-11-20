@@ -34,12 +34,14 @@ export default class FileSystemProvider {
   }
 
   provideApolloFileSystemsForUser(user: ApolloUser): UserSystemFileSystems {
+    const fileSystemBaseDir = this.apolloDirectoryProvider.getUserFileSystemDirectory(user.id);
+
     return {
       // FIXME: I don't think one _trash file system works... If I delete something on an S3 fs, I can't download the file to local _trash and delete in in S3...
       //        Each file system needs to have its own concept of a trash bin and Apollo needs to be able to quickly display a (unified?) trash bin, if possible...
 //      trashBin: this.createSystemLocalFileSystem(user, '_trash', false),
-      tmp: this.createSystemLocalFileSystem(user, '_tmp', true),
-      cache: new ApolloUserCacheFileSystem(this.createSystemLocalFileSystem(user, '_cache', true)),
+      tmp: this.createSystemLocalFileSystem('_tmp', user, this.apolloDirectoryProvider.getUserTemporaryDirectory(user.id)),
+      cache: new ApolloUserCacheFileSystem(this.createSystemLocalFileSystem('_cache', user, fileSystemBaseDir)),
     };
   }
 
@@ -49,12 +51,11 @@ export default class FileSystemProvider {
       .map((dir) => new LocalFileSystem(dir.name, user, { fs_local: { pathOnHost: Path.join(fileSystemBaseDir, dir.name) } }));
   }
 
-  private createSystemLocalFileSystem(user: ApolloUser, id: string, isInternal: boolean): LocalFileSystem {
-    const fileSystemBaseDir = this.apolloDirectoryProvider.getUserFileSystemDirectory(user.id);
-    return new LocalFileSystem(id, user, {
-      isInternal,
+  private createSystemLocalFileSystem(id: string, owner: ApolloUser, baseDir: string): LocalFileSystem {
+    return new LocalFileSystem(id, owner, {
+      isInternal: true,
       fs_local: {
-        pathOnHost: Path.join(fileSystemBaseDir, id),
+        pathOnHost: Path.join(baseDir, id),
       },
     });
   }
