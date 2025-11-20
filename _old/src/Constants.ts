@@ -1,32 +1,19 @@
 import { PrismaClient } from '@prisma/client';
-import { ConfigFile, HttpClient } from '@spraxdev/node-commons';
+import { ConfigFile } from '@spraxdev/node-commons';
 import Crypto from 'node:crypto';
 import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
-import FileStatCache from './cache/FileStatCache';
-import FileTypeUtils from './FileTypeUtils';
 import type { ApolloConfig } from './global';
-import ProcessManager from './process_manager/ProcessManager';
 
-const IS_PRODUCTION = process.env.NODE_ENV?.toLowerCase() === 'production';
-
-let processManager: ProcessManager;
-let fileTypeUtils: FileTypeUtils;
 let fileNameCollator: Intl.Collator;
-let httpClient: HttpClient;
 let prismaClient: PrismaClient | null;
-let fileStatCache: FileStatCache;
 
 const APP_ROOT = Path.resolve(Path.dirname(__dirname));
 const WORKING_DIR_ROOT = determineDefaultWorkingRoot();
 const APP_TMP_DIR = determineAppTmpDir();
 
 let cfg: ConfigFile<ApolloConfig>;
-
-export function isProduction(): boolean {
-  return IS_PRODUCTION;
-}
 
 export function getConfig(): ConfigFile<ApolloConfig> {
   if (cfg == null) {
@@ -191,10 +178,6 @@ export function getAppTmpDir(): string {
   return APP_TMP_DIR;
 }
 
-export function getUserStorageTmpRoot(): string {
-  return Path.join(getAppTmpDir(), 'user-storage', Path.sep);
-}
-
 // TODO: Maybe introduce a admin setting to choose if potentially large temporary files,
 //       that will be moved (on success) to the user storage should be written to to the same partition or to APP_TMP_DIR,
 //       which might be on an faster SSD for example (but causes a more expensive copy/move operation to happen instead of a simpel and fast "rename")
@@ -205,45 +188,12 @@ export function getUserStorageTmpRootOnSameFileSystem(): string {
   return Path.join(getUserStorageRoot(), '.tmp', Path.sep);
 }
 
-export function getProcessManager(): ProcessManager {
-  if (processManager == null) {
-    processManager = new ProcessManager();
-  }
-
-  return processManager;
-}
-
-export function getProcessLogDir(): string {
-  return Path.join(getWorkingRoot(), 'logs', 'child_processes', Path.sep);
-}
-
-export function getFileTypeUtils(): FileTypeUtils {
-  if (fileTypeUtils == null) {
-    fileTypeUtils = new FileTypeUtils();
-  }
-
-  return fileTypeUtils;
-}
-
 export function getFileNameCollator(): Intl.Collator {
   if (fileNameCollator == null) {
     fileNameCollator = new Intl.Collator('en', { numeric: true, sensitivity: 'accent' });
   }
 
   return fileNameCollator;
-}
-
-export function getHttpClient(): HttpClient {
-  if (httpClient == null) {
-    const packageJson = getPackageJson();
-
-    httpClient = new HttpClient(HttpClient.generateUserAgent(
-      packageJson.name ?? 'Unknown-App-Name',
-      packageJson.version ?? 'Unknown-App-Version',
-    ));
-  }
-
-  return httpClient;
 }
 
 export function getPrismaClient(): PrismaClient | null {
@@ -274,23 +224,6 @@ export function getPrismaClient(): PrismaClient | null {
 
 export function getPrismaClientIfAlreadyInitialized(): PrismaClient | null {
   return prismaClient ?? null;
-}
-
-export function getFileStatCache(): FileStatCache {
-  if (fileStatCache == null) {
-    fileStatCache = new FileStatCache();
-  }
-
-  return fileStatCache;
-}
-
-function getPackageJson(): { name?: string, version?: string } {
-  const packageJsonPath = Path.join(__dirname, '..', 'package.json');
-  if (!Fs.existsSync(packageJsonPath)) {
-    return {};
-  }
-
-  return JSON.parse(Fs.readFileSync(packageJsonPath, 'utf8'));
 }
 
 function determineDefaultWorkingRoot(): string {

@@ -7,7 +7,6 @@ import {
   getConfig,
   getPrismaClient,
   getPrismaClientIfAlreadyInitialized,
-  getProcessManager,
   getUserStorageTmpRootOnSameFileSystem,
 } from './Constants';
 import LibraryManager from './media/libraries/LibraryManager';
@@ -88,14 +87,6 @@ function shutdownHook(): void {
       } finally {
         console.log('Disconnected from the database.');
       }
-    }
-
-    try {
-      await getProcessManager().shutdown();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      console.log('ProcessManager shut down.');
     }
 
     await container.dispose();

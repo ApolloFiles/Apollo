@@ -1,37 +1,8 @@
-import { WebSocket } from 'ws';
-import PlayerSession from './media/video-player/player-session/PlayerSession';
-import { ServerTiming } from './ServerTiming';
 import ApolloUser from './user/ApolloUser';
 
 declare module 'express' {
   interface Request {
     user?: ApolloUser | null;
-  }
-
-  interface Response {
-    locals: {
-      timings?: ServerTiming;
-    };
-  }
-}
-
-export interface ApolloWebSocket extends WebSocket {
-  apollo: {
-    user?: ApolloUser;
-    playerSessionId?: PlayerSession['id'];
-    connectionId?: number;
-    isAlive: boolean;
-
-    pingRtt: number;
-    lastPingTimestamp: number;
-  };
-}
-
-declare module 'express-session' {
-  interface SessionData {
-    userId?: string;
-
-    oAuthReturnTo?: string;
   }
 }
 
