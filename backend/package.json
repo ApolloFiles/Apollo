@@ -22,6 +22,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "build:podman": "cd .. && podman build --file Containerfile --pull=newer --rm --target ffmpeg-cuda --tag localhost/spraxdev/apollo:latest .",
 
     "test": "npm run type-check && vitest --run",
     "test:watch": "vitest",
@@ -31,7 +32,7 @@
 
     "dev": "node --watch --env-file .env --loader ts-node/esm --enable-source-maps src/main.ts",
 
-    "prisma:generate": "prisma generate --no-engine --schema ./prisma",
+    "prisma:generate": "prisma generate --no-engine --require-models --schema ./prisma",
     "prisma:migrate:dev": "prisma migrate dev --schema ./prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema ./prisma",
     "prisma:dump-better-auth-schema": "npx @better-auth/cli generate --output prisma/models/better-auth.prisma"
