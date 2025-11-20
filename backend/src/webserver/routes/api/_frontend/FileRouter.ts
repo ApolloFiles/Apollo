@@ -48,7 +48,7 @@ export default class FileRouter implements Router {
             .send({ error: 'File system or path not found' });
         }
 
-        const requestedFile = await fileSystem.getFile(request.query.path);
+        const requestedFile = fileSystem.getFile(request.query.path);
         if (!(await requestedFile.exists())) {
           return reply
             .status(404)
@@ -67,7 +67,7 @@ export default class FileRouter implements Router {
           .header('Content-Type', 'application/octet-stream')
           // TODO: Sanitize filename or encode it properly
           .header('Content-Disposition', `filename="${requestedFile.getFileName()}"`)
-          .send(await requestedFile.read());
+          .send(requestedFile.supportsStreaming() ? requestedFile.createReadStream() : await requestedFile.read());
       },
     });
   }

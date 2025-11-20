@@ -1,5 +1,6 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
+import NodeStream from 'node:stream';
 import NodeFsUtils from '../../utils/NodeFsUtils.js';
 import VirtualFile from '../VirtualFile.js';
 import LocalFileSystem from './LocalFileSystem.js';
@@ -9,12 +10,20 @@ export default class LocalFile extends VirtualFile<LocalFileSystem> {
     super(fileSystem, path);
   }
 
+  supportsStreaming(): boolean {
+    return true;
+  }
+
   async read(): Promise<Buffer> {
     return Fs.promises.readFile(this.getAbsolutePathOnHost());
   }
 
+  createReadStream(options?: { start?: number; end?: number }): NodeStream.Readable {
+    return Fs.createReadStream(this.getAbsolutePathOnHost(), options);
+  }
+
   // TODO: This is pretty bad for directories with many files, can we do better?
-  async getFiles(): Promise<VirtualFile[]> {
+  async getFiles(): Promise<VirtualFile<LocalFileSystem>[]> {
     if (!(await this.isDirectory())) {
       // TODO: Proper Exception class
       throw new Error(`${this.path} is not a directory`);
@@ -22,15 +31,19 @@ export default class LocalFile extends VirtualFile<LocalFileSystem> {
 
     const fileNames = await NodeFsUtils.readdirIfExists(this.getAbsolutePathOnHost());
 
-    const result: VirtualFile[] = [];
+    const result: VirtualFile<LocalFileSystem>[] = [];
     for (const file of fileNames) {
-      result.push(await this.fileSystem.getFile(Path.join(this.path, file)));
+      result.push(this.fileSystem.getFile(Path.join(this.path, file)));
     }
 
     return result;
   }
 
   async stat(): Promise<Fs.Stats> {
+    if (this.path === '/') {
+      await Fs.promises.mkdir(this.getAbsolutePathOnHost(), { recursive: true });
+    }
+
     return Fs.promises.stat(this.getAbsolutePathOnHost());
   }
 

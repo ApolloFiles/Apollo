@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import NodeStream from 'node:stream';
 import sharp from 'sharp';
 import { injectable } from 'tsyringe';
 import UserByAuthProvider from '../../../../auth/UserByAuthProvider.js';
@@ -61,7 +62,7 @@ export default class MediaRouter implements Router {
       const libraryOwnerFileSystems = await this.fileSystemProvider.provideForUser(library.owner);
       const libraryOwnerDefaultFileSystem = libraryOwnerFileSystems.user[0];
 
-      const mediaFile = await libraryOwnerDefaultFileSystem.getFile(libraryTitleMedia.filePath);
+      const mediaFile = libraryOwnerDefaultFileSystem.getFile(libraryTitleMedia.filePath);
       const mediaFileStat = await mediaFile.stat();
       if (!mediaFileStat.isFile()) {
         return reply
@@ -131,7 +132,7 @@ export default class MediaRouter implements Router {
       const libraryOwnerFileSystems = await this.fileSystemProvider.provideForUser(library.owner);
       const libraryOwnerDefaultFileSystem = libraryOwnerFileSystems.user[0];
 
-      const libraryTitleDirectory = await libraryOwnerDefaultFileSystem.getFile(libraryTitle.directoryPath);
+      const libraryTitleDirectory = libraryOwnerDefaultFileSystem.getFile(libraryTitle.directoryPath);
       if (!(await libraryTitleDirectory.isDirectory())) {
         return reply
           .status(404)
@@ -195,21 +196,27 @@ export default class MediaRouter implements Router {
           .send(`File '${requestedFileName}' not available!`);
       }
 
-      const posterData = await sharp(await posterFile.read())
+      const posterDataPipeline = sharp()
         .removeAlpha()
         .resize({
           height: 720,
           fit: 'contain',
           withoutEnlargement: true,
         })
-        .jpeg()
-        .toBuffer();
+        .jpeg();
+
 
       //      await FileSystemBasedCache.getInstance()
       //        .setUserAssociatedCachedFile(posterFile.fileSystem.owner, posterCacheKey, posterData);
-      return reply
-        .type('image/jpeg')
-        .send(posterData);
+
+      await NodeStream.promises.pipeline(
+        posterFile.supportsStreaming() ? posterFile.createReadStream() : NodeStream.Readable.from(await posterFile.read()),
+        posterDataPipeline,
+        reply
+          .type('image/jpeg')
+          .raw,
+      );
+      return reply;
     });
   }
 }

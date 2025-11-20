@@ -152,7 +152,7 @@ const listFilesInOwnVirtualFileSystem = oRpcBuilder
       throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
     }
 
-    const requestedFile = await fileSystem.getFile(opts.input.path);
+    const requestedFile = fileSystem.getFile(opts.input.path);
     if (!(await requestedFile.exists())) {
       throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
     }

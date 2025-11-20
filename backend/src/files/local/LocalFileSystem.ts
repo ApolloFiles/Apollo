@@ -1,33 +1,41 @@
-import Fs from 'node:fs';
 import Path from 'node:path';
 import type ApolloUser from '../../user/ApolloUser.js';
-import VirtualFileSystem from '../VirtualFileSystem.js';
+import VirtualFileSystem, { type CommonVirtualFileSystemOptions } from '../VirtualFileSystem.js';
+import type WriteableVirtualFile from '../WriteableVirtualFile.js';
 import LocalFile from './LocalFile.js';
+import WriteableLocalFile from './WriteableLocalFile.js';
+
+export type LocalFileSystemOptions = CommonVirtualFileSystemOptions & {
+  fs_local: {
+    pathOnHost: string,
+  }
+};
 
 export default class LocalFileSystem extends VirtualFileSystem {
   constructor(
-    id: string,
-    owner: ApolloUser,
-    private readonly pathOnHost: string,
+    public readonly id: string,
+    public readonly owner: ApolloUser,
+    protected readonly options: LocalFileSystemOptions,
   ) {
-    super(id, owner);
-    if (!Path.isAbsolute(pathOnHost)) {
+    super(id, owner, options);
+    if (!Path.isAbsolute(this.options.fs_local.pathOnHost)) {
       // TODO: Proper Exception class
       throw new Error('pathOnHost must be an absolute path');
     }
   }
 
-  async getFile(path: string): Promise<LocalFile> {
-    const file = new LocalFile(this, path);
+  getFile(path: string): LocalFile {
+    return new LocalFile(this, path);
+  }
 
-    if (file.path === '/') {
-      await Fs.promises.mkdir(file.getAbsolutePathOnHost(), { recursive: true });
+  getWriteableFile(file: LocalFile): WriteableVirtualFile<LocalFile> {
+    if (file.fileSystem !== this) {
+      throw new Error(`Cannot create a Writeable-File for another file system`);
     }
-
-    return file;
+    return new WriteableLocalFile(file);
   }
 
   public getAbsolutePathOnHost(): string {
-    return this.pathOnHost;
+    return this.options.fs_local.pathOnHost;
   }
 }

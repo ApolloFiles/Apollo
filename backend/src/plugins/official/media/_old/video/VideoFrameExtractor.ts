@@ -15,7 +15,7 @@ export default class VideoFrameExtractor {
 
   async extractFrames(file: LocalFile): Promise<{ imagePaths: string[], done: () => Promise<void> }> {
     const userFileSystems = await this.fileSystemProvider.provideForUser(file.fileSystem.owner);
-    const cwdFile = await userFileSystems.tmp.getFile(`/video-frames-${Crypto.randomUUID()}/`);
+    const cwdFile = userFileSystems.tmp.getFile(`/video-frames-${Crypto.randomUUID()}/`);
     if (!(cwdFile instanceof LocalFile)) {
       throw new Error('Temporary directory is not a LocalFile.');
     }

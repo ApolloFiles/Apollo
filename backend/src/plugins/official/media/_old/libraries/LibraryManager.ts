@@ -119,7 +119,7 @@ export default class LibraryManager {
 
     const mappedPaths: LocalFile[] = [];
     for (const path of paths) {
-      mappedPaths.push(await defaultFileSystem.getFile(path));
+      mappedPaths.push(defaultFileSystem.getFile(path));
     }
     return mappedPaths;
   }

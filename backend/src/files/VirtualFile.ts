@@ -1,8 +1,8 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
+import NodeStream from 'node:stream';
 import type VirtualFileSystem from './VirtualFileSystem.js';
 
-// TODO: Add streaming support
 export default abstract class VirtualFile<T extends VirtualFileSystem = VirtualFileSystem> {
   public readonly path: string;
 
@@ -17,7 +17,11 @@ export default abstract class VirtualFile<T extends VirtualFileSystem = VirtualF
     this.path = this.normalizePath(path);
   }
 
+  abstract supportsStreaming(): boolean;
+
   abstract read(): Promise<Buffer>;
+
+  abstract createReadStream(options?: { start?: number, end?: number }): NodeStream.Readable;
 
   abstract getFiles(): Promise<VirtualFile[]>;
 
@@ -46,6 +50,11 @@ export default abstract class VirtualFile<T extends VirtualFileSystem = VirtualF
 
   async isDirectory(): Promise<boolean> {
     return (await this.exists()) && (await this.stat()).isDirectory();
+  }
+
+  // TODO: Replace usage of this with ApolloURLs
+  systemWideUniqueIdentifier(): string {
+    return `${this.fileSystem.owner.id};${this.fileSystem.id};${this.path}`;
   }
 
   private normalizePath(path: string): string {

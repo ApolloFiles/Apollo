@@ -24,7 +24,7 @@ export default class LibraryScanner {
     for (const directory of library.directories) {
       const mediaAnalyses = await this.mediaLibraryAnalyser.analyseLibrary(library);
       for (const mediaAnalysis of mediaAnalyses) {
-        const titleRoot = await directory.fileSystem.getFile('/' + Path.relative(directory.fileSystem.getAbsolutePathOnHost(), mediaAnalysis.rootDirectory)); // FIXME
+        const titleRoot = directory.fileSystem.getFile('/' + Path.relative(directory.fileSystem.getAbsolutePathOnHost(), mediaAnalysis.rootDirectory)); // FIXME
         const titleId = (await this.databaseClient.mediaLibraryMedia.upsert({
           select: {
             id: true,
@@ -48,7 +48,7 @@ export default class LibraryScanner {
         console.log(`[DEBUG] Scanning title '${mediaAnalysis.name}'...`);
 
         for (const videoFile of mediaAnalysis.videoFiles) {
-          const apolloVideoFile = await directory.fileSystem.getFile('/' + Path.relative(directory.fileSystem.getAbsolutePathOnHost(), videoFile.filePath)); // FIXME
+          const apolloVideoFile = directory.fileSystem.getFile('/' + Path.relative(directory.fileSystem.getAbsolutePathOnHost(), videoFile.filePath)); // FIXME
 
           const videoAnalysis = await VideoAnalyser.analyze(videoFile.filePath, true);
           const mediaTitle = (this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title-ger') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title-eng') || this.getValueFromObjectByKeyIgnoreCase(videoAnalysis.file.tags, 'title')) ?? videoFile.title;
@@ -159,7 +159,7 @@ export default class LibraryScanner {
     }
 
     if (!titleHasPosterSaved && externalMetaData.hasPosterImage) {
-      const targetPosterFile = await titleRoot.fileSystem.getFile(Path.join(titleRoot.path, 'folder.jpg'));
+      const targetPosterFile = titleRoot.fileSystem.getFile(Path.join(titleRoot.path, 'folder.jpg'));
 
       const posterImage = await externalMetaData.fetchPosterImage();
       if (posterImage != null) {
@@ -173,8 +173,8 @@ export default class LibraryScanner {
           .jpeg()
           .toBuffer();
 
-        await titleRoot.fileSystem.acquireLock(null as any, targetPosterFile, (writableFile) => {
-          writableFile.write(posterImageToWrite);
+        await titleRoot.fileSystem.acquireWriteLock(targetPosterFile, (writeableFile) => {
+          writeableFile.write(posterImageToWrite);
         });
       }
     }

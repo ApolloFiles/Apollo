@@ -144,7 +144,7 @@ export default class ThumbnailGenerator {
     // FIXME: write lock on cwd
 
     const userFileSystems = await this.fileSystemProvider.provideForUser(file.fileSystem.owner);
-    const cwdFile = await userFileSystems.tmp.getFile(`/thumbnail-${Crypto.randomUUID()}/`);
+    const cwdFile = userFileSystems.tmp.getFile(`/thumbnail-${Crypto.randomUUID()}/`);
     if (!(cwdFile instanceof LocalFile)) {
       throw new Error('Temporary directory is not a LocalFile.');
     }
@@ -198,7 +198,7 @@ export default class ThumbnailGenerator {
     // FIXME: write lock on cwd
 
     const userFileSystems = await this.fileSystemProvider.provideForUser(file.fileSystem.owner);
-    const cwdFile = await userFileSystems.tmp.getFile(`/thumbnail-${Crypto.randomUUID()}/`);
+    const cwdFile = userFileSystems.tmp.getFile(`/thumbnail-${Crypto.randomUUID()}/`);
     if (!(cwdFile instanceof LocalFile)) {
       throw new Error('Temporary directory is not a LocalFile.');
     }
