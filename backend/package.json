@@ -59,6 +59,9 @@
     "ws": "^8.18.3",
     "zod": "^4.1.12"
   },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.9"
+  },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.1",
     "@types/node": "^24.9.2",
