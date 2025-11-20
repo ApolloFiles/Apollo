@@ -1,6 +1,7 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
+import FileNameCollator from '../../../../../../../files/util/FileNameCollator.js';
 import FileTypeUtils from '../../../FileTypeUtils.js';
 
 export type MetaProvider = {
@@ -51,10 +52,7 @@ export default class DirectoryAnalyser {
     }
 
     variantsAndExtras.videoFiles.sort(this.compareVideoFiles);
-    variantsAndExtras.extras?.sort((a, b) => new Intl.Collator('en', {
-      numeric: true,
-      sensitivity: 'accent',
-    }).compare(a.filePath, b.filePath));
+    variantsAndExtras.extras?.sort((a, b) => FileNameCollator.compare(a.filePath, b.filePath));
     return {
       rootDirectory: directoryPath,
       ...this.extractBasicInfoFromName(Path.basename(directoryPath)),
@@ -260,6 +258,6 @@ export default class DirectoryAnalyser {
       return a.tvShow.episode - b.tvShow.episode;
     }
 
-    return new Intl.Collator('en', { numeric: true, sensitivity: 'accent' }).compare(a.filePath, b.filePath);
+    return FileNameCollator.compare(a.filePath, b.filePath);
   }
 }

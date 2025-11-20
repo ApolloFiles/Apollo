@@ -6,7 +6,6 @@ import Os from 'node:os';
 import Path from 'node:path';
 import type { ApolloConfig } from './global';
 
-let fileNameCollator: Intl.Collator;
 let prismaClient: PrismaClient | null;
 
 const APP_ROOT = Path.resolve(Path.dirname(__dirname));
@@ -186,14 +185,6 @@ export function getAppTmpDir(): string {
 //       But maybe this additional cost is preferred for some users/setups - Apollo should not make too many assumptions about the setup and offer ways to reasonable support most setups
 export function getUserStorageTmpRootOnSameFileSystem(): string {
   return Path.join(getUserStorageRoot(), '.tmp', Path.sep);
-}
-
-export function getFileNameCollator(): Intl.Collator {
-  if (fileNameCollator == null) {
-    fileNameCollator = new Intl.Collator('en', { numeric: true, sensitivity: 'accent' });
-  }
-
-  return fileNameCollator;
 }
 
 export function getPrismaClient(): PrismaClient | null {

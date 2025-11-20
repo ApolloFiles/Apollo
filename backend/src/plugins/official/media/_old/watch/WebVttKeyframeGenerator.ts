@@ -1,6 +1,7 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import sharp from 'sharp';
+import FileNameCollator from '../../../../../files/util/FileNameCollator.js';
 import FfmpegProcess from './live_transcode/FfmpegProcess.js';
 
 export default class WebVttKeyframeGenerator {
@@ -17,7 +18,7 @@ export default class WebVttKeyframeGenerator {
     const frameFiles = (await Fs.promises.readdir(targetDir))
       .filter((fileName) => fileName.startsWith('keyframes_'))
       .map((fileName) => Path.join(targetDir, fileName));
-    frameFiles.sort(new Intl.Collator('en', { numeric: true, sensitivity: 'accent' }).compare);
+    frameFiles.sort(FileNameCollator.compare);
 
     const vttFilePath = Path.join(targetDir, WebVttKeyframeGenerator.VTT_FILE_NAME);
     const vttFileStream = await Fs.promises.open(Path.join(targetDir, WebVttKeyframeGenerator.VTT_FILE_NAME), 'w');

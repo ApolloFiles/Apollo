@@ -4,6 +4,7 @@ import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import type FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
+import FileNameCollator from '../../../../../files/util/FileNameCollator.js';
 import ProcessBuilder from '../ProcessBuilder.js';
 
 @singleton()
@@ -44,7 +45,7 @@ export default class VideoFrameExtractor {
 
     const imagePaths = (await Fs.promises.readdir(cwd))
       .map((fileName) => Path.join(cwd, fileName))
-      .sort(new Intl.Collator('en', { numeric: true, sensitivity: 'accent' }).compare);
+      .sort(FileNameCollator.compare);
     return {
       imagePaths,
       done: (): Promise<void> => Fs.promises.rm(cwd, { recursive: true }),

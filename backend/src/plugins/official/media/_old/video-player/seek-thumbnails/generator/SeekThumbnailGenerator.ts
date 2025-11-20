@@ -1,6 +1,7 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
+import FileNameCollator from '../../../../../../../files/util/FileNameCollator.js';
 import FfmpegProcess from '../../../watch/live_transcode/FfmpegProcess.js';
 
 export type GeneratedSeekThumbnails = {
@@ -15,7 +16,7 @@ export default class SeekThumbnailGenerator {
   async generate(inputFile: string, targetDir: string): Promise<GeneratedSeekThumbnails> {
     const frameTimes = await this.runFrameExtraction(inputFile, targetDir);
     const frameFiles = await this.collectImageFiles(targetDir);
-    frameFiles.sort(new Intl.Collator('en', { numeric: true, sensitivity: 'accent' }).compare);
+    frameFiles.sort(FileNameCollator.compare);
 
     return {
       thumbnailFiles: frameFiles,
