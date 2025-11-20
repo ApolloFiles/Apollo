@@ -20,10 +20,61 @@
   let sessionId: string | null = $state(null);  // TODO: Can we determine the sessionId server-side and not have it nullable?
   let webSocketClient: WebSocketClient | undefined = $state(undefined);
   let autoPlayEnabled = $state(false);
+  let searchInputValue = $state('');
 
   let videoContainerRef: HTMLDivElement;
 
   let transcodeRestartInProgress = false;
+
+  function onSearchSubmit(event: SubmitEvent): false {
+    event.preventDefault();
+
+    try {
+      const parsedUrl = new URL(searchInputValue.trim());
+
+      // TODO: Support direct links to video files (and HLS etc.)
+      // TODO: Support Vimeo, Dailymotion
+
+      if (parsedUrl.host === 'www.youtube.com' || parsedUrl.host === 'music.youtube.com' || parsedUrl.host === 'youtube.com') {
+        const videoId = parsedUrl.searchParams.get('v');
+        if (videoId == null) {
+          alert('Invalid YouTube URL: missing video ID');
+        } else {
+          alert('Detected YouTube video ID: ' + videoId + '\n\n(Note: actual playback not implemented yet)');
+        }
+      } else if (parsedUrl.host === 'youtu.be') {
+        const videoId = parsedUrl.pathname.slice(1);
+        if (videoId.length === 0) {
+          alert('Invalid YouTube URL: missing video ID');
+        } else {
+          alert('Detected YouTube video ID: ' + videoId + '\n\n(Note: actual playback not implemented yet)');
+        }
+      } else if (parsedUrl.host === 'www.youtube-nocookie.com' || parsedUrl.host === 'youtube-nocookie.com') {
+        const pathParts = parsedUrl.pathname.slice(1).split('/');
+        if (pathParts.length !== 2 || pathParts[0] !== 'embed') {
+          alert('Invalid YouTube-nocookie URL: unable to detect video ID');
+        } else {
+          const videoId = pathParts[1];
+          alert('Detected YouTube video ID: ' + videoId + '\n\n(Note: actual playback not implemented yet)');
+        }
+      } else if (parsedUrl.host === 'www.twitch.tv' || parsedUrl.host === 'twitch.tv') {
+        // TODO: Add support for clips and VODs, if Twitch API/Player allows it
+        const channelName = parsedUrl.pathname.slice(1);
+        if (channelName.length === 0 || channelName.includes('/')) {
+          alert('Invalid Twitch URL: Unable to detect channel name');
+        } else {
+          alert('Detected Twitch Channel: ' + channelName + '\n\n(Note: actual playback not implemented yet)');
+        }
+      } else {
+        alert('Unsupported URL (Expected to work: YouTube Video-URLs, Twitch Channel-URLs)');
+        return false;
+      }
+    } catch (err) {
+      alert('Error parsing URL: expected a valid URL');
+    }
+
+    return false;
+  }
 
   async function createVideoPlayer(playbackStatus: StartPlaybackResponse, initialAudioTrack?: number, initialSubtitleTrack?: number): Promise<VideoPlayer> {
     const backend = await VideoLiveTranscodeBackend.create(videoContainerRef, {
@@ -199,8 +250,9 @@
   <nav class="navbar">
     <div class="container-fluid">
       <div class="d-flex justify-content-center flex-grow-1">
-        <form class="d-flex" role="search">
-          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+        <form class="d-flex" role="search" onsubmit={onSearchSubmit}>
+          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"
+                 bind:value={searchInputValue}>
           <button class="btn btn-outline-light" type="submit">Search</button>
         </form>
       </div>
