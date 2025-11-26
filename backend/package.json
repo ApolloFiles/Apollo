@@ -54,7 +54,7 @@
     "@sentry/node": "^10.27.0",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#9e15d1631d46e845ec9839b38b09201b659d1475",
     "@types/mime-types": "^3.0.1",
-    "better-auth": "^1.4.2",
+    "better-auth": "^1.4.3",
     "fastify": "^5.6.2",
     "fastify-plugin": "^5.1.0",
     "mime-types": "^3.0.2",
