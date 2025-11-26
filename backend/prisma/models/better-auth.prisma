@@ -28,6 +28,7 @@ model Session {
   @@unique([token])
   @@map("sessions")
   @@schema("better_auth")
+  @@index([userId])
 }
 
 model Account {
@@ -48,6 +49,7 @@ model Account {
 
   @@map("accounts")
   @@schema("better_auth")
+  @@index([userId])
 }
 
 model Verification {
@@ -60,4 +62,5 @@ model Verification {
 
   @@map("verifications")
   @@schema("better_auth")
+  @@index([identifier])
 }
