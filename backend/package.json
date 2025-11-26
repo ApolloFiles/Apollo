@@ -39,8 +39,8 @@
     "prisma:migrate:production": "prisma migrate deploy",
     "prisma:dump-better-auth-schema": "npx @better-auth/cli generate --output prisma/models/better-auth.prisma",
 
-    "contributors:add": "all-contributors add --config ../.all-contributorsrc",
-    "contributors:generate": "all-contributors generate --config ../.all-contributorsrc"
+    "contributors:add": "npx all-contributors add --config ../.all-contributorsrc",
+    "contributors:generate": "npx all-contributors generate --config ../.all-contributorsrc"
   },
   "engines": {
     "node": ">=24.0.0",
@@ -74,7 +74,6 @@
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.0.14",
-    "all-contributors-cli": "^6.26.1",
     "prisma": "^7.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
