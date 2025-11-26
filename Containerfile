@@ -90,4 +90,8 @@ COPY --chown=node:node ./frontend/package.json ./frontend/package-lock.json ./fr
 COPY --chown=node:node ./frontend/patches/ ./frontend/patches/
 COPY --from=builder --chown=node:node /app/frontend/dist/ ./frontend/dist/
 
+RUN cd frontend/ && \
+    npm clean-install --omit dev && \
+    npm cache clean --force
+
 CMD ["node", "--enable-source-maps", "backend/dist/main.js"]
