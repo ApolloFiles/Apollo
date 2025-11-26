@@ -1,6 +1,7 @@
 ## Project
 /dist/
 /.env
+/src/database/prisma-client/
 
 ## npm and other dependencies
 /node_modules/

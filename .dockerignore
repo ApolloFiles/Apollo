@@ -6,6 +6,7 @@
 !/backend/package.json
 !/backend/package-lock.json
 !/backend/tsconfig.json
+!/backend/prisma.config.ts
 !/backend/src/
 !/backend/prisma/
 

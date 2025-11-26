@@ -21,7 +21,7 @@
   "main": "src/main.ts",
   "type": "module",
   "scripts": {
-    "postinstall": "npm run prisma:generate -- --no-hints",
+    "postinstall": "npm run prisma:generate",
 
     "build": "tsc",
     "build:podman": "cd .. && podman build --file Containerfile --pull=newer --rm --target ffmpeg-cuda --tag localhost/spraxdev/apollo:latest .",
@@ -34,9 +34,9 @@
 
     "dev": "node --watch --env-file .env --loader ts-node/esm --enable-source-maps src/main.ts",
 
-    "prisma:generate": "prisma generate --require-models --schema ./prisma",
-    "prisma:migrate:dev": "prisma migrate dev --schema ./prisma",
-    "prisma:migrate:deploy": "prisma migrate deploy --schema ./prisma",
+    "prisma:generate": "prisma generate --require-models",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:production": "prisma migrate deploy",
     "prisma:dump-better-auth-schema": "npx @better-auth/cli generate --output prisma/models/better-auth.prisma",
 
     "contributors:add": "all-contributors add --config ../.all-contributorsrc",
@@ -49,7 +49,8 @@
   "dependencies": {
     "@fastify/websocket": "^11.2.0",
     "@orpc/server": "^1.11.3",
-    "@prisma/client": "^6.19.0",
+    "@prisma/adapter-pg": "^7.0.1",
+    "@prisma/client": "^7.0.1",
     "@sentry/node": "^10.27.0",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#9e15d1631d46e845ec9839b38b09201b659d1475",
     "@types/mime-types": "^3.0.1",
@@ -74,7 +75,7 @@
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.0.14",
     "all-contributors-cli": "^6.26.1",
-    "prisma": "^6.19.0",
+    "prisma": "^7.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14",

@@ -11,6 +11,7 @@ COPY --chown=node:node \
      ./backend/package.json \
      ./backend/package-lock.json \
      ./backend/tsconfig.json \
+     ./backend/prisma.config.ts \
      ./backend/
 COPY --chown=node:node ./backend/prisma/ ./backend/prisma/
 
@@ -76,7 +77,7 @@ WORKDIR /app/
 COPY --chown=node:node LICENSE README.md ./
 
 ## Backend
-COPY --chown=node:node ./backend/package.json ./backend/package-lock.json ./backend/
+COPY --chown=node:node ./backend/package.json ./backend/package-lock.json ./backend/prisma.config.ts ./backend/
 COPY --chown=node:node ./backend/prisma/ ./backend/prisma/
 COPY --from=builder --chown=node:node /app/backend/dist/ ./backend/dist/
 

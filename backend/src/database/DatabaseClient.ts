@@ -1,12 +1,17 @@
-import { type Prisma, PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import ChildProcess from 'node:child_process';
 import { type Disposable, singleton } from 'tsyringe';
 import { APP_ROOT_DIR } from '../constants.js';
+import { type Prisma, PrismaClient } from './prisma-client/client.js';
 
 @singleton()
 export default class DatabaseClient extends PrismaClient implements Disposable {
   constructor() {
-    super();
+    super({
+      adapter: new PrismaPg({
+        connectionString: process.env.DATABASE_URL,
+      }),
+    });
   }
 
   /**
@@ -22,7 +27,7 @@ export default class DatabaseClient extends PrismaClient implements Disposable {
   }
 
   async runDatabaseMigrations(): Promise<void> {
-    ChildProcess.execSync('npm run prisma:migrate:deploy', { stdio: 'inherit', cwd: APP_ROOT_DIR });
+    ChildProcess.execSync('npm run prisma:migrate:production', { stdio: 'inherit', cwd: APP_ROOT_DIR });
   }
 
   async dispose(): Promise<void> {

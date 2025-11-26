@@ -1,4 +1,4 @@
-import * as PrismaClient from '@prisma/client';
+import * as PrismaClient from '../../../../../database/prisma-client/client.js';
 import { container } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type LocalFile from '../../../../../files/local/LocalFile.js';

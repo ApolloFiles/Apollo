@@ -1,4 +1,4 @@
-import type PrismaClient from '@prisma/client';
+import type { Prisma } from '../../../../../../database/prisma-client/client.js';
 import Crypto from 'node:crypto';
 import { container } from 'tsyringe';
 import type { RawData } from 'ws';
@@ -45,7 +45,7 @@ export default class PlayerSession {
   private playerState: { lastUpdated: Date, data: { currentTime: number } } | null = null;  // TODO
   public readonly tmpDir: TemporaryDirectory;
 
-  public readonly watchProgressToUpdate: PrismaClient.Prisma.MediaLibraryUserWatchProgressUpsertArgs[] = [];
+  public readonly watchProgressToUpdate: Prisma.MediaLibraryUserWatchProgressUpsertArgs[] = [];
 
   constructor(id: string, owner: ApolloUser) {
     this.id = id;

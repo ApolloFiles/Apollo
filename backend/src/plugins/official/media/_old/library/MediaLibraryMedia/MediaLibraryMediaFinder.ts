@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../../../../../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
 import MediaLibraryMedia from './MediaLibraryMedia.js';
