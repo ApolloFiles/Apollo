@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { authClient } from '$lib/auth-client';
+  import HrSectionBreak from '$lib/components/login/HrSectionBreak.svelte';
   import type { Component } from 'svelte';
   import IconApple from 'virtual:icons/logos/apple';
   import IconBluesky from 'virtual:icons/logos/bluesky';
@@ -12,7 +14,6 @@
   import IconReddit from 'virtual:icons/logos/reddit-icon';
   import IconTelegram from 'virtual:icons/logos/telegram';
   import IconExTwitter from 'virtual:icons/logos/x';
-  import { authClient } from '$lib/auth-client';
   import type { PageProps } from './$types';
 
   const assetThirdPartyLoginLogos: Record<string, any> = import.meta.glob('$lib/assets/login/third-party/*.svg', {
@@ -98,9 +99,7 @@
           </div>
         </div>
 
-        <div class="hr-section-break mt-4 mb-4">
-          <span>or continue with</span>
-        </div>
+        <HrSectionBreak>or continue with</HrSectionBreak>
       {/if}
 
       <div class="first-party-login-container">

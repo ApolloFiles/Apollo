@@ -1,0 +1,45 @@
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+
+  let { children }: { children: Snippet } = $props();
+</script>
+
+<div class="hr-section-break mt-4 mb-4">
+  <span>{@render children()}</span>
+</div>
+
+<style>
+  /* Original author: https://stackoverflow.com/a/22603610/9346616 */
+
+  .hr-section-break {
+    display:     block;
+    text-align:  center;
+    overflow:    hidden;
+    white-space: nowrap;
+  }
+
+  .hr-section-break > span {
+    position: relative;
+    display:  inline-block;
+  }
+
+  .hr-section-break > span:before,
+  .hr-section-break > span:after {
+    content:    '';
+    position:   absolute;
+    top:        50%;
+    width:      9999px;
+    height:     1px;
+    background: var(--bs-secondary);
+  }
+
+  .hr-section-break > span:before {
+    right:        100%;
+    margin-right: 15px;
+  }
+
+  .hr-section-break > span:after {
+    left:        100%;
+    margin-left: 15px;
+  }
+</style>
