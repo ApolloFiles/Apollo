@@ -71,7 +71,7 @@
 
       {#if data.availableLoginProviders.length > 0}
         <div class="third-party-login-container">
-          <h6 class="text-muted">Sign in with</h6>
+          <h2 class="h6 text-muted">Sign in with</h2>
 
           <div class="d-flex flex-wrap">
             {#each data.availableLoginProviders as provider}
