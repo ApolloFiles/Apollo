@@ -10,6 +10,7 @@ import { ContainerTokens } from '../../../../../../constants.js';
 import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
 import LocalFileSystem from '../../../../../../files/local/LocalFileSystem.js';
 import FileTypeUtils from '../../../../../../plugins/official/media/_old/FileTypeUtils.js';
+import LibraryManager from '../../../../../../plugins/official/media/_old/libraries/LibraryManager.js';
 import MediaLibraryMediaFinder
   from '../../../../../../plugins/official/media/_old/library/MediaLibraryMedia/MediaLibraryMediaFinder.js';
 import type MediaLibraryMediaItem
@@ -151,12 +152,12 @@ export default class PlayerSessionRouter implements Router {
           type: 'object',
           properties: {
             mediaItem: { type: 'string' },
-            startOffset: { type: 'number' },
+            startOffset: { type: 'string' },
           },
           required: ['mediaItem', 'startOffset'],
         },
       },
-    }, async (request: FastifyRequest<{ Querystring: { mediaItem: string, startOffset: number } }>, reply): Promise<RouteReturn> => {
+    }, async (request: FastifyRequest<{ Querystring: { mediaItem: string, startOffset: string } }>, reply): Promise<RouteReturn> => {
       const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
       if (apolloUser == null) {
         return reply
@@ -180,11 +181,6 @@ export default class PlayerSessionRouter implements Router {
       }
 
       try {
-        const startOffset = this.parseUserInputInt(reply, request.query?.startOffset, 0);
-        if (startOffset == null) {
-          return reply;
-        }
-
         const mediaItemId = this.parseUserInputBigInt(request.query?.mediaItem, 0n);
         if (mediaItemId == null || mediaItemId <= 0n) {
           return reply
@@ -194,12 +190,25 @@ export default class PlayerSessionRouter implements Router {
         }
 
         const mediaItem = await this.findMediaItem(mediaItemId, apolloUser);
-
         if (mediaItem == null || !mediaItem.canRead(apolloUser)) {
           return reply
             .status(404)
             .type('text/plain')
             .send('The requested media file does not exist or you do not have permission to read it');
+        }
+
+        let startOffset: number | null = null;
+
+        if (request.query?.startOffset === 'auto') {
+          const watchProgress = await (await new LibraryManager(apolloUser).getLibrary(mediaItem.libraryId.toString()))!.fetchMediaWatchProgressInSeconds(mediaItemId);
+          startOffset = watchProgress ?? 0;
+        }
+
+        if (startOffset == null) {
+          startOffset = this.parseUserInputInt(reply, request.query?.startOffset, 0);
+          if (startOffset == null) {
+            return reply;
+          }
         }
 
         const owningUser = await this.userProvider.provideByAuthId(mediaItem.libraryOwnerId);
@@ -674,14 +683,19 @@ export default class PlayerSessionRouter implements Router {
       return defaultValue;
     }
 
+    if (typeof userInput === 'string' && /^[0-9]+$/.test(userInput)) {
+      userInput = parseInt(userInput, 10);
+    }
+
     if (typeof userInput === 'number' && Number.isSafeInteger(userInput) && userInput >= 0) {
       return userInput;
     }
 
+
     reply
       .status(400)
       .type('application/json')
-      .send({ error: `Parameter 'startOffset' needs to be a positive integer` });
+      .send({ error: `Parameter 'startOffset' needs to be a positive integer or 'auto'` });
     return null;
   }
 
