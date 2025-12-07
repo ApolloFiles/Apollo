@@ -8,7 +8,7 @@ import LocalFileSystem from './local/LocalFileSystem.js';
 import type VirtualFileSystem from './VirtualFileSystem.js';
 
 type UserSystemFileSystems = {
-//  trashBin: VirtualFileSystem,
+  //  trashBin: VirtualFileSystem,
   tmp: VirtualFileSystem,
   cache: ApolloUserCacheFileSystem,
 }
@@ -39,16 +39,22 @@ export default class FileSystemProvider {
     return {
       // FIXME: I don't think one _trash file system works... If I delete something on an S3 fs, I can't download the file to local _trash and delete in in S3...
       //        Each file system needs to have its own concept of a trash bin and Apollo needs to be able to quickly display a (unified?) trash bin, if possible...
-//      trashBin: this.createSystemLocalFileSystem(user, '_trash', false),
+      //      trashBin: this.createSystemLocalFileSystem(user, '_trash', false),
       tmp: this.createSystemLocalFileSystem('_tmp', user, this.apolloDirectoryProvider.getUserTemporaryDirectory(user.id)),
       cache: new ApolloUserCacheFileSystem(this.createSystemLocalFileSystem('_cache', user, fileSystemBaseDir)),
     };
   }
 
   private async findLocalFileSystems(user: ApolloUser, fileSystemBaseDir: string): Promise<LocalFileSystem[]> {
-    return (await NodeFsUtils.readdirWithTypesIfExists(fileSystemBaseDir))
+    const localUserFileSystems = (await NodeFsUtils.readdirWithTypesIfExists(fileSystemBaseDir))
       .filter((file) => file.isDirectory() && !file.name.startsWith('_'))
       .map((dir) => new LocalFileSystem(dir.name, user, { fs_local: { pathOnHost: Path.join(fileSystemBaseDir, dir.name) } }));
+
+    if (localUserFileSystems.length === 0) {
+      localUserFileSystems.push(new LocalFileSystem('default', user, { fs_local: { pathOnHost: Path.join(fileSystemBaseDir, 'default') } }));
+    }
+
+    return localUserFileSystems;
   }
 
   private createSystemLocalFileSystem(id: string, owner: ApolloUser, baseDir: string): LocalFileSystem {
