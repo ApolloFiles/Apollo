@@ -3,7 +3,7 @@
   import IconArrowBack from 'virtual:icons/tabler/arrow-back-up';
   import IconPlayerSkipForward from 'virtual:icons/tabler/player-skip-forward';
   import IconPlayerSkipBack from 'virtual:icons/tabler/player-skip-back';
-  import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
+  import type VideoPlayer from '../../client-side/VideoPlayer.svelte.js';
 
   let { episodeTitlePrefix, mediaMetadata, initiateMediaChange, autoPlayEnabled = $bindable() }: {
     episodeTitlePrefix: string,

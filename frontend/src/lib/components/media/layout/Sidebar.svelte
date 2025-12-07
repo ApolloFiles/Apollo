@@ -57,19 +57,19 @@
       </span>
     </button>
     <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="appDropdown">
-      <li><a class="dropdown-item" href="/browse"><IconFolder class="icon me-2" />File Browser</a></li>
-      <li><a class="dropdown-item active" href="/media-new"><IconCircleCaretRight class="icon me-2" />Media</a></li>
+      <li><a class="dropdown-item" href="/browse/"><IconFolder class="icon me-2" />File Browser</a></li>
+      <li><a class="dropdown-item active" href="/media/"><IconCircleCaretRight class="icon me-2" />Media</a></li>
     </ul>
   </div>
 
   <div class="nav flex-column">
-    <a href="/media-new"
+    <a href="/media/"
        class="nav-link"
        class:active={activeLibraryId == null}
     ><IconHome class="icon me-2" />Übersicht</a>
 
     {#each ownedLibraries as library}
-      <a href="/media-new/{library.id}"
+      <a href="/media/{library.id}"
          class="nav-link"
          class:active={activeLibraryId === library.id}>
         <IconDeviceDesktop class="icon me-2" />{library.name}
@@ -81,7 +81,7 @@
     {/if}
 
     {#each sharedLibraries as library}
-      <a href="/media-new/{library.id}"
+      <a href="/media/{library.id}"
          class="nav-link"
          class:active={activeLibraryId === library.id}>
         <IconDeviceDesktop class="icon me-2" />{library.name}

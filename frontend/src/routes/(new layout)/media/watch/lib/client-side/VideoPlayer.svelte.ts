@@ -1,8 +1,8 @@
 import type { StartPlaybackResponse } from '../../legacy-types';
 import type SubtitleTrack from './backends/subtitles/SubtitleTrack';
 import type VideoPlayerBackend from './backends/VideoPlayerBackend';
-import VideoPlayerExtras from './VideoPlayerExtras.svelte';
-import type { ReferencePlayerState } from './WebSocketClient.svelte';
+import VideoPlayerExtras from './VideoPlayerExtras.svelte.js';
+import type { ReferencePlayerState } from './WebSocketClient.svelte.js';
 
 type MediaMetadata = StartPlaybackResponse['mediaMetadata'];
 

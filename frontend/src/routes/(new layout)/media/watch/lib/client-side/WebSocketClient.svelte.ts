@@ -6,7 +6,7 @@ import {
   type PlayerStateUpdateMessage, type RequestStateChangePlayingMessage, type RequestStateChangeTimeMessage,
   type SessionInfoMessage, WebSocketMessageValidator, type WelcomeMessage,
 } from '../../legacy-types';
-import type VideoPlayer from './VideoPlayer.svelte';
+import type VideoPlayer from './VideoPlayer.svelte.js';
 
 export type WebSocketSelfInfo = {
   connectionId: number;

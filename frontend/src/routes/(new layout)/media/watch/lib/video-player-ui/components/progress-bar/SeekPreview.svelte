@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type VideoPlayerExtras from '../../../client-side/VideoPlayerExtras.svelte';
+  import type VideoPlayerExtras from '../../../client-side/VideoPlayerExtras.svelte.js';
 
   const { visible, position, time, playerExtras }: {
     visible: boolean,

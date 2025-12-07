@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type VideoPlayer from '../client-side/VideoPlayer.svelte';
+  import type VideoPlayer from '../client-side/VideoPlayer.svelte.js';
   import VideoContextMenu from './components/VideoContextMenu.svelte';
   import ControlsBottomBar from './layout/ControlsBottomBar.svelte';
   import ControlsTopBar from './layout/ControlsTopBar.svelte';

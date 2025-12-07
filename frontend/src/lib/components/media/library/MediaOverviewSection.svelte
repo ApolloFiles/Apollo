@@ -25,7 +25,7 @@
 
   <div class="media-scroller">
     {#each items as item}
-      <a href="/media-new/{item.libraryId}/{item.mediaId}" class="media-card">
+      <a href="/media/{item.libraryId}/{item.mediaId}" class="media-card">
         <picture class="s-BUJUVtHZo5xi">
 <!--          <source srcset="/api/_frontend/media/{item.libraryId}/{item.mediaId}/poster.avif" type="image/avif" />-->
           <img src="/api/_frontend/media/{item.libraryId}/{item.mediaId}/poster.jpg" alt="" />

@@ -4,11 +4,11 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { BackendConfig } from '../../../../../backend/src/utils/orpc/RouteTypes';
+  import type { BackendConfig } from '../../../../../../backend/src/utils/orpc/RouteTypes';
   import type { StartPlaybackResponse } from './legacy-types';
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
-  import VideoPlayer from './lib/client-side/VideoPlayer.svelte';
-  import WebSocketClient from './lib/client-side/WebSocketClient.svelte';
+  import VideoPlayer from './lib/client-side/VideoPlayer.svelte.js';
+  import WebSocketClient from './lib/client-side/WebSocketClient.svelte.js';
   import { fetchPlaybackSessionInfo } from './lib/playback-session-backend-api';
   import PlaybackSessionButton from './lib/PlaybackSessionButton.svelte';
   import VideoPlayerUI from './lib/video-player-ui/VideoPlayerUI.svelte';

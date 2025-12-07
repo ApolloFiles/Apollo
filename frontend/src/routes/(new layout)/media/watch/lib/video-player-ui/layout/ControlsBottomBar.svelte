@@ -3,7 +3,7 @@
   import IconHeadphones from 'virtual:icons/tabler/headphones';
   import IconPause from 'virtual:icons/tabler/player-pause';
   import IconPlay from 'virtual:icons/tabler/player-play';
-  import type VideoPlayer from '../../client-side/VideoPlayer.svelte';
+  import type VideoPlayer from '../../client-side/VideoPlayer.svelte.js';
   import BottomMenuBox from '../components/BottomMenuBox.svelte';
   import FullscreenButton from '../components/FullscreenButton.svelte';
   import VideoProgressBar from '../components/progress-bar/VideoProgressBar.svelte';
