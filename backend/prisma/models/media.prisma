@@ -50,7 +50,8 @@ model MediaLibraryMediaItem {
   seasonNumber  Int?     @map("season_number")
   synopsis      String?
 
-  media MediaLibraryMedia @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  media                         MediaLibraryMedia               @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  MediaLibraryUserWatchProgress MediaLibraryUserWatchProgress[]
 
   @@unique([mediaId, filePath])
   @@map("media_libraries_media_items")
@@ -62,6 +63,8 @@ model MediaLibraryUserWatchProgress {
   mediaItemId   BigInt   @map("media_item_id")
   durationInSec Int      @map("duration_in_sec")
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  mediaItem MediaLibraryMediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
 
   @@id([userId, mediaItemId])
   @@map("media_libraries_user_watch_progress")
