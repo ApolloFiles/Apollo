@@ -1,4 +1,6 @@
 <script lang="ts">
+  import 'inter-ui/inter.css';
+
   import { page } from '$app/state';
   import Sidebar from '$lib/components/media/layout/Sidebar.svelte';
   import TopNavbar from '$lib/components/media/layout/TopNavbar.svelte';
@@ -20,8 +22,6 @@
 
 <!-- FIXME: Get rid of these external styles -->
 <svelte:head>
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
         integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
