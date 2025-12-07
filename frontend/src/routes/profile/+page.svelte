@@ -4,9 +4,9 @@
 
   let { data }: PageProps = $props();
 
-  const linkedAccounts = data.userProfile?.linkedAccounts ?? [];
-  const sessions = data.userProfile?.session.all ?? [];
-  const currentSessionId = data.userProfile?.session.current ?? null;
+  const linkedAccounts = $derived(data.userProfile?.linkedAccounts ?? []);
+  const sessions = $derived(data.userProfile?.session.all ?? []);
+  const currentSessionId = $derived(data.userProfile?.session.current ?? null);
 
   function revokeSession(sessionToken: string): void {
     // TODO: Show loading indicator in UI
