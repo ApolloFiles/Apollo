@@ -1,9 +1,11 @@
-import * as Sentry from '@sentry/node';
 import FastifyWebSocket from '@fastify/websocket';
-import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import * as Sentry from '@sentry/node';
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import * as FastifyTypeProviderZod from 'fastify-type-provider-zod';
 import Http from 'node:http';
 import { injectAll, singleton } from 'tsyringe';
 import { ContainerTokens } from '../../constants.js';
+import { jsonStringifyWithBigInt } from '../../utils/json.js';
 import ORPCRequestHandler from '../../utils/orpc/ORPCRequestHandler.js';
 import { HttpError } from '../errors/HttpErrors.js';
 import type Router from '../routes/Router.js';
@@ -11,9 +13,17 @@ import FrontendRequestHandlerFactory from './FrontendRequestHandlerFactory.js';
 import InitialRequestRouter from './InitialRequestRouter.js';
 import NotFoundHandlerPlugin from './NotFoundHandlerPlugin.js';
 
+export type FastifyInstanceWithZod = Fastify.FastifyInstance<
+  Fastify.RawServerDefault,
+  Fastify.RawRequestDefaultExpression,
+  Fastify.RawReplyDefaultExpression,
+  Fastify.FastifyBaseLogger,
+  FastifyTypeProviderZod.ZodTypeProvider
+>;
+
 @singleton()
 export default class FastifyWebServer {
-  private readonly fastify: FastifyInstance;
+  private readonly fastify: FastifyInstanceWithZod;
 
   constructor(
     @injectAll(ContainerTokens.ROUTER) routers: Router[],
@@ -43,6 +53,8 @@ export default class FastifyWebServer {
     this.registerErrorHandler();
     this.fastify.register(NotFoundHandlerPlugin);
 
+    this.fastify.setValidatorCompiler(FastifyTypeProviderZod.validatorCompiler);
+    this.fastify.setSerializerCompiler(FastifyTypeProviderZod.serializerCompiler);
     this.fastify.register(FastifyWebSocket);
 
     this.registerDefaultHeaders();
@@ -68,15 +80,18 @@ export default class FastifyWebServer {
       }
 
       if ((err as any).code === 'FST_ERR_VALIDATION') {
+        const responseBody = {
+          error: 'Request validation failed',
+          validation: {
+            context: (err as any).validationContext,
+            errors: (err as any).validation,
+          },
+        };
+
         return reply
           .code(400)
-          .send({
-            error: 'Bad Request (Validation Error)',
-            validation: {
-              context: (err as any).validationContext,
-              errors: (err as any).validation,
-            },
-          });
+          .type('application/json; charset=utf-8')
+          .send(jsonStringifyWithBigInt(responseBody) + '\n');
       }
 
       console.error(err);
