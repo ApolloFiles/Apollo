@@ -5,7 +5,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { BackendConfig } from '../../../../../backend/src/utils/orpc/RouteTypes';
-  import type { StartPlaybackResponse } from '../legacy-types';
+  import type { StartPlaybackResponse } from './legacy-types';
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte';
   import WebSocketClient from './lib/client-side/WebSocketClient.svelte';

@@ -1,4 +1,4 @@
-import type { PlayerSessionInfoResponse, RegenerateJoinTokenResponse } from '../../legacy-types';
+import type { PlayerSessionInfoResponse, RegenerateJoinTokenResponse } from '../legacy-types';
 
 function getSessionId(): string | null {
   return new URL(location.href).searchParams.get('session');

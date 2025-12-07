@@ -1,4 +1,4 @@
-import type { StartPlaybackResponse } from '../../../../legacy-types';
+import type { StartPlaybackResponse } from '../../../legacy-types';
 import AssSubtitleTrack from './subtitles/AssSubtitleTrack';
 import NativeSubtitleTrack from './subtitles/NativeSubtitleTrack';
 import type SubtitleTrack from './subtitles/SubtitleTrack';

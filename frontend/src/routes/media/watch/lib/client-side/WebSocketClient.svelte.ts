@@ -5,7 +5,7 @@ import {
   MESSAGE_TYPE,
   type PlayerStateUpdateMessage, type RequestStateChangePlayingMessage, type RequestStateChangeTimeMessage,
   type SessionInfoMessage, WebSocketMessageValidator, type WelcomeMessage,
-} from '../../../legacy-types';
+} from '../../legacy-types';
 import type VideoPlayer from './VideoPlayer.svelte';
 
 export type WebSocketSelfInfo = {

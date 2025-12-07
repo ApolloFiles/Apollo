@@ -1,4 +1,4 @@
-import type { StartPlaybackResponse } from '../../../legacy-types';
+import type { StartPlaybackResponse } from '../../legacy-types';
 import type SubtitleTrack from './backends/subtitles/SubtitleTrack';
 import type VideoPlayerBackend from './backends/VideoPlayerBackend';
 import VideoPlayerExtras from './VideoPlayerExtras.svelte';
