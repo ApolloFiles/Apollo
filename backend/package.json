@@ -48,13 +48,13 @@
   },
   "dependencies": {
     "@fastify/websocket": "^11.2.0",
-    "@orpc/server": "^1.11.3",
-    "@prisma/adapter-pg": "^7.0.1",
-    "@prisma/client": "^7.0.1",
-    "@sentry/node": "^10.27.0",
+    "@orpc/server": "^1.12.2",
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "^7.1.0",
+    "@sentry/node": "^10.29.0",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#9e15d1631d46e845ec9839b38b09201b659d1475",
     "@types/mime-types": "^3.0.1",
-    "better-auth": "^1.4.3",
+    "better-auth": "^1.4.5",
     "fastify": "^5.6.2",
     "fastify-plugin": "^5.1.0",
     "mime-types": "^3.0.2",
@@ -73,11 +73,11 @@
     "@types/node": "^24.10.1",
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^4.0.14",
-    "prisma": "^7.0.1",
+    "@vitest/coverage-v8": "^4.0.15",
+    "prisma": "^7.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.14",
+    "vitest": "^4.0.15",
     "vitest-mock-extended": "^3.1.0"
   }
 }
