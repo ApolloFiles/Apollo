@@ -1,5 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import IconPlay from 'virtual:icons/tabler/player-play-filled';
+  import IconRotate from 'virtual:icons/tabler/rotate';
+  import IconChevronDown from 'virtual:icons/tabler/chevron-down';
+  import IconChevronUp from 'virtual:icons/tabler/chevron-up';
 
   let { libraryId, mediaId, title, synopsis, nextMediaItem }: {
     libraryId: string,
@@ -55,7 +59,7 @@
 
 <div class="hero-backdrop"
      style:background-image="url('/api/_frontend/media/{libraryId}/{mediaId}/backdrop-tmp.jpg')"
-     >
+>
   <div class="hero-overlay">
     <div class="hero-content">
       <!-- Optional: Movie Logo instead of text title -->
@@ -64,14 +68,12 @@
       <h1 class="hero-title">{title}</h1>
 
       <!-- FIXME: Fill with real data -->
-      {#if false}
-        <div class="hero-meta">
-          <span>2024</span>
-          <span class="rating-badge">FSK 16</span>
-          <span>1h 54m</span>
-          <span class="badge bg-secondary">4K Ultra HD</span>
-        </div>
-      {/if}
+      <div class="hero-meta">
+        <span>YYYY</span>
+        <span class="rating-badge">FSK -1</span>
+        <!-- <span>1h 54m</span> -->
+        <span class="badge bg-secondary">40K Hyper HD</span>
+      </div>
 
       {#if synopsis != null}
         <p class="hero-synopsis"
@@ -85,9 +87,9 @@
             class="read-more-btn"
           >
             {#if isSynopsisExpanded}
-              Show Less <i class="fas fa-chevron-up"></i>
+              Show Less <IconChevronUp class="icon" />
             {:else}
-              Read More <i class="fas fa-chevron-down"></i>
+              Read More <IconChevronDown class="icon" />
             {/if}
           </button>
         {/if}
@@ -110,14 +112,18 @@
         </div>
 
         <div class="action-buttons">
-          <a href={`/api/_frontend/media/player-session/start-watching?mediaItem=${encodeURIComponent(nextMediaItem.id)}&startOffset=auto`}
-             class="btn-play">
-            <i class="fas fa-play"></i> Resume
+          <a
+            href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=auto"
+            class="btn-action">
+            <IconPlay class="icon" />
+            Resume
           </a>
 
-          <a href={`/api/_frontend/media/player-session/start-watching?mediaItem=${encodeURIComponent(nextMediaItem.id)}&startOffset=0`}
-             class="btn-secondary-action">
-            <i class="fas fa-undo"></i> Start Over
+          <a
+            href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=0"
+            class="btn-action btn-action-secondary">
+            <IconRotate class="icon" />
+            Start Over
           </a>
         </div>
       {/if}
@@ -230,7 +236,7 @@
     gap:     15px;
   }
 
-  .btn-play {
+  .btn-action {
     background-color: var(--text-primary);
     color:            var(--text-inverse);
     border:           none;
@@ -240,33 +246,27 @@
     display:          flex;
     align-items:      center;
     gap:              10px;
-    transition:       transform 0.2s;
     text-decoration:  none;
+    transition:       background-color .2s;
+    backdrop-filter:  blur(5px);
   }
 
-  .btn-play:hover {
-    transform:        scale(1.05);
+  .btn-action:hover {
     background-color: var(--text-secondary);
-    /* Fallback or specific hover */
   }
 
-  .btn-secondary-action {
+  .btn-action.btn-action-secondary {
     background-color: var(--btn-secondary-bg);
     color:            var(--text-primary);
-    border:           none;
     padding:          12px 20px;
-    font-weight:      600;
-    border-radius:    6px;
-    display:          flex;
-    align-items:      center;
-    gap:              10px;
-    backdrop-filter:  blur(5px);
-    transition:       background-color 0.2s;
-    text-decoration:  none;
   }
 
-  .btn-secondary-action:hover {
+  .btn-action.btn-action-secondary:hover {
     background-color: var(--btn-secondary-hover);
+  }
+
+  .hero-backdrop {
+    height: 85vh;
   }
 
   /* Mobile Responsiveness */
@@ -284,9 +284,5 @@
     .hero-backdrop {
       height: 60vh;
     }
-  }
-
-  .hero-backdrop {
-    height: 85vh;
   }
 </style>

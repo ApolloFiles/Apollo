@@ -1,4 +1,6 @@
 <script lang="ts">
+  import IconPlay from 'virtual:icons/tabler/player-play-filled';
+
   let {
     libraryId,
     mediaId,
@@ -37,8 +39,8 @@
    class:active={isNextToWatch}
    aria-label="Play Episode {episodeNumber}: {title}">
   <div class="episode-thumbnail">
-    <img src="/api/_frontend/media/{libraryId}/{mediaId}/{mediaItemId}/thumbnail-new.png" alt="">
-    <div class="play-overlay"><i class="fas fa-play text-white"></i></div>
+    <img src="/api/_frontend/media/{libraryId}/{mediaId}/{mediaItemId}/thumbnail-new.png" alt="" loading="lazy" />
+    <div class="play-overlay"><IconPlay class="icon" /></div>
     {#if watchProgress != null}
       <div class="episode-progress">
         <div class="episode-progress-bar" style="width: {Math.floor(watchProgress.asPercentage * 100)}%"></div>

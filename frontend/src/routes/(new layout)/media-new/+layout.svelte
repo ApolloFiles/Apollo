@@ -20,14 +20,6 @@
   }
 </script>
 
-<!-- FIXME: Get rid of these external styles -->
-<svelte:head>
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
-        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-</svelte:head>
-
 <Sidebar
   bind:this={sidebarRef}
   libraries={libraryData}
@@ -84,6 +76,10 @@
     color:            var(--text-primary);
     font-family:      'Inter', sans-serif;
     overflow-x:       hidden;
+  }
+
+  :global(.icon) {
+    vertical-align: text-top;
   }
 
   /* Main Content */

@@ -82,7 +82,7 @@
               >
                 {#if determineIconComponent(provider)}
                   {@const IconComponent = determineIconComponent(provider)}
-                  <IconComponent style="font-size: 1.5rem" role="presentation"></IconComponent>
+                  <IconComponent class="icon" style="font-size: 1.5rem" role="presentation"></IconComponent>
                 {:else}
                   {@const customSvg = assetThirdPartyLoginLogos[`/src/lib/assets/login/third-party/${provider}.svg`]}
                   {#if customSvg}

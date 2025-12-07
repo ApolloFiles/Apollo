@@ -1,5 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import IconChevronDown from 'virtual:icons/tabler/chevron-down';
+  import IconFolder from 'virtual:icons/tabler/folder-filled';
+  import IconCircleCaretRight from 'virtual:icons/tabler/circle-caret-right';
+  import IconHome from 'virtual:icons/tabler/home-filled';
+  import IconDeviceDesktop from 'virtual:icons/tabler/device-desktop';
 
   let { libraries, activeLibraryId }: {
     libraries: { id: string, name: string, isOwner: boolean }[],
@@ -48,12 +53,12 @@
       <img src="/logo.svg" alt="Logo" height="40" width="40" style="height: 40px; margin-right: 10px">
       <span>
         <span class="fw-bold d-block">Apollo</span>
-        <small class="text-secondary d-block" style="font-size: 0.8rem">Media&nbsp;<i class="fas fa-chevron-down ms-1"></i></small>
+        <small class="text-secondary d-block" style="font-size: 0.8rem">Media&nbsp;<IconChevronDown class="icon ms-1 w-25 h-25" /></small>
       </span>
     </button>
     <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="appDropdown">
-      <li><a class="dropdown-item" href="/browse"><i class="fas fa-folder me-2"></i> File Browser</a></li>
-      <li><a class="dropdown-item active" href="/media-new"><i class="fas fa-play-circle me-2 text-accent"></i>Media</a></li>
+      <li><a class="dropdown-item" href="/browse"><IconFolder class="icon me-2" />File Browser</a></li>
+      <li><a class="dropdown-item active" href="/media-new"><IconCircleCaretRight class="icon me-2" />Media</a></li>
     </ul>
   </div>
 
@@ -61,13 +66,14 @@
     <a href="/media-new"
        class="nav-link"
        class:active={activeLibraryId == null}
-    ><i class="fas fa-home"></i>&nbsp;Übersicht</a>
+    ><IconHome class="icon me-2" />Übersicht</a>
 
     {#each ownedLibraries as library}
       <a href="/media-new/{library.id}"
          class="nav-link"
-         class:active={activeLibraryId === library.id}
-      ><i class="fas fa-tv"></i>&nbsp;{library.name}</a>
+         class:active={activeLibraryId === library.id}>
+        <IconDeviceDesktop class="icon me-2" />{library.name}
+      </a>
     {/each}
 
     {#if ownedLibraries.length > 0 && sharedLibraries.length > 0}
@@ -77,8 +83,9 @@
     {#each sharedLibraries as library}
       <a href="/media-new/{library.id}"
          class="nav-link"
-         class:active={activeLibraryId === library.id}
-      ><i class="fas fa-film"></i>&nbsp;{library.name}</a>
+         class:active={activeLibraryId === library.id}>
+        <IconDeviceDesktop class="icon me-2" />{library.name}
+      </a>
     {/each}
   </div>
 </nav>
@@ -120,12 +127,6 @@
   .nav-link.active {
     color:            var(--text-primary);
     background-color: var(--hover-bg);
-  }
-
-  .nav-link i {
-    margin-right: 10px;
-    width:        20px;
-    text-align:   center;
   }
 
   /* Sidebar Dropdown Hover */
@@ -196,14 +197,5 @@
     .sidebar.active {
       transform: translateX(0);
     }
-  }
-
-  /* Utility */
-  .text-accent {
-    color: var(--accent-color);
-  }
-
-  .dropdown-item.active .text-accent {
-    color: white !important;
   }
 </style>

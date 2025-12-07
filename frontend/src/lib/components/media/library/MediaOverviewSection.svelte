@@ -1,4 +1,6 @@
 <script lang="ts">
+  import IconChevronRight from 'virtual:icons/tabler/chevron-right';
+
   let { title, viewAllLink, items }: {
     title: string,
     viewAllLink?: string,
@@ -15,8 +17,9 @@
   <div class="section-title">
     <span>{title}</span>
     {#if viewAllLink != null}
-      <a href={viewAllLink} class="text-decoration-none text-secondary fs-6">View All&nbsp;<i
-        class="fas fa-chevron-right ms-1"></i></a>
+      <a href={viewAllLink} class="text-decoration-none text-secondary fs-6">
+        View All&nbsp;<IconChevronRight class="icon ms-1" />
+      </a>
     {/if}
   </div>
 
