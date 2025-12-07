@@ -2,7 +2,11 @@ import type VirtualFile from '../../../../files/VirtualFile.js';
 
 export default class UserFileHelper {
   static findFolderPoster(directory: VirtualFile): Promise<VirtualFile | null> {
-    return UserFileHelper.findFirstFileMatchingInDirectory(directory, /^(?:poster|folder|cover)\.(?:png|jpg|jpeg|webp)$/ig);
+    return UserFileHelper.findFirstFileMatchingInDirectory(directory, /^(?:poster|folder|cover)\.(?:png|jpg|jpeg|avif|webp)$/ig);
+  }
+
+  static findFolderBackdrop(directory: VirtualFile): Promise<VirtualFile | null> {
+    return UserFileHelper.findFirstFileMatchingInDirectory(directory, /^(?:backdrop|background)\.(?:png|jpg|jpeg|avif|webp)$/ig);
   }
 
   static async findFirstFileMatchingInDirectory(directory: VirtualFile, fileNamePattern: RegExp): Promise<VirtualFile | null> {

@@ -28,6 +28,182 @@ export default class MediaRouter implements Router {
   }
 
   register(server: FastifyInstance): void {
+    server.get('/:libraryId/:mediaId/:mediaItemId/thumbnail-new.png', async (request: FastifyRequest<{ Params: { libraryId: string, mediaId: string, mediaItemId: string } }>, reply): Promise<RouteReturn> => {
+      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
+      if (apolloUser == null) {
+        return reply
+          .status(401)
+          .send({ error: 'Unauthorized' });
+      }
+
+      const requestedLibraryId = request.params.libraryId;
+      const requestedMediaId = request.params.mediaId;
+      const requestedMediaItemId = request.params.mediaItemId;
+
+      const library = await new LibraryManager(apolloUser).getLibrary(requestedLibraryId);
+      if (library == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Library with id '${requestedLibraryId}' not found!`);
+      }
+
+      const media = await library.fetchMedia(BigInt(requestedMediaId));
+      if (media == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Media with id '${requestedMediaId}' not found in library '${library.id}'!`);
+      }
+
+      const mediaItem = await library.fetchMediaItem(BigInt(requestedMediaItemId));
+      if (mediaItem == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Media item with id '${requestedMediaItemId}' not found for media '${requestedMediaId}' in library '${library.id}'!`);
+      }
+
+      const libraryOwnerFileSystems = await this.fileSystemProvider.provideForUser(library.owner);
+      const libraryOwnerDefaultFileSystem = libraryOwnerFileSystems.user[0];
+
+      const mediaFile = libraryOwnerDefaultFileSystem.getFile(mediaItem.filePath);
+      const mediaFileStat = await mediaFile.stat();
+      if (!mediaFileStat.isFile()) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`File '${mediaItem.filePath}' not found!`);
+      }
+
+      //      const thumbnailCacheKey = `${req.originalUrl}${mediaFileStat.mtime.getTime()}${mediaFileStat.size}`;
+      //      const cachedThumbnail = await FileSystemBasedCache.getInstance()
+      //        .getUserAssociatedCachedFile(mediaFile.fileSystem.owner, thumbnailCacheKey);
+      //      if (cachedThumbnail != null) {
+      //        return reply
+      //          .type('image/png')
+      //          .send(cachedThumbnail);
+      //      }
+
+      if (!(mediaFile instanceof LocalFile)) {
+        throw new Error('Only LocalFile is supported in MediaRouter for thumbnail generation');
+      }
+
+      const thumbnail = await this.thumbnailGenerator.generateThumbnail(mediaFile);
+      if (thumbnail == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Unable to generate thumbnail for '${mediaItem.filePath}'!`);
+      }
+
+      //      await FileSystemBasedCache.getInstance()
+      //        .setUserAssociatedCachedFile(mediaFile.fileSystem.owner, thumbnailCacheKey, thumbnail.data);
+      return reply
+        .type(thumbnail.mime)
+        .send(thumbnail.data);
+    });
+
+    server.get('/:libraryId/:mediaId/backdrop-tmp.jpg', async (request: FastifyRequest<{ Params: { libraryId: string, mediaId: string } }>, reply): Promise<RouteReturn> => {
+      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
+      if (apolloUser == null) {
+        return reply
+          .status(401)
+          .send({ error: 'Unauthorized' });
+      }
+
+      const requestedLibraryId = request.params.libraryId;
+      const requestedMediaId = request.params.mediaId;
+      const requestedFileName = 'backdrop-tmp.jpg';
+
+      const library = await new LibraryManager(apolloUser).getLibrary(requestedLibraryId);
+      if (library == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Library with id '${requestedLibraryId}' not found!`);
+      }
+
+      const libraryMedia = await library.fetchMedia(BigInt(requestedMediaId));
+      if (libraryMedia == null) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`Media with id '${requestedMediaId}' not found in library '${library.id}'!`);
+      }
+
+      const libraryOwnerFileSystems = await this.fileSystemProvider.provideForUser(library.owner);
+      const libraryOwnerDefaultFileSystem = libraryOwnerFileSystems.user[0];
+
+      const libraryMediaDirectory = libraryOwnerDefaultFileSystem.getFile(libraryMedia.directoryPath);
+      if (!(await libraryMediaDirectory.isDirectory())) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`File '${requestedFileName}' not found!`);
+      }
+
+      const backdropFile = await UserFileHelper.findFolderBackdrop(libraryMediaDirectory);
+      const backdropFileStat = await backdropFile?.stat();
+      if (backdropFile == null || backdropFileStat == null || !backdropFileStat.isFile()) {
+        const posterData = await sharp({
+          create: {
+            width: 1280,
+            height: 720,
+            channels: 3,
+            background: { r: 125, g: 125, b: 125 },
+          },
+        })
+          .composite([{
+            input: {
+              text: {
+                text: `<span foreground="white">${libraryMedia.title}</span>`,
+                rgba: true,
+                width: 1000,
+                height: 720 / 2,
+              },
+            },
+          }])
+          .jpeg()
+          .toBuffer();
+
+        return reply
+          .type('image/jpeg')
+          .send(posterData);
+      }
+
+      if (!(backdropFile instanceof LocalFile)) {
+        throw new Error('Only LocalFile is supported in MediaRouter for poster files');
+      }
+
+      const backdropMimeType = await this.fileTypeUtils.getMimeType(backdropFile.getAbsolutePathOnHost());
+      if (backdropMimeType == null || !backdropMimeType.startsWith('image/')) {
+        return reply
+          .status(404)
+          .type('text/plain')
+          .send(`File '${requestedFileName}' not available!`);
+      }
+
+      const backdropDataPipeline = sharp()
+        .removeAlpha()
+        .resize({
+          height: 720,
+          fit: 'contain',
+          withoutEnlargement: true,
+        })
+        .jpeg();
+
+
+      await NodeStream.promises.pipeline(
+        backdropFile.supportsStreaming() ? backdropFile.createReadStream() : NodeStream.Readable.from(await backdropFile.read()),
+        backdropDataPipeline,
+        reply
+          .type('image/jpeg')
+          .raw,
+      );
+      return reply;
+    });
+
     server.get('/:libraryId/:titleId/:mediaItemPathBase64/thumbnail.png', async (request: FastifyRequest<{ Params: { libraryId: string, titleId: string, mediaItemPathBase64: string } }>, reply): Promise<RouteReturn> => {
       const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
       if (apolloUser == null) {
@@ -51,7 +227,7 @@ export default class MediaRouter implements Router {
       }
 
       const requestedMediaFilePath = Buffer.from(requestedMediaFilePathBase64, 'base64').toString('utf8');
-      const libraryTitleMedia = await library.fetchMedia(requestedTitleId, requestedMediaFilePath);
+      const libraryTitleMedia = await library.fetchMediaItemByPath(requestedTitleId, requestedMediaFilePath);
       if (libraryTitleMedia == null) {
         return reply
           .status(404)
@@ -99,9 +275,7 @@ export default class MediaRouter implements Router {
         .send(thumbnail.data);
     });
 
-    server.get('/:libraryId/:titleId/poster.jpg', async (request: FastifyRequest<{
-      Params: { libraryId: string, titleId: string }
-    }>, reply): Promise<RouteReturn> => {
+    server.get('/:libraryId/:titleId/poster.jpg', async (request: FastifyRequest<{ Params: { libraryId: string, titleId: string } }>, reply): Promise<RouteReturn> => {
       const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
       if (apolloUser == null) {
         return reply
@@ -121,7 +295,7 @@ export default class MediaRouter implements Router {
           .send(`Library with id '${requestedLibraryId}' not found!`);
       }
 
-      const libraryTitle = await library.fetchTitle(requestedTitleId);
+      const libraryTitle = await library.fetchMedia(BigInt(requestedTitleId));
       if (libraryTitle == null) {
         return reply
           .status(404)
@@ -218,5 +392,5 @@ export default class MediaRouter implements Router {
       );
       return reply;
     });
-  }
+}
 }

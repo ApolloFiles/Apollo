@@ -6,6 +6,7 @@ import AppConfiguration from '../../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../../constants.js';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import FileSystemProvider from '../../files/FileSystemProvider.js';
+import LibraryManager from '../../plugins/official/media/_old/libraries/LibraryManager.js';
 import type MediaLibrary from '../../plugins/official/media/_old/library/MediaLibrary/MediaLibrary.js';
 import MediaLibraryFinder from '../../plugins/official/media/_old/library/MediaLibrary/MediaLibraryFinder.js';
 import MediaLibraryMediaFinder
@@ -515,6 +516,223 @@ const collectAdminDebugInfo = oRpcBuilder
     };
   });
 
+const fetchMediaLibraryOverview = oRpcBuilder
+  .authenticated
+  .input(z.object({ libraryId: z.coerce.bigint().optional() }))
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const libraryIdToFilterBy = opts.input.libraryId;
+
+    const apolloUser = await container.resolve(UserProvider).provideByAuthId(sessionInfo.user.id);
+    if (apolloUser == null) {
+      // TODO: Proper error handling
+      console.debug('Unable to determine ApolloUser for the current session user');
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    const libraryManager = new LibraryManager(apolloUser);
+
+    type LibraryElement = {
+      id: string,
+      name: string,
+      isOwner: boolean,
+    }
+
+    type MediaElement = {
+      title: string,
+      libraryId: string,
+      mediaId: string,
+    }
+
+    type ContinueWatchingElement = MediaElement & {
+      mediaItemId: string,
+      watchProgressPercentage?: number,
+      seasonNumber?: number,
+      episodeNumber?: number,
+    };
+
+    return {
+      loggedInUser: {
+        id: apolloUser.id,
+        displayName: apolloUser.displayName,
+      },
+
+      page: {
+        libraries: (await libraryManager.getLibraries())
+          .map(l => ({
+            id: l.id,
+            name: l.name,
+            isOwner: l.owner.id === apolloUser.id,
+          })) satisfies LibraryElement[],
+        continueWatching: ((await libraryManager.fetchContinueWatchingItems(libraryIdToFilterBy)).map(i => ({
+          title: i.media.title,
+          watchProgressPercentage: Math.max(0, Math.min(1, 1 - ((i.item.durationInSec - i.watchProgressInSec) / i.item.durationInSec))),
+          libraryId: i.media.libraryId.toString(),
+          mediaId: i.media.id.toString(),
+          mediaItemId: i.item.id.toString(),
+          seasonNumber: i.item.seasonNumber ?? undefined,
+          episodeNumber: i.item.episodeNumber ?? undefined,
+        }))) satisfies ContinueWatchingElement[],
+        recentlyAdded: ((await libraryManager.fetchRecentlyAddedMedia(libraryIdToFilterBy)).map(i => ({
+          title: i.title,
+          libraryId: i.libraryId.toString(),
+          mediaId: i.id.toString(),
+        }))) satisfies MediaElement[],
+      },
+    };
+  });
+
+const fetchMedia = oRpcBuilder
+  .authenticated
+  .input(z.object({ libraryId: z.coerce.bigint(), mediaId: z.coerce.bigint() }))
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const libraryId = opts.input.libraryId;
+    const mediaId = opts.input.mediaId;
+
+    const apolloUser = await container.resolve(UserProvider).provideByAuthId(sessionInfo.user.id);
+    if (apolloUser == null) {
+      // TODO: Proper error handling
+      console.debug('Unable to determine ApolloUser for the current session user');
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    const libraryManager = new LibraryManager(apolloUser);
+
+    const library = await libraryManager.getLibrary(libraryId.toString());
+    if (library == null) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    const media = await library.fetchMediaFull(mediaId);
+    if (media == null) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    const seasonsMap: Map<number, SeasonData> = new Map();
+    for (const item of media.items) {
+      const seasonNumber = item.seasonNumber ?? 0;
+      if (!seasonsMap.has(seasonNumber)) {
+        seasonsMap.set(seasonNumber, {
+          seasonNumber: seasonNumber,
+          episodes: [],
+        });
+      }
+
+      const watchProgressInSec = await library.fetchMediaWatchProgressInSeconds(item.id);
+
+      seasonsMap.get(seasonNumber)!.episodes.push({
+        id: item.id.toString(),
+        episodeNumber: item.episodeNumber ?? 0,
+        title: item.title,
+        synopsis: item.synopsis,
+        durationInSeconds: item.durationInSec,
+        watchProgress: watchProgressInSec != null ? {
+          inSeconds: watchProgressInSec,
+          asPercentage: Math.max(0, Math.min(1, 1 - ((item.durationInSec - watchProgressInSec) / item.durationInSec))),
+        } : null,
+      });
+    }
+
+    type LibraryElement = {
+      id: string,
+      name: string,
+      isOwner: boolean,
+    }
+
+    type SeasonData = {
+      seasonNumber: number,
+      episodes: MediaItemData[],
+    }
+
+    type MediaItemData = {
+      id: string,
+      episodeNumber: number,
+      title: string,
+      synopsis: string | null,
+      durationInSeconds: number,
+      watchProgress: {
+                       inSeconds: number,
+                       asPercentage: number,
+                     } | null,
+    }
+
+    type MediaDetail = {
+      id: string,
+      type: 'movie' | 'tv_show',
+      title: string,
+      synopsis: string | null,
+      genres: string[],
+      nextMediaItemToWatch: MediaItemData | null,
+      seasons?: SeasonData[],
+    }
+
+    const seasons: MediaDetail['seasons'] = seasonsMap.size > 0 ? Array.from(seasonsMap.values())
+      .sort((a, b) => a.seasonNumber - b.seasonNumber)
+      .map(season => ({
+        ...season,
+        episodes: season.episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+      })) : undefined;
+
+    // TODO: nextMediaItemToWatch should be similar to continue watching logic and fall back to the first episode
+    const continueWatchingResultItem = await libraryManager.determineContinueOrNextWatchItemForMedia(mediaId);
+    let nextMediaItemToWatch: MediaDetail['nextMediaItemToWatch'] = continueWatchingResultItem != null ? {
+      id: continueWatchingResultItem.item.id.toString(),
+      title: '',
+      synopsis: '',
+      episodeNumber: continueWatchingResultItem.item.episodeNumber ?? 0,
+      durationInSeconds: continueWatchingResultItem.item.durationInSec,
+      watchProgress: {
+        inSeconds: continueWatchingResultItem.watchProgressInSec,
+        asPercentage: Math.max(0, Math.min(1, 1 - ((continueWatchingResultItem.item.durationInSec - continueWatchingResultItem.watchProgressInSec) / continueWatchingResultItem.item.durationInSec))),
+      },
+    } : null;
+
+    return {
+      loggedInUser: {
+        id: apolloUser.id,
+        displayName: apolloUser.displayName,
+      },
+
+      page: {
+        libraries: (await libraryManager.getLibraries())
+          .map(l => ({
+            id: l.id,
+            name: l.name,
+            isOwner: l.owner.id === apolloUser.id,
+          })) satisfies LibraryElement[],
+        media: {
+          id: media.id.toString(),
+          type: (seasonsMap.size > 1 || !seasonsMap.has(0)) ? 'tv_show' : 'movie',
+          title: media.title,
+          synopsis: media.synopsis,
+          genres: [],
+          nextMediaItemToWatch,
+          seasons,
+        } satisfies MediaDetail,
+      },
+    };
+  });
+
+
 export const oRpcRouter = {
   tmpBackend: {
     getConfig: tmpBackendConfig,
@@ -538,6 +756,9 @@ export const oRpcRouter = {
       fetchMediaDetailData: fetchLegacyMedia_MediaDetailData,
       fetchProfile: fetchLegacyMedia_Profile,
     },
+
+    getMediaLibraryOverview: fetchMediaLibraryOverview,
+    getMedia: fetchMedia,
   },
 
   admin: {

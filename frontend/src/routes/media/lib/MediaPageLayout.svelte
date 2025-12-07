@@ -9,6 +9,14 @@
   } = $props();
 </script>
 
+<div class="wrapper">
+  <MediaSidebar pageData={pageData} />
+
+  <main class="content d-flex flex-row flex-wrap">
+    {@render children()}
+  </main>
+</div>
+
 <style>
   .wrapper {
     height:  calc(100vh - 4.75rem);
@@ -21,11 +29,3 @@
     overflow-y: auto;
   }
 </style>
-
-<div class="wrapper">
-  <MediaSidebar pageData={pageData} />
-
-  <main class="content d-flex flex-row flex-wrap">
-    {@render children()}
-  </main>
-</div>

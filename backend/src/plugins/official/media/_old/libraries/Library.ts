@@ -1,10 +1,12 @@
-import * as PrismaClient from '../../../../../database/prisma-client/client.js';
 import { container } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
+import * as PrismaClient from '../../../../../database/prisma-client/client.js';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
 import type ApolloUser from '../../../../../user/ApolloUser.js';
 
 export default class Library {
+  private readonly databaseClient = container.resolve(DatabaseClient);
+
   readonly owner: ApolloUser;
   readonly id: string;
   readonly name: string;
@@ -21,7 +23,7 @@ export default class Library {
   }
 
   fetchTitles(): Promise<PrismaClient.MediaLibraryMedia[]> {
-    return container.resolve(DatabaseClient).mediaLibraryMedia.findMany({
+    return this.databaseClient.mediaLibraryMedia.findMany({
       where: {
         libraryId: BigInt(this.id),
       },
@@ -31,16 +33,65 @@ export default class Library {
     });
   }
 
-  fetchTitle(titleId: string): Promise<PrismaClient.MediaLibraryMedia | null> {
-    return container.resolve(DatabaseClient).mediaLibraryMedia.findUnique({ where: { id: BigInt(titleId) } });
+  fetchMedia(mediaId: bigint): Promise<PrismaClient.MediaLibraryMedia | null> {
+    return this.databaseClient.mediaLibraryMedia.findUnique({ where: { id: mediaId } });
   }
 
-  fetchMedia(titleId: string, mediaFilePath: string): Promise<PrismaClient.MediaLibraryMediaItem | null> {
-    return container.resolve(DatabaseClient).mediaLibraryMediaItem.findUnique({
+  fetchMediaItem(mediaItemId: bigint): Promise<PrismaClient.MediaLibraryMediaItem | null> {
+    return this.databaseClient.mediaLibraryMediaItem.findUnique({ where: { id: mediaItemId } });
+  }
+
+  async fetchMediaWatchProgressInSeconds(mediaItemId: bigint): Promise<number | null> {
+    const watchProgress = await this.databaseClient.mediaLibraryUserWatchProgress.findUnique({
+      where: {
+        userId_mediaItemId: {
+          userId: this.owner.id,
+          mediaItemId,
+        },
+      },
+      select: {
+        durationInSec: true,
+      },
+    });
+
+    return watchProgress ? watchProgress.durationInSec : null;
+  }
+
+  fetchMediaFull(mediaId: bigint): Promise<
+    (
+      Omit<PrismaClient.MediaLibraryMedia, 'directoryPath' | 'addedAt'>
+      & { items: Omit<PrismaClient.MediaLibraryMediaItem, 'mediaId' | 'filePath' | 'lastScannedAt' | 'addedAt'>[] }
+      ) | null> {
+    return this.databaseClient.mediaLibraryMedia.findUnique({
+      where: {
+        id: mediaId,
+      },
+      select: {
+        id: true,
+        libraryId: true,
+        title: true,
+        synopsis: true,
+        items: {
+          select: {
+            id: true,
+            filePath: true,
+            title: true,
+            durationInSec: true,
+            episodeNumber: true,
+            seasonNumber: true,
+            synopsis: true,
+          }
+        },
+      },
+    });
+  }
+
+  fetchMediaItemByPath(mediaId: string, filePath: string): Promise<PrismaClient.MediaLibraryMediaItem | null> {
+    return this.databaseClient.mediaLibraryMediaItem.findUnique({
       where: {
         mediaId_filePath: {
-          mediaId: BigInt(titleId),
-          filePath: mediaFilePath,
+          mediaId: BigInt(mediaId),
+          filePath: filePath,
         },
       },
     });

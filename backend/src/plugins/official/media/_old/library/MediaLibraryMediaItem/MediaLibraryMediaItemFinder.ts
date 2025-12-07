@@ -31,7 +31,7 @@ export default class MediaLibraryMediaItemFinder {
       },
     },
     orderBy: [{ seasonNumber: 'asc' }, { episodeNumber: 'asc' }],
-  }satisfies Prisma.MediaLibraryMediaItemFindManyArgs;
+  } satisfies Prisma.MediaLibraryMediaItemFindManyArgs;
 
   constructor(
     private readonly databaseClient: DatabaseClient,
