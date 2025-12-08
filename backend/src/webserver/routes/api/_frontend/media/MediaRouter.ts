@@ -1,15 +1,11 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import NodeStream from 'node:stream';
-import sharp from 'sharp';
 import { injectable } from 'tsyringe';
 import UserByAuthProvider from '../../../../../auth/UserByAuthProvider.js';
 import { ContainerTokens } from '../../../../../constants.js';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
-import FileTypeUtils from '../../../../../plugins/official/media/_old/FileTypeUtils.js';
 import LibraryManager from '../../../../../plugins/official/media/_old/libraries/LibraryManager.js';
 import ThumbnailGenerator from '../../../../../plugins/official/media/_old/ThumbnailGenerator.js';
-import UserFileHelper from '../../../../../plugins/official/media/_old/UserFileHelper.js';
 import type { default as Router, RouteReturn } from '../../../Router.js';
 
 // TODO: Refactor this
@@ -18,7 +14,6 @@ export default class MediaRouter implements Router {
   constructor(
     private readonly userByAuthProvider: UserByAuthProvider,
     private readonly fileSystemProvider: FileSystemProvider,
-    private readonly fileTypeUtils: FileTypeUtils,
     private readonly thumbnailGenerator: ThumbnailGenerator,
   ) {
   }
@@ -104,106 +99,6 @@ export default class MediaRouter implements Router {
         .send(thumbnail.data);
     });
 
-    server.get('/:libraryId/:mediaId/backdrop-tmp.jpg', async (request: FastifyRequest<{ Params: { libraryId: string, mediaId: string } }>, reply): Promise<RouteReturn> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-      if (apolloUser == null) {
-        return reply
-          .status(401)
-          .send({ error: 'Unauthorized' });
-      }
-
-      const requestedLibraryId = request.params.libraryId;
-      const requestedMediaId = request.params.mediaId;
-      const requestedFileName = 'backdrop-tmp.jpg';
-
-      const library = await new LibraryManager(apolloUser).getLibrary(requestedLibraryId);
-      if (library == null) {
-        return reply
-          .status(404)
-          .type('text/plain')
-          .send(`Library with id '${requestedLibraryId}' not found!`);
-      }
-
-      const libraryMedia = await library.fetchMedia(BigInt(requestedMediaId));
-      if (libraryMedia == null) {
-        return reply
-          .status(404)
-          .type('text/plain')
-          .send(`Media with id '${requestedMediaId}' not found in library '${library.id}'!`);
-      }
-
-      const libraryOwnerFileSystems = await this.fileSystemProvider.provideForUser(library.owner);
-      const libraryOwnerDefaultFileSystem = libraryOwnerFileSystems.user[0];
-
-      const libraryMediaDirectory = libraryOwnerDefaultFileSystem.getFile(libraryMedia.directoryPath);
-      if (!(await libraryMediaDirectory.isDirectory())) {
-        return reply
-          .status(404)
-          .type('text/plain')
-          .send(`File '${requestedFileName}' not found!`);
-      }
-
-      const backdropFile = await UserFileHelper.findFolderBackdrop(libraryMediaDirectory);
-      const backdropFileStat = await backdropFile?.stat();
-      if (backdropFile == null || backdropFileStat == null || !backdropFileStat.isFile()) {
-        const posterData = await sharp({
-          create: {
-            width: 1280,
-            height: 720,
-            channels: 3,
-            background: { r: 125, g: 125, b: 125 },
-          },
-        })
-          .composite([{
-            input: {
-              text: {
-                text: `<span foreground="white">${libraryMedia.title}</span>`,
-                rgba: true,
-                width: 1000,
-                height: 720 / 2,
-              },
-            },
-          }])
-          .jpeg()
-          .toBuffer();
-
-        return reply
-          .type('image/jpeg')
-          .send(posterData);
-      }
-
-      if (!(backdropFile instanceof LocalFile)) {
-        throw new Error('Only LocalFile is supported in MediaRouter for poster files');
-      }
-
-      const backdropMimeType = await this.fileTypeUtils.getMimeType(backdropFile.getAbsolutePathOnHost());
-      if (backdropMimeType == null || !backdropMimeType.startsWith('image/')) {
-        return reply
-          .status(404)
-          .type('text/plain')
-          .send(`File '${requestedFileName}' not available!`);
-      }
-
-      const backdropDataPipeline = sharp()
-        .removeAlpha()
-        .resize({
-          height: 720,
-          fit: 'contain',
-          withoutEnlargement: true,
-        })
-        .jpeg();
-
-
-      await NodeStream.promises.pipeline(
-        backdropFile.supportsStreaming() ? backdropFile.createReadStream() : NodeStream.Readable.from(await backdropFile.read()),
-        backdropDataPipeline,
-        reply
-          .type('image/jpeg')
-          .raw,
-      );
-      return reply;
-    });
-
     server.get('/:libraryId/:titleId/:mediaItemPathBase64/thumbnail.png', async (request: FastifyRequest<{ Params: { libraryId: string, titleId: string, mediaItemPathBase64: string } }>, reply): Promise<RouteReturn> => {
       const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
       if (apolloUser == null) {
@@ -274,123 +169,5 @@ export default class MediaRouter implements Router {
         .type(thumbnail.mime)
         .send(thumbnail.data);
     });
-
-    server.get('/:libraryId/:titleId/poster.jpg', async (request: FastifyRequest<{ Params: { libraryId: string, titleId: string } }>, reply): Promise<RouteReturn> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-      if (apolloUser == null) {
-        return reply
-          .status(401)
-          .send({ error: 'Unauthorized' });
-      }
-
-      const requestedLibraryId = request.params.libraryId;
-      const requestedTitleId = request.params.titleId;
-      const requestedFileName = 'poster.jpg';
-
-      const library = await new LibraryManager(apolloUser).getLibrary(requestedLibraryId);
-      if (library == null) {
-        return reply
-          .status(404)
-          .type('text/plain')
-          .send(`Library with id '${requestedLibraryId}' not found!`);
-      }
-
-      const libraryTitle = await library.fetchMedia(BigInt(requestedTitleId));
-      if (libraryTitle == null) {
-        return reply
-          .status(404)
-          .type('text/plain')
-          .send(`Title with id '${requestedTitleId}' not found in library '${library.id}'!`);
-      }
-
-      const libraryOwnerFileSystems = await this.fileSystemProvider.provideForUser(library.owner);
-      const libraryOwnerDefaultFileSystem = libraryOwnerFileSystems.user[0];
-
-      const libraryTitleDirectory = libraryOwnerDefaultFileSystem.getFile(libraryTitle.directoryPath);
-      if (!(await libraryTitleDirectory.isDirectory())) {
-        return reply
-          .status(404)
-          .type('text/plain')
-          .send(`File '${requestedFileName}' not found!`);
-      }
-
-      const posterFile = await UserFileHelper.findFolderPoster(libraryTitleDirectory);
-      const posterFileStat = await posterFile?.stat();
-      if (posterFile == null || posterFileStat == null || !posterFileStat.isFile()) {
-        const titleStartingLetters = libraryTitle.title
-          .split(/[\s_-]/g)
-          .map(word => word.charAt(0))
-          .join('')
-          .toUpperCase();
-
-        const posterData = await sharp({
-          create: {
-            width: 400,
-            height: 600,
-            channels: 3,
-            background: { r: 125, g: 125, b: 125 },
-          },
-        })
-          .composite([{
-            input: {
-              text: {
-                text: `<span foreground="white">${titleStartingLetters}</span>`,
-                rgba: true,
-                width: 300,
-                height: 400,
-              },
-            },
-          }])
-          .jpeg()
-          .toBuffer();
-
-        return reply
-          .type('image/jpeg')
-          .send(posterData);
-      }
-
-      //      const posterCacheKey = `${request.originalUrl}${posterFileStat.mtime.getTime()}${posterFileStat.size}`;
-      //      const cachedPoster = await FileSystemBasedCache.getInstance()
-      //        .getUserAssociatedCachedFile(posterFile.fileSystem.owner, posterCacheKey);
-      //      if (cachedPoster != null) {
-      //        return reply
-      //          .type('image/jpeg')
-      //          .send(cachedPoster);
-      //      }
-
-      if (!(posterFile instanceof LocalFile)) {
-        throw new Error('Only LocalFile is supported in MediaRouter for poster files');
-      }
-
-      const posterMimeType = await this.fileTypeUtils.getMimeType(posterFile.getAbsolutePathOnHost());
-      if (posterMimeType == null || !posterMimeType.startsWith('image/')) {
-        return reply
-          .status(404)
-          .type('text/plain')
-          .send(`File '${requestedFileName}' not available!`);
-      }
-
-      const posterDataPipeline = sharp()
-        .removeAlpha()
-        .resize({
-          height: 720,
-          fit: 'contain',
-          withoutEnlargement: true,
-        })
-        .jpeg();
-
-
-      //      await FileSystemBasedCache.getInstance()
-      //        .setUserAssociatedCachedFile(posterFile.fileSystem.owner, posterCacheKey, posterData);
-
-      await NodeStream.promises.pipeline(
-        posterFile.supportsStreaming() ? posterFile.createReadStream() : NodeStream.Readable.from(await posterFile.read()),
-        posterDataPipeline,
-        reply
-          .type('image/jpeg')
-          .raw,
-      );
-      return reply;
-    });
-}
+  }
 }

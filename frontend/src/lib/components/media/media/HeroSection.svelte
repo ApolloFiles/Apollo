@@ -58,7 +58,10 @@
 </script>
 
 <div class="hero-backdrop"
-     style:background-image="url('/api/_frontend/media/{libraryId}/{mediaId}/backdrop-tmp.jpg')"
+     style="background-image: url('/api/_frontend/media-new/{mediaId}/backdrop.jpeg'); background-image: image-set(
+       '/api/_frontend/media-new/{mediaId}/backdrop.avif' type('image/avif'),
+       '/api/_frontend/media-new/{mediaId}/backdrop.jpeg' type('image/jpeg')
+     )"
 >
   <div class="hero-overlay">
     <div class="hero-content">

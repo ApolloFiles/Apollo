@@ -1,0 +1,72 @@
+import Crypto from 'node:crypto';
+import Fs from 'node:fs';
+import Path from 'node:path';
+import sharp from 'sharp';
+import { singleton } from 'tsyringe';
+import ApolloDirectoryProvider from '../../../../../config/ApolloDirectoryProvider.js';
+import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
+import VirtualFile from '../../../../../files/VirtualFile.js';
+import UserProvider from '../../../../../user/UserProvider.js';
+import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
+import AbstractMediaImageProvider, { type ImageType } from './AbstractMediaImageProvider.js';
+import FallbackMediaPosterGenerator from './FallbackMediaPosterGenerator.js';
+import ImageFileConstants from './ImageFileConstants.js';
+import MediaImageCache from './MediaImageCache.js';
+
+@singleton()
+export default class MediaPosterImageProvider extends AbstractMediaImageProvider {
+  private static readonly MAX_POSTER_WIDTH = 1000;
+  private static readonly MAX_POSTER_HEIGHT = 1500; // 2:3 aspect ratio
+
+  constructor(
+    userProvider: UserProvider,
+    fileSystemProvider: FileSystemProvider,
+    mediaImageCache: MediaImageCache,
+    private readonly fallbackPosterGenerator: FallbackMediaPosterGenerator,
+    private readonly apolloDirectoryProvider: ApolloDirectoryProvider,
+  ) {
+    super(userProvider, fileSystemProvider, mediaImageCache, ['poster', 'folder', 'cover']);
+  }
+
+  protected get imageType(): ImageType {
+    return 'poster';
+  }
+
+  protected async processImageFile(imageFile: VirtualFile, format: 'jpeg' | 'avif'): Promise<Buffer> {
+    let poster = sharp(await imageFile.read())
+      .resize(
+        MediaPosterImageProvider.MAX_POSTER_WIDTH,
+        MediaPosterImageProvider.MAX_POSTER_HEIGHT,
+        {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+      .flatten({ background: { r: 0, g: 0, b: 0 } });
+
+    if (format === 'avif') {
+      poster = poster.avif(ImageFileConstants.POSTER_OPTIONS_AVIF);
+    } else {
+      poster = poster.jpeg(ImageFileConstants.POSTER_OPTIONS_JPEG);
+    }
+
+    return poster.toBuffer();
+  }
+
+  protected async generatedFallback(media: MediaLibraryMedia, format: 'jpeg' | 'avif'): Promise<Buffer> {
+    const mediaTitleHash = Crypto.createHash('sha256').update(media.title).digest('hex');
+
+    const tmpDir = Path.join(this.apolloDirectoryProvider.getAppTemporaryDirectory(), 'apollo_media', 'fallback-posters');
+    const tmpFile = Path.join(tmpDir, `${mediaTitleHash}.${format}`);
+
+    if (Fs.existsSync(tmpFile)) {
+      return Fs.promises.readFile(tmpFile);
+    }
+
+    const fileData = await this.fallbackPosterGenerator.generatePoster(media.title, format);
+
+    await Fs.promises.mkdir(tmpDir, { recursive: true });
+    await Fs.promises.writeFile(tmpFile, fileData);
+
+    return fileData;
+  }
+}
