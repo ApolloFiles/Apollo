@@ -1,8 +1,9 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { injectable } from 'tsyringe';
+import { z } from 'zod';
 import UserByAuthProvider from '../../../../auth/UserByAuthProvider.js';
 import { ContainerTokens } from '../../../../constants.js';
 import FileSystemProvider from '../../../../files/FileSystemProvider.js';
+import type { FastifyInstanceWithZod } from '../../../server/FastifyWebServer.js';
 import type { default as Router, RouteReturn } from '../../Router.js';
 
 // TODO: Refactor this. oRPC has an endpoint too, that has veeeeeery similar logic
@@ -14,24 +15,17 @@ export default class FileRouter implements Router {
   ) {
   }
 
-  register(server: FastifyInstance): void {
+  register(server: FastifyInstanceWithZod): void {
     server.route({
       method: ['GET'],
       url: '/api/_frontend/file',
       schema: {
-        querystring: {
-          type: 'object',
-          required: ['fileSystemId', 'path'],
-          properties: {
-            fileSystemId: { type: 'string' },
-            path: { type: 'string' },
-          },
-        },
+        querystring: z.object({
+          fileSystemId: z.string(),
+          path:  z.string(),
+        }),
       },
-      // TODO: I want type-safety between the schema and the handler
-      handler: async (request: FastifyRequest<{
-        Querystring: { fileSystemId: string, path: string }
-      }>, reply): Promise<RouteReturn> => {
+      handler: async (request, reply): Promise<RouteReturn> => {
         const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
 
         if (apolloUser == null) {

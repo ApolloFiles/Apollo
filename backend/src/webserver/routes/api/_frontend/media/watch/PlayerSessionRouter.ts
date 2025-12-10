@@ -1,9 +1,10 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import Fs from 'node:fs';
 import Http2 from 'node:http2';
 import Path from 'node:path';
 import rangeParser from 'range-parser';
 import { injectable } from 'tsyringe';
+import { z } from 'zod';
 import UserByAuthProvider from '../../../../../../auth/UserByAuthProvider.js';
 import AppConfiguration from '../../../../../../config/AppConfiguration.js';
 import { ContainerTokens } from '../../../../../../constants.js';
@@ -35,6 +36,7 @@ import VideoSeekThumbnailControllerHelper
   from '../../../../../../plugins/official/media/_old/video-player/seek-thumbnails/VideoSeekThumbnailControllerHelper.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import UserProvider from '../../../../../../user/UserProvider.js';
+import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
 import type { default as Router, RouteReturn } from '../../../../Router.js';
 
 // TODO: Refactor this
@@ -58,7 +60,7 @@ export default class PlayerSessionRouter implements Router {
     return '/api/_frontend/media/player-session';
   }
 
-  register(server: FastifyInstance): void {
+  register(server: FastifyInstanceWithZod): void {
     server.get('/info', async (request, reply): Promise<RouteReturn> => {
       const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
       if (apolloUser == null) {
@@ -115,15 +117,11 @@ export default class PlayerSessionRouter implements Router {
 
     server.get('/join', {
       schema: {
-        querystring: {
-          type: 'object',
-          properties: {
-            token: { type: 'string' },
-          },
-          required: ['token'],
-        },
+        querystring: z.object({
+          token: z.string(),
+        }),
       },
-    }, async (request: FastifyRequest<{ Querystring: { token: string } }>, reply): Promise<RouteReturn> => {
+    }, async (request, reply): Promise<RouteReturn> => {
       const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
       if (apolloUser == null) {
         return reply
@@ -148,16 +146,12 @@ export default class PlayerSessionRouter implements Router {
 
     server.get('/start-watching', {
       schema: {
-        querystring: {
-          type: 'object',
-          properties: {
-            mediaItem: { type: 'string' },
-            startOffset: { type: 'string' },
-          },
-          required: ['mediaItem', 'startOffset'],
-        },
+        querystring: z.object({
+          mediaItem: z.coerce.bigint().positive(),
+          startOffset: z.string().regex(/^(?:[0-9]+|auto)$/),
+        }),
       },
-    }, async (request: FastifyRequest<{ Querystring: { mediaItem: string, startOffset: string } }>, reply): Promise<RouteReturn> => {
+    }, async (request, reply): Promise<RouteReturn> => {
       const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
       if (apolloUser == null) {
         return reply
@@ -181,7 +175,7 @@ export default class PlayerSessionRouter implements Router {
       }
 
       try {
-        const mediaItemId = this.parseUserInputBigInt(request.query?.mediaItem, 0n);
+        const mediaItemId = this.parseUserInputBigInt(request.query.mediaItem, 0n);
         if (mediaItemId == null || mediaItemId <= 0n) {
           return reply
             .status(400)
@@ -199,13 +193,13 @@ export default class PlayerSessionRouter implements Router {
 
         let startOffset: number | null = null;
 
-        if (request.query?.startOffset === 'auto') {
+        if (request.query.startOffset === 'auto') {
           const watchProgress = await (await new LibraryManager(apolloUser).getLibrary(mediaItem.libraryId.toString()))!.fetchMediaWatchProgressInSeconds(mediaItemId);
           startOffset = watchProgress ?? 0;
         }
 
         if (startOffset == null) {
-          startOffset = this.parseUserInputInt(reply, request.query?.startOffset, 0);
+          startOffset = this.parseUserInputInt(reply, request.query.startOffset, 0);
           if (startOffset == null) {
             return reply;
           }
