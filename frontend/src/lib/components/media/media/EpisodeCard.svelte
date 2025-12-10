@@ -39,7 +39,10 @@
    class:active={isNextToWatch}
    aria-label="Play Episode {episodeNumber}: {title}">
   <div class="episode-thumbnail">
-    <img src="/api/_frontend/media/{libraryId}/{mediaId}/{mediaItemId}/thumbnail-new.png" alt="" loading="lazy" />
+    <picture>
+      <source srcset="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.avif" type="image/avif" />
+      <img src="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.jpeg" alt="" loading="lazy" />
+    </picture>
     <div class="play-overlay"><IconPlay class="icon" /></div>
     {#if watchProgress != null}
       <div class="episode-progress">

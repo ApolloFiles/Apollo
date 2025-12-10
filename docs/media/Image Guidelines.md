@@ -9,7 +9,8 @@ and prefers high quality/resolution images, over compressed or resized ones.
 
 I recommend **against** adding black borders/bars and not upscaling images to meet minimum size requirements.
 
-| Type     | Aspect ratio (w:h) | Minimum size | Transparency allowed | Notes                                                        |
-|----------|--------------------|--------------|----------------------|--------------------------------------------------------------|
-| Poster   | 2:3                | 500x750 px   | No                   | A 'clean' poster works best for Apollo (e.g. just the title) |
-| Backdrop | 16:9               | 1280x720 px  | No                   | Should not contain spoilers                                  |
+| Type            | Aspect ratio (w:h) | Minimum size | Transparency allowed | Notes                                                        |
+|-----------------|--------------------|--------------|----------------------|--------------------------------------------------------------|
+| Poster          | 2:3                | 500x750 px   | No                   | A 'clean' poster works best for Apollo (e.g. just the title) |
+| Backdrop        | 16:9               | 1280x720 px  | No                   | Should not contain spoilers                                  |
+| Video Thumbnail | 16:9               | 320x180 px   | No                   | Should not contain spoilers                                  |

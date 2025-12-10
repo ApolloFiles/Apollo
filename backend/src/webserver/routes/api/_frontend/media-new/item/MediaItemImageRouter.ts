@@ -2,24 +2,21 @@ import { injectable } from 'tsyringe';
 import { z } from 'zod';
 import UserByAuthProvider from '../../../../../../auth/UserByAuthProvider.js';
 import { ContainerTokens } from '../../../../../../constants.js';
-import MediaLibraryMediaFinder
-  from '../../../../../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
-import MediaBackdropImageProvider
-  from '../../../../../../plugins/official/media/library/files/MediaBackdropImageProvider.js';
-import MediaPosterImageProvider
-  from '../../../../../../plugins/official/media/library/files/MediaPosterImageProvider.js';
+import MediaLibraryMediaItemFinder
+  from '../../../../../../plugins/official/media/library/database/finder/MediaLibraryMediaItemFinder.js';
+import VideoThumbnailProvider
+  from '../../../../../../plugins/official/media/library/thumbnail/VideoThumbnailProvider.js';
 import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
 import type { default as Router, RouteReturn } from '../../../../Router.js';
 
 @injectable({ token: ContainerTokens.ROUTER })
 export default class MediaImageRouter implements Router {
-  private static readonly FILE_NAME_REGEX = /^(poster|backdrop)\.(jpeg|avif)$/;
+  private static readonly FILE_NAME_REGEX = /^(thumbnail)\.(jpeg|avif)$/;
 
   constructor(
     private readonly userByAuthProvider: UserByAuthProvider,
-    private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
-    private readonly mediaPosterImageProvider: MediaPosterImageProvider,
-    private readonly mediaBackdropImageProvider: MediaBackdropImageProvider,
+    private readonly mediaLibraryMediaItemFinder: MediaLibraryMediaItemFinder,
+    private readonly videoThumbnailProvider: VideoThumbnailProvider,
   ) {
   }
 
@@ -28,18 +25,18 @@ export default class MediaImageRouter implements Router {
   }
 
   register(server: FastifyInstanceWithZod): void {
-    server.get('/:mediaId/:fileName',
+    server.get('/item/:mediaItemId/:fileName',
       {
         schema: {
           params: z.object({
-            mediaId: z.coerce.bigint().positive(),
+            mediaItemId: z.coerce.bigint().positive(),
             fileName: z.string().regex(MediaImageRouter.FILE_NAME_REGEX),
           }),
         },
       },
       async (request, reply): Promise<RouteReturn> => {
-        const requestedMediaId = request.params.mediaId;
-        const [fileName, fileFormat] = request.params.fileName.split('.') as ['poster' | 'backdrop', 'jpeg' | 'avif'];
+        const requestedMediaItemId = request.params.mediaItemId;
+        const [fileName, fileFormat] = request.params.fileName.split('.') as ['thumbnail', 'jpeg' | 'avif'];
         const fileFormatMimeType = `image/${fileFormat}`;
 
         const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
@@ -49,21 +46,19 @@ export default class MediaImageRouter implements Router {
             .send({ error: 'Unauthorized' });
         }
 
-        const media = await this.mediaLibraryMediaFinder.findForUserById(apolloUser, requestedMediaId);
-        if (media == null) {
+        const mediaItem = await this.mediaLibraryMediaItemFinder.findForUserById(apolloUser, requestedMediaItemId);
+        if (mediaItem == null) {
           return reply
             .status(404)
             .send({
-              error: `Media with id '${requestedMediaId.toString()}' does not exist or you do not have access to it`,
+              error: `MediaItem with id '${requestedMediaItemId.toString()}' does not exist or you do not have access to it`,
             });
         }
 
         let responseBody: Buffer | null;
 
-        if (fileName === 'poster') {
-          responseBody = await this.mediaPosterImageProvider.provide(media, fileFormat);
-        } else if (fileName === 'backdrop') {
-          responseBody = await this.mediaBackdropImageProvider.provide(media, fileFormat);
+        if (fileName === 'thumbnail') {
+          responseBody = await this.videoThumbnailProvider.provide(mediaItem, fileFormat);
         } else {
           throw new Error(`Unsupported fileName: ${JSON.stringify(fileName)}`);
         }

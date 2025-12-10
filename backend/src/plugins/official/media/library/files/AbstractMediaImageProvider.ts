@@ -4,7 +4,7 @@ import type UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
 import type MediaImageCache from './MediaImageCache.js';
 
-export type ImageType = 'poster' | 'backdrop';
+export type ImageType = 'poster' | 'backdrop' | 'thumbnail';
 export type ImageFormat = 'jpeg' | 'avif';
 
 export default abstract class AbstractMediaImageProvider {
