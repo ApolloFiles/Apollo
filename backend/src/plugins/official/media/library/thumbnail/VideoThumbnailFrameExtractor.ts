@@ -3,7 +3,7 @@ import { singleton } from 'tsyringe';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
 import ApolloTemporaryDirectory from '../../../../../files/temporary/ApolloTemporaryDirectory.js';
 import BufferedChildProcess from '../../../../builtin/child_process/BufferedChildProcess.js';
-import VideoAnalyser from '../../_old/video/analyser/VideoAnalyser.js';
+import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
 import BestVideoThumbnailFrameSelector from './BestVideoThumbnailFrameSelector.js';
 
 @singleton()
@@ -15,6 +15,7 @@ export default class VideoThumbnailFrameExtractor {
   constructor(
     private readonly apolloTemporaryDirectory: ApolloTemporaryDirectory,
     private readonly bestVideoThumbnailFrameDetector: BestVideoThumbnailFrameSelector,
+    private readonly ffprobeExecutor: FfprobeExecutor,
   ) {
   }
 
@@ -68,7 +69,7 @@ export default class VideoThumbnailFrameExtractor {
   }
 
   private async determineVideoDurationInSeconds(videoFilePath: string): Promise<number> {
-    const videoAnalysis = await VideoAnalyser.analyze(videoFilePath);
-    return parseInt(videoAnalysis.file.duration ?? '0', 10);
+    const videoAnalysis = await this.ffprobeExecutor.probe(videoFilePath);
+    return parseInt(videoAnalysis.format.duration ?? '0', 10);
   }
 }
