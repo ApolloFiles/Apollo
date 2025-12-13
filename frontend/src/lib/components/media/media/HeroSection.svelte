@@ -1,15 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import IconPlay from 'virtual:icons/tabler/player-play-filled';
-  import IconRotate from 'virtual:icons/tabler/rotate';
   import IconChevronDown from 'virtual:icons/tabler/chevron-down';
   import IconChevronUp from 'virtual:icons/tabler/chevron-up';
+  import IconPlay from 'virtual:icons/tabler/player-play-filled';
+  import IconRotate from 'virtual:icons/tabler/rotate';
 
-  let { libraryId, mediaId, title, synopsis, nextMediaItem }: {
-    libraryId: string,
+  let { mediaId, title, synopsis, hasClearLogo, nextMediaItem }: {
     mediaId: string,
     title: string,
     synopsis: string | null,
+    hasClearLogo: boolean,
     nextMediaItem: {
                      id: string,
                      episodeNumber: number,
@@ -65,10 +65,15 @@
 >
   <div class="hero-overlay">
     <div class="hero-content">
-      <!-- Optional: Movie Logo instead of text title -->
-      <!-- <img src="/tmp-media-assets/logo_placeholder.png" class="hero-logo" alt="Velocity Logo"> -->
-
-      <h1 class="hero-title">{title}</h1>
+      <h1 class="hero-title"
+          class:visually-hidden={hasClearLogo}
+      >{title}</h1>
+      {#if hasClearLogo}
+        <picture>
+          <source srcset="/api/_frontend/media-new/{mediaId}/logo.avif" type="image/avif" />
+          <img src="/api/_frontend/media-new/{mediaId}/logo.png" class="hero-logo" alt="" loading="eager" role="presentation">
+        </picture>
+      {/if}
 
       <!-- FIXME: Fill with real data -->
       <div class="hero-meta">
@@ -162,12 +167,10 @@
     z-index:   10;
   }
 
-  /*
   .hero-logo {
     max-width:     300px;
     margin-bottom: 20px;
   }
-  */
 
   .hero-title {
     font-size:     3.5rem;

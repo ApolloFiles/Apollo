@@ -1,9 +1,7 @@
 <script lang="ts">
   import EpisodeCard from '$lib/components/media/media/EpisodeCard.svelte';
 
-  let { libraryId, mediaId, nextEpisodeIdToWatch, seasons }: {
-    libraryId: string,
-    mediaId: string,
+  let { nextEpisodeIdToWatch, seasons }: {
     nextEpisodeIdToWatch: string | null,
     seasons: {
       seasonNumber: number,
@@ -42,8 +40,6 @@
 <div class="d-flex flex-column gap-3">
   {#each episodesForSelectedSeason as episode}
     <EpisodeCard
-      libraryId={libraryId}
-      mediaId={mediaId}
       mediaItemId={episode.id}
       episodeNumber={episode.episodeNumber}
       title={episode.title}

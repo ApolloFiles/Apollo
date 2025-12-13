@@ -7,6 +7,8 @@ import { IS_PRODUCTION } from '../../constants.js';
 import FileSystemProvider from '../../files/FileSystemProvider.js';
 import LibraryManager from '../../plugins/official/media/_old/libraries/LibraryManager.js';
 import ProcessBuilder from '../../plugins/official/media/_old/ProcessBuilder.js';
+import MediaLibraryMediaFinder from '../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
+import MediaClearLogoImageProvider from '../../plugins/official/media/library/files/MediaClearLogoImageProvider.js';
 import UserProvider from '../../user/UserProvider.js';
 import { auth } from '../auth.js';
 import * as oRpcBuilder from './oRpcRouteBuilder.js';
@@ -370,6 +372,17 @@ const fetchMedia = oRpcBuilder
       throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
     }
 
+    const mediaHasClearLogoPromise = container.resolve(MediaLibraryMediaFinder)
+      .findForUserById(apolloUser, mediaId)
+      .then((mediaFromOtherFinder) => {
+        if (mediaFromOtherFinder == null) {
+          throw new Error('Unexpected null media when checking for clear logo');
+        }
+
+        return container.resolve(MediaClearLogoImageProvider).provide(mediaFromOtherFinder!, 'avif');
+      })
+      .then((imageData) => imageData != null);
+
     const seasonsMap: Map<number, SeasonData> = new Map();
     for (const item of media.items) {
       const seasonNumber = item.seasonNumber ?? 0;
@@ -423,6 +436,7 @@ const fetchMedia = oRpcBuilder
       type: 'movie' | 'tv_show',
       title: string,
       synopsis: string | null,
+      hasClearLogo: boolean,
       genres: string[],
       nextMediaItemToWatch: MediaItemData | null,
       seasons?: SeasonData[],
@@ -467,6 +481,7 @@ const fetchMedia = oRpcBuilder
           type: (seasonsMap.size > 1 || !seasonsMap.has(0)) ? 'tv_show' : 'movie',
           title: media.title,
           synopsis: media.synopsis,
+          hasClearLogo: await mediaHasClearLogoPromise,
           genres: [],
           nextMediaItemToWatch,
           seasons,

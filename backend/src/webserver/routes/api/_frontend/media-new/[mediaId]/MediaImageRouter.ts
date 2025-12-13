@@ -4,8 +4,12 @@ import UserByAuthProvider from '../../../../../../auth/UserByAuthProvider.js';
 import { ContainerTokens } from '../../../../../../constants.js';
 import MediaLibraryMediaFinder
   from '../../../../../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
+import ImageFormatNotSupportedError
+  from '../../../../../../plugins/official/media/library/files/error/ImageFormatNotSupportedError.js';
 import MediaBackdropImageProvider
   from '../../../../../../plugins/official/media/library/files/MediaBackdropImageProvider.js';
+import MediaClearLogoImageProvider
+  from '../../../../../../plugins/official/media/library/files/MediaClearLogoImageProvider.js';
 import MediaPosterImageProvider
   from '../../../../../../plugins/official/media/library/files/MediaPosterImageProvider.js';
 import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
@@ -13,13 +17,14 @@ import type { default as Router, RouteReturn } from '../../../../Router.js';
 
 @injectable({ token: ContainerTokens.ROUTER })
 export default class MediaImageRouter implements Router {
-  private static readonly FILE_NAME_REGEX = /^(poster|backdrop)\.(jpeg|avif)$/;
+  private static readonly FILE_NAME_REGEX = /^(poster|backdrop|logo)\.(jpeg|avif|png)$/;
 
   constructor(
     private readonly userByAuthProvider: UserByAuthProvider,
     private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
     private readonly mediaPosterImageProvider: MediaPosterImageProvider,
     private readonly mediaBackdropImageProvider: MediaBackdropImageProvider,
+    private readonly mediaClearLogoImageProvider: MediaClearLogoImageProvider,
   ) {
   }
 
@@ -39,7 +44,7 @@ export default class MediaImageRouter implements Router {
       },
       async (request, reply): Promise<RouteReturn> => {
         const requestedMediaId = request.params.mediaId;
-        const [fileName, fileFormat] = request.params.fileName.split('.') as ['poster' | 'backdrop', 'jpeg' | 'avif'];
+        const [fileName, fileFormat] = request.params.fileName.split('.') as ['poster' | 'backdrop' | 'logo', 'jpeg' | 'png' | 'avif'];
         const fileFormatMimeType = `image/${fileFormat}`;
 
         const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
@@ -60,12 +65,25 @@ export default class MediaImageRouter implements Router {
 
         let responseBody: Buffer | null;
 
-        if (fileName === 'poster') {
-          responseBody = await this.mediaPosterImageProvider.provide(media, fileFormat);
-        } else if (fileName === 'backdrop') {
-          responseBody = await this.mediaBackdropImageProvider.provide(media, fileFormat);
-        } else {
-          throw new Error(`Unsupported fileName: ${JSON.stringify(fileName)}`);
+        try {
+          if (fileName === 'poster') {
+            responseBody = await this.mediaPosterImageProvider.provide(media, fileFormat);
+          } else if (fileName === 'backdrop') {
+            responseBody = await this.mediaBackdropImageProvider.provide(media, fileFormat);
+          } else if (fileName === 'logo') {
+            responseBody = await this.mediaClearLogoImageProvider.provide(media, fileFormat);
+          } else {
+            //noinspection ExceptionCaughtLocallyJS
+            throw new Error(`Unsupported fileName: ${JSON.stringify(fileName)}`);
+          }
+        } catch (err) {
+          if (err instanceof ImageFormatNotSupportedError) {
+            return reply
+              .status(400)
+              .send({ error: `Format '${fileFormat}' is not supported for '${fileName}'` });
+          }
+
+          throw err;
         }
 
         if (responseBody == null) {

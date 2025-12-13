@@ -9,4 +9,7 @@ export default class ImageFileConstants {
 
   public static readonly THUMBNAIL_OPTIONS_AVIF: sharp.AvifOptions = { effort: 3, quality: 60 } as const;
   public static readonly THUMBNAIL_OPTIONS_JPEG: sharp.JpegOptions = { quality: 85, optimiseScans: true } as const;
+
+  public static readonly LOGO_OPTIONS_AVIF: sharp.AvifOptions = { effort: 3, quality: 60 } as const;
+  public static readonly LOGO_OPTIONS_PNG: sharp.PngOptions = {} as const;
 }

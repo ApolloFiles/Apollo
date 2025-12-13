@@ -2,8 +2,6 @@
   import IconPlay from 'virtual:icons/tabler/player-play-filled';
 
   let {
-    libraryId,
-    mediaId,
     mediaItemId,
     episodeNumber,
     title,
@@ -12,8 +10,6 @@
     durationInSeconds,
     watchProgress,
   }: {
-    libraryId: string,
-    mediaId: string,
     mediaItemId: string,
     episodeNumber: number,
     title: string,

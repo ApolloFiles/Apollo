@@ -2,10 +2,11 @@ import type FileSystemProvider from '../../../../../files/FileSystemProvider.js'
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import type UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
+import ImageFormatNotSupportedError from './error/ImageFormatNotSupportedError.js';
 import type MediaImageCache from './MediaImageCache.js';
 
-export type ImageType = 'poster' | 'backdrop' | 'thumbnail';
-export type ImageFormat = 'jpeg' | 'avif';
+export type ImageType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
+export type ImageFormat = 'jpeg' | 'png' | 'avif';
 
 export default abstract class AbstractMediaImageProvider {
   private readonly fileNamePatterns: RegExp[];
@@ -27,11 +28,20 @@ export default abstract class AbstractMediaImageProvider {
 
   protected abstract get imageType(): ImageType;
 
-  protected abstract processImageFile(imageFile: VirtualFile, format: ImageFormat): Promise<Buffer>;
+  protected abstract get supportedFormats(): ImageFormat[];
+
+  protected abstract processImageFile(imageFile: VirtualFile, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer>;
 
   protected abstract generatedFallback(media: MediaLibraryMedia, format: ImageFormat): Promise<Buffer | null>;
 
+  /**
+   * @throws ImageFormatNotSupported
+   */
   async provide(media: MediaLibraryMedia, format: ImageFormat): Promise<Buffer | null> {
+    if (!this.supportedFormats.includes(format)) {
+      throw new ImageFormatNotSupportedError(`The format '${format}' is not supported for image type '${this.imageType}'`);
+    }
+
     const imageFile = await this.findImageFileInDirectory(media);
     if (imageFile == null) {
       return this.generatedFallback(media, format);

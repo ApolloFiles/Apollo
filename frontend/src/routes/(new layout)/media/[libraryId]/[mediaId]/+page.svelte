@@ -27,10 +27,10 @@
 </svelte:head>
 
 <HeroSection
-  libraryId={params.libraryId}
   mediaId={data.page.media.id}
   title={data.page.media.title}
   synopsis={data.page.media.synopsis}
+  hasClearLogo={data.page.media.hasClearLogo}
   nextMediaItem={data.page.media.nextMediaItemToWatch}
 />
 
@@ -38,8 +38,6 @@
   <div class="row">
     <div class="col-md-8">
       <EpisodeList
-        libraryId={params.libraryId}
-        mediaId={data.page.media.id}
         nextEpisodeIdToWatch={nextEpisodeIdToWatchForEpisodeList}
         seasons={data.page.media.seasons ?? []}
       />

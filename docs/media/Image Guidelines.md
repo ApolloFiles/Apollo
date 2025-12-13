@@ -14,3 +14,4 @@ I recommend **against** adding black borders/bars and not upscaling images to me
 | Poster          | 2:3                | 500x750 px   | No                   | A 'clean' poster works best for Apollo (e.g. just the title) |
 | Backdrop        | 16:9               | 1280x720 px  | No                   | Should not contain spoilers                                  |
 | Video Thumbnail | 16:9               | 320x180 px   | No                   | Should not contain spoilers                                  |
+| (Clear-)Logo    | Variable           | Variable     | Yes                  | Usually the movie/show title in a stylized font/design       |

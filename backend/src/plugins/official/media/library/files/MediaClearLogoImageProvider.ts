@@ -9,43 +9,40 @@ import ImageFileConstants from './ImageFileConstants.js';
 import MediaImageCache from './MediaImageCache.js';
 
 @singleton()
-export default class MediaBackdropImageProvider extends AbstractMediaImageProvider {
-  private static readonly MAX_BACKDROP_WIDTH = 2560;
-  private static readonly MAX_BACKDROP_HEIGHT = 1440; // 16:9 aspect ratio
+export default class MediaClearLogoImageProvider extends AbstractMediaImageProvider {
+  private static readonly MAX_LOGO_HEIGHT = 500;
 
   constructor(
     userProvider: UserProvider,
     fileSystemProvider: FileSystemProvider,
     mediaImageCache: MediaImageCache,
   ) {
-    super(userProvider, fileSystemProvider, mediaImageCache, ['backdrop', 'background', 'fanart', 'art']);
+    super(userProvider, fileSystemProvider, mediaImageCache, ['clearlogo', 'logo']);
   }
 
   protected get imageType(): ImageType {
-    return 'backdrop';
+    return 'logo';
   }
 
   protected get supportedFormats() {
-    return ['jpeg', 'avif'] as const satisfies ImageFormat[];
+    return ['png', 'avif'] as const satisfies ImageFormat[];
   }
 
-  protected async processImageFile(imageFile: VirtualFile, format: MediaBackdropImageProvider['supportedFormats'][number]): Promise<Buffer> {
-    let backdrop = sharp(await imageFile.read())
+  protected async processImageFile(imageFile: VirtualFile, format: MediaClearLogoImageProvider['supportedFormats'][number]): Promise<Buffer> {
+    let logo = sharp(await imageFile.read())
       .resize({
-        width: MediaBackdropImageProvider.MAX_BACKDROP_WIDTH,
-        height: MediaBackdropImageProvider.MAX_BACKDROP_HEIGHT,
+        height: MediaClearLogoImageProvider.MAX_LOGO_HEIGHT,
         fit: 'inside',
         withoutEnlargement: true,
-      })
-      .flatten({ background: { r: 0, g: 0, b: 0 } });
+      });
 
     if (format === 'avif') {
-      backdrop = backdrop.avif(ImageFileConstants.BACKDROP_OPTIONS_AVIF);
+      logo = logo.avif(ImageFileConstants.LOGO_OPTIONS_AVIF);
     } else {
-      backdrop = backdrop.jpeg(ImageFileConstants.BACKDROP_OPTIONS_JPEG);
+      logo = logo.png(ImageFileConstants.LOGO_OPTIONS_PNG);
     }
 
-    return backdrop.toBuffer();
+    return logo.toBuffer();
   }
 
   protected generatedFallback(_media: MediaLibraryMedia, _format: ImageFormat): Promise<Buffer | null> {

@@ -8,7 +8,7 @@ import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
-import AbstractMediaImageProvider, { type ImageType } from './AbstractMediaImageProvider.js';
+import AbstractMediaImageProvider, { type ImageFormat, type ImageType } from './AbstractMediaImageProvider.js';
 import FallbackMediaPosterGenerator from './FallbackMediaPosterGenerator.js';
 import ImageFileConstants from './ImageFileConstants.js';
 import MediaImageCache from './MediaImageCache.js';
@@ -32,15 +32,18 @@ export default class MediaPosterImageProvider extends AbstractMediaImageProvider
     return 'poster';
   }
 
-  protected async processImageFile(imageFile: VirtualFile, format: 'jpeg' | 'avif'): Promise<Buffer> {
+  protected get supportedFormats() {
+    return ['jpeg', 'avif'] as const satisfies ImageFormat[];
+  }
+
+  protected async processImageFile(imageFile: VirtualFile, format: MediaPosterImageProvider['supportedFormats'][number]): Promise<Buffer> {
     let poster = sharp(await imageFile.read())
-      .resize(
-        MediaPosterImageProvider.MAX_POSTER_WIDTH,
-        MediaPosterImageProvider.MAX_POSTER_HEIGHT,
-        {
-          fit: 'inside',
-          withoutEnlargement: true,
-        })
+      .resize({
+        width: MediaPosterImageProvider.MAX_POSTER_WIDTH,
+        height: MediaPosterImageProvider.MAX_POSTER_HEIGHT,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
       .flatten({ background: { r: 0, g: 0, b: 0 } });
 
     if (format === 'avif') {
