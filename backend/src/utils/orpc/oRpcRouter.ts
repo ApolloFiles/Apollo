@@ -8,7 +8,7 @@ import FileSystemProvider from '../../files/FileSystemProvider.js';
 import LibraryManager from '../../plugins/official/media/_old/libraries/LibraryManager.js';
 import ProcessBuilder from '../../plugins/official/media/_old/ProcessBuilder.js';
 import MediaLibraryMediaFinder from '../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
-import MediaClearLogoImageProvider from '../../plugins/official/media/library/files/MediaClearLogoImageProvider.js';
+import MediaClearLogoImageProvider from '../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
 import UserProvider from '../../user/UserProvider.js';
 import { auth } from '../auth.js';
 import * as oRpcBuilder from './oRpcRouteBuilder.js';

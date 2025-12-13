@@ -5,13 +5,13 @@ import { ContainerTokens } from '../../../../../../constants.js';
 import MediaLibraryMediaFinder
   from '../../../../../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
 import ImageFormatNotSupportedError
-  from '../../../../../../plugins/official/media/library/files/error/ImageFormatNotSupportedError.js';
+  from '../../../../../../plugins/official/media/library/images/error/ImageFormatNotSupportedError.js';
 import MediaBackdropImageProvider
-  from '../../../../../../plugins/official/media/library/files/MediaBackdropImageProvider.js';
+  from '../../../../../../plugins/official/media/library/images/MediaBackdropImageProvider.js';
 import MediaClearLogoImageProvider
-  from '../../../../../../plugins/official/media/library/files/MediaClearLogoImageProvider.js';
+  from '../../../../../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
 import MediaPosterImageProvider
-  from '../../../../../../plugins/official/media/library/files/MediaPosterImageProvider.js';
+  from '../../../../../../plugins/official/media/library/images/MediaPosterImageProvider.js';
 import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
 import type { default as Router, RouteReturn } from '../../../../Router.js';
 

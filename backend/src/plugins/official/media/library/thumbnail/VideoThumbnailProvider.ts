@@ -4,8 +4,8 @@ import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMediaItem from '../database/MediaLibraryMediaItem.js';
-import ImageFileConstants from '../files/ImageFileConstants.js';
-import MediaImageCache from '../files/MediaImageCache.js';
+import ImageFileConstants from '../images/ImageFileConstants.js';
+import MediaImageCache from '../images/MediaImageCache.js';
 import VideoThumbnailFrameExtractor from './VideoThumbnailFrameExtractor.js';
 
 @singleton()
