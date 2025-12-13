@@ -1,6 +1,6 @@
-import type { Prisma } from '../../../../../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
+import type { Prisma } from '../../../../../../database/prisma-client/client.js';
 import MediaLibraryMediaItem from './MediaLibraryMediaItem.js';
 
 @singleton()
@@ -9,7 +9,7 @@ export default class MediaLibraryMediaItemFinder {
     select: {
       id: true,
       mediaId: true,
-      filePath: true,
+      relativeFilePath: true,
       title: true,
       durationInSec: true,
       seasonNumber: true,
@@ -18,6 +18,7 @@ export default class MediaLibraryMediaItemFinder {
       media: {
         select: {
           id: true,
+          directoryUri: true,
           library: {
             select: {
               id: true,

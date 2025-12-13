@@ -26,7 +26,7 @@ export default class MediaLibraryMediaFinder {
         id: true,
         title: true,
         synopsis: true,
-        directoryPath: true,
+        directoryUri: true,
         addedAt: true,
 
         library: {

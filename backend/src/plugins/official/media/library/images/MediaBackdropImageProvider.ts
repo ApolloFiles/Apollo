@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { singleton } from 'tsyringe';
-import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
+import FileProvider from '../../../../../files/FileProvider.js';
 import VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
@@ -15,10 +15,10 @@ export default class MediaBackdropImageProvider extends AbstractMediaImageProvid
 
   constructor(
     userProvider: UserProvider,
-    fileSystemProvider: FileSystemProvider,
+    fileProvider: FileProvider,
     mediaImageCache: MediaImageCache,
   ) {
-    super(userProvider, fileSystemProvider, mediaImageCache, ['backdrop', 'background', 'fanart', 'art']);
+    super(userProvider, fileProvider, mediaImageCache, ['backdrop', 'background', 'fanart', 'art']);
   }
 
   protected get imageType(): ImageType {

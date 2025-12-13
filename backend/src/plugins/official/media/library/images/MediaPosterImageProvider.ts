@@ -4,7 +4,7 @@ import Path from 'node:path';
 import sharp from 'sharp';
 import { singleton } from 'tsyringe';
 import ApolloDirectoryProvider from '../../../../../config/ApolloDirectoryProvider.js';
-import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
+import FileProvider from '../../../../../files/FileProvider.js';
 import VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
@@ -20,12 +20,12 @@ export default class MediaPosterImageProvider extends AbstractMediaImageProvider
 
   constructor(
     userProvider: UserProvider,
-    fileSystemProvider: FileSystemProvider,
+    fileProvider: FileProvider,
     mediaImageCache: MediaImageCache,
     private readonly fallbackPosterGenerator: FallbackMediaPosterGenerator,
     private readonly apolloDirectoryProvider: ApolloDirectoryProvider,
   ) {
-    super(userProvider, fileSystemProvider, mediaImageCache, ['poster', 'folder', 'cover']);
+    super(userProvider, fileProvider, mediaImageCache, ['poster', 'folder', 'cover']);
   }
 
   protected get imageType(): ImageType {

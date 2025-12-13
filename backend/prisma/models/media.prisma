@@ -1,8 +1,8 @@
 model MediaLibrary {
-  id             BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_id_seq'::text)"))
-  ownerId        String   @map("owner_id")
-  name           String   @db.VarChar(256)
-  directoryPaths String[] @map("directory_paths")
+  id            BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_id_seq'::text)"))
+  ownerId       String   @map("owner_id")
+  name          String   @db.VarChar(256)
+  directoryUris String[] @map("directory_uris")
 
   media                  MediaLibraryMedia[]
   MediaLibrarySharedWith MediaLibrarySharedWith[]
@@ -23,37 +23,37 @@ model MediaLibrarySharedWith {
 }
 
 model MediaLibraryMedia {
-  id            BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_media_id_seq'::text)"))
-  libraryId     BigInt   @map("library_id")
-  title         String
-  directoryPath String   @map("directory_path")
-  addedAt       DateTime @default(now()) @map("added_at") @db.Timestamptz()
-  synopsis      String?
+  id           BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_media_id_seq'::text)"))
+  libraryId    BigInt   @map("library_id")
+  title        String
+  synopsis     String?
+  directoryUri String   @map("directory_uri")
+  addedAt      DateTime @default(now()) @map("added_at") @db.Timestamptz()
 
   library MediaLibrary            @relation(fields: [libraryId], references: [id], onDelete: Cascade)
   items   MediaLibraryMediaItem[]
 
-  @@unique([libraryId, directoryPath])
+  @@unique([libraryId, directoryUri])
   @@map("media_libraries_media")
   @@schema("public")
 }
 
 model MediaLibraryMediaItem {
-  id            BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_media_items_id_seq'::text)"))
-  mediaId       BigInt   @map("media_id")
-  filePath      String   @map("file_path")
-  title         String
-  lastScannedAt DateTime @default(now()) @map("last_scanned_at") @db.Timestamptz()
-  addedAt       DateTime @default(now()) @map("added_at") @db.Timestamptz()
-  durationInSec Int      @map("duration_in_sec")
-  episodeNumber Int?     @map("episode_number")
-  seasonNumber  Int?     @map("season_number")
-  synopsis      String?
+  id               BigInt   @id @default(dbgenerated("generate_snowflake('media_libraries_media_items_id_seq'::text)"))
+  mediaId          BigInt   @map("media_id")
+  relativeFilePath String   @map("relative_file_path")
+  durationInSec    Int      @map("duration_in_sec")
+  title            String
+  synopsis         String?
+  seasonNumber     Int?     @map("season_number")
+  episodeNumber    Int?     @map("episode_number")
+  lastScannedAt    DateTime @default(now()) @map("last_scanned_at") @db.Timestamptz()
+  addedAt          DateTime @default(now()) @map("added_at") @db.Timestamptz()
 
-  media                         MediaLibraryMedia               @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-  MediaLibraryUserWatchProgress MediaLibraryUserWatchProgress[]
+  media             MediaLibraryMedia               @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userWatchProgress MediaLibraryUserWatchProgress[]
 
-  @@unique([mediaId, filePath])
+  @@unique([mediaId, relativeFilePath])
   @@map("media_libraries_media_items")
   @@schema("public")
 }

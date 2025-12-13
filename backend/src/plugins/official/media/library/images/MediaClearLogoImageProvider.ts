@@ -1,5 +1,6 @@
 import sharp from 'sharp';
 import { singleton } from 'tsyringe';
+import FileProvider from '../../../../../files/FileProvider.js';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
@@ -14,10 +15,10 @@ export default class MediaClearLogoImageProvider extends AbstractMediaImageProvi
 
   constructor(
     userProvider: UserProvider,
-    fileSystemProvider: FileSystemProvider,
+    fileProvider: FileProvider,
     mediaImageCache: MediaImageCache,
   ) {
-    super(userProvider, fileSystemProvider, mediaImageCache, ['clearlogo', 'logo']);
+    super(userProvider, fileProvider, mediaImageCache, ['clearlogo', 'logo']);
   }
 
   protected get imageType(): ImageType {

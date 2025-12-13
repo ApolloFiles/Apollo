@@ -1,7 +1,9 @@
+import ApolloFileURI from '../../../../../url/ApolloFileURI.js';
+
 export default class MediaLibraryMediaItem {
   constructor(
     public readonly id: bigint,
-    public readonly filePath: string,
+    public readonly relativeFilePath: string,
     public readonly title: string,
     public readonly synopsis: string | null,
     public readonly lastScannedAt: Date,
@@ -10,6 +12,7 @@ export default class MediaLibraryMediaItem {
     public readonly episodeNumber: number | null,
     public readonly seasonNumber: number | null,
     public readonly mediaId: bigint,
+    public readonly mediaBaseDirectoryUri: ApolloFileURI,
     public readonly libraryId: bigint,
     public readonly libraryOwnerId: string,
   ) {
@@ -17,7 +20,7 @@ export default class MediaLibraryMediaItem {
 
   public static fromData(data: {
     id: bigint,
-    filePath: string,
+    relativeFilePath: string,
     title: string,
     synopsis: string | null,
     lastScannedAt: Date,
@@ -27,6 +30,7 @@ export default class MediaLibraryMediaItem {
     seasonNumber: number | null,
     media: {
       id: bigint,
+      directoryUri: string,
       library: {
         id: bigint,
         ownerId: string,
@@ -35,7 +39,7 @@ export default class MediaLibraryMediaItem {
   }): MediaLibraryMediaItem {
     return new MediaLibraryMediaItem(
       data.id,
-      data.filePath,
+      data.relativeFilePath,
       data.title,
       data.synopsis,
       data.lastScannedAt,
@@ -45,6 +49,7 @@ export default class MediaLibraryMediaItem {
       data.seasonNumber,
 
       data.media.id,
+      ApolloFileURI.parse(data.media.directoryUri),
       data.media.library.id,
       data.media.library.ownerId,
     );

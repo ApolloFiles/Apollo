@@ -5,7 +5,7 @@ export type MediaLibraryInput = {
   id: bigint;
   ownerId: string;
   name: string;
-  directoryPaths: string[];
+  directoryUris: string[];
   MediaLibrarySharedWith: {
     userId: string;
   }[];
@@ -16,7 +16,7 @@ export default class MediaLibrary implements BaseModel {
     public readonly id: bigint,
     public readonly ownerId: string,
     public readonly name: string,
-    public readonly directoryPaths: string[],
+    public readonly directoryUris: string[],
     public readonly sharedWithUserIds: string[],
   ) {
   }
@@ -42,7 +42,7 @@ export default class MediaLibrary implements BaseModel {
       data.id,
       data.ownerId,
       data.name,
-      data.directoryPaths,
+      data.directoryUris,
       data.MediaLibrarySharedWith.map(v => v.userId),
     );
   }

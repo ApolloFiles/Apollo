@@ -3,11 +3,12 @@ import Fs from 'node:fs';
 import Http2 from 'node:http2';
 import Path from 'node:path';
 import rangeParser from 'range-parser';
-import { injectable } from 'tsyringe';
+import { container, injectable } from 'tsyringe';
 import { z } from 'zod';
 import UserByAuthProvider from '../../../../../../auth/UserByAuthProvider.js';
 import AppConfiguration from '../../../../../../config/AppConfiguration.js';
 import { ContainerTokens } from '../../../../../../constants.js';
+import FileProvider from '../../../../../../files/FileProvider.js';
 import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
 import LocalFileSystem from '../../../../../../files/local/LocalFileSystem.js';
 import FileTypeUtils from '../../../../../../plugins/official/media/_old/FileTypeUtils.js';
@@ -218,7 +219,7 @@ export default class PlayerSessionRouter implements Router {
             .send({ error: `The requested file is not stored in the local file system (Missing implementation)` });
         }
 
-        const apolloFile = owningUserDefaultFileSystem.getFile(mediaItem.filePath);
+        const apolloFile = owningUserDefaultFileSystem.getFile(Path.join(mediaItem.mediaBaseDir.filePath, mediaItem.relativeFilePath));
         const surroundingMediaItems = await this.libraryMediaItemFinder.findSurroundingMediaItems(mediaItem.id, mediaItem.libraryMediaId);
 
         const libraryMedia = await this.libraryMediaFinder.find(mediaItem.libraryMediaId);
@@ -450,7 +451,7 @@ export default class PlayerSessionRouter implements Router {
               .send({ error: `The requested file is not stored in the local file system (Missing implementation)` });
           }
 
-          videoLiveTranscodeMedia = await playerSession.startLiveTranscode(owningUserDefaultFileSystem.getFile(mediaItem.filePath), startOffset, {
+          videoLiveTranscodeMedia = await playerSession.startLiveTranscode(owningUserDefaultFileSystem.getFile(Path.join(mediaItem.mediaBaseDir.filePath, mediaItem.relativeFilePath)), startOffset, {
             mediaItemId: mediaItemId.toString(),
             title: libraryMedia.title,
             episode: ((mediaItem.seasonNumber != null && mediaItem.episodeNumber != null) ? {

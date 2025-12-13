@@ -1,9 +1,11 @@
+import ApolloFileURI from '../../../../../url/ApolloFileURI.js';
+
 export default class MediaLibraryMedia {
   constructor(
     public readonly id: bigint,
     public readonly title: string,
     public readonly synopsis: string | null,
-    public readonly directoryPath: string,
+    public readonly directoryUri: ApolloFileURI,
     public readonly addedAt: Date,
     public readonly libraryId: bigint,
     public readonly libraryOwnerId: string,
@@ -14,7 +16,7 @@ export default class MediaLibraryMedia {
     id: bigint,
     title: string,
     synopsis: string | null,
-    directoryPath: string,
+    directoryUri: string,
     addedAt: Date,
     library: {
       id: bigint,
@@ -25,7 +27,7 @@ export default class MediaLibraryMedia {
       data.id,
       data.title,
       data.synopsis,
-      data.directoryPath,
+      ApolloFileURI.parse(data.directoryUri),
       data.addedAt,
       data.library.id,
       data.library.ownerId,

@@ -2,9 +2,10 @@ import { container } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type * as PrismaClient from '../../../../../database/prisma-client/client.js';
 import type { MediaLibraryFindManyArgs } from '../../../../../database/prisma-client/models.js';
-import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
+import FileProvider from '../../../../../files/FileProvider.js';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
-import LocalFileSystem from '../../../../../files/local/LocalFileSystem.js';
+import type VirtualFile from '../../../../../files/VirtualFile.js';
+import ApolloFileURI from '../../../../../url/ApolloFileURI.js';
 import type ApolloUser from '../../../../../user/ApolloUser.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import MediaLibraryMediaItemFinder from '../library/MediaLibraryMediaItem/MediaLibraryMediaItemFinder.js';
@@ -21,7 +22,7 @@ export default class LibraryManager {
 
   private readonly databaseClient = container.resolve(DatabaseClient);
   private readonly userProvider = container.resolve(UserProvider);
-  private readonly fileSystemProvider = container.resolve(FileSystemProvider);
+  private readonly fileProvider = container.resolve(FileProvider);
   private readonly mediaLibraryMediaItemFinder = container.resolve(MediaLibraryMediaItemFinder);
 
   private readonly FILTER_LIBRARY_FOR_USER: MediaLibraryFindManyArgs['where'];
@@ -53,7 +54,7 @@ export default class LibraryManager {
         id: true,
         ownerId: true,
         name: true,
-        directoryPaths: true,
+        directoryUris: true,
         MediaLibrarySharedWith: {
           select: {
             userId: true,
@@ -78,7 +79,7 @@ export default class LibraryManager {
       library.id.toString(),
       library.name,
       library.MediaLibrarySharedWith.map(v => Number(v.userId)),
-      await this.mapLibraryPathToUserFile(library.directoryPaths),
+      await this.mapLibraryPathUrisToUserFile(library.directoryUris),
     );
   }
 
@@ -89,7 +90,7 @@ export default class LibraryManager {
         id: true,
         ownerId: true,
         name: true,
-        directoryPaths: true,
+        directoryUris: true,
         MediaLibrarySharedWith: {
           select: {
             userId: true,
@@ -112,7 +113,7 @@ export default class LibraryManager {
         user,
         library.id.toString(),
         library.name, library.MediaLibrarySharedWith.map(v => Number(v.userId)),
-        await this.mapLibraryPathToUserFile(library.directoryPaths),
+        await this.mapLibraryPathUrisToUserFile(library.directoryUris),
       ));
     }
 
@@ -349,17 +350,13 @@ export default class LibraryManager {
       .map(library => library.id);
   }
 
-  private async mapLibraryPathToUserFile(paths: string[]): Promise<LocalFile[]> {
-    const fileSystems = await this.fileSystemProvider.provideForUser(this.user);
-    const defaultFileSystem = fileSystems.user[0];
-    if (!(defaultFileSystem instanceof LocalFileSystem)) {
-      throw new Error('Default user file system is not a LocalFileSystem');
+  private async mapLibraryPathUrisToUserFile(uris: string[]): Promise<LocalFile[]> {
+    const files: VirtualFile[] = [];
+
+    for (const uri of uris) {
+      files.push(await this.fileProvider.provideForUserByUri(this.user, ApolloFileURI.parse(uri)));
     }
 
-    const mappedPaths: LocalFile[] = [];
-    for (const path of paths) {
-      mappedPaths.push(defaultFileSystem.getFile(path));
-    }
-    return mappedPaths;
+    return files as LocalFile[];
   }
 }

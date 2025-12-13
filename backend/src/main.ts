@@ -4,8 +4,8 @@ import { container } from 'tsyringe';
 import type App from './boot/App.js';
 import WebApp from './boot/WebApp.js';
 import { IS_PRODUCTION } from './constants.js';
-import LibraryManager from './plugins/official/media/_old/libraries/LibraryManager.js';
-import LibraryScanner from './plugins/official/media/_old/libraries/scan/LibraryScanner.js';
+import MediaLibraryFinder from './plugins/official/media/library/database/finder/MediaLibraryFinder.js';
+import MediaLibraryScanner from './plugins/official/media/library/scanner/MediaLibraryScanner.js';
 import UserProvider from './user/UserProvider.js';
 import SentrySdk from './utils/SentrySdk.js';
 
@@ -29,20 +29,23 @@ async function bootstrap(): Promise<void> {
 
   // TODO: remove debug
   (async () => {
+    const mediaLibraryFinder = container.resolve(MediaLibraryFinder);
+    const mediaLibraryScanner = container.resolve(MediaLibraryScanner);
+
     const users = await container.resolve(UserProvider).findAll();
     for (const user of users) {
-      const libraries = await new LibraryManager(user).getLibraries();
+      const libraries = await mediaLibraryFinder.findOwnedByUser(user);
+
       for (const library of libraries) {
         try {
-          await container.resolve(LibraryScanner).scanLibrary(library);
+          await mediaLibraryScanner.scan(library);
           console.log(`Done scanning library ${library.name} (id: ${library.id}, owner: ${user.displayName})`);
         } catch (err) {
           console.error(err);
         }
       }
     }
-  })()
-    .catch(console.error);
+  })().catch(console.error);
 }
 
 function registerShutdownHooks(): void {

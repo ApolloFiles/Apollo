@@ -1,4 +1,4 @@
-import type FileSystemProvider from '../../../../../files/FileSystemProvider.js';
+import FileProvider from '../../../../../files/FileProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import type UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
@@ -13,7 +13,7 @@ export default abstract class AbstractMediaImageProvider {
 
   protected constructor(
     private readonly userProvider: UserProvider,
-    private readonly fileSystemProvider: FileSystemProvider,
+    private readonly fileProvider: FileProvider,
     private readonly mediaImageCache: MediaImageCache,
     baseFileNamesInPrioritySort: string[],
   ) {
@@ -78,16 +78,6 @@ export default abstract class AbstractMediaImageProvider {
       throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(media.libraryOwnerId)}`);
     }
 
-    const fileSystems = await this.getOwnerFileSystems(media);
-    return fileSystems.user[0].getFile(media.directoryPath);
-  }
-
-  private async getOwnerFileSystems(media: MediaLibraryMedia) {
-    const mediaOwner = await this.userProvider.provideByAuthId(media.libraryOwnerId);
-    if (mediaOwner == null) {
-      throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(media.libraryOwnerId)}`);
-    }
-
-    return await this.fileSystemProvider.provideForUser(mediaOwner);
+    return this.fileProvider.provideForUserByUri(mediaOwner, media.directoryUri);
   }
 }

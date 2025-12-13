@@ -26,7 +26,7 @@ export default class MediaLibraryMediaItemFinder {
 
       select: {
         id: true,
-        filePath: true,
+        relativeFilePath: true,
         title: true,
         synopsis: true,
         lastScannedAt: true,
@@ -38,6 +38,7 @@ export default class MediaLibraryMediaItemFinder {
         media: {
           select: {
             id: true,
+            directoryUri: true,
             library: {
               select: {
                 id: true,

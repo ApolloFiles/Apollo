@@ -59,8 +59,8 @@ export default class Library {
 
   fetchMediaFull(mediaId: bigint): Promise<
     (
-      Omit<PrismaClient.MediaLibraryMedia, 'directoryPath' | 'addedAt'>
-      & { items: Omit<PrismaClient.MediaLibraryMediaItem, 'mediaId' | 'filePath' | 'lastScannedAt' | 'addedAt'>[] }
+      Omit<PrismaClient.MediaLibraryMedia, 'directoryUri' | 'addedAt'>
+      & { items: Omit<PrismaClient.MediaLibraryMediaItem, 'mediaId' | 'relativeFilePath' | 'lastScannedAt' | 'addedAt'>[] }
       ) | null> {
     return this.databaseClient.mediaLibraryMedia.findUnique({
       where: {
@@ -74,7 +74,7 @@ export default class Library {
         items: {
           select: {
             id: true,
-            filePath: true,
+            relativeFilePath: true,
             title: true,
             durationInSec: true,
             episodeNumber: true,
@@ -86,12 +86,12 @@ export default class Library {
     });
   }
 
-  fetchMediaItemByPath(mediaId: string, filePath: string): Promise<PrismaClient.MediaLibraryMediaItem | null> {
+  fetchMediaItemByPath(mediaId: string, relativeFilePath: string): Promise<PrismaClient.MediaLibraryMediaItem | null> {
     return this.databaseClient.mediaLibraryMediaItem.findUnique({
       where: {
-        mediaId_filePath: {
+        mediaId_relativeFilePath: {
           mediaId: BigInt(mediaId),
-          filePath: filePath,
+          relativeFilePath: relativeFilePath,
         },
       },
     });

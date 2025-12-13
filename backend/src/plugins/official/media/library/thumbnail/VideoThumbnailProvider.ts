@@ -1,3 +1,4 @@
+import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
@@ -66,7 +67,7 @@ export default class VideoThumbnailProvider {
     }
 
     const fileSystems = await this.getOwnerFileSystems(media);
-    return fileSystems.user[0].getFile(media.filePath);
+    return fileSystems.user[0].getFile(Path.join(media.mediaBaseDirectoryUri.filePath, media.relativeFilePath));
   }
 
   private async getOwnerFileSystems(media: MediaLibraryMediaItem) {

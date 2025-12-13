@@ -1,3 +1,4 @@
+import ApolloFileURI from '../../../../../../url/ApolloFileURI.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import type BaseModel from '../BaseModel.js';
 import MediaLibrary from '../MediaLibrary/MediaLibrary.js';
@@ -5,13 +6,14 @@ import MediaLibrary from '../MediaLibrary/MediaLibrary.js';
 export type MediaLibraryMediaItemInput = {
   id: bigint;
   mediaId: bigint;
-  filePath: string;
+  relativeFilePath: string;
   title: string;
   durationInSec: number;
   seasonNumber: number | null;
   episodeNumber: number | null;
   synopsis: string | null;
   media: {
+    directoryUri: string;
     library: {
       id: bigint;
       ownerId: string;
@@ -26,7 +28,7 @@ export default class MediaLibraryMediaItem implements BaseModel {
   private constructor(
     public readonly id: bigint,
     public readonly libraryMediaId: bigint,
-    public readonly filePath: string,
+    public readonly relativeFilePath: string,
     public readonly title: string,
     public readonly durationInSeconds: number,
     public readonly seasonNumber: number | null,
@@ -35,6 +37,7 @@ export default class MediaLibraryMediaItem implements BaseModel {
     public readonly libraryId: bigint,
     public readonly libraryOwnerId: string,
     public readonly librarySharedWithUserIds: string[],
+    public readonly mediaBaseDir: ApolloFileURI,
   ) {
   }
 
@@ -56,7 +59,7 @@ export default class MediaLibraryMediaItem implements BaseModel {
     return new MediaLibraryMediaItem(
       data.id,
       data.mediaId,
-      data.filePath,
+      data.relativeFilePath,
       data.title,
       data.durationInSec,
       data.seasonNumber,
@@ -65,6 +68,7 @@ export default class MediaLibraryMediaItem implements BaseModel {
       data.media.library.id,
       data.media.library.ownerId,
       data.media.library.MediaLibrarySharedWith.map(v => v.userId),
+      ApolloFileURI.parse(data.media.directoryUri),
     );
   }
 }

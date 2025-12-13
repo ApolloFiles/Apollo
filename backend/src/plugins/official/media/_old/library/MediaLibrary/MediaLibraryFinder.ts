@@ -1,6 +1,6 @@
-import type { Prisma } from '../../../../../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
+import type { Prisma } from '../../../../../../database/prisma-client/client.js';
 import MediaLibrary from './MediaLibrary.js';
 
 @singleton()
@@ -10,13 +10,13 @@ export default class MediaLibraryFinder {
       id: true,
       ownerId: true,
       name: true,
-      directoryPaths: true,
+      directoryUris: true,
       MediaLibrarySharedWith: {
         select: { userId: true },
       },
     },
     orderBy: { name: 'asc' },
-  }satisfies Prisma.MediaLibraryFindManyArgs;
+  } satisfies Prisma.MediaLibraryFindManyArgs;
 
   constructor(
     private readonly databaseClient: DatabaseClient,

@@ -30,22 +30,26 @@
   }
 </script>
 
-<a href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(mediaItemId)}&startOffset=auto"
-   class="episode-card d-flex gap-3 p-3 rounded-3"
-   class:active={isNextToWatch}
-   aria-label="Play Episode {episodeNumber}: {title}">
-  <div class="episode-thumbnail">
-    <picture>
-      <source srcset="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.avif" type="image/avif" />
-      <img src="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.jpeg" alt="" loading="lazy" />
-    </picture>
-    <div class="play-overlay"><IconPlay class="icon" /></div>
-    {#if watchProgress != null}
-      <div class="episode-progress">
-        <div class="episode-progress-bar" style="width: {Math.floor(watchProgress.asPercentage * 100)}%"></div>
+<div class="episode-card d-flex gap-3 p-3 rounded-3" class:active={isNextToWatch}>
+  <a
+    href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(mediaItemId)}&startOffset=auto"
+    aria-label="Play Episode {episodeNumber}: {title}"
+  >
+    <div class="episode-thumbnail">
+      <picture>
+        <source srcset="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.avif" type="image/avif" />
+        <img src="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.jpeg" alt="" loading="lazy" />
+      </picture>
+      <div class="play-overlay">
+        <IconPlay class="icon" />
       </div>
-    {/if}
-  </div>
+      {#if watchProgress != null}
+        <div class="episode-progress">
+          <div class="episode-progress-bar" style="width: {Math.floor(watchProgress.asPercentage * 100)}%"></div>
+        </div>
+      {/if}
+    </div>
+  </a>
   <div class="flex-grow-1">
     <div class="d-flex justify-content-between">
       <h5 class="mb-1 episode-title">{episodeNumber}. {title}</h5>
@@ -55,16 +59,16 @@
       <p class="text-secondary small mb-0 line-clamp-2">{synopsis}</p>
     {/if}
   </div>
-</a>
+</div>
 
 <style>
   .episode-card {
     text-decoration: none;
     color:           inherit;
     transition:      background-color 0.2s;
-    cursor:          pointer;
     border:          1px solid transparent;
     border-left:     4px solid transparent;
+    align-items:     center;
   }
 
   .episode-card:hover {
