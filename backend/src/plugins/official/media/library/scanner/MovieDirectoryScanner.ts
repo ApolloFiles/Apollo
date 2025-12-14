@@ -1,6 +1,5 @@
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
-import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
 import type MediaLibrary from '../database/MediaLibrary.js';
@@ -9,10 +8,8 @@ import type MediaLibraryMediaWriter from './MediaLibraryMediaWriter.js';
 
 @singleton()
 export default class MovieDirectoryScanner extends AbstractScanner {
-  constructor(
-    private readonly ffprobeExecutor: FfprobeExecutor,
-  ) {
-    super();
+  constructor(ffprobeExecutor: FfprobeExecutor) {
+    super(ffprobeExecutor);
   }
 
   async scan(library: MediaLibrary, mediaDirectory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {
@@ -49,29 +46,7 @@ export default class MovieDirectoryScanner extends AbstractScanner {
     file: VirtualFile,
     fallbackTitle: string,
   ): Promise<void> {
-    let title = fallbackTitle;
-    let synopsis: string | null = null;
-    let durationInSec = 0;
-
-    if (file instanceof LocalFile) {
-      const fileProbe = await this.ffprobeExecutor.probe(file.getAbsolutePathOnHost(), true);
-      durationInSec = Math.ceil(parseInt(fileProbe.format.duration ?? '0', 10));
-
-      const extractedTitle = this.extractMetadataFromProbe(fileProbe, 'title');
-      if (extractedTitle != null && extractedTitle.trim().length > 0) {
-        title = extractedTitle.trim();
-      }
-
-      const extractedSynopsis = this.extractMetadataFromProbe(fileProbe, 'synopsis');
-      if (extractedSynopsis != null && extractedSynopsis.trim().length > 0) {
-        synopsis = extractedSynopsis.trim();
-      }
-    } else {
-      console.error(
-        '[ERROR] Cannot probe file duration for non-local files during media library scan:',
-        file.toURI().toString(),
-      );
-    }
+    const { title, synopsis, durationInSec } = await this.extractCommonVideoMetadata(file, fallbackTitle);
 
     await writer.createMediaItemIfNotExist(
       mediaId,

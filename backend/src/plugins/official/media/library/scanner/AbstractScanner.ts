@@ -1,5 +1,6 @@
+import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
-import type { ExtendedProbeResult } from '../../../ffmpeg/FfprobeExecutor.js';
+import FfprobeExecutor, { type ExtendedProbeResult } from '../../../ffmpeg/FfprobeExecutor.js';
 
 export type MediaDirectoryInfo = {
   title: string,
@@ -7,8 +8,19 @@ export type MediaDirectoryInfo = {
   metadataTagsRaw?: string,
 }
 
+export type CommonVideoMetadata = {
+  title: string,
+  synopsis: string | null,
+  durationInSec: number,
+}
+
 export default abstract class AbstractScanner {
   private static MEDIA_DIR_REGEX = /^(.*?)(?:\s*\((\d{4})\))?((?:\s*\[[a-z0-9_.-]+])+)*$/i;
+
+  protected constructor(
+    private readonly ffprobeExecutor: FfprobeExecutor,
+  ) {
+  }
 
   protected getRelativeFilePath(mediaDirectory: VirtualFile, file: VirtualFile): string {
     const mediaDirPath = mediaDirectory.path;
@@ -37,6 +49,38 @@ export default abstract class AbstractScanner {
     }
 
     return { title: directoryName };
+  }
+
+  protected async extractCommonVideoMetadata(file: VirtualFile, fallbackTitle: string): Promise<CommonVideoMetadata> {
+    let title = fallbackTitle;
+    let synopsis: string | null = null;
+    let durationInSec = 0;
+
+    if (file instanceof LocalFile) {
+      const fileProbe = await this.ffprobeExecutor.probe(file.getAbsolutePathOnHost(), true);
+      durationInSec = Math.ceil(parseInt(fileProbe.format.duration ?? '0', 10));
+
+      const extractedTitle = this.extractMetadataFromProbe(fileProbe, 'title');
+      if (extractedTitle != null && extractedTitle.trim().length > 0) {
+        title = extractedTitle.trim();
+      }
+
+      const extractedSynopsis = this.extractMetadataFromProbe(fileProbe, 'synopsis');
+      if (extractedSynopsis != null && extractedSynopsis.trim().length > 0) {
+        synopsis = extractedSynopsis.trim();
+      }
+    } else {
+      console.error(
+        '[ERROR] Cannot probe file duration for non-local files during media library scan:',
+        file.toURI().toString(),
+      );
+    }
+
+    return {
+      title,
+      synopsis,
+      durationInSec,
+    };
   }
 
   protected extractMetadataFromProbe(probeResult: ExtendedProbeResult, tag: string): string | null {

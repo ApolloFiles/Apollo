@@ -1,5 +1,4 @@
 import { singleton } from 'tsyringe';
-import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
 import type MediaLibrary from '../database/MediaLibrary.js';
@@ -17,10 +16,8 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
   private static EPISODE_FILE_REGEX_LONG = /Episode[\s_.-]*\d+/i;
   private static EPISODE_FILE_REGEX_SHORT = /S(\d+)[\s_.-]*E(\d+)/i;
 
-  constructor(
-    private readonly ffprobeExecutor: FfprobeExecutor,
-  ) {
-    super();
+  constructor(ffprobeExecutor: FfprobeExecutor) {
+    super(ffprobeExecutor);
   }
 
   async scan(library: MediaLibrary, mediaDirectory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {
@@ -72,26 +69,8 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
       return;
     }
 
-    let title = `Episode ${episodeInfo.episodeNumber.toString().padStart(2, '0')}`;
-    let synopsis: string | null = null;
-    let durationInSec = 0;
-
-    if (file instanceof LocalFile) {
-      const fileProbe = await this.ffprobeExecutor.probe(file.getAbsolutePathOnHost(), true);
-      durationInSec = Math.ceil(parseInt(fileProbe.format.duration ?? '0', 10));
-
-      const extractedTitle = this.extractMetadataFromProbe(fileProbe, 'title');
-      if (extractedTitle != null) {
-        title = extractedTitle;
-      }
-
-      synopsis = this.extractMetadataFromProbe(fileProbe, 'synopsis');
-    } else {
-      console.error(
-        '[ERROR] Cannot probe file duration for non-local files during media library scan:',
-        file.toURI().toString(),
-      );
-    }
+    let fallbackTitle = `Episode ${episodeInfo.episodeNumber.toString().padStart(2, '0')}`;
+    const { title, synopsis, durationInSec } = await this.extractCommonVideoMetadata(file, fallbackTitle);
 
     await writer.createMediaItemIfNotExist(
       mediaId,
