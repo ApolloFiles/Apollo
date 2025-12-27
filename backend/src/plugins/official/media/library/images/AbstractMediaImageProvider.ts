@@ -1,4 +1,6 @@
-import FileProvider from '../../../../../files/FileProvider.js';
+import type DatabaseClient from '../../../../../database/DatabaseClient.js';
+import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
+import type FileProvider from '../../../../../files/FileProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import type UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
@@ -15,6 +17,7 @@ export default abstract class AbstractMediaImageProvider {
     private readonly userProvider: UserProvider,
     private readonly fileProvider: FileProvider,
     private readonly mediaImageCache: MediaImageCache,
+    private readonly databaseClient: DatabaseClient,
     baseFileNamesInPrioritySort: string[],
   ) {
     this.fileNamePatterns = baseFileNamesInPrioritySort.map(fileName => {
@@ -28,9 +31,11 @@ export default abstract class AbstractMediaImageProvider {
 
   protected abstract get imageType(): ImageType;
 
+  protected abstract get databaseImageType(): MediaLibraryMediaFallbackImageType | null;
+
   protected abstract get supportedFormats(): ImageFormat[];
 
-  protected abstract processImageFile(imageFile: VirtualFile, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer>;
+  protected abstract processImageBytes(imageBytes: Buffer, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer>;
 
   protected abstract generatedFallback(media: MediaLibraryMedia, format: ImageFormat): Promise<Buffer | null>;
 
@@ -44,6 +49,11 @@ export default abstract class AbstractMediaImageProvider {
 
     const imageFile = await this.findImageFileInDirectory(media);
     if (imageFile == null) {
+      const fallbackFromDatabase = await this.provideFallbackFromDatabase(media, format);
+      if (fallbackFromDatabase != null) {
+        return fallbackFromDatabase;
+      }
+
       return this.generatedFallback(media, format);
     }
 
@@ -55,6 +65,10 @@ export default abstract class AbstractMediaImageProvider {
     }
 
     return imageData;
+  }
+
+  protected async processImageFile(imageFile: VirtualFile, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer> {
+    return this.processImageBytes(await imageFile.read(), format);
   }
 
   protected async findImageFileInDirectory(media: MediaLibraryMedia): Promise<VirtualFile | null> {
@@ -69,6 +83,28 @@ export default abstract class AbstractMediaImageProvider {
       }
     }
 
+    return null;
+  }
+
+  // TODO: Add caching
+  private async provideFallbackFromDatabase(media: MediaLibraryMedia, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer | null> {
+    if (this.databaseImageType == null) {
+      return null;
+    }
+
+    const rawFallbackImage = await this.databaseClient.mediaLibraryMediaFallbackImages.findUnique({
+      where: {
+        mediaId_type: {
+          mediaId: media.id,
+          type: this.databaseImageType,
+        },
+      },
+      select: { image: true },
+    });
+
+    if (rawFallbackImage != null) {
+      return this.processImageBytes(Buffer.from(rawFallbackImage.image), format);
+    }
     return null;
   }
 

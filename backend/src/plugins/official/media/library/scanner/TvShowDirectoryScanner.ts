@@ -1,7 +1,6 @@
 import { singleton } from 'tsyringe';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
-import type { ExternalId } from '../../_old/libraries/external_meta_data_provider/tmdb/TheMovieDatabaseApiClient.js';
 import type MediaLibrary from '../database/MediaLibrary.js';
 import AbstractScanner, { type CommonVideoMetadata } from './AbstractScanner.js';
 import type MediaLibraryMediaWriter from './MediaLibraryMediaWriter.js';

@@ -4,8 +4,9 @@ import Path from 'node:path';
 import sharp from 'sharp';
 import { singleton } from 'tsyringe';
 import ApolloDirectoryProvider from '../../../../../config/ApolloDirectoryProvider.js';
+import DatabaseClient from '../../../../../database/DatabaseClient.js';
+import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
 import FileProvider from '../../../../../files/FileProvider.js';
-import VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
 import AbstractMediaImageProvider, { type ImageFormat, type ImageType } from './AbstractMediaImageProvider.js';
@@ -22,22 +23,27 @@ export default class MediaPosterImageProvider extends AbstractMediaImageProvider
     userProvider: UserProvider,
     fileProvider: FileProvider,
     mediaImageCache: MediaImageCache,
+    databaseClient: DatabaseClient,
     private readonly fallbackPosterGenerator: FallbackMediaPosterGenerator,
     private readonly apolloDirectoryProvider: ApolloDirectoryProvider,
   ) {
-    super(userProvider, fileProvider, mediaImageCache, ['poster', 'folder', 'cover']);
+    super(userProvider, fileProvider, mediaImageCache, databaseClient, ['poster', 'folder', 'cover']);
   }
 
   protected get imageType(): ImageType {
     return 'poster';
   }
 
+  protected get databaseImageType(): MediaLibraryMediaFallbackImageType | null {
+    return 'POSTER';
+  }
+
   protected get supportedFormats() {
     return ['jpeg', 'avif'] as const satisfies ImageFormat[];
   }
 
-  protected async processImageFile(imageFile: VirtualFile, format: MediaPosterImageProvider['supportedFormats'][number]): Promise<Buffer> {
-    let poster = sharp(await imageFile.read())
+  protected processImageBytes(imageBytes: Buffer, format: MediaPosterImageProvider['supportedFormats'][number]): Promise<Buffer> {
+    let poster = sharp(imageBytes)
       .resize({
         width: MediaPosterImageProvider.MAX_POSTER_WIDTH,
         height: MediaPosterImageProvider.MAX_POSTER_HEIGHT,

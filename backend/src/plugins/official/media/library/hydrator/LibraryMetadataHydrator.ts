@@ -17,8 +17,12 @@ export default class LibraryMetadataHydrator {
     const allMedia = await this.mediaLibraryMediaFinder.findByLibraryId(library.id);
     for (const media of allMedia) {
       if (media.externalApiFetchedAt == null) {
-        await this.mediaMetadataHydrator.hydrate(media);
-        ++totalHydrated;
+        try {
+          await this.mediaMetadataHydrator.hydrate(media);
+          ++totalHydrated;
+        } catch (err) {
+          console.error(`Failed to hydrate media ID ${media.id}:`, err);
+        }
       }
     }
 

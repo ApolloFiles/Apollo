@@ -1,8 +1,8 @@
 import sharp from 'sharp';
 import { singleton } from 'tsyringe';
+import DatabaseClient from '../../../../../database/DatabaseClient.js';
+import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
 import FileProvider from '../../../../../files/FileProvider.js';
-import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
-import VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
 import AbstractMediaImageProvider, { type ImageFormat, type ImageType } from './AbstractMediaImageProvider.js';
@@ -17,20 +17,25 @@ export default class MediaClearLogoImageProvider extends AbstractMediaImageProvi
     userProvider: UserProvider,
     fileProvider: FileProvider,
     mediaImageCache: MediaImageCache,
+    databaseClient: DatabaseClient,
   ) {
-    super(userProvider, fileProvider, mediaImageCache, ['clearlogo', 'logo']);
+    super(userProvider, fileProvider, mediaImageCache, databaseClient, ['clearlogo', 'logo']);
   }
 
   protected get imageType(): ImageType {
     return 'logo';
   }
 
+  protected get databaseImageType(): MediaLibraryMediaFallbackImageType | null {
+    return 'LOGO';
+  }
+
   protected get supportedFormats() {
     return ['png', 'avif'] as const satisfies ImageFormat[];
   }
 
-  protected async processImageFile(imageFile: VirtualFile, format: MediaClearLogoImageProvider['supportedFormats'][number]): Promise<Buffer> {
-    let logo = sharp(await imageFile.read())
+  protected processImageBytes(imageBytes: Buffer, format: MediaClearLogoImageProvider['supportedFormats'][number]): Promise<Buffer> {
+    let logo = sharp(imageBytes)
       .resize({
         height: MediaClearLogoImageProvider.MAX_LOGO_HEIGHT,
         fit: 'inside',

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-export type TMDBMovieDetails = z.infer<typeof MOVIE_DETAILS_SCHEMA>;
-export type TMDBTvSeriesDetails = z.infer<typeof TV_SERIES_DETAILS_SCHEMA>;
+export type TMDBMovieDetails = z.infer<typeof FULL_MOVIE_DETAILS_RESPONSE_SCHEMA>;
+export type TMDBTvSeriesDetails = z.infer<typeof FULL_TV_SERIES_DETAILS_RESPONSE_SCHEMA>;
 export type TMDBApiConfiguration = z.infer<typeof CONFIGURATION_RESPONSE_SCHEMA>;
 
 const IMAGE_PATH_VALUE_SCHEMA = z.string().startsWith('/').nullable();

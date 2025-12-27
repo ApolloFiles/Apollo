@@ -31,9 +31,10 @@ model MediaLibraryMedia {
   addedAt              DateTime  @default(now()) @map("added_at") @db.Timestamptz()
   externalApiFetchedAt DateTime? @map("external_api_fetched_at") @db.Timestamptz()
 
-  library                      MediaLibrary                   @relation(fields: [libraryId], references: [id], onDelete: Cascade)
-  items                        MediaLibraryMediaItem[]
-  mediaLibraryMediaExternalIds MediaLibraryMediaExternalIds[]
+  library                         MediaLibrary                      @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  items                           MediaLibraryMediaItem[]
+  mediaLibraryMediaExternalIds    MediaLibraryMediaExternalIds[]
+  mediaLibraryMediaFallbackImages MediaLibraryMediaFallbackImages[]
 
   @@unique([libraryId, directoryUri])
   @@map("media_libraries_media")
@@ -86,11 +87,32 @@ model MediaLibraryMediaExternalIds {
   @@schema("public")
 }
 
+model MediaLibraryMediaFallbackImages {
+  mediaId BigInt                             @map("media_id")
+  type    MediaLibraryMediaFallbackImageType
+  image   Bytes
+
+  media MediaLibraryMedia @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([mediaId, type])
+  @@map("media_libraries_media_fallback_images")
+  @@schema("public")
+}
+
 enum MediaLibraryMediaExternalIdSource {
   THE_MOVIE_DB
   IMDB
   THE_TV_DB
 
   @@map("media_library_media_external_id_source")
+  @@schema("public")
+}
+
+enum MediaLibraryMediaFallbackImageType {
+  POSTER
+  BACKDROP
+  LOGO
+
+  @@map("media_library_media_fallback_image_type")
   @@schema("public")
 }

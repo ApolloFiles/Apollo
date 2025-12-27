@@ -1,7 +1,8 @@
 import sharp from 'sharp';
 import { singleton } from 'tsyringe';
+import DatabaseClient from '../../../../../database/DatabaseClient.js';
+import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
 import FileProvider from '../../../../../files/FileProvider.js';
-import VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
 import AbstractMediaImageProvider, { type ImageFormat, type ImageType } from './AbstractMediaImageProvider.js';
@@ -17,20 +18,25 @@ export default class MediaBackdropImageProvider extends AbstractMediaImageProvid
     userProvider: UserProvider,
     fileProvider: FileProvider,
     mediaImageCache: MediaImageCache,
+    databaseClient: DatabaseClient,
   ) {
-    super(userProvider, fileProvider, mediaImageCache, ['backdrop', 'background', 'fanart', 'art']);
+    super(userProvider, fileProvider, mediaImageCache, databaseClient, ['backdrop', 'background', 'fanart', 'art']);
   }
 
   protected get imageType(): ImageType {
     return 'backdrop';
   }
 
+  protected get databaseImageType(): MediaLibraryMediaFallbackImageType | null {
+    return 'BACKDROP';
+  }
+
   protected get supportedFormats() {
     return ['jpeg', 'avif'] as const satisfies ImageFormat[];
   }
 
-  protected async processImageFile(imageFile: VirtualFile, format: MediaBackdropImageProvider['supportedFormats'][number]): Promise<Buffer> {
-    let backdrop = sharp(await imageFile.read())
+  protected processImageBytes(imageBytes: Buffer, format: MediaBackdropImageProvider['supportedFormats'][number]): Promise<Buffer> {
+    let backdrop = sharp(imageBytes)
       .resize({
         width: MediaBackdropImageProvider.MAX_BACKDROP_WIDTH,
         height: MediaBackdropImageProvider.MAX_BACKDROP_HEIGHT,
