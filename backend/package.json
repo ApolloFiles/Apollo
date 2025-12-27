@@ -48,13 +48,13 @@
   },
   "dependencies": {
     "@fastify/websocket": "^11.2.0",
-    "@orpc/server": "^1.12.2",
-    "@prisma/adapter-pg": "^7.1.0",
-    "@prisma/client": "^7.1.0",
-    "@sentry/node": "^10.29.0",
+    "@orpc/server": "^1.13.1",
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "@sentry/node": "^10.32.1",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#9e15d1631d46e845ec9839b38b09201b659d1475",
     "@types/mime-types": "^3.0.1",
-    "better-auth": "^1.4.5",
+    "better-auth": "^1.4.9",
     "fastify": "^5.6.2",
     "fastify-plugin": "^5.1.0",
     "fastify-type-provider-zod": "^6.1.0",
@@ -64,21 +64,21 @@
     "sharp": "^0.34.5",
     "tsyringe": "^4.10.0",
     "ws": "^8.18.3",
-    "zod": "^4.1.13"
+    "zod": "^4.2.1"
   },
   "optionalDependencies": {
-    "bufferutil": "^4.0.9"
+    "bufferutil": "^4.1.0"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",
-    "@types/node": "^24.10.1",
+    "@types/node": "^24.10.4",
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^4.0.15",
-    "prisma": "^7.1.0",
+    "@vitest/coverage-v8": "^4.0.16",
+    "prisma": "^7.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.15",
+    "vitest": "^4.0.16",
     "vitest-mock-extended": "^3.1.0"
   }
 }
