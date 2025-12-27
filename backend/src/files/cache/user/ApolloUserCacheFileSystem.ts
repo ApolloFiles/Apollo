@@ -1,10 +1,10 @@
 import Crypto from 'node:crypto';
 import Fs from 'node:fs';
-import type LocalFile from '../local/LocalFile.js';
-import type LocalFileSystem from '../local/LocalFileSystem.js';
-import type VirtualFile from '../VirtualFile.js';
-import VirtualFileSystem, { type LockAcquireOptions } from '../VirtualFileSystem.js';
-import type WriteableVirtualFile from '../WriteableVirtualFile.js';
+import type LocalFile from '../../local/LocalFile.js';
+import type LocalFileSystem from '../../local/LocalFileSystem.js';
+import type VirtualFile from '../../VirtualFile.js';
+import VirtualFileSystem, { type LockAcquireOptions } from '../../VirtualFileSystem.js';
+import type WriteableVirtualFile from '../../WriteableVirtualFile.js';
 
 // TODO: See if having a cache-dir works with this abstraction.
 //       Would be nice if something like media could have a directory with n images in there etc.

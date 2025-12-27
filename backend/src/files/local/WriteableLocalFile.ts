@@ -27,7 +27,7 @@ export default class WriteableLocalFile extends WriteableVirtualFile<LocalFile> 
     await Fs.promises.writeFile(this.file.getAbsolutePathOnHost(), data);
   }
 
-  async move(destination: WriteableVirtualFile<LocalFile>): Promise<void> {
+  async rename(destination: WriteableVirtualFile<LocalFile>): Promise<void> {
     this.throwIfWriteableFileIsNoLongerUsable();
 
     await Fs.promises.mkdir(Path.dirname(destination.file.getAbsolutePathOnHost()), { recursive: true });

@@ -31,6 +31,7 @@ export default class MediaLibraryMediaItemFinder {
         synopsis: true,
         lastScannedAt: true,
         addedAt: true,
+        externalApiFetchedAt: true,
         durationInSec: true,
         episodeNumber: true,
         seasonNumber: true,

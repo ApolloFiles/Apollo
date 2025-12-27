@@ -4,7 +4,7 @@ import Path from 'node:path';
 import Url from 'node:url';
 
 // manual imports for 'auto' loading:
-import './files/cache/ApolloFileSystemEventListener.js';
+import './files/cache/user/ApolloFileSystemEventListener.js';
 
 await recursiveAutoLoadMultiple(
   'webserver/routes',

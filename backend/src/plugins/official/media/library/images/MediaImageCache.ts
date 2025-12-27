@@ -1,5 +1,5 @@
 import { singleton } from 'tsyringe';
-import type ApolloUserCacheFileSystem from '../../../../../files/cache/ApolloUserCacheFileSystem.js';
+import type ApolloUserCacheFileSystem from '../../../../../files/cache/user/ApolloUserCacheFileSystem.js';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import type { ImageFormat, ImageType } from './AbstractMediaImageProvider.js';

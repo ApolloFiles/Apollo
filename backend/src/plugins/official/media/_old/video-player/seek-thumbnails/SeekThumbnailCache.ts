@@ -1,7 +1,7 @@
 import Fs from 'node:fs';
 import Sharp from 'sharp';
 import { singleton } from 'tsyringe';
-import type ApolloUserCacheFileSystem from '../../../../../../files/cache/ApolloUserCacheFileSystem.js';
+import type ApolloUserCacheFileSystem from '../../../../../../files/cache/user/ApolloUserCacheFileSystem.js';
 import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
 import type LocalFile from '../../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../../files/VirtualFile.js';

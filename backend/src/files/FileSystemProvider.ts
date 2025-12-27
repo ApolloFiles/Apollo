@@ -3,7 +3,7 @@ import { singleton } from 'tsyringe';
 import ApolloDirectoryProvider from '../config/ApolloDirectoryProvider.js';
 import ApolloUser from '../user/ApolloUser.js';
 import NodeFsUtils from '../utils/NodeFsUtils.js';
-import ApolloUserCacheFileSystem from './cache/ApolloUserCacheFileSystem.js';
+import ApolloUserCacheFileSystem from './cache/user/ApolloUserCacheFileSystem.js';
 import LocalFileSystem from './local/LocalFileSystem.js';
 import type VirtualFileSystem from './VirtualFileSystem.js';
 

@@ -1,4 +1,6 @@
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
+import type { MediaLibraryMediaExternalIdSource } from '../../../../../database/prisma-client/enums.js';
+import type { PrismaPromise } from '../../../../../database/prisma-client/internal/prismaNamespace.js';
 
 export default class MediaLibraryMediaWriter {
   private readonly scanStartPromise: Promise<Date>;
@@ -60,6 +62,42 @@ export default class MediaLibraryMediaWriter {
         lastScannedAt: await this.scanStartPromise,
       },
     });
+  }
+
+  async updateExternalIds(mediaId: bigint, externalIds: Partial<Record<MediaLibraryMediaExternalIdSource, string>>): Promise<void> {
+    const sourcesToKeep = Object.keys(externalIds) as MediaLibraryMediaExternalIdSource[];
+
+    const queriesToExecute: PrismaPromise<unknown>[] = [
+      this.databaseClient.mediaLibraryMediaExternalIds.deleteMany({
+        where: {
+          mediaId,
+          source: {
+            notIn: sourcesToKeep,
+          },
+        },
+      }),
+    ];
+
+    for (const [source, externalId] of Object.entries(externalIds)) {
+      queriesToExecute.push(this.databaseClient.mediaLibraryMediaExternalIds.upsert({
+        where: {
+          mediaId_source: {
+            mediaId,
+            source: source as MediaLibraryMediaExternalIdSource,
+          },
+        },
+        create: {
+          mediaId,
+          source: source as MediaLibraryMediaExternalIdSource,
+          externalId,
+        },
+        update: {
+          externalId,
+        },
+      }));
+    }
+
+    await this.databaseClient.$transaction(queriesToExecute);
   }
 
   async deleteOldMediaItems(libraryId: bigint): Promise<void> {

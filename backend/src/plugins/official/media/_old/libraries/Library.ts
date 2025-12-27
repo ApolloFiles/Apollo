@@ -59,8 +59,8 @@ export default class Library {
 
   fetchMediaFull(mediaId: bigint): Promise<
     (
-      Omit<PrismaClient.MediaLibraryMedia, 'directoryUri' | 'addedAt'>
-      & { items: Omit<PrismaClient.MediaLibraryMediaItem, 'mediaId' | 'relativeFilePath' | 'lastScannedAt' | 'addedAt'>[] }
+      Omit<PrismaClient.MediaLibraryMedia, 'directoryUri' | 'addedAt' | 'externalApiFetchedAt'>
+      & { items: Omit<PrismaClient.MediaLibraryMediaItem, 'mediaId' | 'relativeFilePath' | 'lastScannedAt' | 'addedAt' | 'externalApiFetchedAt'>[] }
       ) | null> {
     return this.databaseClient.mediaLibraryMedia.findUnique({
       where: {

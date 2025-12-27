@@ -1,8 +1,8 @@
 import { singleton } from 'tsyringe';
-import type EventRegistry from '../../plugins/builtin/event/EventRegistry.js';
-import FileDeletedEvent from '../../plugins/builtin/event/events/FileDeletedEvent.js';
-import FileRenamedEvent from '../../plugins/builtin/event/events/FileRenamedEvent.js';
-import type FileSystemProvider from '../FileSystemProvider.js';
+import type EventRegistry from '../../../plugins/builtin/event/EventRegistry.js';
+import FileDeletedEvent from '../../../plugins/builtin/event/events/FileDeletedEvent.js';
+import FileRenamedEvent from '../../../plugins/builtin/event/events/FileRenamedEvent.js';
+import type FileSystemProvider from '../../FileSystemProvider.js';
 
 @singleton()
 export default class ApolloFileSystemEventListener {

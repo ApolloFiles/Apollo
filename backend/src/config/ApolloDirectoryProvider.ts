@@ -13,6 +13,10 @@ export default class ApolloDirectoryProvider {
     return Path.join(this.getApolloDataDirectory(), 'tmp');
   }
 
+  getCacheBaseDirectory(): string {
+    return Path.join(this.getApolloDataDirectory(), 'cache');
+  }
+
   getAppTemporaryDirectory(): string {
     return Path.join(this.getTemporaryBaseDirectory(), 'app');
   }

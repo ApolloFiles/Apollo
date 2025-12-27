@@ -1,8 +1,9 @@
 import { singleton } from 'tsyringe';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
+import type { ExternalId } from '../../_old/libraries/external_meta_data_provider/tmdb/TheMovieDatabaseApiClient.js';
 import type MediaLibrary from '../database/MediaLibrary.js';
-import AbstractScanner from './AbstractScanner.js';
+import AbstractScanner, { type CommonVideoMetadata } from './AbstractScanner.js';
 import type MediaLibraryMediaWriter from './MediaLibraryMediaWriter.js';
 
 type EpisodeInfo = {
@@ -25,10 +26,15 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
 
     // TODO: It might make sense to 'overtake' other existing media here, in case the directory got renamed or so (and the other media directory no longer exists)
     const mediaId = await writer.createIfNotExists(library.id, mediaDirectory.toURI().toString(), mediaInfo.title);
+    let firstEpisodeFile: VirtualFile | null = null;
 
     for (const file of (await mediaDirectory.getFiles())) {
       if (await file.isFile()) {
-        await this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, file, null);
+        const isEpisodeFile = await this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, file, null);
+        if (isEpisodeFile && firstEpisodeFile == null) {
+          firstEpisodeFile = file;
+        }
+
         continue;
       }
 
@@ -38,9 +44,23 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
       }
 
       for (const potentialEpisodeFile of (await file.getFiles())) {
-        await this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, potentialEpisodeFile, null);
+        const isEpisodeFile = await this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, potentialEpisodeFile, null);
+        if (isEpisodeFile && firstEpisodeFile == null) {
+          firstEpisodeFile = potentialEpisodeFile;
+        }
       }
     }
+
+    let externalIdsFromFirstEpisode: CommonVideoMetadata['externalIds'] = {};
+    if (firstEpisodeFile != null) {
+      const { externalIds } = await this.extractCommonVideoMetadata(firstEpisodeFile, mediaInfo.title);
+      externalIdsFromFirstEpisode = externalIds;
+    }
+
+    await writer.updateExternalIds(mediaId, {
+      ...externalIdsFromFirstEpisode,
+      ...mediaInfo.externalIds,
+    });
   }
 
   // TODO: Maybe move these 'helper' methods used by the Detector into another shared class?
@@ -58,15 +78,15 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
     mediaDirectory: VirtualFile,
     file: VirtualFile,
     seasonNumber: number | null,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const episodeInfo = this.extractEpisodeInfoFromFileName(file);
     if (episodeInfo.episodeNumber == null) {
-      return;
+      return false;
     }
 
     seasonNumber = seasonNumber ?? episodeInfo.seasonNumber ?? null;
     if (seasonNumber == null) {
-      return;
+      return false;
     }
 
     let fallbackTitle = `Episode ${episodeInfo.episodeNumber.toString().padStart(2, '0')}`;
@@ -81,6 +101,7 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
       episodeInfo.seasonNumber ?? null,
       episodeInfo.episodeNumber ?? null,
     );
+    return true;
   }
 
   private extractSeasonNumberFromDir(directory: VirtualFile): number | null {

@@ -3,7 +3,7 @@ import { singleton } from 'tsyringe';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
 import type MediaLibrary from '../database/MediaLibrary.js';
-import AbstractScanner from './AbstractScanner.js';
+import AbstractScanner, { type MediaDirectoryInfo } from './AbstractScanner.js';
 import type MediaLibraryMediaWriter from './MediaLibraryMediaWriter.js';
 
 @singleton()
@@ -24,7 +24,7 @@ export default class MovieDirectoryScanner extends AbstractScanner {
       }
 
       if (this.looksLikeMovieFile(mediaDirectory, file)) {
-        await this.processMovieFile(writer, mediaId, mediaDirectory, file, mediaInfo.title);
+        await this.processMovieFile(writer, mediaId, mediaDirectory, file, mediaInfo);
         break;
       }
     }
@@ -44,9 +44,19 @@ export default class MovieDirectoryScanner extends AbstractScanner {
     mediaId: bigint,
     mediaDirectory: VirtualFile,
     file: VirtualFile,
-    fallbackTitle: string,
+    mediaInfo: MediaDirectoryInfo,
   ): Promise<void> {
-    const { title, synopsis, durationInSec } = await this.extractCommonVideoMetadata(file, fallbackTitle);
+    const {
+      title,
+      synopsis,
+      durationInSec,
+      externalIds,
+    } = await this.extractCommonVideoMetadata(file, mediaInfo.title);
+
+    await writer.updateExternalIds(mediaId, {
+      ...externalIds,
+      ...mediaInfo.externalIds,
+    });
 
     await writer.createMediaItemIfNotExist(
       mediaId,
