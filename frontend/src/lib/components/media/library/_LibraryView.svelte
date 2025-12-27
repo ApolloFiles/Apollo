@@ -24,6 +24,14 @@
                         items={continueWatchingItems} />
 {/if}
 
+{#if recentlyAdded.length > 0}
 <MediaOverviewSection title="Recently Added"
                       viewAllLink=""
                       items={recentlyAdded} />
+{/if}
+
+{#if continueWatchingItems.length === 0 && recentlyAdded.length === 0}
+  <p class="text-center text-muted mt-5">
+    No media found to display
+  </p>
+{/if}
