@@ -14,7 +14,7 @@ export type LocalFileSystemOptions = CommonVirtualFileSystemOptions & {
 export default class LocalFileSystem extends VirtualFileSystem {
   constructor(
     public readonly id: string,
-    public readonly owner: ApolloUser,
+    public readonly owner: ApolloUser | null,
     protected readonly options: LocalFileSystemOptions,
   ) {
     super(id, owner, options);

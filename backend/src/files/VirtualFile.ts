@@ -2,7 +2,7 @@ import Fs from 'node:fs';
 import Path from 'node:path';
 import NodeStream from 'node:stream';
 import ApolloFileURI from '../uri/ApolloFileURI.js';
-import type VirtualFileSystem from './VirtualFileSystem.js';
+import VirtualFileSystem from './VirtualFileSystem.js';
 
 export default abstract class VirtualFile<T extends VirtualFileSystem = VirtualFileSystem> {
   public readonly path: string;
@@ -53,13 +53,8 @@ export default abstract class VirtualFile<T extends VirtualFileSystem = VirtualF
     return (await this.exists()) && (await this.stat()).isDirectory();
   }
 
-  // TODO: Replace usage of this with ApolloURLs
-  systemWideUniqueIdentifier(): string {
-    return `${this.fileSystem.owner.id};${this.fileSystem.id};${this.path}`;
-  }
-
   toURI(): ApolloFileURI {
-    return ApolloFileURI.create(this.fileSystem.owner.id, this.fileSystem.id, this.path);
+    return ApolloFileURI.create(this.fileSystem.owner?.id ?? VirtualFileSystem.SYSTEM_USER_ID, this.fileSystem.id, this.path);
   }
 
   private normalizePath(path: string): string {

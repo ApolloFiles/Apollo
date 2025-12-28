@@ -15,7 +15,7 @@ export default class ApolloFileSystemEventListener {
       .on(async (event) => {
         console.debug('ApolloFileSystemEventListener: FileDeletedEvent');
 
-        const fileSystems = fileSystemProvider.provideApolloFileSystemsForUser(event.file.fileSystem.owner);
+        const fileSystems = fileSystemProvider.provideApolloFileSystemsForUser(event.file.fileSystem.getOwnerOrThrow());
         await fileSystems.cache.deleteForFile(event.file);
       });
 
@@ -24,9 +24,9 @@ export default class ApolloFileSystemEventListener {
       .on(async (event) => {
         console.debug('ApolloFileSystemEventListener: FileRenamedEvent');
 
-        const fileSystems = fileSystemProvider.provideApolloFileSystemsForUser(event.oldFile.fileSystem.owner);
+        const fileSystems = fileSystemProvider.provideApolloFileSystemsForUser(event.oldFile.fileSystem.getOwnerOrThrow());
 
-        if (event.oldFile.fileSystem.owner.id !== event.newFile.fileSystem.owner.id) {
+        if (event.oldFile.fileSystem.owner?.id !== event.newFile.fileSystem.owner?.id) {
           console.warn('[WARN] FileRenamedEvent across different users/owners is not supported for cache management (and should not have happened)');
           await fileSystems.cache.deleteForFile(event.oldFile);
           return;

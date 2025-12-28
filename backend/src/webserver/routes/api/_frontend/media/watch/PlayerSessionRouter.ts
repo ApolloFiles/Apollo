@@ -340,7 +340,7 @@ export default class PlayerSessionRouter implements Router {
 
       const currentFile = playerSession.getCurrentMedia()?.sourceFile;
       if (currentFile != null) {
-        (request.query as any).file = ApolloFileUrl.create(currentFile.fileSystem.owner.id, currentFile.fileSystem.id, currentFile.path).toString();
+        (request.query as any).file = ApolloFileUrl.create(currentFile.fileSystem.getOwnerOrThrow().id, currentFile.fileSystem.id, currentFile.path).toString();
       }
 
       const inputs = await this.videoSeekThumbnailControllerHelper.parseRequestFileAndThumbnailIndex(request, reply, apolloUser);
@@ -350,7 +350,7 @@ export default class PlayerSessionRouter implements Router {
 
       let responseBody: string | Buffer;
 
-      const releaseGenerationLock = await this.videoSeekThumbnailControllerHelper.acquireGenerationLock(ApolloFileUrl.create(inputs.file.fileSystem.owner.id, inputs.file.fileSystem.id, inputs.file.path)); // acquire lock before any further async operations
+      const releaseGenerationLock = await this.videoSeekThumbnailControllerHelper.acquireGenerationLock(ApolloFileUrl.create(inputs.file.fileSystem.getOwnerOrThrow().id, inputs.file.fileSystem.id, inputs.file.path)); // acquire lock before any further async operations
       try {
         if (inputs.thumbnailIndex === -1) {
           const parsedOriginalRequestUrl = new URL(request.originalUrl, 'https://localhost');

@@ -18,6 +18,8 @@ export type LockHandle = {
 export type LockAcquireOptions = Pick<MutexAcquireOptions, 'waitTimeoutMs' | 'leaseDurationMs'>;
 
 export default abstract class VirtualFileSystem {
+  public static readonly SYSTEM_USER_ID = 'SYSTEM';
+
   private readonly ID_PATTERN = /^[a-z0-9_.=@+-]+$/i;
   protected static readonly mutexManager = new MutexManager();
 
@@ -27,7 +29,7 @@ export default abstract class VirtualFileSystem {
    */
   protected constructor(
     public readonly id: string,
-    public readonly owner: ApolloUser,
+    public readonly owner: ApolloUser | null,
     protected readonly options: CommonVirtualFileSystemOptions & Record<string, any>,
   ) {
     if (!this.ID_PATTERN.test(this.id)) {
@@ -57,7 +59,7 @@ export default abstract class VirtualFileSystem {
 
     const mutexHandle = await VirtualFileSystem
       .mutexManager
-      .acquireMutexHandle(file.systemWideUniqueIdentifier(), {
+      .acquireMutexHandle(file.toURI().toString(), {
         ...options,
         onRelease: () => writeableFile.setLockHasBeenReleased(),
       });
@@ -66,5 +68,12 @@ export default abstract class VirtualFileSystem {
       writeableFile,
       release: () => mutexHandle.release(),
     };
+  }
+
+  getOwnerOrThrow(): ApolloUser {
+    if (this.owner == null) {
+      throw new Error('The file system does not have an owner');
+    }
+    return this.owner;
   }
 }

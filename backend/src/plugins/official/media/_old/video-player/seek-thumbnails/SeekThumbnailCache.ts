@@ -89,6 +89,6 @@ export default class SeekThumbnailCache {
   }
 
   private async getCacheFileSystem(file: VirtualFile): Promise<ApolloUserCacheFileSystem> {
-    return (await this.fileSystemProvider.provideForUser(file.fileSystem.owner)).cache;
+    return (await this.fileSystemProvider.provideForUser(file.fileSystem.getOwnerOrThrow())).cache;
   }
 }

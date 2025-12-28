@@ -39,7 +39,7 @@ export default class SeekThumbnailProvider {
       return;
     }
 
-    const fileSystems = await this.fileSystemProvider.provideForUser(file.fileSystem.owner);
+    const fileSystems = await this.fileSystemProvider.provideForUser(file.fileSystem.getOwnerOrThrow());
     const tmpDir = fileSystems.tmp.getFile('/media-video-player-seek-thumbnails-' + Date.now().toString());
 
     if (!(tmpDir instanceof LocalFile)) {
