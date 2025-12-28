@@ -15,6 +15,9 @@ export type CachePath = {
 
 // TODO: Maybe the concept of a CacheItem makes sense, that encapsulates read, write, stat etc.?
 //       We can always return a CacheItem and it exposed methods to manage itself
+/**
+ * @deprecated Use an {@link SimpleCacheInterface} implementation instead
+ */
 @singleton()
 export default class ExpiringApolloCache {
   public static readonly TTL_INFINITE = 0 as const;

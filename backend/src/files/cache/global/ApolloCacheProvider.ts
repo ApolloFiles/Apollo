@@ -1,6 +1,6 @@
-import Crypto from 'node:crypto';
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
+import XXHashAddon from 'xxhash-addon';
 import ApolloDirectoryProvider from '../../../config/ApolloDirectoryProvider.js';
 
 @singleton()
@@ -35,9 +35,9 @@ export default class ApolloCacheProvider {
   }
 
   private calculateHash(input: string): string {
-    return Crypto
-      .createHash('sha256')
-      .update(input)
-      .digest('hex');
+    return XXHashAddon
+      .XXHash128
+      .hash(Buffer.from(input))
+      .toString('hex');
   }
 }

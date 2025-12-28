@@ -64,6 +64,7 @@
     "sharp": "^0.34.5",
     "tsyringe": "^4.10.0",
     "ws": "^8.18.3",
+    "xxhash-addon": "^2.0.3",
     "zod": "^4.2.1"
   },
   "optionalDependencies": {
