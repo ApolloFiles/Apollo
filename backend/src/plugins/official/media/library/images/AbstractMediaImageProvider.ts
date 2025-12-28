@@ -86,26 +86,32 @@ export default abstract class AbstractMediaImageProvider {
     return null;
   }
 
-  // TODO: Add caching
   private async provideFallbackFromDatabase(media: MediaLibraryMedia, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer | null> {
     if (this.databaseImageType == null) {
       return null;
     }
 
-    const rawFallbackImage = await this.databaseClient.mediaLibraryMediaFallbackImages.findUnique({
-      where: {
-        mediaId_type: {
-          mediaId: media.id,
-          type: this.databaseImageType,
-        },
-      },
-      select: { image: true },
-    });
+    let imageData = await this.mediaImageCache.get(await this.findMediaDirectory(media), this.imageType, format);
 
-    if (rawFallbackImage != null) {
-      return this.processImageBytes(Buffer.from(rawFallbackImage.image), format);
+    if (imageData == null) {
+      const rawFallbackImage = await this.databaseClient.mediaLibraryMediaFallbackImages.findUnique({
+        where: {
+          mediaId_type: {
+            mediaId: media.id,
+            type: this.databaseImageType,
+          },
+        },
+        select: { image: true },
+      });
+      if (rawFallbackImage == null) {
+        return null;
+      }
+
+      imageData = await this.processImageBytes(Buffer.from(rawFallbackImage.image), format);
+      await this.mediaImageCache.write(await this.findMediaDirectory(media), this.imageType, format, imageData);
     }
-    return null;
+
+    return imageData;
   }
 
   private async findMediaDirectory(media: MediaLibraryMedia): Promise<VirtualFile> {
