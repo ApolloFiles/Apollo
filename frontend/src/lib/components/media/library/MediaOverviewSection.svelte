@@ -18,7 +18,7 @@
     <span>{title}</span>
     {#if viewAllLink != null}
       <a href={viewAllLink} class="text-decoration-none text-secondary fs-6">
-        View All&nbsp;<IconChevronRight class="icon ms-1" />
+        View All&nbsp;<IconChevronRight class="icon ms-1" role="presentation" />
       </a>
     {/if}
   </div>

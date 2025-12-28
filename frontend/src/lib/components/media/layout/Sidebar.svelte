@@ -50,15 +50,21 @@
        data-bs-toggle="dropdown"
        aria-expanded="false"
        aria-label="Switch App Section">
-      <img src="/logo.svg" alt="Logo" height="40" width="40" style="height: 40px; margin-right: 10px">
+      <img src="/logo.svg"
+           height="40"
+           width="40"
+           style="height: 40px; margin-right: 10px"
+           alt=""
+           role="presentation"
+      >
       <span>
         <span class="fw-bold d-block">Apollo</span>
-        <small class="text-secondary d-block" style="font-size: 0.8rem">Media&nbsp;<IconChevronDown class="icon ms-1 w-25 h-25" /></small>
+        <small class="text-secondary d-block" style="font-size: 0.8rem">Media&nbsp;<IconChevronDown class="icon ms-1 w-25 h-25" role="presentation" /></small>
       </span>
     </button>
     <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="appDropdown">
-      <li><a class="dropdown-item" href="/browse/"><IconFolder class="icon me-2" />File Browser</a></li>
-      <li><a class="dropdown-item active" href="/media/"><IconCircleCaretRight class="icon me-2" />Media</a></li>
+      <li><a class="dropdown-item" href="/browse/"><IconFolder class="icon me-2" role="presentation" />File Browser</a></li>
+      <li><a class="dropdown-item active" href="/media/"><IconCircleCaretRight class="icon me-2" role="presentation" />Media</a></li>
     </ul>
   </div>
 
@@ -66,13 +72,13 @@
     <a href="/media/"
        class="nav-link"
        class:active={activeLibraryId == null}
-    ><IconHome class="icon me-2" />Übersicht</a>
+    ><IconHome class="icon me-2" role="presentation" />Übersicht</a>
 
     {#each ownedLibraries as library}
       <a href="/media/{library.id}"
          class="nav-link"
          class:active={activeLibraryId === library.id}>
-        <IconDeviceDesktop class="icon me-2" />{library.name}
+        <IconDeviceDesktop class="icon me-2" role="presentation" />{library.name}
       </a>
     {/each}
 
@@ -84,7 +90,7 @@
       <a href="/media/{library.id}"
          class="nav-link"
          class:active={activeLibraryId === library.id}>
-        <IconDeviceDesktop class="icon me-2" />{library.name}
+        <IconDeviceDesktop class="icon me-2" role="presentation" />{library.name}
       </a>
     {/each}
   </div>

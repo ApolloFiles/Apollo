@@ -71,7 +71,7 @@
       {#if hasClearLogo}
         <picture>
           <source srcset="/api/_frontend/media-new/{mediaId}/logo.avif" type="image/avif" />
-          <img src="/api/_frontend/media-new/{mediaId}/logo.png" class="hero-logo" alt="" loading="eager" role="presentation">
+          <img src="/api/_frontend/media-new/{mediaId}/logo.png" class="hero-logo" alt="" title={title} loading="eager" role="presentation" aria-hidden="true">
         </picture>
       {/if}
 
@@ -95,9 +95,9 @@
             class="read-more-btn"
           >
             {#if isSynopsisExpanded}
-              Show Less <IconChevronUp class="icon" />
+              Show Less <IconChevronUp class="icon" role="presentation" />
             {:else}
-              Read More <IconChevronDown class="icon" />
+              Read More <IconChevronDown class="icon" role="presentation" />
             {/if}
           </button>
         {/if}
@@ -123,14 +123,14 @@
           <a
             href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=auto"
             class="btn-action">
-            <IconPlay class="icon" />
+            <IconPlay class="icon" role="presentation" />
             Resume
           </a>
 
           <a
             href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=0"
             class="btn-action btn-action-secondary">
-            <IconRotate class="icon" />
+            <IconRotate class="icon" role="presentation" />
             Start Over
           </a>
         </div>

@@ -41,7 +41,7 @@
         <img src="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.jpeg" alt="" loading="lazy" />
       </picture>
       <div class="play-overlay">
-        <IconPlay class="icon" />
+        <IconPlay class="icon" role="presentation" />
       </div>
       {#if watchProgress != null}
         <div class="episode-progress">
@@ -52,7 +52,7 @@
   </a>
   <div class="flex-grow-1">
     <div class="d-flex justify-content-between">
-      <h5 class="mb-1 episode-title">{episodeNumber}. {title}</h5>
+      <h3 class="h5 mb-1 episode-title">{episodeNumber}. {title}</h3>
       <span class="text-secondary">{formatDuration(durationInSeconds)}</span>
     </div>
     {#if synopsis != null}

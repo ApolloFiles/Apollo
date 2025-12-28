@@ -27,7 +27,7 @@
 </script>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="m-0">Episodes</h3>
+  <h2 class="h3 m-0">Episodes</h2>
   <select class="form-select bg-dark text-white border-secondary"
           style="width: auto"
           aria-label="Select Season">

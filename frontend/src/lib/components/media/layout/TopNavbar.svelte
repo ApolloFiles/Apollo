@@ -16,13 +16,15 @@
           aria-label="Toggle sidebar menu"
           onclick={onSidebarToggleClicked}
           data-sidebar-toggle>
-    <IconMenu class="icon" />
+    <IconMenu class="icon" role="presentation" />
   </button>
 
-  <div class="search-bar">
-    <span class="icon icon-search"><IconSearch /></span>
-    <input type="text" placeholder="Search">
-  </div>
+  <form role="search" action="/media/search" method="GET">
+    <div class="search-bar">
+      <span class="icon icon-search"><IconSearch role="presentation" /></span>
+      <input type="search" name="q" placeholder="Search" />
+    </div>
+  </form>
 
   <div class="user-profile dropdown">
     <button
@@ -34,12 +36,12 @@
       type="button"
     >
       <img src="/img/neutral-avatar.svg" alt="" class="bg-info" width="512" height="512">
-      <IconChevronDown class="icon text-secondary w-75 h-75" />
+      <IconChevronDown class="icon text-secondary w-75 h-75" role="presentation" />
     </button>
     <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" aria-labelledby="profileDropdown">
       <li>
         <a class="dropdown-item" href="/profile">
-          <IconUser class="icon me-2" />
+          <IconUser class="icon me-2" role="presentation" />
           Profile
         </a>
       </li>
@@ -60,7 +62,7 @@
 
       <li>
         <a class="dropdown-item text-danger" href="/logout" data-sveltekit-reload>
-          <IconLogout class="icon me-2" />
+          <IconLogout class="icon me-2" role="presentation" />
           Logout
         </a>
       </li>
