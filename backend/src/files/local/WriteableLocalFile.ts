@@ -37,4 +37,8 @@ export default class WriteableLocalFile extends WriteableVirtualFile<LocalFile> 
       .for(FileRenamedEvent)
       .emit(new FileRenamedEvent(this.file, destination.file));
   }
+
+  async delete(recursive?: boolean): Promise<void> {
+    await Fs.promises.rm(this.file.getAbsolutePathOnHost(), { recursive, force: true });
+  }
 }

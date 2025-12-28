@@ -1,21 +1,15 @@
 import Crypto from 'node:crypto';
-import Fs from 'node:fs';
 import type LocalFile from '../../local/LocalFile.js';
-import type LocalFileSystem from '../../local/LocalFileSystem.js';
 import type VirtualFile from '../../VirtualFile.js';
 import VirtualFileSystem, { type LockAcquireOptions } from '../../VirtualFileSystem.js';
 import type WriteableVirtualFile from '../../WriteableVirtualFile.js';
 
-// TODO: See if having a cache-dir works with this abstraction.
-//       Would be nice if something like media could have a directory with n images in there etc.
 // TODO: Clear/Delete should probably make sure there's no write lock on any file (or acquire a lock on the whole fs)
 export default class ApolloUserCacheFileSystem {
   private readonly ID_PATTERN = /^[a-z0-9_.=@+-]+$/i;
 
   constructor(
-    // TODO: Support 'VirtualFileSystem' in the future for more flexibility
-    //       But limiting to LocalFileSystem makes some stuff easier right now, while VirtualFileSystems are not 100 % figured out yet
-    private cacheFileSystem: LocalFileSystem,
+    private readonly cacheFileSystem: VirtualFileSystem,
   ) {
   }
 
@@ -48,24 +42,27 @@ export default class ApolloUserCacheFileSystem {
     const newCacheDirVirtualFile = this.cacheFileSystem.getFile(newCacheDir);
 
     await this.deleteForFile(newFile);
-    await Fs.promises.rename(
-      oldCacheDirVirtualFile.getAbsolutePathOnHost(),
-      newCacheDirVirtualFile.getAbsolutePathOnHost(),
-    );
+
+    await this.cacheFileSystem.getWriteableFile(oldCacheDirVirtualFile)
+      .rename(this.cacheFileSystem.getWriteableFile(newCacheDirVirtualFile));
   }
 
   async deleteForFile(file: VirtualFile): Promise<void> {
     const cacheDir = this.cacheFileSystem.getFile(this.createCachePathForFile(file));
-    await Fs.promises.rm(cacheDir.getAbsolutePathOnHost(), { recursive: true, force: true });
+    const cacheStat = this.cacheFileSystem.getFile(`${this.createCachePathForFile(file)}.stat`);
+    await Promise.all([
+      this.cacheFileSystem.getWriteableFile(cacheDir).delete(true),
+      this.cacheFileSystem.getWriteableFile(cacheStat).delete(),
+    ]);
   }
 
   async clearForFileSystem(fileSystem: VirtualFileSystem): Promise<void> {
     const cacheDir = this.cacheFileSystem.getFile(this.createCachePathForFileSystem(fileSystem));
-    await Fs.promises.rm(cacheDir.getAbsolutePathOnHost(), { recursive: true, force: true });
+    await this.cacheFileSystem.getWriteableFile(cacheDir).delete(true);
   }
 
   async clear(): Promise<void> {
-    await Fs.promises.rm(this.cacheFileSystem.getAbsolutePathOnHost(), { recursive: true, force: true });
+    await this.cacheFileSystem.getWriteableFile(this.cacheFileSystem.getFile('/')).delete(true);
   }
 
   private async isCacheStillUpToDate(file: VirtualFile): Promise<boolean> {

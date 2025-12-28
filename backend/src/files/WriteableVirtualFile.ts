@@ -16,6 +16,8 @@ export default abstract class WriteableVirtualFile<T extends VirtualFile = Virtu
 
   abstract rename(destination: WriteableVirtualFile<T>): Promise<void>;
 
+  abstract delete(recursive?: boolean): Promise<void>;
+
   getChildFile(child: string): WriteableVirtualFile<T> {
     return this.file.fileSystem.getWriteableFile(this.file.fileSystem.getFile(Path.join(this.file.path, child))) as WriteableVirtualFile<T>;
   }
