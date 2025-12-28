@@ -4,10 +4,7 @@ import { container } from 'tsyringe';
 import type App from './boot/App.js';
 import WebApp from './boot/WebApp.js';
 import { IS_PRODUCTION } from './constants.js';
-import MediaLibraryFinder from './plugins/official/media/library/database/finder/MediaLibraryFinder.js';
-import LibraryMetadataHydrator from './plugins/official/media/library/hydrator/LibraryMetadataHydrator.js';
-import MediaLibraryScanner from './plugins/official/media/library/scanner/MediaLibraryScanner.js';
-import UserProvider from './user/UserProvider.js';
+import FullLibraryIndexingHelper from './plugins/official/media/library/FullLibraryIndexingHelper.js';
 import SentrySdk from './utils/SentrySdk.js';
 
 // main
@@ -29,34 +26,7 @@ async function bootstrap(): Promise<void> {
   await app.boot();
 
   // TODO: remove debug
-  (async () => {
-    const mediaLibraryFinder = container.resolve(MediaLibraryFinder);
-    const mediaLibraryScanner = container.resolve(MediaLibraryScanner);
-    const mediaLibraryHydrator = container.resolve(LibraryMetadataHydrator);
-
-    const users = await container.resolve(UserProvider).findAll();
-    for (const user of users) {
-      const libraries = await mediaLibraryFinder.findOwnedByUser(user);
-
-      for (const library of libraries) {
-        try {
-          await mediaLibraryScanner.scan(library);
-          console.log(`Done scanning library ${library.name} (id: ${library.id}, owner: ${user.displayName})`);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      for (const library of libraries) {
-        try {
-          const totalHydrated = await mediaLibraryHydrator.hydrateNeeded(library);
-          console.log(`Done hydrating library ${library.name} (id: ${library.id}, owner: ${user.displayName}, total hydrated: ${totalHydrated})`);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-    }
-  })().catch(console.error);
+  container.resolve(FullLibraryIndexingHelper).runForAllUsers().catch(console.error);
 }
 
 function registerShutdownHooks(): void {
