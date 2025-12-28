@@ -2,7 +2,12 @@ import { singleton } from 'tsyringe';
 import type ApolloUser from '../../../../user/ApolloUser.js';
 import UserProvider from '../../../../user/UserProvider.js';
 import MediaLibraryFinder from './database/finder/MediaLibraryFinder.js';
+import MediaLibraryMediaFinder from './database/finder/MediaLibraryMediaFinder.js';
+import type MediaLibrary from './database/MediaLibrary.js';
 import LibraryMetadataHydrator from './hydrator/LibraryMetadataHydrator.js';
+import MediaBackdropImageProvider from './images/MediaBackdropImageProvider.js';
+import MediaClearLogoImageProvider from './images/MediaClearLogoImageProvider.js';
+import MediaPosterImageProvider from './images/MediaPosterImageProvider.js';
 import MediaLibraryScanner from './scanner/MediaLibraryScanner.js';
 
 @singleton()
@@ -12,6 +17,10 @@ export default class FullLibraryIndexingHelper {
     private readonly mediaLibraryFinder: MediaLibraryFinder,
     private readonly mediaLibraryScanner: MediaLibraryScanner,
     private readonly mediaLibraryHydrator: LibraryMetadataHydrator,
+    private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
+    private readonly mediaPosterImageProvider: MediaPosterImageProvider,
+    private readonly mediaClearLogoImageProvider: MediaClearLogoImageProvider,
+    private readonly mediaBackdropImageProvider: MediaBackdropImageProvider,
   ) {
   }
 
@@ -47,6 +56,26 @@ export default class FullLibraryIndexingHelper {
       } catch (err) {
         console.error(err);
       }
+    }
+
+    for (const library of libraries) {
+      try {
+        await this.preGenerateImagesForLibrary(library);
+        console.debug(`[MediaLibraryIndexer] Pre-generated important images for {id=${library.id},name=${JSON.stringify(library.name)},owner=${JSON.stringify(user.displayName)}}`);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+
+  private async preGenerateImagesForLibrary(library: MediaLibrary): Promise<void> {
+    const allMedia = await this.mediaLibraryMediaFinder.findByLibraryId(library.id);
+    for (const media of allMedia) {
+      await Promise.allSettled([
+        this.mediaPosterImageProvider.provide(media, 'avif'),
+        this.mediaClearLogoImageProvider.provide(media, 'avif'),
+        this.mediaBackdropImageProvider.provide(media, 'avif'),
+      ]);
     }
   }
 }
