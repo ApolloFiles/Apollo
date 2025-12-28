@@ -1,7 +1,7 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import NodeStream from 'node:stream';
-import ApolloFileURI from '../url/ApolloFileURI.js';
+import ApolloFileURI from '../uri/ApolloFileURI.js';
 import type VirtualFileSystem from './VirtualFileSystem.js';
 
 export default abstract class VirtualFile<T extends VirtualFileSystem = VirtualFileSystem> {

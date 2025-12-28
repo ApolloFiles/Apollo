@@ -5,7 +5,7 @@ import type { MediaLibraryFindManyArgs } from '../../../../../database/prisma-cl
 import FileProvider from '../../../../../files/FileProvider.js';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
-import ApolloFileURI from '../../../../../url/ApolloFileURI.js';
+import ApolloFileURI from '../../../../../uri/ApolloFileURI.js';
 import type ApolloUser from '../../../../../user/ApolloUser.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import MediaLibraryMediaItemFinder from '../library/MediaLibraryMediaItem/MediaLibraryMediaItemFinder.js';

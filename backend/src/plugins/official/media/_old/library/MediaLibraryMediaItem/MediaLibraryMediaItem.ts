@@ -1,4 +1,4 @@
-import ApolloFileURI from '../../../../../../url/ApolloFileURI.js';
+import ApolloFileURI from '../../../../../../uri/ApolloFileURI.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import type BaseModel from '../BaseModel.js';
 import MediaLibrary from '../MediaLibrary/MediaLibrary.js';

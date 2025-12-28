@@ -2,7 +2,7 @@ import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import FileProvider from '../../../../../files/FileProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
-import ApolloFileURI from '../../../../../url/ApolloFileURI.js';
+import ApolloFileURI from '../../../../../uri/ApolloFileURI.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import MediaLibrary from '../database/MediaLibrary.js';
 import MediaDirectoryDetector from './MediaDirectoryDetector.js';

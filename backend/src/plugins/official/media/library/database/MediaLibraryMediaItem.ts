@@ -1,4 +1,4 @@
-import ApolloFileURI from '../../../../../url/ApolloFileURI.js';
+import ApolloFileURI from '../../../../../uri/ApolloFileURI.js';
 
 export default class MediaLibraryMediaItem {
   constructor(

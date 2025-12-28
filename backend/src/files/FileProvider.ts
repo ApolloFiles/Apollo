@@ -1,5 +1,5 @@
 import { singleton } from 'tsyringe';
-import type ApolloFileURI from '../url/ApolloFileURI.js';
+import type ApolloFileURI from '../uri/ApolloFileURI.js';
 import type ApolloUser from '../user/ApolloUser.js';
 import FileSystemProvider from './FileSystemProvider.js';
 import type VirtualFile from './VirtualFile.js';
