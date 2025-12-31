@@ -4,6 +4,7 @@ import { container } from 'tsyringe';
 import type App from './boot/App.js';
 import WebApp from './boot/WebApp.js';
 import { IS_PRODUCTION } from './constants.js';
+import DatabaseClient from './database/DatabaseClient.js';
 import FullLibraryIndexingHelper from './plugins/official/media/library/FullLibraryIndexingHelper.js';
 import SentrySdk from './utils/SentrySdk.js';
 
@@ -27,6 +28,32 @@ async function bootstrap(): Promise<void> {
 
   // TODO: remove debug
   container.resolve(FullLibraryIndexingHelper).runForAllUsers().catch(console.error);
+
+  // TODO: Move to a scheduled job system (and have different intervals for anonymous vs. authenticated sessions)
+  setInterval(async () => {
+    const databaseClient = container.resolve(DatabaseClient);
+    const now = await databaseClient.fetchNow();
+
+    const sessionCleanUpResult = await Promise.all([
+      databaseClient.authAnonymousSession.deleteMany({
+        where: {
+          expiresAt: { lte: now },
+        },
+      }),
+      databaseClient.authSession.deleteMany({
+        where: {
+          expiresAt: { lte: now },
+        },
+      }),
+    ]);
+
+    if (sessionCleanUpResult[0].count > 0) {
+      console.debug('Cleaned up', sessionCleanUpResult[0].count, 'expired anonymous sessions');
+    }
+    if (sessionCleanUpResult[1].count > 0) {
+      console.debug('Cleaned up', sessionCleanUpResult[1].count, 'expired auth sessions');
+    }
+  }, 5 * 60 * 1000);
 }
 
 function registerShutdownHooks(): void {
