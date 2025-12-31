@@ -71,6 +71,9 @@ export default class LoginRouter extends AbstractLoginRouter {
         if (apolloUser == null) {
           throw new BadRequestError('Cannot log in: user not found');
         }
+        if (apolloUser.blocked) {
+          throw new BadRequestError('Cannot log in: account is blocked');
+        }
 
         await this.oAuthLinkPersister.updateLinkData(
           oAuthConfig.type,
