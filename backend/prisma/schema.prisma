@@ -7,6 +7,5 @@ generator client {
 datasource db {
   provider = "postgresql"
 
-  schemas    = ["public", "better_auth"]
   extensions = [pg_trgm]
 }

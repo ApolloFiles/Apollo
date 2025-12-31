@@ -1,46 +1,43 @@
 export type FullUserProfile = {
   user: {
-    id: string;
-    name: string;
-    email: string;
-    createdAt: Date;
-  };
+    id: string,
+    name: string,
+    createdAt: Date,
+  },
 
   linkedAccounts: {
-    id: string;
-    providerId: string;
-    accountId: string;
-    createdAt: Date;
-  }[];
-  availableAccountProviders: string[];
-  appBaseUrl: BackendConfig['appBaseUrl'];
+    providerType: string,
+    providerUserId: string,
+    providerUserDisplayName: string,
+    profilePictureDataUrl: string | null,
+    createdAt: Date,
+  }[],
+  availableAccountProviders: string[],
 
   session: {
-    current: string;
+    current: string,
     all: {
-      id: string;
-      token: string;
-      createdAt: Date;
-      expiresAt: Date;
-      userAgent: string | null;
-      ipAddress: string | null;
-    }[];
-  };
+      id: string,
+      createdAt: Date,
+      expiresAt: Date,
+      userAgent: string | null,
+    }[],
+  },
 }
 
 export type BackendConfig = {
-  appBaseUrl: string;
-  internalBackendBaseUrl: string;
+  appBaseUrl: string,
+  internalBackendBaseUrl: string,
 
   auth: {
-    providers: string[];
-  }
+    providers: string[],
+  },
 }
 
 export type VirtualFileSystemFileList = {
   files: {
-    name: string;
-    isDirectory: boolean;
-    path: string;
-  }[];
+    name: string,
+    isDirectory: boolean,
+    path: string,
+  }[],
 }

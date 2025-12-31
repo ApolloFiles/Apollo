@@ -24,7 +24,7 @@ export const rpcClient: RouterClient<typeof oRpcRouter, ClientContext> = createO
   interceptors: [
     onError((err) => {
       if (err instanceof ORPCError && err.code === 'UNAUTHORIZED') {
-        redirect(302, '/login');
+        redirect(303, '/login');
       }
 
       throw err;

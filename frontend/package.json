@@ -39,7 +39,6 @@
     "@iconify-json/logos": "^1.2.10",
     "@iconify-json/tabler": "^1.2.25",
     "@orpc/client": "^1.13.1",
-    "better-auth": "^1.4.9",
     "bootstrap": "^5.3.8",
     "hls.js": "^1.6.15",
     "inter-ui": "^4.1.1",

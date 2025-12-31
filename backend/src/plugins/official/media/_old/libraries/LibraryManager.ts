@@ -68,7 +68,7 @@ export default class LibraryManager {
 
     let user: ApolloUser | null = this.user;
     if (library.ownerId !== this.user.id) {
-      user = await this.userProvider.provideByAuthId(library.ownerId);
+      user = await this.userProvider.findById(library.ownerId);
     }
     if (user == null) {
       throw new Error('Library is owned by a user that does not exist');
@@ -103,7 +103,7 @@ export default class LibraryManager {
     for (const library of libraries) {
       let user: ApolloUser | null = this.user;
       if (library.ownerId !== this.user.id) {
-        user = await this.userProvider.provideByAuthId(library.ownerId);
+        user = await this.userProvider.findById(library.ownerId);
       }
       if (user == null) {
         throw new Error('Library is owned by a user that does not exist');

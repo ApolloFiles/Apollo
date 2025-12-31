@@ -1,17 +1,35 @@
-import FastifyWebSocket from '@fastify/websocket';
+import FastifyCookiePlugin from '@fastify/cookie';
+import FastifyWebSocketPlugin from '@fastify/websocket';
 import * as Sentry from '@sentry/node';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import * as FastifyTypeProviderZod from 'fastify-type-provider-zod';
 import Http from 'node:http';
 import { injectAll, singleton } from 'tsyringe';
+import SessionCookieHelper from '../../auth/session/SessionCookieHelper.js';
+import UserBySessionTokenProvider, { type SessionUser } from '../../auth/UserBySessionTokenProvider.js';
 import { ContainerTokens } from '../../constants.js';
+import type ApolloUser from '../../user/ApolloUser.js';
 import { jsonStringifyWithBigInt } from '../../utils/json.js';
 import ORPCRequestHandler from '../../utils/orpc/ORPCRequestHandler.js';
-import { HttpError } from '../errors/HttpErrors.js';
+import { HttpError, UnauthorizedError } from '../errors/HttpErrors.js';
 import type Router from '../routes/Router.js';
 import FrontendRequestHandlerFactory from './FrontendRequestHandlerFactory.js';
 import InitialRequestRouter from './InitialRequestRouter.js';
 import NotFoundHandlerPlugin from './NotFoundHandlerPlugin.js';
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    /** @internal Use {@link getSessionData} or {@link getAuthenticatedUser} instead. */
+    _apollo_session_data: SessionUser | null;
+
+    getSessionData(): SessionUser | null;
+
+    /**
+     * @throws {Error} If no user is authenticated for this request
+     */
+    getAuthenticatedUser(): ApolloUser;
+  }
+}
 
 export type FastifyInstanceWithZod = Fastify.FastifyInstance<
   Fastify.RawServerDefault,
@@ -28,6 +46,8 @@ export default class FastifyWebServer {
   constructor(
     @injectAll(ContainerTokens.ROUTER) routers: Router[],
     oRPCRequestHandler: ORPCRequestHandler,
+    sessionCookieHelper: SessionCookieHelper,
+    userBySessionTokenProvider: UserBySessionTokenProvider,
   ) {
     this.fastify = Fastify({
       routerOptions: {
@@ -53,7 +73,11 @@ export default class FastifyWebServer {
 
     this.fastify.setValidatorCompiler(FastifyTypeProviderZod.validatorCompiler);
     this.fastify.setSerializerCompiler(FastifyTypeProviderZod.serializerCompiler);
-    this.fastify.register(FastifyWebSocket);
+
+    this.fastify.register(FastifyCookiePlugin);
+    this.decorateRequestForAuthentication(sessionCookieHelper, userBySessionTokenProvider);
+
+    this.fastify.register(FastifyWebSocketPlugin);
 
     this.registerDefaultHeaders();
     this.setupRouters(routers);
@@ -99,6 +123,36 @@ export default class FastifyWebServer {
     });
   }
 
+  private decorateRequestForAuthentication(sessionCookieHelper: SessionCookieHelper, userBySessionTokenProvider: UserBySessionTokenProvider): void {
+    this.fastify.decorateRequest('_apollo_session_data', null);
+
+    this.fastify.addHook('preHandler', async (request, reply): Promise<void> => {
+      const sessionToken = sessionCookieHelper.extractSessionCookieValue(request.cookies, false);
+      if (sessionToken == null) {
+        request._apollo_session_data = null;
+        return;
+      }
+
+      request._apollo_session_data = await userBySessionTokenProvider.findBySessionToken(sessionToken, true);
+
+      if (request._apollo_session_data == null) {
+        sessionCookieHelper.unsetCookie(reply, false);
+      }
+    });
+
+    this.fastify.decorateRequest('getSessionData', function(): SessionUser | null {
+      return this._apollo_session_data;
+    });
+
+    this.fastify.decorateRequest('getAuthenticatedUser', function(): ApolloUser {
+      const sessionUser = this.getSessionData();
+      if (sessionUser == null) {
+        throw new Error('No user is authenticated for this request');
+      }
+      return sessionUser.user;
+    });
+  }
+
   private registerDefaultHeaders(): void {
     this.fastify.addHook('onRequest', (_request: FastifyRequest, reply: FastifyReply, done: Fastify.HookHandlerDoneFunction): void => {
       reply
@@ -110,7 +164,18 @@ export default class FastifyWebServer {
 
   private setupRouters(routers: Router[]): void {
     for (const router of routers) {
-      this.fastify.register((instance, options) => router.register(instance, options), { prefix: router.getRoutePrefix?.() });
+      this.fastify.register((instance, options) => {
+        if (router.allowUnauthenticatedAccess?.() !== true) {
+          instance.addHook('preHandler', async (req: FastifyRequest): Promise<void> => {
+            const sessionUser = req.getSessionData();
+            if (sessionUser == null) {
+              throw new UnauthorizedError();
+            }
+          });
+        }
+
+        router.register(instance, options);
+      }, { prefix: router.getRoutePrefix?.() });
     }
   }
 }

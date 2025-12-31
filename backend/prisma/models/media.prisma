@@ -8,7 +8,6 @@ model MediaLibrary {
   MediaLibrarySharedWith MediaLibrarySharedWith[]
 
   @@map("media_libraries")
-  @@schema("public")
 }
 
 model MediaLibrarySharedWith {
@@ -19,7 +18,6 @@ model MediaLibrarySharedWith {
 
   @@id([libraryId, userId])
   @@map("media_libraries_shared_with")
-  @@schema("public")
 }
 
 model MediaLibraryMedia {
@@ -38,7 +36,6 @@ model MediaLibraryMedia {
 
   @@unique([libraryId, directoryUri])
   @@map("media_libraries_media")
-  @@schema("public")
 }
 
 model MediaLibraryMediaItem {
@@ -59,7 +56,6 @@ model MediaLibraryMediaItem {
 
   @@unique([mediaId, relativeFilePath])
   @@map("media_libraries_media_items")
-  @@schema("public")
 }
 
 model MediaLibraryUserWatchProgress {
@@ -72,7 +68,6 @@ model MediaLibraryUserWatchProgress {
 
   @@id([userId, mediaItemId])
   @@map("media_libraries_user_watch_progress")
-  @@schema("public")
 }
 
 model MediaLibraryMediaExternalIds {
@@ -84,7 +79,6 @@ model MediaLibraryMediaExternalIds {
 
   @@id([mediaId, source])
   @@map("media_libraries_media_external_ids")
-  @@schema("public")
 }
 
 model MediaLibraryMediaFallbackImages {
@@ -96,7 +90,6 @@ model MediaLibraryMediaFallbackImages {
 
   @@id([mediaId, type])
   @@map("media_libraries_media_fallback_images")
-  @@schema("public")
 }
 
 enum MediaLibraryMediaExternalIdSource {
@@ -105,7 +98,6 @@ enum MediaLibraryMediaExternalIdSource {
   THE_TV_DB
 
   @@map("media_library_media_external_id_source")
-  @@schema("public")
 }
 
 enum MediaLibraryMediaFallbackImageType {
@@ -114,5 +106,4 @@ enum MediaLibraryMediaFallbackImageType {
   LOGO
 
   @@map("media_library_media_fallback_image_type")
-  @@schema("public")
 }

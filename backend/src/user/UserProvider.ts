@@ -9,22 +9,40 @@ export default class UserProvider {
   ) {
   }
 
-  // TODO: Remove when better-auth gets replaced with a better (fitting) auth
-  async provideByAuthId(authId: string): Promise<ApolloUser | null> {
-    return new ApolloUser(authId, `User ${authId}`);
+  async findById(id: string): Promise<ApolloUser | null> {
+    const userData = await this.databaseClient.authUser.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        displayName: true,
+        blocked: true,
+      },
+    });
+
+    if (userData == null) {
+      return null;
+    }
+
+    return new ApolloUser(userData.id, userData.displayName, userData.blocked);
   }
 
-  async findAll(): Promise<ApolloUser[]> {
-    const userIds = await this.databaseClient.user.findMany({
-      select: { id: true },
+  async findAll(includeBlockedUsers = true): Promise<ApolloUser[]> {
+    const allUsers = await this.databaseClient.authUser.findMany({
+      where: {
+        ...(includeBlockedUsers ? {} : { blocked: false }),
+      },
+      select: {
+        id: true,
+        displayName: true,
+        blocked: true,
+      },
     });
 
     const users: ApolloUser[] = [];
-    for (const userId of userIds) {
-      const user = await this.provideByAuthId(userId.id);
-      if (user != null) {
-        users.push(user);
-      }
+    for (const userData of allUsers) {
+      users.push(new ApolloUser(userData.id, userData.displayName, userData.blocked));
     }
     return users;
   }

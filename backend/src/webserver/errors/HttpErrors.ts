@@ -17,6 +17,12 @@ export class BadRequestError extends HttpError {
   }
 }
 
+export class UnauthorizedError extends HttpError {
+  constructor(httpErrorMessage = 'Unauthorized') {
+    super(401, httpErrorMessage);
+  }
+}
+
 export class NotFoundError extends HttpError {
   constructor(httpErrorMessage = 'Requested resource not found') {
     super(404, httpErrorMessage);

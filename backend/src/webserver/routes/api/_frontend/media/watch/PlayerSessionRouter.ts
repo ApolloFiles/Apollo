@@ -3,12 +3,10 @@ import Fs from 'node:fs';
 import Http2 from 'node:http2';
 import Path from 'node:path';
 import rangeParser from 'range-parser';
-import { container, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import { z } from 'zod';
-import UserByAuthProvider from '../../../../../../auth/UserByAuthProvider.js';
 import AppConfiguration from '../../../../../../config/AppConfiguration.js';
 import { ContainerTokens } from '../../../../../../constants.js';
-import FileProvider from '../../../../../../files/FileProvider.js';
 import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
 import LocalFileSystem from '../../../../../../files/local/LocalFileSystem.js';
 import FileTypeUtils from '../../../../../../plugins/official/media/_old/FileTypeUtils.js';
@@ -45,7 +43,6 @@ import type { default as Router, RouteReturn } from '../../../../Router.js';
 export default class PlayerSessionRouter implements Router {
   constructor(
     private readonly appConfiguration: AppConfiguration,
-    private readonly userByAuthProvider: UserByAuthProvider,
     private readonly userProvider: UserProvider,
     private readonly playerSessionStorage: PlayerSessionStorage,
     private readonly videoSeekThumbnailControllerHelper: VideoSeekThumbnailControllerHelper,
@@ -63,13 +60,8 @@ export default class PlayerSessionRouter implements Router {
 
   register(server: FastifyInstanceWithZod): void {
     server.get('/info', async (request, reply): Promise<RouteReturn> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-      if (apolloUser == null) {
-        return reply
-          .status(401)
-          .type('text/plain')
-          .send('Support for Anonymous users is planned, but not ready yet. You have to login for now.');
-      }
+      const apolloUser = request.getAuthenticatedUser();
+      // TODO: Support for Anonymous users?
 
       const playerSession = this.findPlayerSessionByQueryParamOrSessionCookie(request, reply, apolloUser);
       if (playerSession == null) {
@@ -123,13 +115,8 @@ export default class PlayerSessionRouter implements Router {
         }),
       },
     }, async (request, reply): Promise<RouteReturn> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-      if (apolloUser == null) {
-        return reply
-          .status(401)
-          .type('text/plain')
-          .send('Support for Anonymous users is planned, but not ready yet. You have to login for now.');
-      }
+      const apolloUser = request.getAuthenticatedUser();
+      // TODO: Support for Anonymous users?
 
       const joinTokenInput = request.query.token;
 
@@ -153,13 +140,8 @@ export default class PlayerSessionRouter implements Router {
         }),
       },
     }, async (request, reply): Promise<RouteReturn> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-      if (apolloUser == null) {
-        return reply
-          .status(401)
-          .type('text/plain')
-          .send('Support for Anonymous users is planned, but not ready yet. You have to login for now.');
-      }
+      const apolloUser = request.getAuthenticatedUser();
+      // TODO: Support for Anonymous users?
 
       const playerSession = this.findPlayerSessionByQueryParamOrSessionCookie(request, reply, apolloUser);
       if (playerSession == null) {
@@ -206,7 +188,7 @@ export default class PlayerSessionRouter implements Router {
           }
         }
 
-        const owningUser = await this.userProvider.provideByAuthId(mediaItem.libraryOwnerId);
+        const owningUser = await this.userProvider.findById(mediaItem.libraryOwnerId);
         if (owningUser == null) {
           throw new Error('The owning user of the MediaItem does not exist');  // TODO: show 404 page
         }
@@ -263,13 +245,8 @@ export default class PlayerSessionRouter implements Router {
     });
 
     server.get('/:sessionId/file/*', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-      if (apolloUser == null) {
-        return reply
-          .status(401)
-          .type('text/plain')
-          .send('Support for Anonymous users is planned, but not ready yet. You have to login for now.');
-      }
+      const apolloUser = request.getAuthenticatedUser();
+      // TODO: Support for Anonymous users?
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
       if (playerSession?.owner.id !== apolloUser.id) {
@@ -322,13 +299,8 @@ export default class PlayerSessionRouter implements Router {
     });
 
     server.get('/:sessionId/video-seek-thumbnails', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-      if (apolloUser == null) {
-        return reply
-          .status(401)
-          .type('text/plain')
-          .send('Support for Anonymous users is planned, but not ready yet. You have to login for now.');
-      }
+      const apolloUser = request.getAuthenticatedUser();
+      // TODO: Support for Anonymous users?
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
       if (playerSession?.owner.id !== apolloUser.id) {
@@ -381,19 +353,12 @@ export default class PlayerSessionRouter implements Router {
         .status(200)
         .type(inputs.thumbnailIndex === -1 ? 'text/vtt' : 'image/jpeg')
         .header('Cache-Control', 'private, no-cache')
-        .send(responseBody)
+        .send(responseBody);
     });
 
-    server.post('/:sessionId/change-media', async (request: FastifyRequest<{
-      Params: { sessionId: string }
-    }>, reply): Promise<RouteReturn> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-      if (apolloUser == null) {
-        return reply
-          .status(401)
-          .type('text/plain')
-          .send('Support for Anonymous users is planned, but not ready yet. You have to login for now.');
-      }
+    server.post('/:sessionId/change-media', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
+      const apolloUser = request.getAuthenticatedUser();
+      // TODO: Support for Anonymous users?
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
       if (playerSession?.owner.id !== apolloUser.id) {
@@ -438,7 +403,7 @@ export default class PlayerSessionRouter implements Router {
 
           const surroundingMediaItems = await this.libraryMediaItemFinder.findSurroundingMediaItems(mediaItem.id, mediaItem.libraryMediaId);
 
-          const owningUser = await this.userProvider.provideByAuthId(mediaItem.libraryOwnerId);
+          const owningUser = await this.userProvider.findById(mediaItem.libraryOwnerId);
           if (owningUser == null) {
             throw new Error('The owning user of the MediaItem does not exist');  // TODO: show 404 page
           }
@@ -517,16 +482,9 @@ export default class PlayerSessionRouter implements Router {
         } satisfies StartPlaybackResponse);
     });
 
-    server.post('/:sessionId/regenerate-join-token', async (request: FastifyRequest<{
-      Params: { sessionId: string }
-    }>, reply): Promise<RouteReturn> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-      if (apolloUser == null) {
-        return reply
-          .status(401)
-          .type('text/plain')
-          .send('Support for Anonymous users is planned, but not ready yet. You have to login for now.');
-      }
+    server.post('/:sessionId/regenerate-join-token', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
+      const apolloUser = request.getAuthenticatedUser();
+      // TODO: Support for Anonymous users?
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
       if (playerSession?.owner.id !== apolloUser.id) {

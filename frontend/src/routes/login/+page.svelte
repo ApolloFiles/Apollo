@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { authClient } from '$lib/auth-client';
   import HrSectionBreak from '$lib/components/login/HrSectionBreak.svelte';
   import type { Component } from 'svelte';
   import IconApple from 'virtual:icons/logos/apple';
@@ -76,9 +75,9 @@
 
           <div class="d-flex flex-wrap">
             {#each data.availableLoginProviders as provider}
-              <button
+              <a
                 class="btn btn-outline-secondary p-2 text-white"
-                onclick={() => authClient.signIn.social({ provider, callbackURL: data.appBaseUrl })}
+                href="/api/_auth/login/{provider}"
               >
                 {#if determineIconComponent(provider)}
                   {@const IconComponent = determineIconComponent(provider)}
@@ -94,7 +93,7 @@
                   {/if}
                 {/if}
                 {provider}
-              </button>
+              </a>
             {/each}
           </div>
         </div>
@@ -177,16 +176,16 @@
   }
 
   /* To have it symmetric, evenly apply the margin to the left and right of the even/odd elements */
-  .third-party-login-container button:nth-child(even) {
+  .third-party-login-container a:nth-child(even) {
     margin-left: .25rem;
   }
 
-  .third-party-login-container button:nth-child(odd) {
+  .third-party-login-container a:nth-child(odd) {
     margin-right: .25rem;
   }
 
   /* Last item should be full width */
-  .third-party-login-container button:last-child:nth-child(odd) {
+  .third-party-login-container a:last-child:nth-child(odd) {
     flex:   50%;
     margin: unset;
   }

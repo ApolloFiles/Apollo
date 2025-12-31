@@ -8,7 +8,7 @@ import { redirect } from '@sveltejs/kit';
 export const load = async ({ cookies, fetch }) => {
   const sessionUser = await rpcClient.session.get(undefined, { context: { cookies, fetch } });
   if (sessionUser != null) {
-    redirect(302, '/');
+    redirect(303, '/');
   }
 
   const backendConfig = await rpcClient.tmpBackend.getConfig(undefined, { context: { cookies, fetch } });

@@ -1,6 +1,5 @@
 import { injectable } from 'tsyringe';
 import { z } from 'zod';
-import UserByAuthProvider from '../../../../../../auth/UserByAuthProvider.js';
 import { ContainerTokens } from '../../../../../../constants.js';
 import MediaLibraryMediaItemFinder
   from '../../../../../../plugins/official/media/library/database/finder/MediaLibraryMediaItemFinder.js';
@@ -14,7 +13,6 @@ export default class MediaImageRouter implements Router {
   private static readonly FILE_NAME_REGEX = /^(thumbnail)\.(jpeg|avif)$/;
 
   constructor(
-    private readonly userByAuthProvider: UserByAuthProvider,
     private readonly mediaLibraryMediaItemFinder: MediaLibraryMediaItemFinder,
     private readonly videoThumbnailProvider: VideoThumbnailProvider,
   ) {
@@ -39,14 +37,7 @@ export default class MediaImageRouter implements Router {
         const [fileName, fileFormat] = request.params.fileName.split('.') as ['thumbnail', 'jpeg' | 'avif'];
         const fileFormatMimeType = `image/${fileFormat}`;
 
-        const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-        if (apolloUser == null) {
-          return reply
-            .status(401)
-            .send({ error: 'Unauthorized' });
-        }
-
-        const mediaItem = await this.mediaLibraryMediaItemFinder.findForUserById(apolloUser, requestedMediaItemId);
+        const mediaItem = await this.mediaLibraryMediaItemFinder.findForUserById(request.getAuthenticatedUser(), requestedMediaItemId);
         if (mediaItem == null) {
           return reply
             .status(404)

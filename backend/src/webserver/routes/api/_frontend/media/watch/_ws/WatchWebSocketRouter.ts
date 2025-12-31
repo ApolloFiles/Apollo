@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify';
 import { injectable } from 'tsyringe';
-import UserByAuthProvider from '../../../../../../../auth/UserByAuthProvider.js';
 import { ContainerTokens } from '../../../../../../../constants.js';
 import PlayerSessionStorage
   from '../../../../../../../plugins/official/media/_old/video-player/player-session/PlayerSessionStorage.js';
@@ -15,7 +14,6 @@ import type Router from '../../../../../Router.js';
 @injectable({ token: ContainerTokens.ROUTER })
 export default class WatchRouter implements Router {
   constructor(
-    private readonly userByAuthProvider: UserByAuthProvider,
     private readonly playerSessionStorage: PlayerSessionStorage,
   ) {
   }
@@ -24,9 +22,13 @@ export default class WatchRouter implements Router {
     return '/api/_frontend/media/watch/_ws';
   }
 
+  allowUnauthenticatedAccess(): boolean {
+    return true;
+  }
+
   register(server: FastifyInstance): void {
     server.get('/*', { websocket: true }, async (socket, request): Promise<void> => {
-      const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
+      const apolloUser = request.getSessionData()?.user;
       if (apolloUser == null) {
         socket.close(3000, 'Not logged into Apollo');
         return;

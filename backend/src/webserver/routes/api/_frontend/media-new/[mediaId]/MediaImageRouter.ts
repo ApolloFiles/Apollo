@@ -1,6 +1,5 @@
 import { injectable } from 'tsyringe';
 import { z } from 'zod';
-import UserByAuthProvider from '../../../../../../auth/UserByAuthProvider.js';
 import { ContainerTokens } from '../../../../../../constants.js';
 import MediaLibraryMediaFinder
   from '../../../../../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
@@ -20,7 +19,6 @@ export default class MediaImageRouter implements Router {
   private static readonly FILE_NAME_REGEX = /^(poster|backdrop|logo)\.(jpeg|avif|png)$/;
 
   constructor(
-    private readonly userByAuthProvider: UserByAuthProvider,
     private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
     private readonly mediaPosterImageProvider: MediaPosterImageProvider,
     private readonly mediaBackdropImageProvider: MediaBackdropImageProvider,
@@ -47,14 +45,7 @@ export default class MediaImageRouter implements Router {
         const [fileName, fileFormat] = request.params.fileName.split('.') as ['poster' | 'backdrop' | 'logo', 'jpeg' | 'png' | 'avif'];
         const fileFormatMimeType = `image/${fileFormat}`;
 
-        const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-        if (apolloUser == null) {
-          return reply
-            .status(401)
-            .send({ error: 'Unauthorized' });
-        }
-
-        const media = await this.mediaLibraryMediaFinder.findForUserById(apolloUser, requestedMediaId);
+        const media = await this.mediaLibraryMediaFinder.findForUserById(request.getAuthenticatedUser(), requestedMediaId);
         if (media == null) {
           return reply
             .status(404)

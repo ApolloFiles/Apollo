@@ -1,6 +1,7 @@
 import Os from 'node:os';
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
+import { IS_PRODUCTION } from '../constants.js';
 
 export type AppConfig = {
   serverInterface: string;
@@ -50,6 +51,7 @@ export default class AppConfiguration {
       },
 
       login: {
+        // TODO: Rename env variable
         oAuth: JSON.parse(process.env.BETTER_AUTH_OAUTH_CONFIG_JSON ?? '{}'), // TODO: Move from JSON in env to something better
       },
 
@@ -67,6 +69,10 @@ export default class AppConfiguration {
         },
       },
     } satisfies AppConfig);
+
+    if (IS_PRODUCTION && !this.config.baseUrl.toLowerCase().startsWith('https://')) {
+      console.warn(`[WARNING] The configured BaseURL does NOT start with https:// – Please ensure that you have a reverse proxy or load balancer in front of Apollo that handles HTTPS termination.`);
+    }
   }
 
   private deepFreeze(obj: any): any {

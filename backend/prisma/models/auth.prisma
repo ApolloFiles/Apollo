@@ -1,0 +1,60 @@
+model AuthUser {
+  id               String    @id @default(dbgenerated("apollo_nanoid(19)"))
+  displayName      String    @map("display_name")
+  blocked          Boolean   @default(false) @map("is_blocked")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  lastLoginDate    DateTime? @map("last_login_date") @db.Date
+  lastActivityDate DateTime? @map("last_activity_date") @db.Date
+  profilePicture   Bytes?    @map("profile_picture")
+
+  linkedAuthProviders AuthUserLinkedProvider[]
+  sessions            AuthSession[]
+
+  @@map("auth_users")
+}
+
+model AuthUserLinkedProvider {
+  apolloUserId            String   @map("user_id")
+  provider                String
+  providerUserId          String   @map("provider_user_id")
+  providerUserDisplayName String?  @map("provider_user_display_name")
+  providerProfilePicture  Bytes?   @map("provider_profile_picture")
+  linkedAt                DateTime @default(now()) @map("linked_at") @db.Timestamptz()
+
+  providerUser AuthUser @relation(fields: [apolloUserId], references: [id], onDelete: Cascade)
+
+  @@id([apolloUserId, provider])
+  @@unique([provider, providerUserId])
+  @@map("auth_users_linked_providers")
+}
+
+model AuthSession {
+  id                BigInt   @id @default(dbgenerated("generate_snowflake('auth_sessions_id_seq'::text)"))
+  hashedToken       Bytes    @unique @map("hashed_token")
+  userId            String   @map("user_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  expiresAt         DateTime @map("expires_at") @db.Timestamptz()
+  userAgent         String   @map("user_agent")
+  roughLastActivity DateTime @default(now()) @map("rough_last_activity") @db.Timestamptz()
+
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_sessions")
+}
+
+model AuthAnonymousSession {
+  hashedToken Bytes    @id @map("hashed_token")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz()
+  data        Json     @db.JsonB
+
+  @@map("auth_anonymous_sessions")
+}
+
+model AuthAccountCreationInviteToken {
+  hashedToken Bytes    @id @map("hashed_token")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz
+
+  @@map("auth_account_creation_invite_tokens")
+}

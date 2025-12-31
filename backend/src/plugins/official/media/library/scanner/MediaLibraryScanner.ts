@@ -23,7 +23,7 @@ export default class MediaLibraryScanner {
   }
 
   async scan(library: MediaLibrary): Promise<void> {
-    const libraryOwner = await this.userProvider.provideByAuthId(library.ownerId);
+    const libraryOwner = await this.userProvider.findById(library.ownerId);
     if (libraryOwner == null) {
       throw new Error(`Library owner with id '${library.ownerId}' not found`);
     }

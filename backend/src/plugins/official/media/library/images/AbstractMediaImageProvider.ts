@@ -115,7 +115,7 @@ export default abstract class AbstractMediaImageProvider {
   }
 
   private async findMediaDirectory(media: MediaLibraryMedia): Promise<VirtualFile> {
-    const mediaOwner = await this.userProvider.provideByAuthId(media.libraryOwnerId);
+    const mediaOwner = await this.userProvider.findById(media.libraryOwnerId);
     if (mediaOwner == null) {
       throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(media.libraryOwnerId)}`);
     }

@@ -1,6 +1,5 @@
 import { injectable } from 'tsyringe';
 import { z } from 'zod';
-import UserByAuthProvider from '../../../../auth/UserByAuthProvider.js';
 import { ContainerTokens } from '../../../../constants.js';
 import FileSystemProvider from '../../../../files/FileSystemProvider.js';
 import type { FastifyInstanceWithZod } from '../../../server/FastifyWebServer.js';
@@ -10,7 +9,6 @@ import type { default as Router, RouteReturn } from '../../Router.js';
 @injectable({ token: ContainerTokens.ROUTER })
 export default class FileRouter implements Router {
   constructor(
-    private readonly userByAuthProvider: UserByAuthProvider,
     private readonly fileSystemProvider: FileSystemProvider,
   ) {
   }
@@ -26,15 +24,7 @@ export default class FileRouter implements Router {
         }),
       },
       handler: async (request, reply): Promise<RouteReturn> => {
-        const apolloUser = await this.userByAuthProvider.provideByHeaders(request.headers);
-
-        if (apolloUser == null) {
-          return reply
-            .status(401)
-            .send({ error: 'Unauthorized' });
-        }
-
-        const allFileSystems = await this.fileSystemProvider.provideForUser(apolloUser);
+        const allFileSystems = await this.fileSystemProvider.provideForUser(request.getAuthenticatedUser());
         const fileSystem = request.query.fileSystemId === '_' ? allFileSystems.user[0] : [/*allFileSystems.trashBin,*/ ...allFileSystems.user].find((fs) => fs.id === request.query.fileSystemId);
         if (fileSystem == null) {
           return reply

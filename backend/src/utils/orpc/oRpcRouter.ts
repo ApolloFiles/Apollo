@@ -2,15 +2,18 @@ import { onError, ORPCError } from '@orpc/server';
 import Fs from 'node:fs';
 import { container } from 'tsyringe';
 import { z } from 'zod';
+import OAuthConfigurationProvider from '../../auth/oauth/OAuthConfigurationProvider.js';
+import AuthSessionFinder from '../../auth/session/AuthSessionFinder.js';
+import AuthSessionRevoker from '../../auth/session/AuthSessionRevoker.js';
 import AppConfiguration from '../../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../../constants.js';
+import DatabaseClient from '../../database/DatabaseClient.js';
 import FileSystemProvider from '../../files/FileSystemProvider.js';
 import LibraryManager from '../../plugins/official/media/_old/libraries/LibraryManager.js';
 import ProcessBuilder from '../../plugins/official/media/_old/ProcessBuilder.js';
 import MediaLibraryMediaFinder from '../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
 import MediaClearLogoImageProvider from '../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
 import UserProvider from '../../user/UserProvider.js';
-import { auth } from '../auth.js';
 import * as oRpcBuilder from './oRpcRouteBuilder.js';
 import type { BackendConfig, FullUserProfile, VirtualFileSystemFileList } from './RouteTypes.js';
 
@@ -23,30 +26,15 @@ const tmpBackendConfig = oRpcBuilder
   }))
   .handler(async (): Promise<BackendConfig> => {
     const appConfig = container.resolve(AppConfiguration);
+    const oAuthConfigurationProvider = container.resolve(OAuthConfigurationProvider);
 
     return {
       appBaseUrl: appConfig.config.baseUrl,
       internalBackendBaseUrl: IS_PRODUCTION ? appConfig.config.baseUrl : 'http://localhost:8081',
       auth: {
-        providers: Object.keys(auth.options.socialProviders),
+        providers: oAuthConfigurationProvider.getAvailableTypes(),
       },
     };
-  });
-
-const logoutCurrentSession = oRpcBuilder
-  .authenticated
-  .use(onError((err) => {
-    if (!(err instanceof ORPCError)) {
-      console.error(err);
-    }
-  }))
-  .handler(async (opts): Promise<{ success: boolean, message?: string }> => {
-    if (opts.context.sessionInfo == null) {
-      return { success: false, message: 'No active session' };
-    }
-
-    await auth.api.signOut({ headers: opts.context.authHeaders });
-    return { success: true };
   });
 
 const getSessionUser = oRpcBuilder
@@ -74,46 +62,62 @@ const getFullUserProfile = oRpcBuilder
     }
   }))
   .handler(async (opts): Promise<FullUserProfile> => {
-    const appConfig = container.resolve(AppConfiguration);
+    const databaseClient = container.resolve(DatabaseClient);
+    const oAuthConfigurationProvider = container.resolve(OAuthConfigurationProvider);
+    const authSessionFinder = container.resolve(AuthSessionFinder);
 
     const sessionInfo = opts.context.sessionInfo;
     if (sessionInfo == null || sessionInfo.user == null) {
       throw opts.errors.UNAUTHORIZED();
     }
 
-    const accounts = await auth.api.listUserAccounts({ headers: opts.context.authHeaders });
-    const sessions = (await auth.api.listSessions({ headers: opts.context.authHeaders }))
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const additionalUserInfo = await databaseClient.authUser.findUniqueOrThrow({
+      where: { id: sessionInfo.user.id },
+      select: {
+        createdAt: true,
+      },
+    });
+    const linkedProviders = await databaseClient
+      .authUserLinkedProvider
+      .findMany({
+        where: { apolloUserId: sessionInfo.user.id },
+        select: {
+          provider: true,
+          providerUserId: true,
+          providerUserDisplayName: true,
+          providerProfilePicture: true,
+          linkedAt: true,
+        },
+      });
+    const sessions = await authSessionFinder.findByUserId(sessionInfo.user.id);
 
     return {
       user: {
         id: sessionInfo.user.id,
         name: sessionInfo.user.name,
-        email: sessionInfo.user.email,
-        createdAt: sessionInfo.user.createdAt,
+        createdAt: additionalUserInfo.createdAt,
       },
 
-      linkedAccounts: accounts.map((account) => {
+      linkedAccounts: linkedProviders.map((linkedProvider) => {
         return {
-          id: account.id,
-          providerId: account.providerId,
-          accountId: account.accountId,
-          createdAt: account.createdAt,
+          providerType: linkedProvider.provider,
+          providerUserId: linkedProvider.providerUserId,
+          providerUserDisplayName: linkedProvider.providerUserDisplayName ?? linkedProvider.providerUserId,
+          profilePictureDataUrl: linkedProvider.providerProfilePicture != null ? `data:image/png;base64,${Buffer.from(linkedProvider.providerProfilePicture)
+            .toString('base64')}` : null,
+          createdAt: linkedProvider.linkedAt,
         };
       }),
-      availableAccountProviders: Object.keys(auth.options.socialProviders),
-      appBaseUrl: appConfig.config.baseUrl,
+      availableAccountProviders: oAuthConfigurationProvider.getAvailableTypes(),
 
       session: {
-        current: sessionInfo.session.id,
+        current: sessionInfo.session.id.toString(),
         all: sessions.map((session) => {
           return {
-            id: session.id,
-            token: session.token,
+            id: session.id.toString(),
             createdAt: session.createdAt,
             expiresAt: session.expiresAt,
-            userAgent: session.userAgent ?? null,
-            ipAddress: session.ipAddress ?? null,
+            userAgent: session.userAgent,
           };
         }),
       },
@@ -137,7 +141,7 @@ const listFilesInOwnVirtualFileSystem = oRpcBuilder
     const userProvider = container.resolve(UserProvider);
     const fileSystemProvider = container.resolve(FileSystemProvider);
 
-    const apolloUser = await userProvider.provideByAuthId(sessionInfo.user.id);
+    const apolloUser = await userProvider.findById(sessionInfo.user.id);
     if (apolloUser == null) {
       // TODO: Proper error handling
       console.debug('Unable to determine ApolloUser for the current session user');
@@ -189,7 +193,7 @@ const collectAdminDebugInfo = oRpcBuilder
       throw opts.errors.UNAUTHORIZED();
     }
 
-    const apolloUser = await container.resolve(UserProvider).provideByAuthId(sessionInfo.user.id);
+    const apolloUser = await container.resolve(UserProvider).findById(sessionInfo.user.id);
     if (apolloUser == null) {
       // TODO: Proper error handling
       console.debug('Unable to determine ApolloUser for the current session user');
@@ -277,7 +281,7 @@ const fetchMediaLibraryOverview = oRpcBuilder
 
     const libraryIdToFilterBy = opts.input.libraryId;
 
-    const apolloUser = await container.resolve(UserProvider).provideByAuthId(sessionInfo.user.id);
+    const apolloUser = await container.resolve(UserProvider).findById(sessionInfo.user.id);
     if (apolloUser == null) {
       // TODO: Proper error handling
       console.debug('Unable to determine ApolloUser for the current session user');
@@ -353,7 +357,7 @@ const fetchMedia = oRpcBuilder
     const libraryId = opts.input.libraryId;
     const mediaId = opts.input.mediaId;
 
-    const apolloUser = await container.resolve(UserProvider).provideByAuthId(sessionInfo.user.id);
+    const apolloUser = await container.resolve(UserProvider).findById(sessionInfo.user.id);
     if (apolloUser == null) {
       // TODO: Proper error handling
       console.debug('Unable to determine ApolloUser for the current session user');
@@ -490,6 +494,52 @@ const fetchMedia = oRpcBuilder
     };
   });
 
+const sessionManagement_revokeSingleSession = oRpcBuilder
+  .authenticated
+  .input(z.object({ sessionId: z.coerce.bigint() }))
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    await container.resolve(AuthSessionRevoker).revoke(opts.input.sessionId, sessionInfo.user.id);
+  });
+const sessionManagement_revokeAllSessions = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    await container.resolve(AuthSessionRevoker).revokeAllForUser(sessionInfo.user.id);
+  });
+const sessionManagement_revokeAllSessionsExceptCurrent = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    await container.resolve(AuthSessionRevoker).revokeAllForUserExcept(sessionInfo.user.id, sessionInfo.session.id);
+  });
 
 export const oRpcRouter = {
   tmpBackend: {
@@ -499,7 +549,14 @@ export const oRpcRouter = {
   session: {
     get: getSessionUser,
     getFullProfile: getFullUserProfile,
-    logoutCurrent: logoutCurrentSession,
+  },
+
+  auth: {
+    sessions: {
+      revokeSingleSession: sessionManagement_revokeSingleSession,
+      revokeAllSessions: sessionManagement_revokeAllSessions,
+      revokeAllSessionsExceptCurrent: sessionManagement_revokeAllSessionsExceptCurrent,
+    },
   },
 
   files: {

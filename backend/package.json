@@ -37,7 +37,6 @@
     "prisma:generate": "prisma generate --require-models",
     "prisma:migrate:dev": "prisma migrate dev && npm run prisma:generate",
     "prisma:migrate:production": "prisma migrate deploy",
-    "prisma:dump-better-auth-schema": "npx @better-auth/cli generate --output prisma/models/better-auth.prisma",
 
     "contributors:add": "npx all-contributors add --config ../.all-contributorsrc",
     "contributors:generate": "npx all-contributors generate --config ../.all-contributorsrc"
@@ -47,6 +46,7 @@
     "npm": ">=11.0.0"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/websocket": "^11.2.0",
     "@orpc/server": "^1.13.1",
     "@prisma/adapter-pg": "^7.2.0",
@@ -54,11 +54,11 @@
     "@sentry/node": "^10.32.1",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#9e15d1631d46e845ec9839b38b09201b659d1475",
     "@types/mime-types": "^3.0.1",
-    "better-auth": "^1.4.9",
     "fastify": "^5.6.2",
     "fastify-plugin": "^5.1.0",
     "fastify-type-provider-zod": "^6.1.0",
     "mime-types": "^3.0.2",
+    "openid-client": "^6.8.1",
     "range-parser": "^1.2.1",
     "reflect-metadata": "^0.2.2",
     "sharp": "^0.34.5",

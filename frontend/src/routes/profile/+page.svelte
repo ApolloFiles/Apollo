@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { authClient } from '$lib/auth-client';
+  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();
@@ -8,14 +8,17 @@
   const sessions = $derived(data.userProfile?.session.all ?? []);
   const currentSessionId = $derived(data.userProfile?.session.current ?? null);
 
-  function revokeSession(sessionToken: string): void {
-    // TODO: Show loading indicator in UI
+  function revokeSession(sessionId: string): void {
+    // TODO: Show loading indicator in UI?
 
-    authClient.revokeSession({ token: sessionToken })
-      .catch((err => {
-        console.error('Error revoking sessions via authClient:', err);
-        alert('Error revoking sessions... Reloading page.');
-      }))
+    getClientSideRpcClient()
+      .auth
+      .sessions
+      .revokeSingleSession({ sessionId })
+      .catch(err => {
+        console.error('Error revoking session:', err);
+        alert('Error revoking session... Reloading page.');
+      })
       .finally(() => {
         window.location.reload();
       });
@@ -26,11 +29,14 @@
       return;
     }
 
-    authClient.revokeOtherSessions()
-      .catch((err => {
-        console.error('Error revoking sessions via authClient:', err);
+    getClientSideRpcClient()
+      .auth
+      .sessions
+      .revokeAllSessionsExceptCurrent()
+      .catch(err => {
+        console.error('Error revoking sessions:', err);
         alert('Error revoking sessions... Reloading page.');
-      }))
+      })
       .finally(() => {
         window.location.reload();
       });
@@ -41,16 +47,23 @@
       return;
     }
 
-    // TODO: show loading indicator in UI
+    // TODO: show loading indicator in UI?
 
-    authClient.revokeSessions()
-      .catch((err => {
-        console.error('Error revoking sessions via authClient:', err);
+    getClientSideRpcClient()
+      .auth
+      .sessions
+      .revokeAllSessions()
+      .catch(err => {
+        console.error('Error revoking sessions:', err);
         alert('Error revoking sessions... Reloading page.');
-      }))
+      })
       .finally(() => {
         window.location.reload();
       });
+  }
+
+  function startLinkingProcess(provider: string): void {
+    alert('Not implemented yet...');
   }
 </script>
 
@@ -69,10 +82,6 @@
         <input id="name" name="name" type="text" value={data.userProfile?.user.name ?? ''} readonly disabled />
       </div>
 
-      <div>
-        <label for="email">Email address</label>
-        <input id="email" name="email" type="email" value={data.userProfile?.user.email ?? ''} readonly disabled />
-      </div>
 
       <small>
         Account created:
@@ -85,11 +94,11 @@
     <h2 id="accounts-heading">Connected accounts</h2>
 
     <ul>
-      {#each linkedAccounts as account (account.id)}
+      {#each linkedAccounts as account}
         <li>
-          <strong>{account.providerId}</strong>
-          {#if account.accountId}
-            <span>(id={account.accountId})</span>
+          <strong>{account.providerType}: {account.providerUserDisplayName}</strong>
+          {#if account.providerUserId}
+            <span>(id={account.providerUserId})</span>
           {/if}
           <div>
             <small>Connected: {new Date(account.createdAt).toLocaleString()}</small>
@@ -98,13 +107,13 @@
       {/each}
 
       {#each data.userProfile.availableAccountProviders as accountProvider}
-        {#if linkedAccounts.find(linkedAcc => linkedAcc.providerId === accountProvider) == null}
+        {#if linkedAccounts.find(linkedAcc => linkedAcc.providerType === accountProvider) == null}
           <li>
             <strong>{accountProvider}</strong>
             <div>
               <button
                 type="button"
-                onclick={() => authClient.linkSocial({ provider: accountProvider, callbackURL: data.userProfile.appBaseUrl })}
+                onclick={() => startLinkingProcess(accountProvider)}
               >
                 Link {accountProvider} account
               </button>
@@ -132,7 +141,6 @@
           <th scope="col">Device / user agent</th>
           <th scope="col">Created</th>
           <th scope="col">Expires</th>
-          <th scope="col">IP</th>
           <th scope="col">Actions</th>
         </tr>
         </thead>
@@ -149,9 +157,8 @@
             </td>
             <td>{session.createdAt ? new Date(session.createdAt).toLocaleString() : '-'}</td>
             <td>{session.expiresAt ? new Date(session.expiresAt).toLocaleString() : '-'}</td>
-            <td>{session.ipAddress || '—'}</td>
             <td>
-              <button class="revoke" type="button" onclick={() => revokeSession(session.token)}>Revoke</button>
+              <button class="revoke" type="button" onclick={() => revokeSession(session.id)}>Revoke</button>
             </td>
           </tr>
         {/each}
@@ -207,7 +214,7 @@
 
   /* Highlight the current session */
   .sessions-table tbody tr.current {
-    background: #e8f4ff; /* pale blue */
+    background:  #e8f4ff; /* pale blue */
     font-weight: 600;
   }
 
@@ -218,13 +225,13 @@
   }
 
   .current-badge {
-    display: inline-block;
-    margin-left: 0.5rem;
-    padding: 0.12rem 0.4rem;
-    font-size: 0.75rem;
-    border-radius: 999px;
-    background: #0366d6;
-    color: white;
+    display:        inline-block;
+    margin-left:    0.5rem;
+    padding:        0.12rem 0.4rem;
+    font-size:      0.75rem;
+    border-radius:  999px;
+    background:     #0366d6;
+    color:          white;
     vertical-align: middle;
   }
 
@@ -233,6 +240,7 @@
     border-radius: 6px;
     border:        1px solid #d0d7de;
     background:    white;
+    color:         #0f1720;
     cursor:        pointer;
     font-size:     0.9rem;
   }
@@ -278,8 +286,8 @@
 
     .current-badge {
       margin-left: 0.25rem;
-      font-size: 0.7rem;
-      padding: 0.1rem 0.3rem;
+      font-size:   0.7rem;
+      padding:     0.1rem 0.3rem;
     }
   }
 </style>
