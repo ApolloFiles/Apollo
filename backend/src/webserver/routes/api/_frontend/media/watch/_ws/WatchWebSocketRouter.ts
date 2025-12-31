@@ -28,7 +28,7 @@ export default class WatchRouter implements Router {
 
   register(server: FastifyInstance): void {
     server.get('/*', { websocket: true }, async (socket, request): Promise<void> => {
-      const apolloUser = request.getSessionData()?.user;
+      const apolloUser = request.getSessionUserOptional()?.user;
       if (apolloUser == null) {
         socket.close(3000, 'Not logged into Apollo');
         return;

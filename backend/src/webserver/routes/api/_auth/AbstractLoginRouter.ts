@@ -13,6 +13,10 @@ const LOGIN_STATE_SCHEMA = z.object({
   code_verifier: z.string(),
   state: z.string(),
   nonce: z.string().optional(),
+
+  linkWithExistingApolloAccount: z.object({
+    sessionId: z.coerce.bigint(),
+  }).optional(),
 });
 export type LoginStateData = z.infer<typeof LOGIN_STATE_SCHEMA>;
 
@@ -38,7 +42,7 @@ export default abstract class AbstractLoginRouter implements Router {
    * @throws {BadRequestError}
    */
   protected ensureNotAlreadyLoggedIn(request: FastifyRequest): void {
-    if (request.getSessionData() != null) {
+    if (request.getSessionUserOptional() != null) {
       throw new BadRequestError('You are already logged in – Log out first, if you want to log in with another account');
     }
   }

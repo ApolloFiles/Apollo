@@ -19,10 +19,15 @@ import NotFoundHandlerPlugin from './NotFoundHandlerPlugin.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
-    /** @internal Use {@link getSessionData} or {@link getAuthenticatedUser} instead. */
+    /** @internal Use {@link getSessionUser}, {@link getSessionUserOptional} or {@link getAuthenticatedUser} instead */
     _apollo_session_data: SessionUser | null;
 
-    getSessionData(): SessionUser | null;
+    getSessionUserOptional(): SessionUser | null;
+
+    /**
+     * @throws {Error} If no user is authenticated for this request
+     */
+    getSessionUser(): SessionUser;
 
     /**
      * @throws {Error} If no user is authenticated for this request
@@ -140,16 +145,20 @@ export default class FastifyWebServer {
       }
     });
 
-    this.fastify.decorateRequest('getSessionData', function(): SessionUser | null {
+    this.fastify.decorateRequest('getSessionUserOptional', function(): SessionUser | null {
       return this._apollo_session_data;
     });
 
-    this.fastify.decorateRequest('getAuthenticatedUser', function(): ApolloUser {
-      const sessionUser = this.getSessionData();
+    this.fastify.decorateRequest('getSessionUser', function(): SessionUser {
+      const sessionUser = this.getSessionUserOptional();
       if (sessionUser == null) {
         throw new Error('No user is authenticated for this request');
       }
-      return sessionUser.user;
+      return sessionUser;
+    });
+
+    this.fastify.decorateRequest('getAuthenticatedUser', function(): ApolloUser {
+      return this.getSessionUser().user;
     });
   }
 
@@ -167,7 +176,7 @@ export default class FastifyWebServer {
       this.fastify.register((instance, options) => {
         if (router.allowUnauthenticatedAccess?.() !== true) {
           instance.addHook('preHandler', async (req: FastifyRequest): Promise<void> => {
-            const sessionUser = req.getSessionData();
+            const sessionUser = req.getSessionUserOptional();
             if (sessionUser == null) {
               throw new UnauthorizedError();
             }

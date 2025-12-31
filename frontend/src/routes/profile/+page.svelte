@@ -61,10 +61,6 @@
         window.location.reload();
       });
   }
-
-  function startLinkingProcess(provider: string): void {
-    alert('Not implemented yet...');
-  }
 </script>
 
 <main>
@@ -111,12 +107,9 @@
           <li>
             <strong>{accountProvider}</strong>
             <div>
-              <button
-                type="button"
-                onclick={() => startLinkingProcess(accountProvider)}
-              >
+              <a href="/api/_auth/login/{accountProvider}/link">
                 Link {accountProvider} account
-              </button>
+              </a>
             </div>
           </li>
         {/if}

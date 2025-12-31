@@ -11,13 +11,24 @@ export default class OAuthLinkPersister {
   ) {
   }
 
-  async updateLinkData(type: OAuthType, apolloUserId: string, displayName: string, rawProfilePictureBytes: Buffer | null): Promise<void> {
-    let profilePictureBytes: Buffer<ArrayBuffer> | null = null;
+  async createLink(type: OAuthType, apolloUserId: string, providerUserId: string, displayName: string, rawProfilePictureBytes: Buffer | null): Promise<void> {
+    const profilePictureBytes = await this.preProcessProfilePicture(rawProfilePictureBytes);
 
-    if (rawProfilePictureBytes != null) {
-      const processedImage = await this.profilePicturePreProcessor.processForOAuthLink(rawProfilePictureBytes);
-      profilePictureBytes = Buffer.from(processedImage);
-    }
+    await this.databaseClient.authUserLinkedProvider.create({
+      data: {
+        provider: type,
+        apolloUserId,
+        providerUserId,
+        providerUserDisplayName: displayName,
+        providerProfilePicture: profilePictureBytes,
+      },
+
+      select: { provider: true },
+    });
+  }
+
+  async updateLinkData(type: OAuthType, apolloUserId: string, displayName: string, rawProfilePictureBytes: Buffer | null): Promise<void> {
+    const profilePictureBytes = await this.preProcessProfilePicture(rawProfilePictureBytes);
 
     await this.databaseClient.authUserLinkedProvider.update({
       where: {
@@ -28,10 +39,18 @@ export default class OAuthLinkPersister {
       },
       data: {
         providerUserDisplayName: displayName,
-        providerProfilePicture: profilePictureBytes ? Buffer.from(profilePictureBytes) : null,
+        providerProfilePicture: profilePictureBytes,
       },
 
       select: { provider: true },
     });
+  }
+
+  private async preProcessProfilePicture(rawProfilePictureBytes: Buffer | null): Promise<Buffer<ArrayBuffer> | null> {
+    if (rawProfilePictureBytes == null) {
+      return null;
+    }
+
+    return Buffer.from(await this.profilePicturePreProcessor.processForOAuthLink(rawProfilePictureBytes));
   }
 }

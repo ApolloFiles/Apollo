@@ -6,6 +6,7 @@ import AuthAnonymousSessionHelper from '../../../../auth/session/anonymous/AuthA
 import SessionCookieHelper from '../../../../auth/session/SessionCookieHelper.js';
 import AppConfiguration from '../../../../config/AppConfiguration.js';
 import { ContainerTokens } from '../../../../constants.js';
+import { BadRequestError } from '../../../errors/HttpErrors.js';
 import type { FastifyInstanceWithZod } from '../../../server/FastifyWebServer.js';
 import type { RouteReturn } from '../../Router.js';
 import AbstractLoginRouter, { type LoginStateData } from './AbstractLoginRouter.js';
@@ -39,14 +40,30 @@ export default class LoginRouter extends AbstractLoginRouter {
 
       return reply.redirect(authorizationUrl.href, 302);
     });
+
+    server.get('/login/:providerType/link', this.ROUTE_OPTIONS, async (request, reply): Promise<RouteReturn> => {
+      const sessionUser = request.getSessionUserOptional();
+      if (sessionUser == null) {
+        throw new BadRequestError('You must be logged in to link an OAuth provider to your account');
+      }
+
+      const oAuthConfig = await this.determineOAuthConfig(request.params.providerType);
+      const authorizationUrl = await this.initiateOAuthLoginFlow(reply, oAuthConfig, sessionUser.session.id);
+
+      return reply.redirect(authorizationUrl.href, 302);
+    });
   }
 
-  private async initiateOAuthLoginFlow(reply: FastifyReply, oAuthConfig: OAuthConfig): Promise<URL> {
+  private async initiateOAuthLoginFlow(reply: FastifyReply, oAuthConfig: OAuthConfig, linkWithSessionId?: bigint): Promise<URL> {
     const code_verifier = OpenIdClient.randomPKCECodeVerifier();
     const state = OpenIdClient.randomState();
     const nonce: string | undefined = undefined;// OpenIdClient.randomNonce();  // TODO: Only generate nonce for OpenID providers (OAuth itself won't work with nonce)
 
-    await this.createAnonymousSession(reply, { code_verifier, state });
+    await this.createAnonymousSession(reply, {
+      code_verifier,
+      state,
+      linkWithExistingApolloAccount: linkWithSessionId != null ? { sessionId: linkWithSessionId } : undefined,
+    });
 
     return OpenIdClient.buildAuthorizationUrl(
       oAuthConfig.openIdConfig,

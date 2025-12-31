@@ -42,19 +42,45 @@ export default class LoginRouter extends AbstractLoginRouter {
 
   register(server: FastifyInstanceWithZod): void {
     server.get('/login/:providerType/callback', this.ROUTE_OPTIONS, async (request, reply): Promise<RouteReturn> => {
-      this.ensureNotAlreadyLoggedIn(request);
-
       const oAuthConfig = await this.determineOAuthConfig(request.params.providerType);
 
       const loginState = await this.extractLoginStateFromRequest(request, reply);
+      if (loginState.linkWithExistingApolloAccount != null && loginState.linkWithExistingApolloAccount.sessionId !== request.getSessionUserOptional()?.session.id) {
+        throw new BadRequestError('Cannot link accounts: no valid session found for linking');
+      }
+
       const tokenResponse = await this.acquireAccessToken(request, oAuthConfig, loginState);
-
       const userInfo = await oAuthConfig.fetchUserInfo(oAuthConfig.openIdConfig, tokenResponse.access_token, tokenResponse.claims()?.sub);
-      const apolloUser = await this.determineApolloUser(oAuthConfig, userInfo.id);
 
-      await this.createSession(request, reply, apolloUser);
+      if (loginState.linkWithExistingApolloAccount != null) {
+        const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.type, userInfo.id);
+        if (apolloUser != null) {
+          throw new BadRequestError('Cannot link accounts: OAuth provider account is already linked with another account');
+        }
 
-      await this.oAuthLinkPersister.updateLinkData(oAuthConfig.type, apolloUser.id, userInfo.displayName, userInfo.profilePictureBytes);
+        // TODO: Check and try to link with current session/account
+        await this.oAuthLinkPersister.createLink(
+          oAuthConfig.type,
+          request.getAuthenticatedUser().id,
+          userInfo.id,
+          userInfo.displayName,
+          userInfo.profilePictureBytes,
+        );
+      } else {
+        const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.type, userInfo.id);
+        if (apolloUser == null) {
+          throw new BadRequestError('Cannot log in: user not found');
+        }
+
+        await this.oAuthLinkPersister.updateLinkData(
+          oAuthConfig.type,
+          apolloUser.id,
+          userInfo.displayName,
+          userInfo.profilePictureBytes,
+        );
+
+        await this.createSession(request, reply, apolloUser);
+      }
 
       return reply.redirect('/', 302);
     });
@@ -63,18 +89,6 @@ export default class LoginRouter extends AbstractLoginRouter {
   private async createSession(request: FastifyRequest, reply: FastifyReply, user: ApolloUser): Promise<void> {
     const session = await this.sessionCreator.create(user.id, request.headers['user-agent'] ?? '');
     this.sessionCookieHelper.setSessionCookie(reply, false, session.token, session.remainingLifetimeInSeconds);
-  }
-
-  /**
-   * @throws {BadRequestError}
-   */
-  private async determineApolloUser(oAuthConfig: OAuthConfig, providerUserId: string): Promise<ApolloUser> {
-    const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.type, providerUserId);
-
-    if (apolloUser == null) {
-      throw new BadRequestError('Cannot log in: user not found');
-    }
-    return apolloUser;
   }
 
   private acquireAccessToken(request: FastifyRequest, oAuthConfig: OAuthConfig, loginState: LoginStateData): Promise<OpenIdTokenResponse> {
