@@ -6,6 +6,7 @@ model AuthUser {
   lastLoginDate    DateTime? @map("last_login_date") @db.Date
   lastActivityDate DateTime? @map("last_activity_date") @db.Date
   profilePicture   Bytes?    @map("profile_picture")
+  isSuperUser      Boolean   @default(false) @map("is_super_user")
 
   linkedAuthProviders AuthUserLinkedProvider[]
   sessions            AuthSession[]

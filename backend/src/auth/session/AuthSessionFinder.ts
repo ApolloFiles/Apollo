@@ -14,6 +14,7 @@ export type SessionDataWithUser = SessionData & {
   user: {
     id: string,
     displayName: string,
+    isSuperUser: boolean,
     blocked: boolean,
   },
 }
@@ -44,6 +45,7 @@ export default class AuthSessionFinder {
           select: {
             id: true,
             displayName: true,
+            isSuperUser: true,
             blocked: true,
           },
         },

@@ -17,6 +17,7 @@ export default class UserProvider {
       select: {
         id: true,
         displayName: true,
+        isSuperUser: true,
         blocked: true,
       },
     });
@@ -25,7 +26,7 @@ export default class UserProvider {
       return null;
     }
 
-    return new ApolloUser(userData.id, userData.displayName, userData.blocked);
+    return new ApolloUser(userData.id, userData.displayName, userData.blocked, userData.isSuperUser);
   }
 
   async findAll(includeBlockedUsers = true): Promise<ApolloUser[]> {
@@ -36,13 +37,14 @@ export default class UserProvider {
       select: {
         id: true,
         displayName: true,
+        isSuperUser: true,
         blocked: true,
       },
     });
 
     const users: ApolloUser[] = [];
     for (const userData of allUsers) {
-      users.push(new ApolloUser(userData.id, userData.displayName, userData.blocked));
+      users.push(new ApolloUser(userData.id, userData.displayName, userData.blocked, userData.isSuperUser));
     }
     return users;
   }

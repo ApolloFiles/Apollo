@@ -47,7 +47,7 @@ export default class UserBySessionTokenProvider {
 
     return {
       session: session,
-      user: new ApolloUser(session.user.id, session.user.displayName, session.user.blocked),
+      user: new ApolloUser(session.user.id, session.user.displayName, session.user.blocked, session.user.isSuperUser),
     };
   }
 

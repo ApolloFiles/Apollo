@@ -23,6 +23,7 @@ export default class UserByOAuthProvider {
       select: {
         id: true,
         displayName: true,
+        isSuperUser: true,
         blocked: true,
       },
     });
@@ -30,6 +31,6 @@ export default class UserByOAuthProvider {
     if (user == null) {
       return null;
     }
-    return new ApolloUser(user.id, user.displayName, user.blocked);
+    return new ApolloUser(user.id, user.displayName, user.blocked, user.isSuperUser);
   }
 }
