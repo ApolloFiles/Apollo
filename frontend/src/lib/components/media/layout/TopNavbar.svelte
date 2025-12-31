@@ -61,7 +61,7 @@
       </li>
 
       <li>
-        <a class="dropdown-item text-danger" href="/logout" data-sveltekit-reload>
+        <a class="dropdown-item text-danger" href="/logout">
           <IconLogout class="icon me-2" role="presentation" />
           Logout
         </a>

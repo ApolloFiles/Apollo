@@ -16,7 +16,7 @@
   <a href="/profile">
     <button>Profile</button>
   </a>
-  <a href="/logout" data-sveltekit-reload>
+  <a href="/logout">
     <button>Log out</button>
   </a>
 </div>
