@@ -74,10 +74,13 @@
 
     <div>
       <div>
+        <img src="/api/_frontend/user/BFQLojZBosxi826JdOv/picture.png" alt="" style="max-width: 128px">
+      </div>
+
+      <div>
         <label for="name">Name or username (visible to others)</label>
         <input id="name" name="name" type="text" value={data.userProfile?.user.name ?? ''} readonly disabled />
       </div>
-
 
       <small>
         Account created:
