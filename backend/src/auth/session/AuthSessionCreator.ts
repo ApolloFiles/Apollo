@@ -1,7 +1,7 @@
-import Crypto from 'node:crypto';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import { Prisma } from '../../database/prisma-client/client.js';
+import SecureTokenHelper from '../SecureTokenHelper.js';
 import AuthSessionFinder from './AuthSessionFinder.js';
 
 type SessionResult = {
@@ -9,6 +9,8 @@ type SessionResult = {
   token: string,
   remainingLifetimeInSeconds: number,
 }
+
+type ExpiresAtResult = { value: Date, expiresInSeconds: number };
 
 @singleton()
 export default class AuthSessionCreator {
@@ -18,6 +20,7 @@ export default class AuthSessionCreator {
   constructor(
     private readonly databaseClient: DatabaseClient,
     private readonly sessionFinder: AuthSessionFinder,
+    private readonly secureTokenHelper: SecureTokenHelper,
   ) {
   }
 
@@ -49,7 +52,7 @@ export default class AuthSessionCreator {
   }
 
   private async createNewSession(userId: string, userAgent: string, transaction: Prisma.TransactionClient): Promise<SessionResult> {
-    const token = this.createToken();
+    const token = this.secureTokenHelper.create();
     const expiresAt = await this.determineExpiresAt(transaction);
 
     const session = await transaction.authSession.create({
@@ -71,16 +74,7 @@ export default class AuthSessionCreator {
     };
   }
 
-  private createToken(): { value: string, sha256sum: Buffer<ArrayBuffer> } {
-    const token = Crypto.randomBytes(64);
-
-    return {
-      value: token.toString('base64url'),
-      sha256sum: Crypto.hash('sha256', token, { outputEncoding: 'buffer' }),
-    };
-  }
-
-  private async determineExpiresAt(transaction: Prisma.TransactionClient): Promise<{ value: Date, expiresInSeconds: number }> {
+  private async determineExpiresAt(transaction: Prisma.TransactionClient): Promise<ExpiresAtResult> {
     const expiresAt = await this.databaseClient.fetchNow(transaction);
     expiresAt.setTime(expiresAt.getTime() + (this.THIRTY_DAYS_IN_S * 1000));
     return {

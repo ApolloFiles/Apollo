@@ -1,7 +1,7 @@
-import Crypto from 'node:crypto';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
 import { Prisma } from '../../../database/prisma-client/client.js';
+import SecureTokenHelper from '../../SecureTokenHelper.js';
 
 type SessionResult = {
   token: string,
@@ -14,11 +14,12 @@ export default class AuthAnonymousSessionHelper {
 
   constructor(
     private readonly databaseClient: DatabaseClient,
+    private readonly secureTokenHelper: SecureTokenHelper,
   ) {
   }
 
   async create(data: object): Promise<SessionResult> {
-    const token = this.createToken();
+    const token = this.secureTokenHelper.create();
     const expiresAt = await this.determineExpiresAt(this.databaseClient);
 
     await this.databaseClient.authAnonymousSession.create({
@@ -38,7 +39,7 @@ export default class AuthAnonymousSessionHelper {
 
   async invalidate(token: string): Promise<Prisma.JsonValue> {
     const sessionData = await this.databaseClient.$transaction(async (transaction) => {
-      const hashedToken = Crypto.hash('sha256', Buffer.from(token, 'base64url'), { outputEncoding: 'buffer' });
+      const hashedToken = this.secureTokenHelper.hashToken(token);
 
       const anonymousSession = await transaction.authAnonymousSession.findUnique({
         where: {
@@ -70,16 +71,6 @@ export default class AuthAnonymousSessionHelper {
     return {
       value: expiresAt,
       expiresInSeconds: this.TEN_MINUTES_IN_S,
-    };
-  }
-
-  // TODO: Method is identical to non-anonymous session creator, refactor to shared utility
-  private createToken(): { value: string, sha256sum: Buffer<ArrayBuffer> } {
-    const token = Crypto.randomBytes(64);
-
-    return {
-      value: token.toString('base64url'),
-      sha256sum: Crypto.hash('sha256', token, { outputEncoding: 'buffer' }),
     };
   }
 }

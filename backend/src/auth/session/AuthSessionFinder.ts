@@ -1,7 +1,7 @@
-import Crypto from 'node:crypto';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import type { Prisma } from '../../database/prisma-client/client.js';
+import SecureTokenHelper from '../SecureTokenHelper.js';
 
 export type SessionData = {
   id: bigint,
@@ -23,13 +23,14 @@ export type SessionDataWithUser = SessionData & {
 export default class AuthSessionFinder {
   constructor(
     private readonly databaseClient: DatabaseClient,
+    private readonly secureTokenHelper: SecureTokenHelper,
   ) {
   }
 
   async findSession(token: string, transaction?: Prisma.TransactionClient): Promise<SessionDataWithUser | null> {
     const session = await (transaction ?? this.databaseClient).authSession.findUnique({
       where: {
-        hashedToken: this.hashToken(token),
+        hashedToken: this.secureTokenHelper.hashToken(token),
         expiresAt: { gt: await this.databaseClient.fetchNow() },
         user: {
           // Sessions for blocked users are invalid
@@ -68,9 +69,5 @@ export default class AuthSessionFinder {
         userAgent: true,
       },
     });
-  }
-
-  private hashToken(token: string): Buffer<ArrayBuffer> {
-    return Crypto.hash('sha256', Buffer.from(token, 'base64url'), { outputEncoding: 'buffer' });
   }
 }
