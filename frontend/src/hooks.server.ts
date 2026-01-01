@@ -21,4 +21,12 @@ const handleParaglide: Handle = ({ event, resolve }) => paraglideMiddleware(even
     transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', locale),
   });
 });
-export const handle: Handle = handleParaglide;
+export const handle: Handle = async (input) => {
+  input.event.setHeaders({
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+  });
+
+  return handleParaglide(input);
+};

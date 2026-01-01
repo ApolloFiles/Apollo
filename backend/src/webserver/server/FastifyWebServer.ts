@@ -166,7 +166,10 @@ export default class FastifyWebServer {
     this.fastify.addHook('onRequest', (_request: FastifyRequest, reply: FastifyReply, done: Fastify.HookHandlerDoneFunction): void => {
       reply
         .header('X-Powered-By', 'fastify')
-        .header('Content-Security-Policy', `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none';`);
+        .header('Content-Security-Policy', `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none';`)
+        .header('X-Frame-Options', 'DENY')
+        .header('X-Content-Type-Options', 'nosniff')
+        .header('Cross-Origin-Opener-Policy', 'same-origin');
       done();
     });
   }
