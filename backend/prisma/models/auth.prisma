@@ -53,9 +53,10 @@ model AuthAnonymousSession {
 }
 
 model AuthAccountCreationInviteToken {
-  hashedToken Bytes    @id @map("hashed_token")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  expiresAt   DateTime @map("expires_at") @db.Timestamptz
+  hashedToken            Bytes    @id @map("hashed_token")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  expiresAt              DateTime @map("expires_at") @db.Timestamptz
+  createSuperUserAccount Boolean  @default(false)
 
   @@map("auth_account_creation_invite_tokens")
 }

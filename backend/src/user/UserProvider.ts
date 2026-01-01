@@ -48,4 +48,9 @@ export default class UserProvider {
     }
     return users;
   }
+
+  async atLeastOneAccountExists(): Promise<boolean> {
+    const someAccount = await this.databaseClient.authUser.findFirst({ select: { id: true } });
+    return someAccount != null;
+  }
 }

@@ -1,6 +1,8 @@
 import type { FastifyReply } from 'fastify';
 import * as OpenIdClient from 'openid-client';
 import { injectable } from 'tsyringe';
+import { z } from 'zod';
+import AccountCreationInviteFinder from '../../../../auth/account_creation_invite/AccountCreationInviteFinder.js';
 import OAuthConfigurationProvider, { type OAuthConfig } from '../../../../auth/oauth/OAuthConfigurationProvider.js';
 import AuthAnonymousSessionHelper from '../../../../auth/session/anonymous/AuthAnonymousSessionHelper.js';
 import SessionCookieHelper from '../../../../auth/session/SessionCookieHelper.js';
@@ -19,6 +21,7 @@ export default class LoginRouter extends AbstractLoginRouter {
     private readonly appConfig: AppConfiguration,
     private readonly anonymousSessionCreator: AuthAnonymousSessionHelper,
     private readonly sessionCookieHelper: SessionCookieHelper,
+    private readonly accountCreationInviteFinder: AccountCreationInviteFinder,
   ) {
     super(oAuthConfigurationProvider);
   }
@@ -31,6 +34,7 @@ export default class LoginRouter extends AbstractLoginRouter {
     return true;
   }
 
+  // TODO: refactor into individual router classes
   register(server: FastifyInstanceWithZod): void {
     server.get('/login/:providerType', this.ROUTE_OPTIONS, async (request, reply): Promise<RouteReturn> => {
       this.ensureNotAlreadyLoggedIn(request);
@@ -41,20 +45,54 @@ export default class LoginRouter extends AbstractLoginRouter {
       return reply.redirect(authorizationUrl.href, 302);
     });
 
-    server.get('/login/:providerType/link', this.ROUTE_OPTIONS, async (request, reply): Promise<RouteReturn> => {
+    server.get('/link/:providerType', this.ROUTE_OPTIONS, async (request, reply): Promise<RouteReturn> => {
       const sessionUser = request.getSessionUserOptional();
       if (sessionUser == null) {
         throw new BadRequestError('You must be logged in to link an OAuth provider to your account');
       }
 
       const oAuthConfig = await this.determineOAuthConfig(request.params.providerType);
-      const authorizationUrl = await this.initiateOAuthLoginFlow(reply, oAuthConfig, sessionUser.session.id);
+      const authorizationUrl = await this.initiateOAuthLoginFlow(
+        reply,
+        oAuthConfig,
+        { action: 'linkWithExisting', sessionId: sessionUser.session.id },
+      );
 
       return reply.redirect(authorizationUrl.href, 302);
     });
+
+    server.get(
+      '/sign-up/:providerType',
+      {
+        ...this.ROUTE_OPTIONS,
+        schema: {
+          ...this.ROUTE_OPTIONS.schema,
+          querystring: z.object({ token: z.string().nonempty() }),
+        },
+      },
+      async (request, reply): Promise<RouteReturn> => {
+        this.ensureNotAlreadyLoggedIn(request);
+
+        const inviteToken = await this.accountCreationInviteFinder.findByToken(request.query.token);
+        if (inviteToken == null) {
+          throw new BadRequestError('The invite token is invalid or expired');
+        }
+
+        const oAuthConfig = await this.determineOAuthConfig(request.params.providerType);
+        const authorizationUrl = await this.initiateOAuthLoginFlow(
+          reply,
+          oAuthConfig,
+          {
+            action: 'accountCreationInvite',
+            inviteTokenHash: inviteToken.hashedToken,
+          });
+
+        return reply.redirect(authorizationUrl.href, 302);
+      },
+    );
   }
 
-  private async initiateOAuthLoginFlow(reply: FastifyReply, oAuthConfig: OAuthConfig, linkWithSessionId?: bigint): Promise<URL> {
+  private async initiateOAuthLoginFlow(reply: FastifyReply, oAuthConfig: OAuthConfig, specialAction?: LoginStateData['specialAction']): Promise<URL> {
     const code_verifier = OpenIdClient.randomPKCECodeVerifier();
     const state = OpenIdClient.randomState();
     const nonce: string | undefined = undefined;// OpenIdClient.randomNonce();  // TODO: Only generate nonce for OpenID providers (OAuth itself won't work with nonce)
@@ -62,7 +100,7 @@ export default class LoginRouter extends AbstractLoginRouter {
     await this.createAnonymousSession(reply, {
       code_verifier,
       state,
-      linkWithExistingApolloAccount: linkWithSessionId != null ? { sessionId: linkWithSessionId } : undefined,
+      specialAction,
     });
 
     return OpenIdClient.buildAuthorizationUrl(

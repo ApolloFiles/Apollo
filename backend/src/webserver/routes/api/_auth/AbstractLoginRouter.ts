@@ -14,9 +14,10 @@ const LOGIN_STATE_SCHEMA = z.object({
   state: z.string(),
   nonce: z.string().optional(),
 
-  linkWithExistingApolloAccount: z.object({
-    sessionId: z.coerce.bigint(),
-  }).optional(),
+  specialAction: z.discriminatedUnion('action', [
+    z.object({ action: z.literal('linkWithExisting'), sessionId: z.coerce.bigint() }),
+    z.object({ action: z.literal('accountCreationInvite'), inviteTokenHash: z.string() }),
+  ]).optional(),
 });
 export type LoginStateData = z.infer<typeof LOGIN_STATE_SCHEMA>;
 

@@ -107,7 +107,7 @@
           <li>
             <strong>{accountProvider}</strong>
             <div>
-              <a href="/api/_auth/login/{accountProvider}/link">
+              <a href="/api/_auth/link/{accountProvider}">
                 Link {accountProvider} account
               </a>
             </div>

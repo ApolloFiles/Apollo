@@ -14,7 +14,7 @@ export default class SecureTokenHelper {
 
   hashToken(token: string | Buffer): Buffer<ArrayBuffer> {
     if (!Buffer.isBuffer(token)) {
-      token = Buffer.from(token, 'base64url');
+      token = this.decodeHashedToken(token);
     }
     return Crypto.hash('sha256', token, { outputEncoding: 'buffer' });
   }
@@ -23,5 +23,9 @@ export default class SecureTokenHelper {
     return Buffer
       .from(hashedToken.buffer, hashedToken.byteOffset, hashedToken.byteLength)
       .toString('base64url');
+  }
+
+  decodeHashedToken(hashedToken: string): Buffer<ArrayBuffer> {
+    return Buffer.from(hashedToken, 'base64url');
   }
 }

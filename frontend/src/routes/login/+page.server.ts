@@ -13,7 +13,6 @@ export const load = async ({ cookies, fetch }) => {
 
   const backendConfig = await rpcClient.tmpBackend.getConfig(undefined, { context: { cookies, fetch } });
   return {
-    appBaseUrl: backendConfig.appBaseUrl,
     availableLoginProviders: backendConfig.auth.providers,
   };
 };

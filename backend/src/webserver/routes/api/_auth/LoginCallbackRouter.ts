@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import * as OpenIdClient from 'openid-client';
 import { injectable } from 'tsyringe';
+import UserCreatorByInvite from '../../../../auth/account_creation_invite/UserCreatorByInvite.js';
 import OAuthConfigurationProvider, { type OAuthConfig } from '../../../../auth/oauth/OAuthConfigurationProvider.js';
 import OAuthLinkPersister from '../../../../auth/oauth/OAuthLinkPersister.js';
 import UserByOAuthProvider from '../../../../auth/oauth/UserByOAuthProvider.js';
@@ -28,6 +29,7 @@ export default class LoginRouter extends AbstractLoginRouter {
     private readonly sessionCookieHelper: SessionCookieHelper,
     private readonly userByOAuthProvider: UserByOAuthProvider,
     private readonly oAuthLinkPersister: OAuthLinkPersister,
+    private readonly userCreatorByInvite: UserCreatorByInvite,
   ) {
     super(oAuthConfigurationProvider);
   }
@@ -40,25 +42,30 @@ export default class LoginRouter extends AbstractLoginRouter {
     return true;
   }
 
+  // TODO: Update lastLoginDate in auth_users table
+  // TODO: Update lastActivityDate in auth_users table
+  // TODO: refactor
   register(server: FastifyInstanceWithZod): void {
     server.get('/login/:providerType/callback', this.ROUTE_OPTIONS, async (request, reply): Promise<RouteReturn> => {
       const oAuthConfig = await this.determineOAuthConfig(request.params.providerType);
 
       const loginState = await this.extractLoginStateFromRequest(request, reply);
-      if (loginState.linkWithExistingApolloAccount != null && loginState.linkWithExistingApolloAccount.sessionId !== request.getSessionUserOptional()?.session.id) {
+
+      if (loginState.specialAction?.action === 'linkWithExisting' &&
+        loginState.specialAction.sessionId !== request.getSessionUser().session.id) {
+        // We are checking this early, so we don't even acquire an access_token, if the loginState is invalid
         throw new BadRequestError('Cannot link accounts: no valid session found for linking');
       }
 
       const tokenResponse = await this.acquireAccessToken(request, oAuthConfig, loginState);
       const userInfo = await oAuthConfig.fetchUserInfo(oAuthConfig.openIdConfig, tokenResponse.access_token, tokenResponse.claims()?.sub);
 
-      if (loginState.linkWithExistingApolloAccount != null) {
+      if (loginState.specialAction?.action === 'linkWithExisting') {
         const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.type, userInfo.id);
         if (apolloUser != null) {
           throw new BadRequestError('Cannot link accounts: OAuth provider account is already linked with another account');
         }
 
-        // TODO: Check and try to link with current session/account
         await this.oAuthLinkPersister.createLink(
           oAuthConfig.type,
           request.getAuthenticatedUser().id,
@@ -66,6 +73,21 @@ export default class LoginRouter extends AbstractLoginRouter {
           userInfo.displayName,
           userInfo.profilePictureBytes,
         );
+      } else if (loginState.specialAction?.action === 'accountCreationInvite') {
+        const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.type, userInfo.id);
+        if (apolloUser != null) {
+          throw new BadRequestError('Cannot create account: OAuth provider account is already linked with another account');
+        }
+
+        const createdUser = await this.userCreatorByInvite.createByInviteTokenAndOAuth(
+          loginState.specialAction.inviteTokenHash,
+          oAuthConfig.type,
+          userInfo.id,
+          userInfo.displayName,
+          userInfo.profilePictureBytes,
+        );
+
+        await this.createSession(request, reply, createdUser);
       } else {
         const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.type, userInfo.id);
         if (apolloUser == null) {

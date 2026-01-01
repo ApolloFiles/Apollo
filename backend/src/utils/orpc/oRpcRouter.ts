@@ -2,6 +2,7 @@ import { onError, ORPCError } from '@orpc/server';
 import Fs from 'node:fs';
 import { container } from 'tsyringe';
 import { z } from 'zod';
+import AccountCreationInviteFinder from '../../auth/account_creation_invite/AccountCreationInviteFinder.js';
 import OAuthConfigurationProvider from '../../auth/oauth/OAuthConfigurationProvider.js';
 import AuthSessionFinder from '../../auth/session/AuthSessionFinder.js';
 import AuthSessionRevoker from '../../auth/session/AuthSessionRevoker.js';
@@ -541,6 +542,33 @@ const sessionManagement_revokeAllSessionsExceptCurrent = oRpcBuilder
     await container.resolve(AuthSessionRevoker).revokeAllForUserExcept(sessionInfo.user.id, sessionInfo.session.id);
   });
 
+const accountCreationInvitation_get = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ token: z.string() }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo != null) {
+      throw opts.errors.NOT_AVAILABLE_FOR_LOGGED_IN_USER();
+    }
+
+    const accountCreationInviteFinder = container.resolve(AccountCreationInviteFinder);
+
+    const inviteToken = await accountCreationInviteFinder.findByToken(opts.input.token);
+    if (inviteToken == null) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    return {
+      createdAt: inviteToken.createdAt,
+      expiresAt: inviteToken.expiresAt,
+    };
+  });
+
 export const oRpcRouter = {
   tmpBackend: {
     getConfig: tmpBackendConfig,
@@ -556,6 +584,10 @@ export const oRpcRouter = {
       revokeSingleSession: sessionManagement_revokeSingleSession,
       revokeAllSessions: sessionManagement_revokeAllSessions,
       revokeAllSessionsExceptCurrent: sessionManagement_revokeAllSessionsExceptCurrent,
+    },
+
+    accountCreationInvitation: {
+      get: accountCreationInvitation_get,
     },
   },
 
