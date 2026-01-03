@@ -4,6 +4,7 @@ import { injectable } from 'tsyringe';
 import { z } from 'zod';
 import AccountCreationInviteFinder from '../../../../auth/account_creation_invite/AccountCreationInviteFinder.js';
 import OAuthConfigurationProvider, { type OAuthConfig } from '../../../../auth/oauth/OAuthConfigurationProvider.js';
+import OAuthLinkPersister from '../../../../auth/oauth/OAuthLinkPersister.js';
 import AuthAnonymousSessionHelper from '../../../../auth/session/anonymous/AuthAnonymousSessionHelper.js';
 import SessionCookieHelper from '../../../../auth/session/SessionCookieHelper.js';
 import AppConfiguration from '../../../../config/AppConfiguration.js';
@@ -22,6 +23,7 @@ export default class LoginRouter extends AbstractLoginRouter {
     private readonly anonymousSessionCreator: AuthAnonymousSessionHelper,
     private readonly sessionCookieHelper: SessionCookieHelper,
     private readonly accountCreationInviteFinder: AccountCreationInviteFinder,
+    private readonly oAuthLinkPersister: OAuthLinkPersister,
   ) {
     super(oAuthConfigurationProvider);
   }
@@ -34,9 +36,10 @@ export default class LoginRouter extends AbstractLoginRouter {
     return true;
   }
 
+  // TODO: Add CSRF protection
   // TODO: refactor into individual router classes
   register(server: FastifyInstanceWithZod): void {
-    server.get('/login/:providerType', this.ROUTE_OPTIONS, async (request, reply): Promise<RouteReturn> => {
+    server.get('/login/:providerType', this.ROUTE_OPTIONS_GET, async (request, reply): Promise<RouteReturn> => {
       this.ensureNotAlreadyLoggedIn(request);
 
       const oAuthConfig = await this.determineOAuthConfig(request.params.providerType);
@@ -45,28 +48,53 @@ export default class LoginRouter extends AbstractLoginRouter {
       return reply.redirect(authorizationUrl.href, 302);
     });
 
-    server.get('/link/:providerType', this.ROUTE_OPTIONS, async (request, reply): Promise<RouteReturn> => {
+    server.post('/provider/link', this.ROUTE_OPTIONS_POST, async (request, reply): Promise<RouteReturn> => {
       const sessionUser = request.getSessionUserOptional();
       if (sessionUser == null) {
         throw new BadRequestError('You must be logged in to link an OAuth provider to your account');
       }
 
-      const oAuthConfig = await this.determineOAuthConfig(request.params.providerType);
+      const oAuthConfig = await this.determineOAuthConfig(request.body.providerType);
       const authorizationUrl = await this.initiateOAuthLoginFlow(
         reply,
         oAuthConfig,
-        { action: 'linkWithExisting', sessionId: sessionUser.session.id },
+        {
+          returnTo: '/settings/security',
+          specialAction: {
+            action: 'linkWithExisting',
+            sessionId: sessionUser.session.id,
+          },
+        },
       );
 
-      return reply.redirect(authorizationUrl.href, 302);
+      return reply.redirect(authorizationUrl.href, 303);
+    });
+
+    server.post('/provider/unlink', this.ROUTE_OPTIONS_POST, async (request, reply): Promise<RouteReturn> => {
+      const sessionUser = request.getSessionUserOptional();
+      if (sessionUser == null) {
+        throw new BadRequestError('You must be logged in to link an OAuth provider to your account');
+      }
+
+      const providerType = request.body.providerType;
+      if (!this.oAuthConfigurationProvider.isTypeAvailable(providerType)) {
+        throw new BadRequestError('The specified OAuth provider is not supported');
+      }
+
+      const unlinkResult = await this.oAuthLinkPersister.unlinkProvider(providerType, sessionUser.user.id);
+      if (!unlinkResult) {
+        throw new BadRequestError(`No linked provider of type '${providerType}' found for your account`);
+      }
+
+      return reply.redirect('/settings/security', 303);
     });
 
     server.get(
       '/sign-up/:providerType',
       {
-        ...this.ROUTE_OPTIONS,
+        ...this.ROUTE_OPTIONS_GET,
         schema: {
-          ...this.ROUTE_OPTIONS.schema,
+          ...this.ROUTE_OPTIONS_GET.schema,
           querystring: z.object({ token: z.string().nonempty() }),
         },
       },
@@ -83,8 +111,10 @@ export default class LoginRouter extends AbstractLoginRouter {
           reply,
           oAuthConfig,
           {
-            action: 'accountCreationInvite',
-            inviteTokenHash: inviteToken.hashedToken,
+            specialAction: {
+              action: 'accountCreationInvite',
+              inviteTokenHash: inviteToken.hashedToken,
+            },
           });
 
         return reply.redirect(authorizationUrl.href, 302);
@@ -92,7 +122,7 @@ export default class LoginRouter extends AbstractLoginRouter {
     );
   }
 
-  private async initiateOAuthLoginFlow(reply: FastifyReply, oAuthConfig: OAuthConfig, specialAction?: LoginStateData['specialAction']): Promise<URL> {
+  private async initiateOAuthLoginFlow(reply: FastifyReply, oAuthConfig: OAuthConfig, loginState?: Pick<LoginStateData, 'returnTo' | 'specialAction'>): Promise<URL> {
     const code_verifier = OpenIdClient.randomPKCECodeVerifier();
     const state = OpenIdClient.randomState();
     const nonce: string | undefined = undefined;// OpenIdClient.randomNonce();  // TODO: Only generate nonce for OpenID providers (OAuth itself won't work with nonce)
@@ -100,7 +130,7 @@ export default class LoginRouter extends AbstractLoginRouter {
     await this.createAnonymousSession(reply, {
       code_verifier,
       state,
-      specialAction,
+      ...loginState,
     });
 
     return OpenIdClient.buildAuthorizationUrl(

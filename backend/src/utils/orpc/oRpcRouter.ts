@@ -14,6 +14,7 @@ import LibraryManager from '../../plugins/official/media/_old/libraries/LibraryM
 import ProcessBuilder from '../../plugins/official/media/_old/ProcessBuilder.js';
 import MediaLibraryMediaFinder from '../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
 import MediaClearLogoImageProvider from '../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
+import UploadedProfilePicturePreProcessor from '../../user/picture/UploadedProfilePicturePreProcessor.js';
 import UserProvider from '../../user/UserProvider.js';
 import * as oRpcBuilder from './oRpcRouteBuilder.js';
 import type { BackendConfig, FullUserProfile, VirtualFileSystemFileList } from './RouteTypes.js';
@@ -495,7 +496,7 @@ const fetchMedia = oRpcBuilder
     };
   });
 
-const sessionManagement_revokeSingleSession = oRpcBuilder
+const user_settings_security_revokeSingleSession = oRpcBuilder
   .authenticated
   .input(z.object({ sessionId: z.coerce.bigint() }))
   .use(onError((err) => {
@@ -511,22 +512,7 @@ const sessionManagement_revokeSingleSession = oRpcBuilder
 
     await container.resolve(AuthSessionRevoker).revoke(opts.input.sessionId, sessionInfo.user.id);
   });
-const sessionManagement_revokeAllSessions = oRpcBuilder
-  .authenticated
-  .use(onError((err) => {
-    if (!(err instanceof ORPCError)) {
-      console.error(err);
-    }
-  }))
-  .handler(async (opts) => {
-    const sessionInfo = opts.context.sessionInfo;
-    if (sessionInfo == null || sessionInfo.user == null) {
-      throw opts.errors.UNAUTHORIZED();
-    }
-
-    await container.resolve(AuthSessionRevoker).revokeAllForUser(sessionInfo.user.id);
-  });
-const sessionManagement_revokeAllSessionsExceptCurrent = oRpcBuilder
+const user_settings_security_revokeAllSessionsExceptCurrent = oRpcBuilder
   .authenticated
   .use(onError((err) => {
     if (!(err instanceof ORPCError)) {
@@ -569,9 +555,153 @@ const accountCreationInvitation_get = oRpcBuilder
     };
   });
 
+const user_get = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    return {
+      id: sessionInfo.user.id,
+      displayName: sessionInfo.user.name,
+    };
+  });
+
+const user_settings_profile_updateDisplayName = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ displayName: z.string().trim().nonempty() }))
+  .handler(async (opts): Promise<undefined> => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const databaseClient = container.resolve(DatabaseClient);
+
+    await databaseClient.authUser.update({
+      where: { id: sessionInfo.user.id },
+      data: {
+        displayName: opts.input.displayName,
+      },
+    });
+
+    return undefined;
+  });
+const user_settings_profile_updateProfilePicture = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ file: z.instanceof(File).nullable() }))
+  .handler(async (opts): Promise<undefined> => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const databaseClient = container.resolve(DatabaseClient);
+    const profilePictureProcessor = container.resolve(UploadedProfilePicturePreProcessor);
+
+    let profilePictureBytes: Buffer | null;
+    try {
+      profilePictureBytes = opts.input.file != null
+        ? await profilePictureProcessor.processForUserProfile(Buffer.from(await opts.input.file.arrayBuffer()))
+        : null;
+    } catch (err) {
+      throw opts.errors.UNSUPPORTED_FILE();
+    }
+
+    await databaseClient.authUser.update({
+      where: { id: sessionInfo.user.id },
+      data: {
+        profilePicture: profilePictureBytes != null ? Buffer.from(profilePictureBytes) : null,
+      },
+    });
+
+    return undefined;
+  });
+
+const user_settings_security_get = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const databaseClient = container.resolve(DatabaseClient);
+    const oAuthConfigurationProvider =container.resolve(OAuthConfigurationProvider);
+    const authSessionFinder=container.resolve(AuthSessionFinder);
+
+    const linkedAuthProviders = await databaseClient.authUserLinkedProvider.findMany({
+      where: {
+        apolloUserId: sessionInfo.user.id,
+      },
+    });
+
+    return {
+      // TODO: Would be sick to change the profile picture system, so that we have something to send in loggedInUser too
+      //       That would allow the user to update the profile picture in browser tab A, and see the new picture
+      //       in browser tab B without a full page reloading
+      loggedInUser: {
+        id: sessionInfo.user.id,
+        displayName: sessionInfo.user.name,
+      },
+
+      sessions: {
+        currentId: sessionInfo.session.id,
+        all: await authSessionFinder.findByUserId(sessionInfo.user.id),
+      },
+      linkedAuthProviders: linkedAuthProviders.map((linkedProvider) => {
+        return {
+          type: linkedProvider.provider,
+          providerUserId: linkedProvider.providerUserId,
+          providerUserDisplayName: linkedProvider.providerUserDisplayName,
+          linkedAt: linkedProvider.linkedAt,
+        }
+      }),
+      allAuthProviderTypes: oAuthConfigurationProvider.getAvailableTypes(),
+    };
+  });
+
 export const oRpcRouter = {
   tmpBackend: {
     getConfig: tmpBackendConfig,
+  },
+
+  user: {
+    get: user_get,
+
+    settings: {
+      profile: {
+        updateDisplayName: user_settings_profile_updateDisplayName,
+        updateProfilePicture: user_settings_profile_updateProfilePicture,
+      },
+      security: {
+        get: user_settings_security_get,
+        revokeSingleSession: user_settings_security_revokeSingleSession,
+        revokeAllSessionsExceptCurrent: user_settings_security_revokeAllSessionsExceptCurrent,
+      },
+    },
   },
 
   session: {
@@ -580,12 +710,6 @@ export const oRpcRouter = {
   },
 
   auth: {
-    sessions: {
-      revokeSingleSession: sessionManagement_revokeSingleSession,
-      revokeAllSessions: sessionManagement_revokeAllSessions,
-      revokeAllSessionsExceptCurrent: sessionManagement_revokeAllSessionsExceptCurrent,
-    },
-
     accountCreationInvitation: {
       get: accountCreationInvitation_get,
     },

@@ -128,7 +128,7 @@
                 class="flex-grow-1">{sessionInfo.participants.owner.displayName + (sessionInfo.participants.owner.id === selfInfo?.userId ? ' (You)' : '')}</span>
               {#if sessionInfo.participants.owner.id !== selfInfo?.userId && webSocketClient?.$userPlaybackState.has(sessionInfo.participants.owner.id)}
                   <span
-                    class="flex-grow-1">{formatTime(webSocketClient.$userPlaybackState.get(sessionInfo.participants.owner.id).currentTime) ?? ''}</span>
+                    class="flex-grow-1">{formatTime(webSocketClient.$userPlaybackState.get(sessionInfo.participants.owner.id)?.currentTime ?? 0) ?? ''}</span>
               {/if}
             </li>
 

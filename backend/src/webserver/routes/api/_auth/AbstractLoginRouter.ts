@@ -14,6 +14,8 @@ const LOGIN_STATE_SCHEMA = z.object({
   state: z.string(),
   nonce: z.string().optional(),
 
+  returnTo: z.string().startsWith('/').optional(),
+
   specialAction: z.discriminatedUnion('action', [
     z.object({ action: z.literal('linkWithExisting'), sessionId: z.coerce.bigint() }),
     z.object({ action: z.literal('accountCreationInvite'), inviteTokenHash: z.string() }),
@@ -22,10 +24,17 @@ const LOGIN_STATE_SCHEMA = z.object({
 export type LoginStateData = z.infer<typeof LOGIN_STATE_SCHEMA>;
 
 export default abstract class AbstractLoginRouter implements Router {
-  protected readonly ROUTE_OPTIONS = {
+  protected readonly ROUTE_OPTIONS_GET = {
     schema: {
       params: z.object({
-        providerType: z.string(),
+        providerType: z.string().nonempty(),
+      }),
+    },
+  } satisfies Fastify.RouteShorthandOptions;
+  protected readonly ROUTE_OPTIONS_POST = {
+    schema: {
+      body: z.object({
+        providerType: z.string().nonempty(),
       }),
     },
   } satisfies Fastify.RouteShorthandOptions;

@@ -1,4 +1,5 @@
 import FastifyCookiePlugin from '@fastify/cookie';
+import FastifyFormBodyPlugin from '@fastify/formbody';
 import FastifyWebSocketPlugin from '@fastify/websocket';
 import * as Sentry from '@sentry/node';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
@@ -82,6 +83,7 @@ export default class FastifyWebServer {
     this.fastify.register(FastifyCookiePlugin);
     this.decorateRequestForAuthentication(sessionCookieHelper, userBySessionTokenProvider);
 
+    this.fastify.register(FastifyFormBodyPlugin, { bodyLimit: 1024 * 1024 /* 1 MiB */ });
     this.fastify.register(FastifyWebSocketPlugin);
 
     this.registerDefaultHeaders();

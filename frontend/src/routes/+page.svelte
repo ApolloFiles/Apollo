@@ -13,8 +13,8 @@
   <a href="/media/">
     <button>Media library</button>
   </a>
-  <a href="/profile">
-    <button>Profile</button>
+  <a href="/settings">
+    <button>Settings</button>
   </a>
   <a href="/logout">
     <button>Log out</button>

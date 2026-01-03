@@ -46,7 +46,7 @@ export default class LoginRouter extends AbstractLoginRouter {
   // TODO: Update lastActivityDate in auth_users table
   // TODO: refactor
   register(server: FastifyInstanceWithZod): void {
-    server.get('/login/:providerType/callback', this.ROUTE_OPTIONS, async (request, reply): Promise<RouteReturn> => {
+    server.get('/login/:providerType/callback', this.ROUTE_OPTIONS_GET, async (request, reply): Promise<RouteReturn> => {
       const oAuthConfig = await this.determineOAuthConfig(request.params.providerType);
 
       const loginState = await this.extractLoginStateFromRequest(request, reply);
@@ -107,7 +107,7 @@ export default class LoginRouter extends AbstractLoginRouter {
         await this.createSession(request, reply, apolloUser);
       }
 
-      return reply.redirect('/', 302);
+      return reply.redirect(loginState.returnTo ?? '/', 303);
     });
   }
 

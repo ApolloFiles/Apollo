@@ -1,58 +1,9 @@
 <script lang="ts">
+  import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
   import HrSectionBreak from '$lib/components/login/HrSectionBreak.svelte';
-  import type { Component } from 'svelte';
-  import IconApple from 'virtual:icons/logos/apple';
-  import IconBluesky from 'virtual:icons/logos/bluesky';
-  import IconDiscord from 'virtual:icons/logos/discord-icon';
-  import IconFacebook from 'virtual:icons/logos/facebook';
-  import IconGitHub from 'virtual:icons/logos/github-icon';
-  import IconGitLab from 'virtual:icons/logos/gitlab';
-  import IconGoogle from 'virtual:icons/logos/google-icon';
-  import IconMastodon from 'virtual:icons/logos/mastodon-icon';
-  import IconMicrosoft from 'virtual:icons/logos/microsoft-icon';
-  import IconReddit from 'virtual:icons/logos/reddit-icon';
-  import IconTelegram from 'virtual:icons/logos/telegram';
-  import IconExTwitter from 'virtual:icons/logos/x';
   import type { PageProps } from './$types';
 
-  const assetThirdPartyLoginLogos: Record<string, any> = import.meta.glob('$lib/assets/login/third-party/*.svg', {
-    eager: true,
-    query: { enhanced: true },
-  });
-
   let { data }: PageProps = $props();
-
-  function determineIconComponent(providerId: string): Component | null {
-    switch (providerId.toLowerCase()) {
-      case 'google':
-        return IconGoogle;
-      case 'microsoft':
-        return IconMicrosoft;
-      case 'github':
-        return IconGitHub;
-      case 'gitlab':
-        return IconGitLab;
-      case 'discord':
-        return IconDiscord;
-      case 'apple':
-        return IconApple;
-      case 'bluesky':
-        return IconBluesky;
-      case 'mastodon':
-        return IconMastodon;
-      case 'telegram':
-        return IconTelegram;
-      case 'reddit':
-        return IconReddit;
-      case 'twitter':
-      case 'x':
-        return IconExTwitter;
-      case 'facebook':
-        return IconFacebook;
-      default:
-        return null;
-    }
-  }
 
   // TODO: Mal https://smashing-freiburg-2024.netlify.app/16-user-valid/ anschauen?
 </script>
@@ -78,20 +29,9 @@
               <a
                 class="btn btn-outline-secondary p-2 text-white"
                 href="/api/_auth/login/{provider}"
+                style="font-size: 1.5rem"
               >
-                {#if determineIconComponent(provider)}
-                  {@const IconComponent = determineIconComponent(provider)}
-                  <IconComponent class="icon" style="font-size: 1.5rem" role="presentation"></IconComponent>
-                {:else}
-                  {@const customSvg = assetThirdPartyLoginLogos[`/src/lib/assets/login/third-party/${provider}.svg`]}
-                  {#if customSvg}
-                    <img
-                      src={customSvg.default}
-                      class="third-party-img"
-                      alt=""
-                    >
-                  {/if}
-                {/if}
+                <AuthProviderIcon identifier={provider} />
                 {provider}
               </a>
             {/each}
@@ -162,12 +102,6 @@
   .col-right .login-background-image {
     width:  100%;
     height: 100%;
-  }
-
-  .third-party-login-container .third-party-img {
-    vertical-align: middle;
-    height:         2em;
-    width:          auto;
   }
 
   .third-party-login-container .btn {

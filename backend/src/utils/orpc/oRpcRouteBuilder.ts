@@ -14,8 +14,8 @@ export const base = os
     UNAUTHORIZED: {},
     NOT_AVAILABLE_FOR_LOGGED_IN_USER: {},
     REQUESTED_ENTITY_NOT_FOUND: {},
+    UNSUPPORTED_FILE: {},
   });
-
 
 export const authenticated = base
   .$context<ORPCInitialContext>()

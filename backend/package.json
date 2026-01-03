@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
+    "@fastify/formbody": "^8.0.2",
     "@fastify/websocket": "^11.2.0",
     "@orpc/server": "^1.13.1",
     "@prisma/adapter-pg": "^7.2.0",

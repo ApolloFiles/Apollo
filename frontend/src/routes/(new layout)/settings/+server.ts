@@ -1,0 +1,5 @@
+import { redirect, type RequestHandler } from '@sveltejs/kit';
+
+export const GET: RequestHandler = async (): Promise<never> => {
+  redirect(302, '/settings/profile');
+};

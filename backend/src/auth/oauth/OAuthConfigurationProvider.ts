@@ -7,6 +7,11 @@ import SimpleHttpClient from '../../http/SimpleHttpClient.js';
 const ALL_OAUTH_TYPES = ['github', 'discord', 'google', 'microsoft'] as const;
 export type OAuthType = (typeof ALL_OAUTH_TYPES)[number];
 
+export type OAuthProviderInfo = {
+  identifier: OAuthType,
+  displayName: string,
+}
+
 export type OAuthConfig = {
   type: OAuthType,
   openIdConfig: OpenIdClient.Configuration,

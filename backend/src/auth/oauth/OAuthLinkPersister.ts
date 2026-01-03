@@ -46,6 +46,35 @@ export default class OAuthLinkPersister {
     });
   }
 
+  async unlinkProvider(type: OAuthType, apolloUserId: string): Promise<boolean> {
+    //noinspection ES6RedundantAwait
+    return await this.databaseClient.$transaction(async (transaction): Promise<boolean> => {
+      await transaction.$queryRaw`
+        SELECT
+        FROM "auth_users_linked_providers"
+        WHERE "user_id" = ${apolloUserId}
+        FOR UPDATE
+      `;
+
+      const deleteResult = await transaction.authUserLinkedProvider.deleteMany({
+        where: {
+          apolloUserId,
+          provider: type,
+        },
+      });
+      if (deleteResult.count === 0) {
+        return false;
+      }
+
+      const remainingLinkedProviders = await transaction.authUserLinkedProvider.count({ where: { apolloUserId } });
+      if (remainingLinkedProviders === 0) {
+        throw new Error('Cannot unlink the only remaining linked provider from an account');
+      }
+
+      return true;
+    });
+  }
+
   private async preProcessProfilePicture(rawProfilePictureBytes: Buffer | null): Promise<Buffer<ArrayBuffer> | null> {
     if (rawProfilePictureBytes == null) {
       return null;
