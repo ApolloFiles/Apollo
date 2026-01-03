@@ -37,8 +37,8 @@
   },
   "dependencies": {
     "@iconify-json/logos": "^1.2.10",
-    "@iconify-json/tabler": "^1.2.25",
-    "@orpc/client": "^1.13.1",
+    "@iconify-json/tabler": "^1.2.26",
+    "@orpc/client": "^1.13.2",
     "bootstrap": "^5.3.8",
     "hls.js": "^1.6.15",
     "inter-ui": "^4.1.1",
@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "@inlang/paraglide-js": "^2.7.1",
-    "@orpc/server": "^1.13.1",
+    "@orpc/server": "^1.13.2",
     "@sveltejs/adapter-node": "^5.4.0",
     "@sveltejs/enhanced-img": "^0.9.2",
     "@sveltejs/kit": "^2.49.2",
