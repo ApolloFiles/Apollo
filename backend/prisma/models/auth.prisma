@@ -36,7 +36,7 @@ model AuthSession {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
   expiresAt         DateTime @map("expires_at") @db.Timestamptz()
   userAgent         String   @map("user_agent")
-  roughLastActivity DateTime @default(now()) @map("rough_last_activity") @db.Timestamptz()
+  roughLastActivity DateTime @map("rough_last_activity") @db.Timestamptz()
 
   user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 

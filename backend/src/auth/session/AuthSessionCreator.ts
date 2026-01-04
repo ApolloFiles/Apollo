@@ -36,7 +36,7 @@ export default class AuthSessionCreator {
         throw new Error('Cannot extend session: session for token not found');
       }
 
-      const expiresAt = await this.determineExpiresAt(transaction);
+      const expiresAt = this.determineExpiresAt(await this.databaseClient.fetchNow(transaction));
 
       await this.databaseClient.authSession.update({
         where: { id: sessionData.id },
@@ -53,7 +53,9 @@ export default class AuthSessionCreator {
 
   private async createNewSession(userId: string, userAgent: string, transaction: Prisma.TransactionClient): Promise<SessionResult> {
     const token = this.secureTokenHelper.create();
-    const expiresAt = await this.determineExpiresAt(transaction);
+
+    const now = await this.databaseClient.fetchNow(transaction);
+    const expiresAt = this.determineExpiresAt(now);
 
     const session = await transaction.authSession.create({
       data: {
@@ -61,6 +63,7 @@ export default class AuthSessionCreator {
         userId,
         userAgent,
         expiresAt: expiresAt.value,
+        roughLastActivity: this.normalizeToHour(now),
       },
       select: {
         id: true,
@@ -74,12 +77,18 @@ export default class AuthSessionCreator {
     };
   }
 
-  private async determineExpiresAt(transaction: Prisma.TransactionClient): Promise<ExpiresAtResult> {
-    const expiresAt = await this.databaseClient.fetchNow(transaction);
+  private determineExpiresAt(now: Date): ExpiresAtResult {
+    const expiresAt = new Date(now);
     expiresAt.setTime(expiresAt.getTime() + (this.THIRTY_DAYS_IN_S * 1000));
     return {
       value: expiresAt,
       expiresInSeconds: this.THIRTY_DAYS_IN_S,
     };
+  }
+
+  private normalizeToHour(date: Date): Date {
+    const normalized = new Date(date);
+    normalized.setMinutes(0, 0, 0);
+    return normalized;
   }
 }
