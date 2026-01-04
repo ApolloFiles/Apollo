@@ -111,6 +111,7 @@ export default class LoginRouter extends AbstractLoginRouter {
           reply,
           oAuthConfig,
           {
+            returnTo: '/settings/profile',
             specialAction: {
               action: 'accountCreationInvite',
               inviteTokenHash: inviteToken.hashedToken,
