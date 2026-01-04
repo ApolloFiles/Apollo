@@ -27,12 +27,21 @@ export default class UserBySessionTokenProvider {
 
       if (session != null && updateLastActivity) {
         const now = await this.databaseClient.fetchNow(transaction);
-        const normalizedNow = this.normalizeToHour(now);
 
-        if (normalizedNow.getTime() !== session.roughLastActivity.getTime()) {
+        const normalizedNowToHour = this.normalizeToHour(now);
+        if (normalizedNowToHour.getTime() !== session.roughLastActivity.getTime()) {
           await transaction.authSession.update({
             where: { id: session.id },
-            data: { roughLastActivity: normalizedNow },
+            data: { roughLastActivity: normalizedNowToHour },
+            select: { id: true },
+          });
+        }
+
+        const normalizedNowToDay = this.normalizeToDay(now);
+        if (normalizedNowToDay.getTime() !== session.user.lastActivityDate?.getTime()) {
+          await transaction.authUser.update({
+            where: { id: session.user.id },
+            data: { lastActivityDate: normalizedNowToDay },
             select: { id: true },
           });
         }
@@ -66,6 +75,12 @@ export default class UserBySessionTokenProvider {
   private normalizeToHour(date: Date): Date {
     const normalized = new Date(date);
     normalized.setMinutes(0, 0, 0);
+    return normalized;
+  }
+
+  private normalizeToDay(date: Date): Date {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
     return normalized;
   }
 }

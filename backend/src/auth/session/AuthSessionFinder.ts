@@ -16,6 +16,7 @@ export type SessionDataWithUser = SessionData & {
     displayName: string,
     isSuperUser: boolean,
     blocked: boolean,
+    lastActivityDate: Date | null,
   },
 }
 
@@ -48,6 +49,7 @@ export default class AuthSessionFinder {
             displayName: true,
             isSuperUser: true,
             blocked: true,
+            lastActivityDate: true,
           },
         },
       },

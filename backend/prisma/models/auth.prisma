@@ -4,8 +4,8 @@ model AuthUser {
   blocked          Boolean   @default(false) @map("is_blocked")
   isSuperUser      Boolean   @default(false) @map("is_super_user")
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  lastLoginDate    DateTime? @map("last_login_date") @db.Date
-  lastActivityDate DateTime? @map("last_activity_date") @db.Date
+  lastLoginDate    DateTime? @map("last_login_date") @db.Timestamptz()
+  lastActivityDate DateTime? @map("last_activity_date") @db.Timestamptz()
   profilePicture   Bytes?    @map("profile_picture")
 
   linkedAuthProviders AuthUserLinkedProvider[]

@@ -70,6 +70,13 @@ export default class AuthSessionCreator {
       },
     });
 
+    await transaction.authUser.update({
+      where: { id: userId },
+      data: {
+        lastLoginDate: this.normalizeToDay(now),
+      },
+    });
+
     return {
       id: session.id,
       token: token.value,
@@ -89,6 +96,12 @@ export default class AuthSessionCreator {
   private normalizeToHour(date: Date): Date {
     const normalized = new Date(date);
     normalized.setMinutes(0, 0, 0);
+    return normalized;
+  }
+
+  private normalizeToDay(date: Date): Date {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
     return normalized;
   }
 }
