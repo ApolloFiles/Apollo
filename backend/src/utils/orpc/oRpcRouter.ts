@@ -34,7 +34,9 @@ const tmpBackendConfig = oRpcBuilder
       appBaseUrl: appConfig.config.baseUrl,
       internalBackendBaseUrl: IS_PRODUCTION ? appConfig.config.baseUrl : 'http://localhost:8081',
       auth: {
-        providers: oAuthConfigurationProvider.getAvailableTypes(),
+        providers: oAuthConfigurationProvider.getAvailableTypes().sort((a, b) => {
+          return a.displayName.localeCompare(b.displayName);
+        }),
       },
     };
   });
@@ -624,7 +626,9 @@ const user_settings_security_get = oRpcBuilder
           linkedAt: linkedProvider.linkedAt,
         };
       }),
-      allAuthProviderTypes: oAuthConfigurationProvider.getAvailableTypes(),
+      allAuthProviderTypes: oAuthConfigurationProvider.getAvailableTypes().sort((a, b) => {
+        return a.displayName.localeCompare(b.displayName);
+      }),
     };
   });
 
