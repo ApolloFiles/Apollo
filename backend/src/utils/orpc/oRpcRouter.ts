@@ -17,7 +17,7 @@ import MediaClearLogoImageProvider from '../../plugins/official/media/library/im
 import UploadedProfilePicturePreProcessor from '../../user/picture/UploadedProfilePicturePreProcessor.js';
 import UserProvider from '../../user/UserProvider.js';
 import * as oRpcBuilder from './oRpcRouteBuilder.js';
-import type { BackendConfig, FullUserProfile, VirtualFileSystemFileList } from './RouteTypes.js';
+import type { BackendConfig, VirtualFileSystemFileList } from './RouteTypes.js';
 
 const tmpBackendConfig = oRpcBuilder
   .base
@@ -53,76 +53,6 @@ const getSessionUser = oRpcBuilder
 
     return {
       user: opts.context.sessionInfo.user,
-    };
-  });
-
-const getFullUserProfile = oRpcBuilder
-  .authenticated
-  .use(onError((err) => {
-    if (!(err instanceof ORPCError)) {
-      console.error(err);
-    }
-  }))
-  .handler(async (opts): Promise<FullUserProfile> => {
-    const databaseClient = container.resolve(DatabaseClient);
-    const oAuthConfigurationProvider = container.resolve(OAuthConfigurationProvider);
-    const authSessionFinder = container.resolve(AuthSessionFinder);
-
-    const sessionInfo = opts.context.sessionInfo;
-    if (sessionInfo == null || sessionInfo.user == null) {
-      throw opts.errors.UNAUTHORIZED();
-    }
-
-    const additionalUserInfo = await databaseClient.authUser.findUniqueOrThrow({
-      where: { id: sessionInfo.user.id },
-      select: {
-        createdAt: true,
-      },
-    });
-    const linkedProviders = await databaseClient
-      .authUserLinkedProvider
-      .findMany({
-        where: { apolloUserId: sessionInfo.user.id },
-        select: {
-          provider: true,
-          providerUserId: true,
-          providerUserDisplayName: true,
-          providerProfilePicture: true,
-          linkedAt: true,
-        },
-      });
-    const sessions = await authSessionFinder.findByUserId(sessionInfo.user.id);
-
-    return {
-      user: {
-        id: sessionInfo.user.id,
-        name: sessionInfo.user.name,
-        createdAt: additionalUserInfo.createdAt,
-      },
-
-      linkedAccounts: linkedProviders.map((linkedProvider) => {
-        return {
-          providerType: linkedProvider.provider,
-          providerUserId: linkedProvider.providerUserId,
-          providerUserDisplayName: linkedProvider.providerUserDisplayName ?? linkedProvider.providerUserId,
-          profilePictureDataUrl: linkedProvider.providerProfilePicture != null ? `data:image/png;base64,${Buffer.from(linkedProvider.providerProfilePicture)
-            .toString('base64')}` : null,
-          createdAt: linkedProvider.linkedAt,
-        };
-      }),
-      availableAccountProviders: oAuthConfigurationProvider.getAvailableTypes(),
-
-      session: {
-        current: sessionInfo.session.id.toString(),
-        all: sessions.map((session) => {
-          return {
-            id: session.id.toString(),
-            createdAt: session.createdAt,
-            expiresAt: session.expiresAt,
-            userAgent: session.userAgent,
-          };
-        }),
-      },
     };
   });
 
@@ -721,7 +651,6 @@ export const oRpcRouter = {
 
   session: {
     get: getSessionUser,
-    getFullProfile: getFullUserProfile,
   },
 
   auth: {
