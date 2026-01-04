@@ -2,11 +2,11 @@ model AuthUser {
   id               String    @id @default(dbgenerated("apollo_nanoid(19)"))
   displayName      String    @map("display_name")
   blocked          Boolean   @default(false) @map("is_blocked")
+  isSuperUser      Boolean   @default(false) @map("is_super_user")
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   lastLoginDate    DateTime? @map("last_login_date") @db.Date
   lastActivityDate DateTime? @map("last_activity_date") @db.Date
   profilePicture   Bytes?    @map("profile_picture")
-  isSuperUser      Boolean   @default(false) @map("is_super_user")
 
   linkedAuthProviders AuthUserLinkedProvider[]
   sessions            AuthSession[]
@@ -15,17 +15,17 @@ model AuthUser {
 }
 
 model AuthUserLinkedProvider {
-  apolloUserId            String   @map("user_id")
-  provider                String
-  providerUserId          String   @map("provider_user_id")
-  providerUserDisplayName String?  @map("provider_user_display_name")
-  providerProfilePicture  Bytes?   @map("provider_profile_picture")
-  linkedAt                DateTime @default(now()) @map("linked_at") @db.Timestamptz()
+  userId                     String   @map("user_id")
+  providerId                 String   @map("provider_id")
+  providerUserId             String   @map("provider_user_id")
+  providerUserDisplayName    String?  @map("provider_user_display_name")
+  providerUserProfilePicture Bytes?   @map("provider_user_profile_picture")
+  linkedAt                   DateTime @default(now()) @map("linked_at") @db.Timestamptz()
 
-  providerUser AuthUser @relation(fields: [apolloUserId], references: [id], onDelete: Cascade)
+  providerUser AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([apolloUserId, provider])
-  @@unique([provider, providerUserId])
+  @@id([userId, providerId])
+  @@unique([providerId, providerUserId])
   @@map("auth_users_linked_providers")
 }
 
@@ -46,7 +46,7 @@ model AuthSession {
 model AuthAnonymousSession {
   hashedToken Bytes    @id @map("hashed_token")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  expiresAt   DateTime @map("expires_at") @db.Timestamptz()
+  expiresAt   DateTime @default(dbgenerated("(now() + '00:10:00'::interval)")) @map("expires_at") @db.Timestamptz()
   data        Json     @db.JsonB
 
   @@map("auth_anonymous_sessions")

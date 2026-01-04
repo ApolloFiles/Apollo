@@ -28,11 +28,11 @@
             {#each data.availableLoginProviders as provider}
               <a
                 class="btn btn-outline-secondary p-2 text-white"
-                href="/api/_auth/login/{provider}"
+                href="/api/_auth/login/{provider.identifier}"
                 style="font-size: 1.5rem"
               >
-                <AuthProviderIcon identifier={provider} />
-                {provider}
+                <AuthProviderIcon identifier={provider.identifier} />
+                {provider.displayName}
               </a>
             {/each}
           </div>

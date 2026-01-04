@@ -4,16 +4,12 @@ import { z } from 'zod';
 import AppConfiguration from '../../config/AppConfiguration.js';
 import SimpleHttpClient from '../../http/SimpleHttpClient.js';
 
-const ALL_OAUTH_TYPES = ['github', 'discord', 'google', 'microsoft'] as const;
-export type OAuthType = (typeof ALL_OAUTH_TYPES)[number];
-
 export type OAuthProviderInfo = {
-  identifier: OAuthType,
+  identifier: string,
   displayName: string,
 }
 
-export type OAuthConfig = {
-  type: OAuthType,
+export type OAuthConfig = OAuthProviderInfo & {
   openIdConfig: OpenIdClient.Configuration,
   scopes: string[],
   fetchUserInfo: (openIdConfig: OpenIdClient.Configuration, accessToken: string, expectedSubjectId: string | undefined) => Promise<OAuthUserInfo>,
@@ -33,24 +29,21 @@ export default class OAuthConfigurationProvider {
   ) {
   }
 
-  isTypeAvailable(type: string): type is OAuthType {
-    const availableTypes: string[] = this.getAvailableTypes();
-    return availableTypes.includes(type);
+  isAvailable(identifier: string): boolean {
+    return identifier in this.appConfig.config.login.oAuth;
   }
 
-  getAvailableTypes(): OAuthType[] {
+  getAvailableTypes(): OAuthProviderInfo[] {
     const oAuthConfig = this.appConfig.config.login.oAuth;
 
-    const availableTypes: OAuthType[] = [];
-    for (const type of ALL_OAUTH_TYPES) {
-      if (type in oAuthConfig) {
-        availableTypes.push(type);
-      }
+    const availableProviders: OAuthProviderInfo[] = [];
+    for (const providerIdentifier in oAuthConfig) {
+      availableProviders.push(this.getProviderInfo(providerIdentifier));
     }
-    return availableTypes;
+    return availableProviders;
   }
 
-  async createConfig(type: OAuthType): Promise<OAuthConfig> {
+  async createConfig(type: string): Promise<OAuthConfig> {
     const oAuthConfig = this.appConfig.config.login.oAuth;
 
     let scopes: OAuthConfig['scopes'];
@@ -190,7 +183,7 @@ export default class OAuthConfigurationProvider {
         };
 
         return {
-          type: type,
+          ...this.getProviderInfo(type),
           // TODO: Cache discovery
           openIdConfig: await OpenIdClient.discovery(new URL('https://accounts.google.com/'), oAuthConfig[type].clientId, oAuthConfig[type].clientSecret),
           scopes,
@@ -230,19 +223,42 @@ export default class OAuthConfigurationProvider {
         };
 
         return {
-          type: type,
+          ...this.getProviderInfo(type),
           // TODO: Cache discovery
           openIdConfig: await OpenIdClient.discovery(new URL('https://login.microsoftonline.com/consumers/v2.0'), oAuthConfig[type].clientId, oAuthConfig[type].clientSecret),
           scopes,
           fetchUserInfo,
         };
+
+      default:
+        throw new Error(`Unsupported OAuth provider identifier: ${type}`);
     }
 
     return {
-      type: type,
+      ...this.getProviderInfo(type),
       openIdConfig: new OpenIdClient.Configuration(serverMetadata, oAuthConfig[type].clientId, oAuthConfig[type].clientSecret),
       scopes,
       fetchUserInfo,
     };
+  }
+
+  getProviderInfo(type: string): OAuthProviderInfo {
+    switch (type) {
+      case 'github':
+        return { identifier: type, displayName: 'GitHub' };
+      case 'discord':
+        return { identifier: type, displayName: 'Discord' };
+      case 'google':
+        return { identifier: type, displayName: 'Google' };
+      case 'microsoft':
+        return { identifier: type, displayName: 'Microsoft' };
+
+      default:
+        const identifier: string = type;
+        return {
+          identifier,
+          displayName: identifier.charAt(0).toUpperCase() + identifier.substring(1),
+        };
+    }
   }
 }

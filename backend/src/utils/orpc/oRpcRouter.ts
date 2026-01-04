@@ -649,13 +649,20 @@ const user_settings_security_get = oRpcBuilder
     }
 
     const databaseClient = container.resolve(DatabaseClient);
-    const oAuthConfigurationProvider =container.resolve(OAuthConfigurationProvider);
-    const authSessionFinder=container.resolve(AuthSessionFinder);
+    const oAuthConfigurationProvider = container.resolve(OAuthConfigurationProvider);
+    const authSessionFinder = container.resolve(AuthSessionFinder);
 
     const linkedAuthProviders = await databaseClient.authUserLinkedProvider.findMany({
       where: {
-        apolloUserId: sessionInfo.user.id,
+        userId: sessionInfo.user.id,
       },
+      select: {
+        providerId: true,
+        providerUserId: true,
+        providerUserDisplayName: true,
+        linkedAt: true,
+      },
+      orderBy: { providerId: 'asc' },
     });
 
     return {
@@ -672,12 +679,20 @@ const user_settings_security_get = oRpcBuilder
         all: await authSessionFinder.findByUserId(sessionInfo.user.id),
       },
       linkedAuthProviders: linkedAuthProviders.map((linkedProvider) => {
+        const providerInfo: {
+          identifier: string,
+          displayName: string,
+        } = oAuthConfigurationProvider.getProviderInfo(linkedProvider.providerId) ?? {
+          identifiers: linkedProvider.providerId,
+          displayName: linkedProvider.providerId,
+        };
+
         return {
-          type: linkedProvider.provider,
+          ...providerInfo,
           providerUserId: linkedProvider.providerUserId,
           providerUserDisplayName: linkedProvider.providerUserDisplayName,
           linkedAt: linkedProvider.linkedAt,
-        }
+        };
       }),
       allAuthProviderTypes: oAuthConfigurationProvider.getAvailableTypes(),
     };

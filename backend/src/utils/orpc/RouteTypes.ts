@@ -30,7 +30,7 @@ export type BackendConfig = {
   internalBackendBaseUrl: string,
 
   auth: {
-    providers: string[],
+    providers: { identifier: string, displayName: string }[],
   },
 }
 

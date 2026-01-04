@@ -61,7 +61,7 @@ export default abstract class AbstractLoginRouter implements Router {
    * @throws {BadRequestError}
    */
   protected async determineOAuthConfig(providerType: string): Promise<OAuthConfig> {
-    if (!this.oAuthConfigurationProvider.isTypeAvailable(providerType)) {
+    if (!this.oAuthConfigurationProvider.isAvailable(providerType)) {
       throw new BadRequestError(`Requested login with unavailable OAuth provider: ${JSON.stringify(providerType)}`);
     }
 

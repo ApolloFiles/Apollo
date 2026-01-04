@@ -14,7 +14,8 @@
 
   const authProviders = $derived.by(() => {
     const authProviders: ({
-                            type: string,
+                            identifier: string,
+                            displayName: string,
                           } & (
                             { linked: false }
                             | { linked: true, providerUserNameToRender: string }
@@ -31,16 +32,17 @@
       }
 
       authProviders.push({
-        type: linkedAuthProvider.type,
+        identifier: linkedAuthProvider.identifier,
+        displayName: linkedAuthProvider.displayName,
         linked: true,
         providerUserNameToRender,
       });
     }
 
-    for (const providerType of data.allAuthProviderTypes) {
-      if (!authProviders.find(p => p.type === providerType)) {
+    for (const provider of data.allAuthProviderTypes) {
+      if (!authProviders.find(p => p.identifier === provider.identifier)) {
         authProviders.push({
-          type: providerType,
+          ...provider,
           linked: false,
         });
       }
@@ -81,13 +83,13 @@
     <h2>Connected Accounts</h2>
     <div class="settings-card">
       <div class="provider-list">
-        {#each authProviders as authProvider (authProvider.type)}
+        {#each authProviders as authProvider (authProvider.identifier)}
           <div class="provider-item">
-            <AuthProviderIcon identifier={authProvider.type} />
+            <AuthProviderIcon identifier={authProvider.identifier} />
 
             <div class="provider-info">
               <div class="d-flex align-items-center gap-2">
-                <span class="provider-name">{authProvider.type}</span>
+                <span class="provider-name">{authProvider.displayName}</span>
                 {#if authProvider.linked}
                   <span class="badge bg-success-subtle text-success">Connected</span>
                 {/if}
@@ -106,7 +108,7 @@
                 method="POST"
                 enctype="application/x-www-form-urlencoded"
               >
-                <input type="hidden" name="providerType" value={authProvider.type} />
+                <input type="hidden" name="providerType" value={authProvider.identifier} />
                 <button
                   type="submit"
                   class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"

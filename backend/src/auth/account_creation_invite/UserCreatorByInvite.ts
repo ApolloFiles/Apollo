@@ -2,7 +2,6 @@ import { singleton } from 'tsyringe';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import ApolloUser from '../../user/ApolloUser.js';
 import UploadedProfilePicturePreProcessor from '../../user/picture/UploadedProfilePicturePreProcessor.js';
-import type { OAuthType } from '../oauth/OAuthConfigurationProvider.js';
 import SecureTokenHelper from '../SecureTokenHelper.js';
 
 type ProcessedProfilePicture = {
@@ -21,7 +20,7 @@ export default class UserCreatorByInvite {
 
   async createByInviteTokenAndOAuth(
     hashedToken: string,
-    providerType: OAuthType,
+    providerId: string,
     providerUserId: string,
     providerUserDisplayName: string,
     rawProfilePictureBytes: Buffer | null,
@@ -45,10 +44,10 @@ export default class UserCreatorByInvite {
 
           linkedAuthProviders: {
             create: {
-              provider: providerType,
+              providerId,
               providerUserId,
               providerUserDisplayName,
-              providerProfilePicture: profilePicture?.oauth,
+              providerUserProfilePicture: profilePicture?.oauth,
             },
           },
         },

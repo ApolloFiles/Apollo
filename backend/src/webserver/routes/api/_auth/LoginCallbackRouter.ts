@@ -61,27 +61,27 @@ export default class LoginRouter extends AbstractLoginRouter {
       const userInfo = await oAuthConfig.fetchUserInfo(oAuthConfig.openIdConfig, tokenResponse.access_token, tokenResponse.claims()?.sub);
 
       if (loginState.specialAction?.action === 'linkWithExisting') {
-        const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.type, userInfo.id);
+        const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.identifier, userInfo.id);
         if (apolloUser != null) {
           throw new BadRequestError('Cannot link accounts: OAuth provider account is already linked with another account');
         }
 
         await this.oAuthLinkPersister.createLink(
-          oAuthConfig.type,
+          oAuthConfig.identifier,
           request.getAuthenticatedUser().id,
           userInfo.id,
           userInfo.displayName,
           userInfo.profilePictureBytes,
         );
       } else if (loginState.specialAction?.action === 'accountCreationInvite') {
-        const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.type, userInfo.id);
+        const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.identifier, userInfo.id);
         if (apolloUser != null) {
           throw new BadRequestError('Cannot create account: OAuth provider account is already linked with another account');
         }
 
         const createdUser = await this.userCreatorByInvite.createByInviteTokenAndOAuth(
           loginState.specialAction.inviteTokenHash,
-          oAuthConfig.type,
+          oAuthConfig.identifier,
           userInfo.id,
           userInfo.displayName,
           userInfo.profilePictureBytes,
@@ -89,7 +89,7 @@ export default class LoginRouter extends AbstractLoginRouter {
 
         await this.createSession(request, reply, createdUser);
       } else {
-        const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.type, userInfo.id);
+        const apolloUser = await this.userByOAuthProvider.provide(oAuthConfig.identifier, userInfo.id);
         if (apolloUser == null) {
           throw new BadRequestError('Cannot log in: user not found');
         }
@@ -98,7 +98,7 @@ export default class LoginRouter extends AbstractLoginRouter {
         }
 
         await this.oAuthLinkPersister.updateLinkData(
-          oAuthConfig.type,
+          oAuthConfig.identifier,
           apolloUser.id,
           userInfo.displayName,
           userInfo.profilePictureBytes,

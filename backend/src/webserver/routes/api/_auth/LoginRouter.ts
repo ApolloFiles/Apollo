@@ -77,7 +77,7 @@ export default class LoginRouter extends AbstractLoginRouter {
       }
 
       const providerType = request.body.providerType;
-      if (!this.oAuthConfigurationProvider.isTypeAvailable(providerType)) {
+      if (!this.oAuthConfigurationProvider.isAvailable(providerType)) {
         throw new BadRequestError('The specified OAuth provider is not supported');
       }
 
@@ -137,7 +137,7 @@ export default class LoginRouter extends AbstractLoginRouter {
       oAuthConfig.openIdConfig,
       {
         scope: oAuthConfig.scopes.join(' '),
-        redirect_uri: `${this.appConfig.config.baseUrl}/api/_auth/login/${oAuthConfig.type}/callback`,
+        redirect_uri: `${this.appConfig.config.baseUrl}/api/_auth/login/${oAuthConfig.identifier}/callback`,
 
         state,
         // nonce: nonce, // TODO

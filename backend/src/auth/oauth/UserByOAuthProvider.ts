@@ -1,7 +1,6 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import ApolloUser from '../../user/ApolloUser.js';
-import type { OAuthType } from './OAuthConfigurationProvider.js';
 
 @singleton()
 export default class UserByOAuthProvider {
@@ -10,12 +9,12 @@ export default class UserByOAuthProvider {
   ) {
   }
 
-  async provide(type: OAuthType, providerUserId: string): Promise<ApolloUser | null> {
+  async provide(providerId: string, providerUserId: string): Promise<ApolloUser | null> {
     const user = await this.databaseClient.authUser.findFirst({
       where: {
         linkedAuthProviders: {
           some: {
-            provider: type,
+            providerId,
             providerUserId,
           },
         },
