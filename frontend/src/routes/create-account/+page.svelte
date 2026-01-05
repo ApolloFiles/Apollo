@@ -26,7 +26,7 @@
         {#each data.availableLoginProviders as provider}
           <a
             class="btn btn-outline-secondary p-2 text-white"
-            href="/api/_auth/sign-up/{provider}?token={data.inviteToken}"
+            href="/api/_auth/sign-up/{provider.identifier}?token={data.inviteToken}"
           >
             <AuthProviderIcon identifier={provider.identifier} />
             {provider.displayName}

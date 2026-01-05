@@ -241,6 +241,7 @@ const fetchMediaLibraryOverview = oRpcBuilder
       loggedInUser: {
         id: apolloUser.id,
         displayName: apolloUser.displayName,
+        isSuperUser: sessionInfo.user.isSuperUser,
       },
 
       page: {
@@ -399,6 +400,7 @@ const fetchMedia = oRpcBuilder
       loggedInUser: {
         id: apolloUser.id,
         displayName: apolloUser.displayName,
+        isSuperUser: sessionInfo.user.isSuperUser,
       },
 
       page: {
@@ -497,6 +499,7 @@ const user_get = oRpcBuilder
     return {
       id: sessionInfo.user.id,
       displayName: sessionInfo.user.name,
+      isSuperUser: sessionInfo.user.isSuperUser,
     };
   });
 
@@ -598,6 +601,7 @@ const user_settings_security_get = oRpcBuilder
       loggedInUser: {
         id: sessionInfo.user.id,
         displayName: sessionInfo.user.name,
+        isSuperUser: sessionInfo.user.isSuperUser,
       },
 
       sessions: {
@@ -646,6 +650,7 @@ const admin_users_list = oRpcBuilder
       loggedInUser: {
         id: sessionInfo.user.id,
         displayName: sessionInfo.user.name,
+        isSuperUser: sessionInfo.user.isSuperUser,
       },
 
       users: allUsers.map((user) => ({
@@ -706,6 +711,7 @@ const admin_users_get = oRpcBuilder
       loggedInUser: {
         id: sessionInfo.user.id,
         displayName: sessionInfo.user.name,
+        isSuperUser: sessionInfo.user.isSuperUser,
       },
 
       user: {

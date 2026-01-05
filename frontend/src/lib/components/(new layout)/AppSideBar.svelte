@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
+  import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
 
   export type SideBarMenuItems = ({
                                     label: string,
@@ -8,11 +9,7 @@
                                     icon: TablerIconId,
                                   } | 'divider')[];
 
-  const apolloSubApps: {
-    label: string,
-    href: string,
-    icon: TablerIconId,
-  }[] = [
+  const baseApolloSubApps: SideBarMenuItems = [
     {
       label: 'File Browser',
       href: '/browse/',
@@ -29,9 +26,28 @@
 
   let sidebarActive = $state(false);
 
+  const apolloSubApps: SideBarMenuItems = $derived.by(() => {
+    if (!getUserProfile().isSuperUser) {
+      return baseApolloSubApps;
+    }
+
+    return [
+      ...baseApolloSubApps,
+      'divider',
+      {
+        label: 'Admin',
+        href: '/admin/',
+        icon: 'shield-check-filled',
+      },
+    ];
+  });
   const activeSubApp = $derived.by(() => {
-    const path = page.url.pathname;
-    return apolloSubApps.find((app) => path.startsWith(app.href));
+    for (const subApp of apolloSubApps) {
+      if (subApp !== 'divider' && page.url.pathname.startsWith(subApp.href)) {
+        return subApp;
+      }
+    }
+    return null;
   });
   const activeMenuItemHref = $derived.by(() => {
     let longestPartialHrefMatch: string | null = null;
@@ -101,15 +117,21 @@
       aria-labelledby="appDropdown"
     >
       {#each apolloSubApps as subApp}
-        <li>
-          <a href={subApp.href}
-             class="dropdown-item"
-             class:active={activeSubApp != null && subApp.href === activeSubApp.href}
-          >
-            <TablerIcon icon={subApp.icon} class="me-2" />
-            {subApp.label}
-          </a>
-        </li>
+        {#if subApp === 'divider'}
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+        {:else}
+          <li>
+            <a href={subApp.href}
+               class="dropdown-item"
+               class:active={activeSubApp != null && subApp.href === activeSubApp.href}
+            >
+              <TablerIcon icon={subApp.icon} class="me-2" />
+              {subApp.label}
+            </a>
+          </li>
+        {/if}
       {/each}
     </ul>
   </div>

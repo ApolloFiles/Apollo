@@ -1,6 +1,6 @@
 import { getContext, setContext } from 'svelte';
 
-type PageDataFunction = () => { loggedInUser?: { id: string, displayName: string } };
+type PageDataFunction = () => { loggedInUser?: { id: string, displayName: string, isSuperUser: boolean } };
 
 const CONTEXT_KEY = Symbol('user_profile');
 
@@ -16,7 +16,7 @@ export function setUserProfileContext(pageDataFunction: PageDataFunction): UserP
     throw new Error('No logged in user found in page data');
   }
 
-  return setContext(CONTEXT_KEY, new UserProfile(user.id, user.displayName));
+  return setContext(CONTEXT_KEY, new UserProfile(user.id, user.displayName, user.isSuperUser));
 }
 
 export function getUserProfile(): UserProfile {
@@ -31,11 +31,13 @@ export function getUserProfile(): UserProfile {
 class UserProfile {
   public readonly id: string;
   public displayName: string;
+  public isSuperUser: boolean;
   public profilePictureUri = $state('');
 
-  constructor(userId: string, displayName: string) {
+  constructor(userId: string, displayName: string, isSuperUser: boolean) {
     this.id = userId;
     this.displayName = $state(displayName);
+    this.isSuperUser = $state(isSuperUser);
     this.indicateProfilePictureChanged();
   }
 
