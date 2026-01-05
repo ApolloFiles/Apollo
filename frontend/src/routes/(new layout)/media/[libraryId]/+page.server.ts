@@ -6,6 +6,10 @@ import type { RenderingLayoutData } from '../../types';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, cookies, params }) => {
+  if (params.libraryId === 'search') {
+    error(404, 'There is no search yet');
+  }
+
   const libraryOverviewResult = await safe(
     rpcClient
       .media
