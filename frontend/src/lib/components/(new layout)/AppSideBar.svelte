@@ -29,10 +29,38 @@
 
   let sidebarActive = $state(false);
 
-  const currentPath = $derived(page.url.pathname);
   const activeSubApp = $derived.by(() => {
     const path = page.url.pathname;
     return apolloSubApps.find((app) => path.startsWith(app.href));
+  });
+  const activeMenuItemHref = $derived.by(() => {
+    let longestPartialHrefMatch: string | null = null;
+    let longestPartialHrefLength = -1;
+
+    const path = page.url.pathname;
+    for (const item of menuItems) {
+      if (item === 'divider') {
+        continue;
+      }
+
+      if (path === item.href) {
+        return item.href;
+      }
+
+      if (path.startsWith(item.href)) {
+        let hrefLength = item.href.split('/').length;
+        if (item.href.endsWith('/')) {
+          hrefLength -= 1;
+        }
+
+        if (hrefLength > longestPartialHrefLength) {
+          longestPartialHrefMatch = item.href;
+          longestPartialHrefLength = hrefLength;
+        }
+      }
+    }
+
+    return longestPartialHrefMatch;
   });
 
   //noinspection JSUnusedGlobalSymbols
@@ -94,7 +122,7 @@
         <a
           href={menuItem.href}
           class="nav-link"
-          class:active={currentPath === menuItem.href}
+          class:active={menuItem.href === activeMenuItemHref}
         >
           <TablerIcon icon={menuItem.icon} class="me-2" />
           {menuItem.label}
