@@ -15,8 +15,6 @@
       watchProgressPercentage?: number,
     }[],
   } = $props();
-
-
 </script>
 
 {#if continueWatchingItems.length > 0}

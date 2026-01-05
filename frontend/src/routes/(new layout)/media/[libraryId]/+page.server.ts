@@ -1,9 +1,11 @@
+import { buildMediaSideBarMenuItems } from '$lib/components/media/MediaSideBarMenuItemsBuilder';
 import { rpcClient } from '$lib/oRPC';
-import { safe, isDefinedError } from '@orpc/client';
+import { isDefinedError, safe } from '@orpc/client';
 import { error } from '@sveltejs/kit';
+import type { RenderingLayoutData } from '../../types';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, cookies,params }) => {
+export const load: PageServerLoad = async ({ fetch, cookies, params }) => {
   const libraryOverviewResult = await safe(
     rpcClient
       .media
@@ -16,5 +18,14 @@ export const load: PageServerLoad = async ({ fetch, cookies,params }) => {
     throw libraryOverviewResult.error;
   }
 
-  return libraryOverviewResult.data;
+  const pageData = libraryOverviewResult.data;
+  return {
+    ...pageData,
+    rendering: {
+      layout: {
+        sideBarMenuItems: buildMediaSideBarMenuItems(pageData.page.libraries),
+        searchFormAction: '/media/search',
+      },
+    },
+  } satisfies RenderingLayoutData;
 };

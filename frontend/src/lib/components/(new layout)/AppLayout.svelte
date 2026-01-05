@@ -1,40 +1,48 @@
 <script lang="ts">
-  import 'inter-ui/inter.css';
-
   import { page } from '$app/state';
-  import Sidebar from '$lib/components/media/layout/Sidebar.svelte';
-  import TopNavbar from '$lib/components/media/layout/TopNavbar.svelte';
+  import AppSideBar, { type SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
+  import AppTopNav from '$lib/components/(new layout)/AppTopNav.svelte';
+  import { setUserProfileContext } from '$lib/stores/UserProfileStore.svelte';
+  import type { Snippet } from 'svelte';
 
-  const { children } = $props();
+  const {
+    children,
+    sideBarMenuItems,
+    topBarRenderAsOverlay = false,
+    topBarSearchFormAction,
+    mainContentType,
+  }: {
+    children: Snippet,
+    sideBarMenuItems: SideBarMenuItems,
+    topBarRenderAsOverlay?: boolean,
+    topBarSearchFormAction?: string,
+    mainContentType?: 'media-detail',
+  } = $props();
+  setUserProfileContext(() => page.data);
 
-  // TODO: Proper type hint that is also used by the page load functions
-  let libraryData: { id: string, name: string, isOwner: boolean }[] = $derived(page.data.page.libraries);
-  let activeLibraryId: string | null = $derived(page.params.libraryId ?? null);
-
-  let sidebarRef: Sidebar | null = null;
-
-  function toggleSidebar(): void {
-    if (sidebarRef) {
-      sidebarRef.toggleSidebar();
-    }
-  }
+  let appSideBarRef: AppSideBar | null = $state(null);
 </script>
 
-<Sidebar
-  bind:this={sidebarRef}
-  libraries={libraryData}
-  activeLibraryId={activeLibraryId}
+<AppSideBar
+  bind:this={appSideBarRef}
+  menuItems={sideBarMenuItems}
 />
 
-<main class="main-content" class:details-view={page.data.rendering?.mainContentType === 'detail-page'}>
-  <TopNavbar
-    onSidebarToggleClicked={toggleSidebar}
-    renderAsOverlay={page.data.rendering?.topBarOverlay ?? false}
+<main
+  class="main-content"
+  class:media-detail-view={mainContentType === 'media-detail'}
+>
+  <AppTopNav
+    appSideBarRef={appSideBarRef}
+    renderAsOverlay={topBarRenderAsOverlay}
+    searchFormAction={topBarSearchFormAction}
   />
+
   {@render children()}
 </main>
 
 <style>
+  /* FIXME: Get rid of all the :global in here, it messes with pages using another layout */
   :global(:root) {
     /* Core Colors */
     --primary-bg:             #0f1014;
@@ -76,8 +84,10 @@
     color:            var(--text-primary);
     font-family:      'Inter', sans-serif;
     overflow-x:       hidden;
+    margin:           0;
   }
 
+  /* TODO: Remove .icon as soon as TablerIcon-Component is used everywhere */
   :global(.icon) {
     vertical-align: text-top;
   }
@@ -89,7 +99,7 @@
     transition:  margin-left 0.3s ease;
   }
 
-  .main-content.details-view {
+  .main-content.media-detail-view {
     padding:  0;
     position: relative;
   }

@@ -1,6 +1,8 @@
+import { buildMediaSideBarMenuItems } from '$lib/components/media/MediaSideBarMenuItemsBuilder';
 import { rpcClient } from '$lib/oRPC';
-import { safe, isDefinedError } from '@orpc/client';
+import { isDefinedError, safe } from '@orpc/client';
 import { error } from '@sveltejs/kit';
+import type { RenderingLayoutData } from '../../../types';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, cookies, params }) => {
@@ -16,11 +18,16 @@ export const load: PageServerLoad = async ({ fetch, cookies, params }) => {
     throw mediaResult.error;
   }
 
+  const pageData = mediaResult.data;
   return {
-    ...mediaResult.data,
+    ...pageData,
     rendering: {
-      topBarOverlay: true,
-      mainContentType: 'detail-page',
+      layout: {
+        sideBarMenuItems: buildMediaSideBarMenuItems(pageData.page.libraries),
+        searchFormAction: '/media/search',
+        topNavAsOverlay: true,
+        mainContentType: 'media-detail',
+      },
     },
-  };
+  } satisfies RenderingLayoutData;
 };

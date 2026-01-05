@@ -1,32 +1,37 @@
 <script lang="ts">
-  import IconChevronDown from 'virtual:icons/tabler/chevron-down';
-  import IconLogout from 'virtual:icons/tabler/logout';
-  import IconMenu from 'virtual:icons/tabler/menu-2';
+  import AppSideBar from '$lib/components/(new layout)/AppSideBar.svelte';
+  import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
   import IconSearch from 'virtual:icons/tabler/search';
-  import IconUser from 'virtual:icons/tabler/user-filled';
 
-  let { onSidebarToggleClicked, renderAsOverlay }: {
-    onSidebarToggleClicked: () => void,
-    renderAsOverlay: boolean
+  let { appSideBarRef, renderAsOverlay = false, searchFormAction }: {
+    appSideBarRef: AppSideBar,
+    renderAsOverlay?: boolean,
+    searchFormAction?: string,
   } = $props();
+
+  const userProfile = getUserProfile();
 </script>
 
 <header class="top-navbar" class:overlay={renderAsOverlay}>
-  <button class="btn btn-dark d-md-none"
-          aria-label="Toggle sidebar menu"
-          onclick={onSidebarToggleClicked}
-          data-sidebar-toggle>
-    <IconMenu class="icon" role="presentation" />
+  <button
+    class="btn btn-dark d-md-none"
+    aria-label="Toggle sidebar menu"
+    onclick={appSideBarRef.toggleSidebar}
+  >
+    <TablerIcon icon="menu-2" />
   </button>
 
-  <form role="search" action="/media/search" method="GET">
-    <div class="search-bar">
-      <span class="icon icon-search"><IconSearch role="presentation" /></span>
-      <input type="search" name="q" placeholder="Search" />
-    </div>
-  </form>
+  {#if searchFormAction != null}
+    <form role="search" action={searchFormAction} method="GET">
+      <div class="search-bar">
+        <span class="icon-search"><IconSearch role="presentation" /></span>
+        <input type="search" name="q" placeholder="Search" />
+      </div>
+    </form>
+  {/if}
 
-  <div class="user-profile dropdown">
+  <div class="ms-auto user-profile dropdown">
     <button
       class="d-flex align-items-center gap-2 dropdown-toggle no-caret"
       id="profileDropdown"
@@ -35,17 +40,24 @@
       aria-label="User Profile Menu"
       type="button"
     >
-      <img src="/img/neutral-avatar.svg" alt="" class="bg-info" width="512" height="512">
-      <IconChevronDown class="icon text-secondary w-75 h-75" role="presentation" />
+      <img
+        src={userProfile.profilePictureUri}
+        alt=""
+        class="bg-info"
+      />
+      <TablerIcon icon="chevron-down" class="text-secondary w-75 h-75" />
     </button>
-    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" aria-labelledby="profileDropdown">
+    <ul
+      class="dropdown-menu dropdown-menu-end dropdown-menu-dark"
+      aria-labelledby="profileDropdown"
+    >
       <li>
-        <a class="dropdown-item" href="/profile">
-          <IconUser class="icon me-2" role="presentation" />
-          Profile
+        <a class="dropdown-item" href="/settings/profile">
+          <TablerIcon icon="settings" class="me-2" />
+          Settings
         </a>
       </li>
-      <!--      <li><a class="dropdown-item" href="/profile"><i class="fas fa-cog me-2"></i> Settings</a></li>-->
+      <!-- <li><a class="dropdown-item" href="/profile"><i class="fas fa-cog me-2"></i> Settings</a></li> -->
 
       <!--
       <li><hr class="dropdown-divider"></li>
@@ -62,13 +74,14 @@
 
       <li>
         <a class="dropdown-item text-danger" href="/logout">
-          <IconLogout class="icon me-2" role="presentation" />
+          <TablerIcon icon="logout" class="me-2" />
           Logout
         </a>
       </li>
     </ul>
   </div>
 </header>
+
 
 <style>
   /* Navbar */
@@ -140,15 +153,13 @@
     transition:    border-color 0.2s;
   }
 
-  /* Unified Profile Hover */
   .user-profile button {
-    background:      none;
-    border:          none;
-    padding:         0;
-    cursor:          pointer;
-    transition:      opacity 0.2s, color 0.2s;
-    color:           inherit;
-    text-decoration: none;
+    background: none;
+    border:     none;
+    padding:    0;
+    cursor:     pointer;
+    transition: opacity 0.2s, color 0.2s;
+    color:      inherit;
   }
 
   .user-profile button:hover img {
@@ -169,7 +180,9 @@
   }
 
   .dropdown-item {
-    color: var(--text-secondary);
+    color:       var(--text-secondary);
+    display:     flex;
+    align-items: center;
   }
 
   .dropdown-item:hover,
@@ -177,12 +190,4 @@
     background-color: var(--hover-bg);
     color:            var(--text-primary);
   }
-
-  /*
-  .dropdown-item.active,
-  .dropdown-item:active {
-    background-color: var(--accent-color);
-    color:            white;
-  }
-  */
 </style>

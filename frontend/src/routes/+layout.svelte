@@ -1,5 +1,7 @@
 <script lang="ts">
   import 'bootstrap/dist/css/bootstrap.css';
+  import 'inter-ui/inter.css';
+
   import { onMount } from 'svelte';
 
   let { children } = $props();

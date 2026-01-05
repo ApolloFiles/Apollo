@@ -1,10 +1,7 @@
 <script lang="ts">
+  import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
-  import IconCheck from 'virtual:icons/tabler/check';
-  import IconEdit from 'virtual:icons/tabler/edit';
-  import IconLoader2 from 'virtual:icons/tabler/loader-2';
-  import IconTrash from 'virtual:icons/tabler/trash';
 
   const userProfile = getUserProfile();
 
@@ -102,7 +99,7 @@
             disabled={isUploadingAvatar || isDeletingAvatar}
           >
             {#if isUploadingAvatar}
-              <IconLoader2 class="icon spinner" />
+              <TablerIcon icon="loader-2" spin={true} />
               Uploading...
             {:else}
               Upload new image
@@ -114,10 +111,10 @@
             disabled={isUploadingAvatar || isDeletingAvatar}
           >
             {#if isDeletingAvatar}
-              <IconLoader2 class="icon spinner" />
+              <TablerIcon icon="loader-2" spin={true} />
               Deleting...
             {:else}
-              <IconTrash class="icon" />
+              <TablerIcon icon="trash" />
               Delete
             {/if}
           </button>
@@ -161,11 +158,11 @@
             disabled={isSavingDisplayName}
           >
             {#if isSavingDisplayName}
-              <IconLoader2 class="icon spinner" />
+              <TablerIcon icon="loader-2" spin={true} />
             {:else if isEditing}
-              <IconCheck class="icon text-success" />
+              <TablerIcon icon="check" />
             {:else}
-              <IconEdit class="icon" />
+              <TablerIcon icon="edit" />
             {/if}
           </button>
         </div>
@@ -181,19 +178,6 @@
 </div>
 
 <style>
-  :global(.spinner) {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .profile-settings-page {
     max-width:      800px;
     margin:         0 auto;

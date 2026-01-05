@@ -1,10 +1,7 @@
 <script lang="ts">
   import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
+  import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
-  import IconDeviceDesktop from 'virtual:icons/tabler/device-desktop';
-  import IconLink from 'virtual:icons/tabler/link';
-  import IconUnlink from 'virtual:icons/tabler/link-off';
-  import IconTrash from 'virtual:icons/tabler/trash';
   import type { PageProps } from './$types';
 
   // TODO: This page needs CSRF protection
@@ -116,10 +113,10 @@
                   class:btn-outline-primary={!authProvider.linked}
                 >
                   {#if authProvider.linked}
-                    <IconUnlink class="icon" />
+                    <TablerIcon icon="link-off" />
                     Disconnect
                   {:else}
-                    <IconLink class="icon" />
+                    <TablerIcon icon="link" />
                     Connect
                   {/if}
                 </button>
@@ -145,7 +142,7 @@
         {#each data.sessions.all as session}
           <div class="session-item" class:current={session.id === data.sessions.currentId}>
             <div class="session-icon">
-              <IconDeviceDesktop class="icon" />
+              <TablerIcon icon="device-desktop" />
             </div>
             <div class="session-info">
               <div class="d-flex align-items-center gap-2">
@@ -168,7 +165,7 @@
                 onclick={() => revokeSession(session.id)}
                 aria-label="Revoke session"
               >
-                <IconTrash class="icon" />
+                <TablerIcon icon="trash" />
               </button>
             </div>
           </div>
