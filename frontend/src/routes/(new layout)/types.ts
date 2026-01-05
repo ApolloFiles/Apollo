@@ -4,6 +4,7 @@ export type AuthenticatedPageData = {
   loggedInUser: {
     id: string,
     displayName: string,
+    isSuperUser: boolean,
   }
 }
 

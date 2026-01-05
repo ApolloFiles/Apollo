@@ -12,6 +12,8 @@ export type ORPCInitialContext = {
 export const base = os
   .errors({
     UNAUTHORIZED: {},
+    NO_PERMISSIONS: {},
+    INVALID_INPUT: {},
     NOT_AVAILABLE_FOR_LOGGED_IN_USER: {},
     REQUESTED_ENTITY_NOT_FOUND: {},
     UNSUPPORTED_FILE: {},
@@ -41,8 +43,21 @@ export const authenticated = base
           user: {
             id: sessionData.user.id,
             name: sessionData.user.displayName,
+            isSuperUser: sessionData.user.isSuperUser,
           },
         } : null,
       },
     });
+  });
+
+export const authenticatedAdmin = authenticated
+  .use(async ({ context, next, errors }) => {
+    if (context.sessionInfo == null) {
+      throw errors.UNAUTHORIZED();
+    }
+    if (context.sessionInfo.user.isSuperUser !== true) {
+      throw errors.NO_PERMISSIONS();
+    }
+
+    return next();
   });

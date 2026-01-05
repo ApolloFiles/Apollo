@@ -40,6 +40,9 @@ export default class UserProvider {
         isSuperUser: true,
         blocked: true,
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
     const users: ApolloUser[] = [];

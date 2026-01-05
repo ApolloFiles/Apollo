@@ -3,7 +3,7 @@ export default class ApolloUser {
     public readonly id: string,
     public readonly displayName: string,
     public readonly blocked: boolean,
-    private readonly isSuperUser: boolean,
+    public readonly isSuperUser: boolean,
   ) {
   }
 

@@ -2,6 +2,7 @@ import { onError, ORPCError } from '@orpc/server';
 import Fs from 'node:fs';
 import { container } from 'tsyringe';
 import { z } from 'zod';
+import AccountCreationInviteCreator from '../../auth/account_creation_invite/AccountCreationInviteCreator.js';
 import AccountCreationInviteFinder from '../../auth/account_creation_invite/AccountCreationInviteFinder.js';
 import OAuthConfigurationProvider from '../../auth/oauth/OAuthConfigurationProvider.js';
 import AuthSessionFinder from '../../auth/session/AuthSessionFinder.js';
@@ -115,7 +116,7 @@ const listFilesInOwnVirtualFileSystem = oRpcBuilder
   });
 
 const collectAdminDebugInfo = oRpcBuilder
-  .authenticated
+  .authenticatedAdmin
   .use(onError((err) => {
     if (!(err instanceof ORPCError)) {
       console.error(err);
@@ -123,15 +124,8 @@ const collectAdminDebugInfo = oRpcBuilder
   }))
   .handler(async (opts) => {
     const sessionInfo = opts.context.sessionInfo;
-    if (sessionInfo == null || sessionInfo.user == null) {
-      throw opts.errors.UNAUTHORIZED();
-    }
-
-    const apolloUser = await container.resolve(UserProvider).findById(sessionInfo.user.id);
-    if (apolloUser == null) {
-      // TODO: Proper error handling
-      console.debug('Unable to determine ApolloUser for the current session user');
-      throw new Error('Unable to determine ApolloUser for the current session user');
+    if (sessionInfo?.user.isSuperUser !== true) {
+      throw new Error('Expected a SuperUser session on an authenticatedAdmin route');
     }
 
     const childProcess = await new ProcessBuilder('pgrep', ['--parent', process.pid.toString()])
@@ -632,6 +626,202 @@ const user_settings_security_get = oRpcBuilder
     };
   });
 
+const admin_users_list = oRpcBuilder
+  .authenticatedAdmin
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo?.user.isSuperUser !== true) {
+      throw new Error('Expected a SuperUser session on an authenticatedAdmin route');
+    }
+
+    const userProvider = container.resolve(UserProvider);
+    const allUsers = await userProvider.findAll(true);
+
+    return {
+      loggedInUser: {
+        id: sessionInfo.user.id,
+        displayName: sessionInfo.user.name,
+      },
+
+      users: allUsers.map((user) => ({
+          id: user.id,
+          displayName: user.displayName,
+          blocked: user.blocked,
+          isSuperUser: user.isSuperUser,
+        }),
+      ),
+    };
+  });
+
+const admin_users_get = oRpcBuilder
+  .authenticatedAdmin
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ id: z.string() }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo?.user.isSuperUser !== true) {
+      throw new Error('Expected a SuperUser session on an authenticatedAdmin route');
+    }
+
+    const databaseClient = container.resolve(DatabaseClient);
+    const oAuthConfigurationProvider = container.resolve(OAuthConfigurationProvider);
+
+    const requestedUser = await databaseClient.authUser.findUnique({
+      where: { id: opts.input.id },
+      select: {
+        id: true,
+        displayName: true,
+        blocked: true,
+        isSuperUser: true,
+        createdAt: true,
+        lastLoginDate: true,
+        lastActivityDate: true,
+      },
+    });
+    if (requestedUser == null) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    const linkedAuthProviders = await databaseClient.authUserLinkedProvider.findMany({
+      where: { userId: requestedUser.id },
+      select: {
+        providerId: true,
+        providerUserId: true,
+        providerUserDisplayName: true,
+        linkedAt: true,
+      },
+      orderBy: { providerId: 'asc' },
+    });
+
+    return {
+      loggedInUser: {
+        id: sessionInfo.user.id,
+        displayName: sessionInfo.user.name,
+      },
+
+      user: {
+        id: requestedUser.id,
+        displayName: requestedUser.displayName,
+        blocked: requestedUser.blocked,
+        isSuperUser: requestedUser.isSuperUser,
+        createdAt: requestedUser.createdAt,
+        lastLoginDate: requestedUser.lastLoginDate,
+        lastActivityDate: requestedUser.lastActivityDate,
+      },
+      linkedAuthProviders: linkedAuthProviders.map((linkedProvider) => {
+        const providerInfo: {
+          identifier: string,
+          displayName: string,
+        } = oAuthConfigurationProvider.getProviderInfo(linkedProvider.providerId) ?? {
+          identifiers: linkedProvider.providerId,
+          displayName: linkedProvider.providerId,
+        };
+
+        return {
+          ...providerInfo,
+          providerUserId: linkedProvider.providerUserId,
+          providerUserDisplayName: linkedProvider.providerUserDisplayName,
+          linkedAt: linkedProvider.linkedAt,
+        };
+      }),
+    };
+  });
+
+const admin_users_updateBlock = oRpcBuilder
+  .authenticatedAdmin
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ id: z.string(), block: z.boolean() }))
+  .handler(async (opts): Promise<undefined> => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo?.user.isSuperUser !== true) {
+      throw new Error('Expected a SuperUser session on an authenticatedAdmin route');
+    }
+
+    if (opts.input.id === sessionInfo.user.id) {
+      throw opts.errors.INVALID_INPUT({ message: 'You cannot (un-)block yourself' });
+    }
+
+    const databaseClient = container.resolve(DatabaseClient);
+    databaseClient.$transaction(async (transaction) => {
+      await transaction.authUser.update({
+        where: {
+          id: opts.input.id,
+        },
+        data: {
+          blocked: opts.input.block,
+        },
+        select: { id: true },
+      });
+
+      await transaction.authSession.deleteMany({
+        where: { userId: opts.input.id },
+      });
+    });
+
+    return undefined;
+  });
+
+const admin_users_unlinkAuthProvider = oRpcBuilder
+  .authenticatedAdmin
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ id: z.string(), providerId: z.string() }))
+  .handler(async (opts): Promise<undefined> => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo?.user.isSuperUser !== true) {
+      throw new Error('Expected a SuperUser session on an authenticatedAdmin route');
+    }
+
+    const databaseClient = container.resolve(DatabaseClient);
+    await databaseClient.authUserLinkedProvider.delete({
+      where: {
+        userId_providerId: {
+          userId: opts.input.id,
+          providerId: opts.input.providerId,
+        },
+      },
+    });
+
+    return undefined;
+  });
+
+const admin_accountCreationInvitation_create = oRpcBuilder
+  .authenticatedAdmin
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.undefined())
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo?.user.isSuperUser !== true) {
+      throw new Error('Expected a SuperUser session on an authenticatedAdmin route');
+    }
+
+    const accountCreationInviteCreator = container.resolve(AccountCreationInviteCreator);
+
+    return {
+      inviteToken: await accountCreationInviteCreator.create(),
+    };
+  });
+
 export const oRpcRouter = {
   tmpBackend: {
     getConfig: tmpBackendConfig,
@@ -674,7 +864,19 @@ export const oRpcRouter = {
     getMedia: fetchMedia,
   },
 
+  // TODO: Move all admin oRPC routes to their own file and ensure only superusers can access them
   admin: {
+    users: {
+      list: admin_users_list,
+      get: admin_users_get,
+      updateBlock: admin_users_updateBlock,
+      unlinkAuthProvider: admin_users_unlinkAuthProvider,
+    },
+
+    accountCreationInvitation: {
+      create: admin_accountCreationInvitation_create,
+    },
+
     debug: {
       collectDebugInfo: collectAdminDebugInfo,
     },

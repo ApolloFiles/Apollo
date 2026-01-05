@@ -1,7 +1,11 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
+  import IconArrowLeft from 'virtual:icons/tabler/arrow-left';
+  import IconBan from 'virtual:icons/tabler/ban';
+  import IconBug from 'virtual:icons/tabler/bug';
   import IconCheck from 'virtual:icons/tabler/check';
   import IconChevronDown from 'virtual:icons/tabler/chevron-down';
+  import IconChevronRight from 'virtual:icons/tabler/chevron-right';
   import IconCircleCaretRight from 'virtual:icons/tabler/circle-caret-right';
   import IconDeviceDesktop from 'virtual:icons/tabler/device-desktop';
   import IconEdit from 'virtual:icons/tabler/edit';
@@ -10,27 +14,39 @@
   import IconLinkOff from 'virtual:icons/tabler/link-off';
   import IconLoader2 from 'virtual:icons/tabler/loader-2';
   import IconLogout from 'virtual:icons/tabler/logout';
-  import IconMenu from 'virtual:icons/tabler/menu-2';
+  import IconMenu2 from 'virtual:icons/tabler/menu-2';
   import IconSettings from 'virtual:icons/tabler/settings';
+  import IconShieldCheckFilled from 'virtual:icons/tabler/shield-check-filled';
   import IconShieldLock from 'virtual:icons/tabler/shield-lock';
   import IconTrash from 'virtual:icons/tabler/trash';
   import IconUser from 'virtual:icons/tabler/user-filled';
+  import IconUserPlus from 'virtual:icons/tabler/user-plus';
+  import IconUsers from 'virtual:icons/tabler/users';
 
-  export type TablerIconId = 'check'
-                             | 'chevron-down'
-                             | 'circle-caret-right'
-                             | 'device-desktop'
-                             | 'edit'
-                             | 'folder-filled'
-                             | 'link'
-                             | 'link-off'
-                             | 'loader-2'
-                             | 'logout'
-                             | 'menu-2'
-                             | 'settings'
-                             | 'shield-lock'
-                             | 'trash'
-                             | 'user-filled'
+  export type TablerIconId =
+    | 'arrow-left'
+    | 'ban'
+    | 'bug'
+    | 'check'
+    | 'chevron-down'
+    | 'chevron-right'
+    | 'circle-caret-right'
+    | 'device-desktop'
+    | 'edit'
+    | 'folder-filled'
+    | 'link'
+    | 'link-off'
+    | 'loader-2'
+    | 'logout'
+    | 'menu-2'
+    | 'plus'
+    | 'settings'
+    | 'shield-check-filled'
+    | 'shield-lock'
+    | 'trash'
+    | 'user-filled'
+    | 'users'
+    | 'user-plus'
     ;
 
   let props: {
@@ -41,10 +57,18 @@
 
   const IconComponent = $derived.by(() => {
     switch (props.icon) {
+      case 'arrow-left':
+        return IconArrowLeft;
+      case 'ban':
+        return IconBan;
+      case 'bug':
+        return IconBug;
       case 'check':
         return IconCheck;
       case 'chevron-down':
         return IconChevronDown;
+      case 'chevron-right':
+        return IconChevronRight;
       case 'circle-caret-right':
         return IconCircleCaretRight;
       case 'device-desktop':
@@ -62,15 +86,21 @@
       case 'logout':
         return IconLogout;
       case 'menu-2':
-        return IconMenu;
+        return IconMenu2;
       case 'settings':
         return IconSettings;
+      case 'shield-check-filled':
+        return IconShieldCheckFilled;
       case 'shield-lock':
         return IconShieldLock;
       case 'trash':
         return IconTrash;
       case 'user-filled':
         return IconUser;
+      case 'users':
+        return IconUsers;
+      case 'user-plus':
+        return IconUserPlus;
 
       default:
         console.warn(`No icon found for id: ${props.icon}`);
@@ -91,10 +121,7 @@
 </script>
 
 {#if IconComponent}
-  <IconComponent
-    class={iconComponentClasses}
-    role="presentation"
-  />
+  <IconComponent class={iconComponentClasses} role="presentation" />
 {/if}
 
 <!--suppress CssUnusedSymbol -->

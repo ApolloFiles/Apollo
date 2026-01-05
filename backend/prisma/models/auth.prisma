@@ -11,6 +11,7 @@ model AuthUser {
   linkedAuthProviders AuthUserLinkedProvider[]
   sessions            AuthSession[]
 
+  @@index([createdAt])
   @@map("auth_users")
 }
 
