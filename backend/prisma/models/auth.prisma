@@ -26,6 +26,7 @@ model AuthUserLinkedProvider {
 
   @@id([userId, providerId])
   @@unique([providerId, providerUserId])
+  @@index([userId])
   @@map("auth_users_linked_providers")
 }
 
@@ -40,6 +41,8 @@ model AuthSession {
 
   user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([expiresAt])
   @@map("auth_sessions")
 }
 
@@ -49,6 +52,7 @@ model AuthAnonymousSession {
   expiresAt   DateTime @default(dbgenerated("(now() + '00:10:00'::interval)")) @map("expires_at") @db.Timestamptz()
   data        Json     @db.JsonB
 
+  @@index([expiresAt])
   @@map("auth_anonymous_sessions")
 }
 
@@ -58,5 +62,6 @@ model AuthAccountCreationInviteToken {
   expiresAt              DateTime @map("expires_at") @db.Timestamptz
   createSuperUserAccount Boolean  @default(false)
 
+  @@index([expiresAt])
   @@map("auth_account_creation_invite_tokens")
 }
