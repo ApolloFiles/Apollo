@@ -4,6 +4,7 @@ model MediaLibrary {
   name          String   @db.VarChar(256)
   directoryUris String[] @map("directory_uris")
 
+  owner                  AuthUser                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   media                  MediaLibraryMedia[]
   MediaLibrarySharedWith MediaLibrarySharedWith[]
 
@@ -15,6 +16,7 @@ model MediaLibrarySharedWith {
   userId    String @map("user_id")
 
   library MediaLibrary @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  user    AuthUser     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([libraryId, userId])
   @@map("media_libraries_shared_with")
@@ -64,6 +66,7 @@ model MediaLibraryUserWatchProgress {
   durationInSec Int      @map("duration_in_sec")
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
+  user      AuthUser              @relation(fields: [userId], references: [id], onDelete: Cascade)
   mediaItem MediaLibraryMediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
 
   @@id([userId, mediaItemId])

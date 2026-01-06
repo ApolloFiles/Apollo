@@ -8,8 +8,11 @@ model AuthUser {
   lastActivityDate DateTime? @map("last_activity_date") @db.Timestamptz()
   profilePicture   Bytes?    @map("profile_picture")
 
-  linkedAuthProviders AuthUserLinkedProvider[]
-  sessions            AuthSession[]
+  linkedAuthProviders             AuthUserLinkedProvider[]
+  sessions                        AuthSession[]
+  mediaLibraries                  MediaLibrary[]
+  mediaLibrarySharedWiths         MediaLibrarySharedWith[]
+  mediaLibraryUserWatchProgresses MediaLibraryUserWatchProgress[]
 
   @@index([createdAt])
   @@map("auth_users")
