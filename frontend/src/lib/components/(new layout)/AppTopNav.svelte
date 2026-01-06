@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AppSideBar from '$lib/components/(new layout)/AppSideBar.svelte';
+  import type AppSideBar from '$lib/components/(new layout)/AppSideBar.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
   import IconSearch from 'virtual:icons/tabler/search';
@@ -151,6 +151,7 @@
     object-fit:    cover;
     border:        2px solid transparent;
     transition:    border-color 0.2s;
+    aspect-ratio:  1;
   }
 
   .user-profile button {
