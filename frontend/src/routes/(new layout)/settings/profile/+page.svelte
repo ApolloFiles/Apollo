@@ -139,9 +139,9 @@
             <form onsubmit={(event) => {event.preventDefault(); toggleEdit();}} style="display: contents">
               <!-- svelte-ignore a11y_autofocus -->
               <input
-                id="displayName"
                 type="text"
                 bind:value={editDisplayName}
+                maxlength="50"
                 class="form-input"
                 autofocus
                 disabled={isSavingDisplayName}

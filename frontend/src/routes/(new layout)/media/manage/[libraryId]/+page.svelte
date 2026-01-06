@@ -91,6 +91,7 @@
         <input
           type="text"
           bind:value={editValueName}
+          maxlength="256"
           required
           placeholder="e.g. My Movies"
           class="form-control"
@@ -106,6 +107,7 @@
                 <input
                   type="text"
                   bind:value={editValueDirectoryUris[index]}
+                  maxlength="500"
                   required
                   placeholder="Full ApolloURL needed right now (e.g. apollo:///f/{getUserProfile().id}/default/my-media/)"
                   class="form-control"
@@ -158,6 +160,7 @@
           <input
             type="text"
             bind:value={searchQuery}
+            maxlength="75"
             oninput={handleSearchInput}
             placeholder="Search User ID or Name..."
             class="form-control"

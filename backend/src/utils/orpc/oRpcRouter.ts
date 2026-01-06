@@ -599,8 +599,8 @@ const media_management_createLibrary = oRpcBuilder
     }
   }))
   .input(z.object({
-    name: z.string().nonempty().transform(s => s.trim().replaceAll(/\s{2,}/g, ' ')),
-    directoryUris: z.array(z.string().nonempty()),
+    name: z.string().nonempty().max(256).transform(s => s.trim().replaceAll(/\s{2,}/g, ' ')),
+    directoryUris: z.array(z.string().nonempty().max(500)),
     sharedWithUserIds: z.array(z.string().trim().nonempty()),
   }))
   .handler(async (opts) => {
@@ -668,8 +668,8 @@ const media_management_updateLibrary = oRpcBuilder
   }))
   .input(z.object({
     id: z.coerce.bigint(),
-    name: z.string().nonempty().transform(s => s.trim().replaceAll(/\s{2,}/g, ' ')),
-    directoryUris: z.array(z.string().nonempty()),
+    name: z.string().nonempty().max(256).transform(s => s.trim().replaceAll(/\s{2,}/g, ' ')),
+    directoryUris: z.array(z.string().nonempty().max(500)),
     sharedWithUserIds: z.array(z.string().trim().nonempty()),
   }))
   .handler(async (opts): Promise<undefined> => {
@@ -773,7 +773,7 @@ const media_management_search_user_to_share_with = oRpcBuilder
       console.error(err);
     }
   }))
-  .input(z.object({ searchQuery: z.string().trim().nonempty() }))
+  .input(z.object({ searchQuery: z.string().trim().nonempty().max(75) }))
   .handler(async (opts) => {
     const sessionInfo = opts.context.sessionInfo;
     if (sessionInfo == null || sessionInfo.user == null) {
@@ -970,7 +970,7 @@ const user_settings_profile_updateDisplayName = oRpcBuilder
       console.error(err);
     }
   }))
-  .input(z.object({ displayName: z.string().trim().nonempty() }))
+  .input(z.object({ displayName: z.string().trim().nonempty().max(50) }))
   .handler(async (opts): Promise<undefined> => {
     const sessionInfo = opts.context.sessionInfo;
     if (sessionInfo == null || sessionInfo.user == null) {

@@ -1,6 +1,6 @@
 model AuthUser {
   id               String    @id @default(dbgenerated("apollo_nanoid(19)"))
-  displayName      String    @map("display_name")
+  displayName      String    @map("display_name") @db.VarChar(50)
   blocked          Boolean   @default(false) @map("is_blocked")
   isSuperUser      Boolean   @default(false) @map("is_super_user")
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz()
