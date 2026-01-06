@@ -7,5 +7,5 @@ generator client {
 datasource db {
   provider = "postgresql"
 
-  extensions = [pg_trgm]
+  extensions = [pgcrypto]
 }
