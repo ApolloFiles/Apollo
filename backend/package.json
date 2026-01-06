@@ -64,9 +64,9 @@
     "reflect-metadata": "^0.2.2",
     "sharp": "^0.34.5",
     "tsyringe": "^4.10.0",
-    "ws": "^8.18.3",
+    "ws": "^8.19.0",
     "xxhash-addon": "^2.0.3",
-    "zod": "^4.3.4"
+    "zod": "^4.3.5"
   },
   "optionalDependencies": {
     "bufferutil": "^4.1.0"
