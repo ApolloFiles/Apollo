@@ -42,7 +42,7 @@
     "bootstrap": "^5.3.8",
     "hls.js": "^1.6.15",
     "inter-ui": "^4.1.1",
-    "jassub": "^1.8.6",
+    "jassub": "^1.8.8",
     "patch-package": "^8.0.1"
   },
   "devDependencies": {
@@ -50,8 +50,8 @@
     "@orpc/server": "^1.13.2",
     "@sveltejs/adapter-node": "^5.4.0",
     "@sveltejs/enhanced-img": "^0.9.2",
-    "@sveltejs/kit": "^2.49.2",
-    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@sveltejs/kit": "^2.49.3",
+    "@sveltejs/vite-plugin-svelte": "^6.2.2",
     "@types/node": "^24.10.4",
     "svelte": "^5.46.1",
     "svelte-check": "^4.3.5",
