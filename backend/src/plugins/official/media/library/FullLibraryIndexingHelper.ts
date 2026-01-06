@@ -12,6 +12,8 @@ import MediaLibraryScanner from './scanner/MediaLibraryScanner.js';
 
 @singleton()
 export default class FullLibraryIndexingHelper {
+  private readonly activeScansByUserId: string[] = [];
+
   constructor(
     private readonly userProvider: UserProvider,
     private readonly mediaLibraryFinder: MediaLibraryFinder,
@@ -38,34 +40,50 @@ export default class FullLibraryIndexingHelper {
   }
 
   async runForUser(user: ApolloUser): Promise<void> {
-    const libraries = await this.mediaLibraryFinder.findOwnedByUser(user);
+    this.activeScansByUserId.push(user.id);
 
-    for (const library of libraries) {
-      try {
-        await this.mediaLibraryScanner.scan(library);
-        console.debug(`[MediaLibraryIndexer] Scanned for media in {id=${library.id},name=${JSON.stringify(library.name)},owner=${JSON.stringify(user.displayName)}}`);
-      } catch (err) {
-        console.error(err);
-      }
-    }
+    try {
+      const libraries = await this.mediaLibraryFinder.findOwnedByUser(user);
 
-    for (const library of libraries) {
-      try {
-        const totalHydrated = await this.mediaLibraryHydrator.hydrateNeeded(library);
-        console.debug(`[MediaLibraryIndexer] Hydrated ${totalHydrated} media in {id=${library.id},name=${JSON.stringify(library.name)},owner=${JSON.stringify(user.displayName)}}`);
-      } catch (err) {
-        console.error(err);
+      for (const library of libraries) {
+        try {
+          await this.mediaLibraryScanner.scan(library);
+          console.debug(`[MediaLibraryIndexer] Scanned for media in {id=${library.id},name=${JSON.stringify(library.name)},owner=${JSON.stringify(user.displayName)}}`);
+        } catch (err) {
+          console.error(err);
+        }
       }
-    }
 
-    for (const library of libraries) {
-      try {
-        await this.preGenerateImagesForLibrary(library);
-        console.debug(`[MediaLibraryIndexer] Pre-generated important images for {id=${library.id},name=${JSON.stringify(library.name)},owner=${JSON.stringify(user.displayName)}}`);
-      } catch (err) {
-        console.error(err);
+      for (const library of libraries) {
+        try {
+          const totalHydrated = await this.mediaLibraryHydrator.hydrateNeeded(library);
+          console.debug(`[MediaLibraryIndexer] Hydrated ${totalHydrated} media in {id=${library.id},name=${JSON.stringify(library.name)},owner=${JSON.stringify(user.displayName)}}`);
+        } catch (err) {
+          console.error(err);
+        }
       }
+
+      for (const library of libraries) {
+        try {
+          await this.preGenerateImagesForLibrary(library);
+          console.debug(`[MediaLibraryIndexer] Pre-generated important images for {id=${library.id},name=${JSON.stringify(library.name)},owner=${JSON.stringify(user.displayName)}}`);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    } finally {
+      const indexOfUserId = this.activeScansByUserId.indexOf(user.id);
+      if (indexOfUserId === -1) {
+        //noinspection ThrowInsideFinallyBlockJS
+        throw new Error('Inconsistent state: user id not found in active scans list');
+      }
+
+      this.activeScansByUserId.splice(indexOfUserId, 1);
     }
+  }
+
+  isIndexingRunningForUser(user: ApolloUser): boolean {
+    return this.activeScansByUserId.includes(user.id);
   }
 
   private async preGenerateImagesForLibrary(library: MediaLibrary): Promise<void> {

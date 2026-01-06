@@ -16,6 +16,7 @@
   import IconLogout from 'virtual:icons/tabler/logout';
   import IconMenu2 from 'virtual:icons/tabler/menu-2';
   import IconPlus from 'virtual:icons/tabler/plus';
+  import IconRefresh from 'virtual:icons/tabler/refresh';
   import IconSettings from 'virtual:icons/tabler/settings';
   import IconShieldCheckFilled from 'virtual:icons/tabler/shield-check-filled';
   import IconShieldLock from 'virtual:icons/tabler/shield-lock';
@@ -41,6 +42,7 @@
     | 'logout'
     | 'menu-2'
     | 'plus'
+    | 'refresh'
     | 'settings'
     | 'shield-check-filled'
     | 'shield-lock'
@@ -90,6 +92,8 @@
         return IconMenu2;
       case 'plus':
         return IconPlus;
+      case 'refresh':
+        return IconRefresh;
       case 'settings':
         return IconSettings;
       case 'shield-check-filled':

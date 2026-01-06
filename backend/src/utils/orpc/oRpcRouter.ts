@@ -17,6 +17,7 @@ import ProcessBuilder from '../../plugins/official/media/_old/ProcessBuilder.js'
 import MediaLibraryFinder from '../../plugins/official/media/library/database/finder/MediaLibraryFinder.js';
 import MediaLibraryMediaFinder from '../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
 import MediaLibraryWriter from '../../plugins/official/media/library/database/writer/MediaLibraryWriter.js';
+import FullLibraryIndexingHelper from '../../plugins/official/media/library/FullLibraryIndexingHelper.js';
 import MediaClearLogoImageProvider from '../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
 import ApolloFileURI from '../../uri/ApolloFileURI.js';
 import UploadedProfilePicturePreProcessor from '../../user/picture/UploadedProfilePicturePreProcessor.js';
@@ -831,6 +832,58 @@ const media_management_search_user_to_share_with = oRpcBuilder
     );
   });
 
+const media_management_debug_status_reindex = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts): Promise<boolean> => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const fullLibraryIndexingHelper = container.resolve(FullLibraryIndexingHelper);
+    const userProvider = container.resolve(UserProvider);
+
+    const apolloUser = await userProvider.findById(sessionInfo.user.id);
+    if (apolloUser == null) {
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    return fullLibraryIndexingHelper.isIndexingRunningForUser(apolloUser);
+  });
+
+const media_management_debug_start_full_reindex = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const fullLibraryIndexingHelper = container.resolve(FullLibraryIndexingHelper);
+    const userProvider = container.resolve(UserProvider);
+
+    const apolloUser = await userProvider.findById(sessionInfo.user.id);
+    if (apolloUser == null) {
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    if (fullLibraryIndexingHelper.isIndexingRunningForUser(apolloUser)) {
+      throw opts.errors.INVALID_INPUT({ message: 'A full re-index is already running for this user' });
+    }
+
+    fullLibraryIndexingHelper.runForUser(apolloUser).catch(console.error);
+  });
+
 const user_settings_security_revokeSingleSession = oRpcBuilder
   .authenticated
   .input(z.object({ sessionId: z.coerce.bigint() }))
@@ -1286,6 +1339,11 @@ export const oRpcRouter = {
       unshareMyselfFromOther: media_management_unshare_myself_from_other,
 
       searchUserToShareWith: media_management_search_user_to_share_with,
+
+      debug: {
+        fullReIndexStatus: media_management_debug_status_reindex,
+        startFullReIndex: media_management_debug_start_full_reindex,
+      },
     },
   },
 

@@ -37,11 +37,36 @@
 
     await refreshAll();
   }
+
+  async function debugStartFullReIndex(): Promise<void> {
+    if (!confirm('Are you sure you want to start a full re-index of all your media libraries? This may take a while.')) {
+      return;
+    }
+
+    try {
+      await getClientSideRpcClient().media.management.debug.startFullReIndex();
+      await refreshAll();
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to start re-indexing: ${(err as any).message}`);
+    }
+  }
 </script>
 
 <div class="page-container">
   <header>
-    <h1>Manage Media Libraries</h1>
+    <div class="header-top">
+      <h1>Manage Media Libraries</h1>
+      <button
+        class="debug-btn"
+        onclick={debugStartFullReIndex}
+        disabled={data.debugReIndexStatus}
+        title={data.debugReIndexStatus ? "Indexing in progress. Please reload page later to check status." : "Start a full re-index of all libraries"}
+      >
+        <TablerIcon icon="refresh" />
+        [DEBUG] re-index library contents
+      </button>
+    </div>
   </header>
 
   <main>
@@ -111,6 +136,40 @@
     font-size:   2rem;
     font-weight: 700;
     margin:      0;
+  }
+
+  .header-top {
+    display:         flex;
+    justify-content: space-between;
+    align-items:     center;
+    gap:             1rem;
+    flex-wrap:       wrap;
+  }
+
+  .debug-btn {
+    background:    rgba(255, 165, 0, 0.1) !important;
+    border:        1px solid rgba(255, 165, 0, 0.3) !important;
+    color:         orange !important;
+    font-size:     0.65rem !important;
+    padding:       2px 8px !important;
+    border-radius: 4px;
+    display:       flex;
+    align-items:   center;
+    gap:           4px;
+    font-family:   monospace;
+    cursor:        pointer;
+    transition:    all 0.2s;
+  }
+
+  .debug-btn:hover:not(:disabled) {
+    background:   rgba(255, 165, 0, 0.2) !important;
+    border-color: orange !important;
+  }
+
+  .debug-btn:disabled {
+    opacity: 0.5;
+    cursor:  not-allowed;
+    filter:  grayscale(1);
   }
 
   /* List View */

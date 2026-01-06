@@ -9,12 +9,20 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
     .management
     .list(undefined, { context: { cookies, fetch } });
 
+  const debugReIndexStatus = await rpcClient
+    .media
+    .management
+    .debug
+    .fullReIndexStatus(undefined, { context: { cookies, fetch } });
+
   return {
     ...pageData,
+    debugReIndexStatus,
+
     rendering: {
       layout: {
         sideBarMenuItems: buildMediaSideBarMenuItems(pageData.libraries),
       },
     },
-  } satisfies RenderingLayoutData;
+  } satisfies { [key: string]: unknown } & RenderingLayoutData;
 };
