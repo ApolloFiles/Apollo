@@ -10,10 +10,49 @@ export default class MediaLibraryFinder {
   ) {
   }
 
+  async findById(id: bigint): Promise<MediaLibrary | null> {
+    const fetchedLibrary = await this.databaseClient.mediaLibrary.findUnique({
+      where: { id },
+
+      select: {
+        id: true,
+        ownerId: true,
+        name: true,
+        directoryUris: true,
+      },
+    });
+
+    if (fetchedLibrary == null) {
+      return null;
+    }
+    return MediaLibrary.fromData(fetchedLibrary);
+  }
+
   async findOwnedByUser(apolloUser: ApolloUser): Promise<MediaLibrary[]> {
     const fetchedLibraries = await this.databaseClient.mediaLibrary.findMany({
+      where: { ownerId: apolloUser.id },
+
+      select: {
+        id: true,
+        ownerId: true,
+        name: true,
+        directoryUris: true,
+      },
+
+      orderBy: { name: 'asc' },
+    });
+
+    return fetchedLibraries.map((data) => MediaLibrary.fromData(data));
+  }
+
+  async findSharedWithUser(apolloUser: ApolloUser): Promise<MediaLibrary[]> {
+    const fetchedLibraries = await this.databaseClient.mediaLibrary.findMany({
       where: {
-        ownerId: apolloUser.id,
+        MediaLibrarySharedWith: {
+          some: {
+            userId: apolloUser.id,
+          },
+        },
       },
 
       select: {
@@ -22,6 +61,8 @@ export default class MediaLibraryFinder {
         name: true,
         directoryUris: true,
       },
+
+      orderBy: { name: 'asc' },
     });
 
     return fetchedLibraries.map((data) => MediaLibrary.fromData(data));

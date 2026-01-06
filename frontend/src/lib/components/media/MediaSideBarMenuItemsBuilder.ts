@@ -6,15 +6,23 @@ type Library = {
   isOwner: boolean,
 };
 
-export function buildMediaSideBarMenuItems(libraries: Library[]): SideBarMenuItems {
+// TODO: Drop support for array of Library once all usages are migrated
+export function buildMediaSideBarMenuItems(libraries: (Library[] | {
+  owned: { id: string, name: string, directoryUris: string[] }[],
+  sharedWith: { id: string, name: string }[]
+})): SideBarMenuItems {
   const sideBarMenuItems: SideBarMenuItems = [
     { label: 'Overview', href: '/media/', icon: 'device-desktop' },
   ];
 
-  const ownedLibraries = libraries.filter(l => l.isOwner);
-  const sharedLibraries = libraries.filter(l => !l.isOwner);
+  if (Array.isArray(libraries)) {
+    libraries = {
+      owned: libraries.filter(l => l.isOwner).map(l => ({ id: l.id, name: l.name, directoryUris: [] as string[] })),
+      sharedWith: libraries.filter(l => !l.isOwner).map(l => ({ id: l.id, name: l.name })),
+    };
+  }
 
-  for (const library of ownedLibraries) {
+  for (const library of libraries.owned) {
     sideBarMenuItems.push({
       label: library.name,
       href: `/media/${library.id}`,
@@ -22,11 +30,11 @@ export function buildMediaSideBarMenuItems(libraries: Library[]): SideBarMenuIte
     });
   }
 
-  if (ownedLibraries.length > 0 && sharedLibraries.length > 0) {
+  if (libraries.owned.length > 0 && libraries.sharedWith.length > 0) {
     sideBarMenuItems.push('divider');
   }
 
-  for (const library of sharedLibraries) {
+  for (const library of libraries.sharedWith) {
     sideBarMenuItems.push({
       label: library.name,
       href: `/media/${library.id}`,

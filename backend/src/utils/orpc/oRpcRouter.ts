@@ -10,11 +10,15 @@ import AuthSessionRevoker from '../../auth/session/AuthSessionRevoker.js';
 import AppConfiguration from '../../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../../constants.js';
 import DatabaseClient from '../../database/DatabaseClient.js';
+import FileProvider from '../../files/FileProvider.js';
 import FileSystemProvider from '../../files/FileSystemProvider.js';
 import LibraryManager from '../../plugins/official/media/_old/libraries/LibraryManager.js';
 import ProcessBuilder from '../../plugins/official/media/_old/ProcessBuilder.js';
+import MediaLibraryFinder from '../../plugins/official/media/library/database/finder/MediaLibraryFinder.js';
 import MediaLibraryMediaFinder from '../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
+import MediaLibraryWriter from '../../plugins/official/media/library/database/writer/MediaLibraryWriter.js';
 import MediaClearLogoImageProvider from '../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
+import ApolloFileURI from '../../uri/ApolloFileURI.js';
 import UploadedProfilePicturePreProcessor from '../../user/picture/UploadedProfilePicturePreProcessor.js';
 import UserProvider from '../../user/UserProvider.js';
 import * as oRpcBuilder from './oRpcRouteBuilder.js';
@@ -422,6 +426,409 @@ const fetchMedia = oRpcBuilder
         } satisfies MediaDetail,
       },
     };
+  });
+
+const media_management_get = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ libraryId: z.coerce.bigint() }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const databaseClient = container.resolve(DatabaseClient);
+    const mediaLibraryFinder = container.resolve(MediaLibraryFinder);
+    const userProvider = container.resolve(UserProvider);
+
+    const mediaLibrary = await databaseClient.mediaLibrary.findUnique({
+      where: { id: opts.input.libraryId },
+
+      select: {
+        id: true,
+        ownerId: true,
+        name: true,
+        directoryUris: true,
+
+        MediaLibrarySharedWith: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                displayName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (mediaLibrary == null || mediaLibrary.ownerId !== sessionInfo.user.id) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    const apolloUser = await userProvider.findById(sessionInfo.user.id);
+    if (apolloUser == null) {
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+    const [ownedLibraries, sharedLibraries] = await Promise.all([
+      mediaLibraryFinder.findOwnedByUser(apolloUser),
+      mediaLibraryFinder.findSharedWithUser(apolloUser),
+    ]);
+
+    return {
+      loggedInUser: {
+        id: sessionInfo.user.id,
+        displayName: sessionInfo.user.name,
+        isSuperUser: sessionInfo.user.isSuperUser,
+      },
+
+      library: {
+        id: mediaLibrary.id.toString(),
+        name: mediaLibrary.name,
+        directoryUris: mediaLibrary.directoryUris,
+        sharedWith: mediaLibrary.MediaLibrarySharedWith.map(user => ({
+          id: user.user.id,
+          displayName: user.user.displayName,
+        })),
+      },
+      libraries: {
+        owned: ownedLibraries.map(lib => ({
+          id: lib.id.toString(),
+          name: lib.name,
+          directoryUris: lib.directoryUris,
+        })),
+        sharedWith: sharedLibraries.map(lib => ({
+          id: lib.id.toString(),
+          name: lib.name,
+        })),
+      },
+    };
+  });
+
+const media_management_list = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const mediaLibraryFinder = container.resolve(MediaLibraryFinder);
+    const userProvider = container.resolve(UserProvider);
+
+    const apolloUser = await userProvider.findById(sessionInfo.user.id);
+    if (apolloUser == null) {
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    const [ownedLibraries, sharedLibraries] = await Promise.all([
+      mediaLibraryFinder.findOwnedByUser(apolloUser),
+      mediaLibraryFinder.findSharedWithUser(apolloUser),
+    ]);
+
+    return {
+      loggedInUser: {
+        id: sessionInfo.user.id,
+        displayName: sessionInfo.user.name,
+        isSuperUser: sessionInfo.user.isSuperUser,
+      },
+
+      libraries: {
+        owned: ownedLibraries.map(lib => ({
+          id: lib.id.toString(),
+          name: lib.name,
+          directoryUris: lib.directoryUris,
+        })),
+        sharedWith: sharedLibraries.map(lib => ({
+          id: lib.id.toString(),
+          name: lib.name,
+        })),
+      },
+    };
+  });
+
+const media_management_delete = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ libraryId: z.coerce.bigint() }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const mediaLibraryFinder = container.resolve(MediaLibraryFinder);
+    const databaseClient = container.resolve(DatabaseClient);
+
+    const mediaLibrary = await mediaLibraryFinder.findById(opts.input.libraryId);
+    if (mediaLibrary == null || mediaLibrary.ownerId !== sessionInfo.user.id) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    await databaseClient.mediaLibrary.delete({
+      where: {
+        id: opts.input.libraryId,
+        ownerId: sessionInfo.user.id,
+      },
+    });
+
+    return undefined;
+  });
+
+const media_management_createLibrary = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({
+    name: z.string().nonempty().transform(s => s.trim().replaceAll(/\s{2,}/g, ' ')),
+    directoryUris: z.array(z.string().nonempty()),
+    sharedWithUserIds: z.array(z.string().trim().nonempty()),
+  }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    if (opts.input.sharedWithUserIds.includes(sessionInfo.user.id)) {
+      throw opts.errors.INVALID_INPUT({ message: 'Cannot share a media library with yourself' });
+    }
+
+    const userProvider = container.resolve(UserProvider);
+    const fileProvider = container.resolve(FileProvider);
+    const mediaLibraryWriter = container.resolve(MediaLibraryWriter);
+
+    const apolloUser = await userProvider.findById(sessionInfo.user.id);
+    if (apolloUser == null) {
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    const directoryUris: ApolloFileURI[] = [];
+    for (const rawDirectoryUri of opts.input.directoryUris) {
+      let fileURI;
+      try {
+        fileURI = ApolloFileURI.parse(rawDirectoryUri);
+        await fileProvider.provideForUserByUri(apolloUser, fileURI);
+      } catch (err) {
+        // TODO: Don't hardcode error message
+        if (err instanceof Error &&
+          (
+            [
+              'User does not have access to the requested file, or it does not exist',
+              'The provided URL is not a ApolloFileUrl (does not start with /f/)',
+              'The provided URL is not a ApolloFileUrl (missing userId and/or fileSystemId)',
+            ].includes(err.message)
+            || err.message.startsWith('Path segments cannot be empty: [')
+          )
+        ) {
+          throw opts.errors.INVALID_INPUT({ message: `The provided directory URI is invalid or does not exist: ${rawDirectoryUri}` });
+        }
+
+        throw err;
+      }
+
+      directoryUris.push(fileURI);
+    }
+
+    return await mediaLibraryWriter.create(
+      sessionInfo.user.id,
+      opts.input.name,
+      {
+        directoryUris: directoryUris,
+        sharedWithUserIds: opts.input.sharedWithUserIds,
+      },
+    );
+  });
+
+const media_management_updateLibrary = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({
+    id: z.coerce.bigint(),
+    name: z.string().nonempty().transform(s => s.trim().replaceAll(/\s{2,}/g, ' ')),
+    directoryUris: z.array(z.string().nonempty()),
+    sharedWithUserIds: z.array(z.string().trim().nonempty()),
+  }))
+  .handler(async (opts): Promise<undefined> => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    if (opts.input.sharedWithUserIds.includes(sessionInfo.user.id)) {
+      throw opts.errors.INVALID_INPUT({ message: 'Cannot share a media library with yourself' });
+    }
+
+    const userProvider = container.resolve(UserProvider);
+    const fileProvider = container.resolve(FileProvider);
+    const mediaLibraryFinder = container.resolve(MediaLibraryFinder);
+    const mediaLibraryWriter = container.resolve(MediaLibraryWriter);
+
+    const mediaLibrary = await mediaLibraryFinder.findById(opts.input.id);
+    if (mediaLibrary == null || mediaLibrary.ownerId !== sessionInfo.user.id) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    const apolloUser = await userProvider.findById(sessionInfo.user.id);
+    if (apolloUser == null) {
+      throw new Error('Unable to determine ApolloUser for the current session user');
+    }
+
+    const directoryUris: ApolloFileURI[] = [];
+    for (const rawDirectoryUri of opts.input.directoryUris) {
+      let fileURI;
+      try {
+        fileURI = ApolloFileURI.parse(rawDirectoryUri);
+        await fileProvider.provideForUserByUri(apolloUser, fileURI);
+      } catch (err) {
+        // TODO: Don't hardcode error message
+        if (err instanceof Error &&
+          (
+            [
+              'User does not have access to the requested file, or it does not exist',
+              'The provided URL is not a ApolloFileUrl (does not start with /f/)',
+              'The provided URL is not a ApolloFileUrl (missing userId and/or fileSystemId)',
+            ].includes(err.message)
+            || err.message.startsWith('Path segments cannot be empty: [')
+          )
+        ) {
+          throw opts.errors.INVALID_INPUT({ message: `The provided directory URI is invalid or does not exist: ${rawDirectoryUri}` });
+        }
+
+        throw err;
+      }
+
+      directoryUris.push(fileURI);
+    }
+
+    await mediaLibraryWriter.update(
+      mediaLibrary.id,
+      {
+        name: opts.input.name,
+        directoryUris,
+        sharedWithUserIds: opts.input.sharedWithUserIds,
+      },
+    );
+
+    return undefined;
+  });
+
+const media_management_unshare_myself_from_other = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ libraryId: z.coerce.bigint() }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const databaseClient = container.resolve(DatabaseClient);
+
+    const deleteResult = await databaseClient.mediaLibrarySharedWith.deleteMany({
+      where: {
+        libraryId: opts.input.libraryId,
+        userId: sessionInfo.user.id,
+      },
+    });
+
+    if (deleteResult.count === 0) {
+      throw opts.errors.REQUESTED_ENTITY_NOT_FOUND();
+    }
+
+    return undefined;
+  });
+
+const media_management_search_user_to_share_with = oRpcBuilder
+  .authenticated
+  .use(onError((err) => {
+    if (!(err instanceof ORPCError)) {
+      console.error(err);
+    }
+  }))
+  .input(z.object({ searchQuery: z.string().trim().nonempty() }))
+  .handler(async (opts) => {
+    const sessionInfo = opts.context.sessionInfo;
+    if (sessionInfo == null || sessionInfo.user == null) {
+      throw opts.errors.UNAUTHORIZED();
+    }
+
+    const databaseClient = container.resolve(DatabaseClient);
+
+    const exactIdMatch = await databaseClient.authUser.findUnique({
+      where: { id: opts.input.searchQuery },
+
+      select: {
+        id: true,
+        displayName: true,
+      },
+    });
+
+    const nameMatches = await databaseClient.authUser.findMany({
+      where: {
+        AND: [
+          {
+            displayName: {
+              contains: opts.input.searchQuery,
+              mode: 'insensitive',
+            },
+          },
+          {
+            mediaLibrarySharedWiths: {
+              some: {
+                library: {
+                  ownerId: sessionInfo.user.id,
+                },
+              },
+            },
+          },
+        ],
+      },
+
+      select: {
+        id: true,
+        displayName: true,
+      },
+
+      take: 20,
+    });
+
+    const allMatches = [
+      ...(exactIdMatch != null ? [exactIdMatch] : []),
+      ...nameMatches,
+    ]
+      .filter((user) => user.id !== sessionInfo.user.id);
+
+    // Deduplicate by ID
+    return Array.from(
+      new Map(allMatches.map((user) => [user.id, user])).values(),
+    );
   });
 
 const user_settings_security_revokeSingleSession = oRpcBuilder
@@ -868,6 +1275,18 @@ export const oRpcRouter = {
   media: {
     getMediaLibraryOverview: fetchMediaLibraryOverview,
     getMedia: fetchMedia,
+
+    management: {
+      get: media_management_get,
+      list: media_management_list,
+
+      delete: media_management_delete,
+      createLibrary: media_management_createLibrary,
+      updateLibrary: media_management_updateLibrary,
+      unshareMyselfFromOther: media_management_unshare_myself_from_other,
+
+      searchUserToShareWith: media_management_search_user_to_share_with,
+    },
   },
 
   // TODO: Move all admin oRPC routes to their own file and ensure only superusers can access them

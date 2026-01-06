@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
+  import { getAppSideBarExtras } from '$lib/stores/AppSideBarExtrasStore.svelte';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
 
   export type SideBarMenuItems = ({
@@ -23,9 +24,11 @@
   ];
 
   let { menuItems }: { menuItems: SideBarMenuItems } = $props();
+  const appSideBarExtras = getAppSideBarExtras();
 
   let sidebarActive = $state(false);
 
+  const bottomButton = $derived(appSideBarExtras.bottomButton);
   const apolloSubApps: SideBarMenuItems = $derived.by(() => {
     if (!getUserProfile().isSuperUser) {
       return baseApolloSubApps;
@@ -54,7 +57,9 @@
     let longestPartialHrefLength = -1;
 
     const path = page.url.pathname;
-    for (const item of menuItems) {
+
+    const itemsToCheck = bottomButton ? [...menuItems, bottomButton] : menuItems;
+    for (const item of itemsToCheck) {
       if (item === 'divider') {
         continue;
       }
@@ -136,7 +141,7 @@
     </ul>
   </div>
 
-  <div class="nav flex-column">
+  <div class="nav flex-column sidebar-nav">
     {#each menuItems as menuItem}
       {#if menuItem === 'divider'}
         <hr class="border-secondary my-3">
@@ -152,8 +157,18 @@
       {/if}
     {/each}
   </div>
-</nav>
 
+  {#if bottomButton}
+    <a
+      href={bottomButton.href}
+      class="nav-link"
+      class:active={bottomButton.href === activeMenuItemHref}
+    >
+      <TablerIcon icon={bottomButton.icon} class="me-2" />
+      {bottomButton.label}
+    </a>
+  {/if}
+</nav>
 
 <style>
   /* Sidebar */
@@ -168,6 +183,8 @@
     z-index:          1000;
     transition:       transform 0.3s ease;
     border-right:     1px solid var(--border-color);
+    display:          flex;
+    flex-direction:   column;
   }
 
   .sidebar-brand button {
@@ -228,6 +245,10 @@
   .dropdown-item.active {
     background-color: var(--accent-color);
     color:            white;
+  }
+
+  .sidebar-nav {
+    flex: 1 1 auto;
   }
 
   @media (max-width: 768px) {
