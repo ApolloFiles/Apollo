@@ -1,7 +1,9 @@
 <script lang="ts">
-  export let remoteBufferedPercentage: number;
-  export let localBufferedPercentage: number;
-  export let displayedPercentage: number;
+  let { remoteBufferedPercentage, localBufferedPercentage, displayedPercentage }: {
+    remoteBufferedPercentage: number,
+    localBufferedPercentage: number,
+    displayedPercentage: number,
+  } = $props();
 </script>
 
 <div class="progress-bar total"></div>
