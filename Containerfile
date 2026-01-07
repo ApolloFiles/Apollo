@@ -1,6 +1,12 @@
-FROM docker.io/node:24-alpine AS builder
+FROM docker.io/node:24 AS builder
 
 LABEL org.opencontainers.image.source="https://github.com/ApolloFiles/Apollo"
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
+      build-essential && \
+    apt-get autoclean
 
 RUN mkdir /app/ && chown node:node /app/
 USER node
@@ -63,6 +69,7 @@ RUN apt-get update && \
     apt-get purge -y --auto-remove curl && \
     apt-get update && \
     apt-get -y install nodejs && \
+    apt-get -y install build-essential && \
     npm i -g npm --update-notifier false && \
     npm cache clean --force && \
     apt-get autoclean
@@ -81,9 +88,15 @@ COPY --chown=node:node ./backend/package.json ./backend/package-lock.json ./back
 COPY --chown=node:node ./backend/prisma/ ./backend/prisma/
 COPY --from=builder --chown=node:node /app/backend/dist/ ./backend/dist/
 
+# build-essential is needed to install xxhash dependency (TODO: check if this can be avoided)
 RUN cd backend/ && \
     npm clean-install --omit dev && \
     npm cache clean --force
+
+USER root
+RUN apt-get purge -y --auto-remove build-essential && \
+    apt-get autoclean
+USER node
 
 ## Frontend
 COPY --chown=node:node ./frontend/package.json ./frontend/package-lock.json ./frontend/
