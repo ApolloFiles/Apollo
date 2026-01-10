@@ -1,7 +1,7 @@
 <script lang="ts">
   import IconChevronRight from 'virtual:icons/tabler/chevron-right';
 
-  let { title, viewAllLink, items }: {
+  let { title, viewAllLink, items, loadAllImagesLazy = true }: {
     title: string,
     viewAllLink?: string,
     items: {
@@ -10,6 +10,7 @@
       mediaId: string,
       watchProgressPercentage?: number,
     }[],
+    loadAllImagesLazy?: boolean,
   } = $props();
 </script>
 
@@ -24,11 +25,11 @@
   </div>
 
   <div class="media-scroller">
-    {#each items as item}
+    {#each items as item, index}
       <a href="/media/{item.libraryId}/{item.mediaId}" class="media-card">
         <picture>
           <source srcset="/api/_frontend/media-new/{item.mediaId}/poster.avif" type="image/avif" />
-          <img src="/api/_frontend/media-new/{item.mediaId}/poster.jpeg" alt="" />
+          <img src="/api/_frontend/media-new/{item.mediaId}/poster.jpeg" alt="" loading={loadAllImagesLazy || index > 1 ? 'lazy' : 'eager'} />
         </picture>
 
         {#if item.watchProgressPercentage != null}

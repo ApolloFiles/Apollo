@@ -18,14 +18,20 @@
 </script>
 
 {#if continueWatchingItems.length > 0}
-  <MediaOverviewSection title="Continue Watching"
-                        items={continueWatchingItems} />
+  <MediaOverviewSection
+    title="Continue Watching"
+    items={continueWatchingItems}
+    loadAllImagesLazy={false}
+  />
 {/if}
 
 {#if recentlyAdded.length > 0}
-<MediaOverviewSection title="Recently Added"
-                      viewAllLink=""
-                      items={recentlyAdded} />
+  <MediaOverviewSection
+    title="Recently Added"
+    viewAllLink=""
+    items={recentlyAdded}
+    loadAllImagesLazy={false}
+  />
 {/if}
 
 {#if continueWatchingItems.length === 0 && recentlyAdded.length === 0}
