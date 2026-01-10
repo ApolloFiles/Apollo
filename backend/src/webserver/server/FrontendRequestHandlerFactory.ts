@@ -22,6 +22,8 @@ export default class FrontendRequestHandlerFactory {
         return;
       }
 
+      this.setCacheHeadersForStaticAssets(req, res);
+
       (await this.svelteKitMiddleware).handler(req, res, (err) => {
         if (err != null) {
           console.error(err);
@@ -33,5 +35,18 @@ export default class FrontendRequestHandlerFactory {
         }
       });
     };
+  }
+
+  private setCacheHeadersForStaticAssets(req: IncomingMessage, res: ServerResponse): void {
+    const isPublicStaticAssetNeedingCacheHeader = req.url != null &&
+      [
+        '/logo.svg',
+        '/logo.png',
+        '/favicon.ico',
+      ].includes(req.url);
+
+    if (isPublicStaticAssetNeedingCacheHeader) {
+      res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 days
+    }
   }
 }
