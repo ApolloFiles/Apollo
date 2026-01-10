@@ -1,3 +1,4 @@
+import Fs from 'node:fs';
 import Sharp from 'sharp';
 import { singleton } from 'tsyringe';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
@@ -26,34 +27,10 @@ export default class VideoThumbnailFrameExtractor {
       const videoDurationInSeconds = await videoDurationInSecondsPromise;
       const durationToSeekTo = videoDurationInSeconds <= 30 ? 0 : videoDurationInSeconds * 0.1;
 
-      const ffmpegProcess = await BufferedChildProcess.spawn('ffmpeg', [
-          '-loglevel', 'warning',
+      await this.runFrameExtraction(durationToSeekTo, file.getAbsolutePathOnHost(), tmpDir, false);
 
-          '-hwaccel', 'auto',
-
-          '-skip_frame', 'nokey',
-          '-ss', durationToSeekTo.toFixed(2),
-
-          '-i', file.getAbsolutePathOnHost(),
-          '-map', '0:V:0',  // first 'real' video stream; ignoring all other streams (audio etc.)
-
-          '-map_metadata', '-1',
-          '-fps_mode', 'vfr', // do not duplicate frames
-          '-t', (5 * 60).toString(),  // Limit analyze to a maximum of 5 minutes of video
-
-          '-vf', 'scale=' + VideoThumbnailFrameExtractor.THUMBNAIL_WIDTH + ':-2,select=gt(scene\\,0.5)',
-
-          '-frames:v', VideoThumbnailFrameExtractor.SAMPLE_SIZE.toString(),
-
-          '-c:v', 'png',
-          '-compression_level', '0',
-          'frame_%03d.png',
-        ],
-        { cwd: tmpDir },
-      );
-
-      if (ffmpegProcess.exitCode !== 0) {
-        throw new Error(`Thumbnail extraction failed because ffmpeg exited with code ${ffmpegProcess.exitCode}: ${JSON.stringify(ffmpegProcess)}`);
+      if ((await Fs.promises.readdir(tmpDir)).length === 0) {
+        await this.runFrameExtraction(durationToSeekTo, file.getAbsolutePathOnHost(), tmpDir, true);
       }
 
       const bestFrame = await this.bestVideoThumbnailFrameDetector.determineBestFrame(tmpDir);
@@ -66,6 +43,40 @@ export default class VideoThumbnailFrameExtractor {
           withoutEnlargement: true,
         });
     });
+  }
+
+  private async runFrameExtraction(durationToSeekTo: number, filePath: string, cwd: string, favorGettingSomeResultOverPerformance: boolean): Promise<void> {
+    const ffmpegProcess = await BufferedChildProcess.spawn('ffmpeg', [
+        '-loglevel', 'warning',
+
+        '-hwaccel', 'auto',
+
+        ...(favorGettingSomeResultOverPerformance ? [] : [
+          '-skip_frame', 'nokey',
+          '-ss', durationToSeekTo.toFixed(2),
+        ]),
+
+        '-i', filePath,
+        '-map', '0:V:0',  // first 'real' video stream; ignoring all other streams (audio etc.)
+
+        '-map_metadata', '-1',
+        '-fps_mode', 'vfr', // do not duplicate frames
+        '-t', (5 * 60).toString(),  // Limit analyze to a maximum of 5 minutes of video
+
+        '-vf', 'scale=' + VideoThumbnailFrameExtractor.THUMBNAIL_WIDTH + ':-2,select=gt(scene\\,0.5)',
+
+        '-frames:v', VideoThumbnailFrameExtractor.SAMPLE_SIZE.toString(),
+
+        '-c:v', 'png',
+        '-compression_level', '0',
+        'frame_%03d.png',
+      ],
+      { cwd },
+    );
+
+    if (ffmpegProcess.exitCode !== 0) {
+      throw new Error(`Thumbnail extraction failed because ffmpeg exited with code ${ffmpegProcess.exitCode}: ${JSON.stringify(ffmpegProcess)}`);
+    }
   }
 
   private async determineVideoDurationInSeconds(videoFilePath: string): Promise<number> {
