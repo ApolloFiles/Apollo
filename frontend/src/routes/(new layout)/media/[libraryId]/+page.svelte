@@ -3,7 +3,7 @@
   import type { PageProps } from './$types';
 
   const { data, params }: PageProps = $props();
-  const libraryTitle = $derived(data.page.libraries.find(l => l.id === params.libraryId)?.name || '');
+  const libraryTitle = $derived(data.page.libraries.owned.find(l => l.id === params.libraryId)?.name || data.page.libraries.sharedWith.find(l => l.id === params.libraryId)?.name || '');
 </script>
 
 <svelte:head>

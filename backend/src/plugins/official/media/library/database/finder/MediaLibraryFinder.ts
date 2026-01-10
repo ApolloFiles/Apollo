@@ -28,6 +28,36 @@ export default class MediaLibraryFinder {
     return MediaLibrary.fromData(fetchedLibrary);
   }
 
+  async findByIdForUser(id: bigint, apolloUser: ApolloUser): Promise<MediaLibrary | null> {
+    const fetchedLibrary = await this.databaseClient.mediaLibrary.findFirst({
+      where: {
+        id,
+        OR: [
+          { ownerId: apolloUser.id },
+          {
+            MediaLibrarySharedWith: {
+              some: {
+                userId: apolloUser.id,
+              },
+            },
+          },
+        ],
+      },
+
+      select: {
+        id: true,
+        ownerId: true,
+        name: true,
+        directoryUris: true,
+      },
+    });
+
+    if (fetchedLibrary == null) {
+      return null;
+    }
+    return MediaLibrary.fromData(fetchedLibrary);
+  }
+
   async findOwnedByUser(apolloUser: ApolloUser): Promise<MediaLibrary[]> {
     const fetchedLibraries = await this.databaseClient.mediaLibrary.findMany({
       where: { ownerId: apolloUser.id },

@@ -221,13 +221,12 @@ const fetchMediaLibraryOverview = oRpcBuilder
       throw new Error('Unable to determine ApolloUser for the current session user');
     }
 
-    const libraryManager = new LibraryManager(apolloUser);
+    const [ownedLibraries, sharedLibraries] = await Promise.all([
+      container.resolve(MediaLibraryFinder).findOwnedByUser(apolloUser),
+      container.resolve(MediaLibraryFinder).findSharedWithUser(apolloUser),
+    ]);
 
-    type LibraryElement = {
-      id: string,
-      name: string,
-      isOwner: boolean,
-    }
+    const libraryManager = new LibraryManager(apolloUser);
 
     type MediaElement = {
       title: string,
@@ -250,12 +249,17 @@ const fetchMediaLibraryOverview = oRpcBuilder
       },
 
       page: {
-        libraries: (await libraryManager.getLibraries())
-          .map(l => ({
-            id: l.id,
-            name: l.name,
-            isOwner: l.owner.id === apolloUser.id,
-          })) satisfies LibraryElement[],
+        libraries: {
+          owned: ownedLibraries.map(lib => ({
+            id: lib.id.toString(),
+            name: lib.name,
+            directoryUris: lib.directoryUris,
+          })),
+          sharedWith: sharedLibraries.map(lib => ({
+            id: lib.id.toString(),
+            name: lib.name,
+          })),
+        },
         continueWatching: ((await libraryManager.fetchContinueWatchingItems(libraryIdToFilterBy)).map(i => ({
           title: i.media.title,
           watchProgressPercentage: Math.max(0, Math.min(1, 1 - ((i.item.durationInSec - i.watchProgressInSec) / i.item.durationInSec))),
@@ -346,11 +350,10 @@ const fetchMedia = oRpcBuilder
       });
     }
 
-    type LibraryElement = {
-      id: string,
-      name: string,
-      isOwner: boolean,
-    }
+    const [ownedLibraries, sharedLibraries] = await Promise.all([
+      container.resolve(MediaLibraryFinder).findOwnedByUser(apolloUser),
+      container.resolve(MediaLibraryFinder).findSharedWithUser(apolloUser),
+    ]);
 
     type SeasonData = {
       seasonNumber: number,
@@ -409,12 +412,17 @@ const fetchMedia = oRpcBuilder
       },
 
       page: {
-        libraries: (await libraryManager.getLibraries())
-          .map(l => ({
-            id: l.id,
-            name: l.name,
-            isOwner: l.owner.id === apolloUser.id,
-          })) satisfies LibraryElement[],
+        libraries: {
+          owned: ownedLibraries.map(lib => ({
+            id: lib.id.toString(),
+            name: lib.name,
+            directoryUris: lib.directoryUris,
+          })),
+          sharedWith: sharedLibraries.map(lib => ({
+            id: lib.id.toString(),
+            name: lib.name,
+          })),
+        },
         media: {
           id: media.id.toString(),
           type: (seasonsMap.size > 1 || !seasonsMap.has(0)) ? 'tv_show' : 'movie',

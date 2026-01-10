@@ -1,26 +1,15 @@
 import type { SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
 
-type Library = {
-  id: string,
-  name: string,
-  isOwner: boolean,
+type Libraries = {
+  owned: { id: string, name: string, directoryUris: string[] }[],
+  sharedWith: { id: string, name: string }[],
 };
 
 // TODO: Drop support for array of Library once all usages are migrated
-export function buildMediaSideBarMenuItems(libraries: (Library[] | {
-  owned: { id: string, name: string, directoryUris: string[] }[],
-  sharedWith: { id: string, name: string }[]
-})): SideBarMenuItems {
+export function buildMediaSideBarMenuItems(libraries: Libraries): SideBarMenuItems {
   const sideBarMenuItems: SideBarMenuItems = [
     { label: 'Overview', href: '/media/', icon: 'device-desktop' },
   ];
-
-  if (Array.isArray(libraries)) {
-    libraries = {
-      owned: libraries.filter(l => l.isOwner).map(l => ({ id: l.id, name: l.name, directoryUris: [] as string[] })),
-      sharedWith: libraries.filter(l => !l.isOwner).map(l => ({ id: l.id, name: l.name })),
-    };
-  }
 
   for (const library of libraries.owned) {
     sideBarMenuItems.push({
