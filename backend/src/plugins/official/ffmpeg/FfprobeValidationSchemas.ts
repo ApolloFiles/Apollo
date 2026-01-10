@@ -58,6 +58,8 @@ const VIDEO_STREAM = STREAM_BASE.extend({
   field_order: z.string().optional(),
   is_avc: z.string().optional(),
   nal_length_size: z.string().optional(),
+  film_grain: z.number().nonnegative().optional(),
+  closed_captions: z.number().nonnegative().optional(),
 
   // MP4 specific
   id: z.string().optional(),
@@ -119,13 +121,13 @@ const RESULT_STREAMS_ARRAY = z.array(
 const RESULT_FORMAT = z.object({
   filename: z.string().nonempty(),
   nb_streams: z.number().nonnegative(),
-  nb_stream_groups: z.number().nonnegative(),
+  nb_stream_groups: z.number().nonnegative().optional(),
   nb_programs: z.number().nonnegative(),
   format_name: z.string().nonempty(),
   format_long_name: z.string().nonempty(),
   start_time: z.string().nonempty().optional(),
   duration: z.string().nonempty().optional(),
-  size: z.string().nonempty(),
+  size: z.string().nonempty().optional(),
   bit_rate: z.string().optional(),
   probe_score: z.number(),
   tags: OPTIONAL_TAGS,
