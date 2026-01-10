@@ -2,8 +2,8 @@ import * as FastifyCookiePlugin from '@fastify/cookie';
 import { os } from '@orpc/server';
 import type { IncomingHttpHeaders } from 'node:http';
 import { container } from 'tsyringe';
-import AuthSessionFinder from '../../auth/session/AuthSessionFinder.js';
 import SessionCookieHelper from '../../auth/session/SessionCookieHelper.js';
+import UserBySessionTokenProvider from '../../auth/UserBySessionTokenProvider.js';
 
 export type ORPCInitialContext = {
   headers: IncomingHttpHeaders
@@ -28,7 +28,7 @@ export const authenticated = base
 
     const sessionToken = container.resolve(SessionCookieHelper).extractSessionCookieValue(cookies, false);
     const sessionData = sessionToken != null
-      ? await container.resolve(AuthSessionFinder).findSession(sessionToken)
+      ? await container.resolve(UserBySessionTokenProvider).findBySessionTokenAndUpdateLastActivity(sessionToken)
       : null;
 
     // TODO: oRPC does not extend session lifetimes and does not unset invalid session cookies yet
@@ -38,7 +38,7 @@ export const authenticated = base
         // FIXME: 'sessionInfo' content/structure is based on better-auth; clean up/restructure as needed
         sessionInfo: sessionData != null ? {
           session: {
-            id: sessionData.id,
+            id: sessionData.session.id,
           },
           user: {
             id: sessionData.user.id,

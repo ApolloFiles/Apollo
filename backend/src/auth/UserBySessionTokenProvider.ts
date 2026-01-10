@@ -1,8 +1,7 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../database/DatabaseClient.js';
-import { Prisma } from '../database/prisma-client/client.js';
 import ApolloUser from '../user/ApolloUser.js';
-import AuthSessionFinder, { type SessionData, type SessionDataWithUser } from './session/AuthSessionFinder.js';
+import AuthSessionFinder, { type SessionDataWithUser } from './session/AuthSessionFinder.js';
 
 export type SessionUser = {
   session: SessionDataWithUser,
@@ -11,44 +10,52 @@ export type SessionUser = {
 
 @singleton()
 export default class UserBySessionTokenProvider {
+  private readonly inFlightFindBySessionToken = new Map<string, Promise<SessionUser | null>>();
+
   constructor(
     private readonly databaseClient: DatabaseClient,
     private readonly authSessionFinder: AuthSessionFinder,
   ) {
   }
 
-  async findBySessionToken(token: string, updateLastActivity: boolean): Promise<SessionUser | null> {
-    const session = await this.databaseClient.$transaction(async (transaction) => {
-      const session = await this.authSessionFinder.findSession(token, transaction);
+  async findBySessionTokenAndUpdateLastActivity(token: string): Promise<SessionUser | null> {
+    if (this.inFlightFindBySessionToken.has(token)) {
+      return await this.inFlightFindBySessionToken.get(token)!;
+    }
 
-      if (session != null && updateLastActivity) {
-        await this.updateLastActivityIfNeeded(transaction, session);
-      }
+    try {
+      const task = this.executeFindBySessionTokenAndUpdateLastActivity(token);
+      this.inFlightFindBySessionToken.set(token, task);
+      return await task;
+    } finally {
+      this.inFlightFindBySessionToken.delete(token);
+    }
+  }
 
-      if (session != null && updateLastActivity) {
-        const now = await this.databaseClient.fetchNow(transaction);
+  private async executeFindBySessionTokenAndUpdateLastActivity(token: string): Promise<SessionUser | null> {
+    const [session, now] = await Promise.all([
+      this.authSessionFinder.findSession(token),
+      this.databaseClient.fetchNow(),
+    ]);
 
-        const normalizedNowToHour = this.normalizeToHour(now);
-        if (normalizedNowToHour.getTime() !== session.roughLastActivity.getTime()) {
-          await transaction.authSession.update({
+    if (session != null) {
+      const expectedRoughLastActivity = this.normalizeToHour(now);
+
+      if (session.roughLastActivity.getTime() !== expectedRoughLastActivity.getTime()) {
+        console.log(`Updating last activity for session ${session.id} and user ${session.user.id}`);
+        await this.databaseClient.$transaction([
+          this.databaseClient.authSession.update({
             where: { id: session.id },
-            data: { roughLastActivity: normalizedNowToHour },
-            select: { id: true },
-          });
-        }
+            data: { roughLastActivity: expectedRoughLastActivity },
+          }),
 
-        const normalizedNowToDay = this.normalizeToDay(now);
-        if (normalizedNowToDay.getTime() !== session.user.lastActivityDate?.getTime()) {
-          await transaction.authUser.update({
+          this.databaseClient.authUser.update({
             where: { id: session.user.id },
-            data: { lastActivityDate: normalizedNowToDay },
-            select: { id: true },
-          });
-        }
+            data: { lastActivityDate: this.normalizeToDay(now) },
+          }),
+        ]);
       }
-
-      return session;
-    });
+    }
 
     if (session == null) {
       return null;
@@ -58,18 +65,6 @@ export default class UserBySessionTokenProvider {
       session: session,
       user: new ApolloUser(session.user.id, session.user.displayName, session.user.blocked, session.user.isSuperUser),
     };
-  }
-
-  private async updateLastActivityIfNeeded(transaction: Prisma.TransactionClient, sessionData: SessionData): Promise<void> {
-    const normalizedNow = this.normalizeToHour(await this.databaseClient.fetchNow(transaction));
-
-    if (normalizedNow.getTime() !== sessionData.roughLastActivity.getTime()) {
-      await transaction.authSession.update({
-        where: { id: sessionData.id },
-        data: { roughLastActivity: normalizedNow },
-        select: { id: true },
-      });
-    }
   }
 
   private normalizeToHour(date: Date): Date {

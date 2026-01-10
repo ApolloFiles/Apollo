@@ -16,6 +16,11 @@ export default class DatabaseClient extends PrismaClient implements Disposable {
 
   /**
    * (Workaround for https://github.com/prisma/prisma/issues/5598)
+   *
+   * TODO: Can we *somehow* get rid of the #fetchNow call across the codebase?
+   *       It's just an extra DB call, for the eventuality of highly-out-of-sync server clocks...
+   *       Maybe just introduce big warnings in UI and console at startup (or intervals) if a big clock skew is detected and use the local server time?
+   *       Would remove an extra DB call on a couple of places (e.g. almost every authenticated request)
    */
   async fetchNow(transaction?: Prisma.TransactionClient): Promise<Date> {
     const records = await (transaction ?? this).$queryRaw`SELECT now() as now;`;

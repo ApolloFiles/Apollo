@@ -147,7 +147,7 @@ export default class FastifyWebServer {
         return;
       }
 
-      request._apollo_session_data = await userBySessionTokenProvider.findBySessionToken(sessionToken, true);
+      request._apollo_session_data = await userBySessionTokenProvider.findBySessionTokenAndUpdateLastActivity(sessionToken);
 
       if (request._apollo_session_data == null) {
         sessionCookieHelper.unsetCookie(reply, false);
