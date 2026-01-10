@@ -12,7 +12,7 @@ type EpisodeInfo = {
 
 @singleton()
 export default class TvShowDirectoryScanner extends AbstractScanner {
-  private static SEASON_DIR_REGEX = /^(?:S(?:eason)?|Volume)[\s_.-]*(\d+)$/i;
+  private static SEASON_DIR_REGEX = /^(?:S(?:eason)?|Volume)[\s_.-]*(\d+)/i;
   private static EPISODE_FILE_REGEX_LONG = /Episode[\s_.-]*\d+/i;
   private static EPISODE_FILE_REGEX_SHORT = /S(\d+)[\s_.-]*E(\d+)/i;
 
