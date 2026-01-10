@@ -17,6 +17,7 @@ import type Router from '../routes/Router.js';
 import FrontendRequestHandlerFactory from './FrontendRequestHandlerFactory.js';
 import InitialRequestRouter from './InitialRequestRouter.js';
 import NotFoundHandlerPlugin from './NotFoundHandlerPlugin.js';
+import ServerTimingHeaderPlugin from './plugin/ServerTiming/ServerTimingHeaderPlugin.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -73,6 +74,8 @@ export default class FastifyWebServer {
         });
       },
     });
+
+    this.fastify.register(ServerTimingHeaderPlugin);
 
     this.registerErrorHandler();
     this.fastify.register(NotFoundHandlerPlugin);
@@ -134,9 +137,13 @@ export default class FastifyWebServer {
     this.fastify.decorateRequest('_apollo_session_data', null);
 
     this.fastify.addHook('preHandler', async (request, reply): Promise<void> => {
+      reply.serverTiming?.startNext('auth');
+
       const sessionToken = sessionCookieHelper.extractSessionCookieValue(request.cookies, false);
       if (sessionToken == null) {
         request._apollo_session_data = null;
+
+        reply.serverTiming?.stopCurrent();
         return;
       }
 
@@ -145,6 +152,8 @@ export default class FastifyWebServer {
       if (request._apollo_session_data == null) {
         sessionCookieHelper.unsetCookie(reply, false);
       }
+
+      reply.serverTiming?.stopCurrent();
     });
 
     this.fastify.decorateRequest('getSessionUserOptional', function(): SessionUser | null {
