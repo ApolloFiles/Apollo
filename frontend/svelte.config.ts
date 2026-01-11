@@ -23,7 +23,7 @@ const config: Config = {
         'style-src': ['self', 'unsafe-inline'],
         'font-src': ['self'],
         'img-src': ['self', 'data:', 'blob:'],
-        'media-src': ['self'],
+        'media-src': ['self', 'blob:'],
         'frame-src': ['https://www.youtube.com/embed/'],
         'manifest-src': ['self'],
         'connect-src': ['self', ...(isDevMode ? ['ws://localhost:8081'] satisfies Csp.Sources : [])],
