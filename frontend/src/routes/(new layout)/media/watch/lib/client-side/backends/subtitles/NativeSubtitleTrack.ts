@@ -13,6 +13,10 @@ export default class NativeSubtitleTrack extends SubtitleTrack {
     super();
   }
 
+  protected get isActive(): boolean {
+    return this.trackElement != null;
+  }
+
   activate(): void {
     this.trackElement = this.createTrackElement();
     this.videoElement.appendChild(this.trackElement);

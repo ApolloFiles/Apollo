@@ -13,6 +13,10 @@ export interface VideoLiveTranscodeBackendOptions extends HlsVideoBackendOptions
 export default class VideoLiveTranscodeBackend<T extends VideoLiveTranscodeBackendOptions = VideoLiveTranscodeBackendOptions> extends HlsVideoBackend<T> {
   protected constructor(container: HTMLDivElement, options: T) {
     super(container, options);
+
+    for (const subtitleTrack of this.subtitleTracks) {
+      subtitleTrack.setVideoStatOffset(options.backend.startOffset);
+    }
   }
 
   get duration(): number {

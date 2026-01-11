@@ -15,6 +15,10 @@ export default class HlsSubtitleTrack extends SubtitleTrack {
     return `hls_${this.trackNumber}`;
   }
 
+  protected get isActive(): boolean {
+    return this.hls.subtitleDisplay && this.hls.subtitleTrack === this.trackNumber;
+  }
+
   activate(): void {
     this.hls.subtitleTrack = this.trackNumber;
     this.hls.subtitleDisplay = true;

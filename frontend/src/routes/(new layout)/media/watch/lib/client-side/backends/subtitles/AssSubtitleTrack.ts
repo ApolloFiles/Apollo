@@ -19,6 +19,10 @@ export default class AssSubtitleTrack extends SubtitleTrack {
     super();
   }
 
+  protected get isActive(): boolean {
+    return this.subtitleInstance != null;
+  }
+
   activate(): void {
     this.subtitleCanvasContainer = document.createElement('div');
     this.subtitleCanvasContainer.style.position = 'absolute';
@@ -35,6 +39,7 @@ export default class AssSubtitleTrack extends SubtitleTrack {
       canvas: subtitleCanvas,
       subUrl: new URL(this.uri, window.location.href).href,
       fonts: this.fonts.map(a => new URL(a.uri, window.location.href).href),
+      timeOffset: this.videoStartOffset,
       availableFonts: { 'liberation sans': jasSubDefaultFontUrl },
       fallbackFont: 'liberation sans',
       workerUrl: jasSubWorkerUrl,

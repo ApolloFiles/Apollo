@@ -15,10 +15,10 @@ export interface ExtractedSubtitle {
 export default class TextBasedSubtitleExtractor {
   private static readonly SUPPORTED: { [codec: string]: string /* file extension */ } = {
     'ass': 'ass',
-    'webvtt': 'vtt',
   };
   private static readonly CONVERSION_TARGETS: { [codec: string]: string /* one of supported codec */ } = {
-    'ssa': 'ass',
+    'ssa': 'ass', // A video player supporting ass, should support ssa, but if we pre-process anyway...
+    'webvtt': 'ass',  // HTML's <track> element does not support applying a delay/offset, so live transcode breaks
 
     'subrip': 'ass',
     'subviewer': 'ass',
