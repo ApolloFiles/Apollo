@@ -73,7 +73,7 @@
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",
-    "@types/node": "^24.10.4",
+    "@types/node": "^24.10.7",
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.0.16",
