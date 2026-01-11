@@ -10,18 +10,6 @@ import FfmpegProcess from './FfmpegProcess.js';
 
 // TODO: Check the subtitle formats listed below (supported by ffmpeg) and add support for them (we might need to convert them into a client-side supported format first)
 //   ..S... hdmv_text_subtitle   HDMV Text subtitle
-//   D.S... jacosub              JACOsub subtitle
-//   D.S... microdvd             MicroDVD subtitle
-//   D.S... mpl2                 MPL2 subtitle
-//   D.S... pjs                  PJS (Phoenix Japanimation Society) subtitle
-//   D.S... realtext             RealText subtitle
-//   D.S... sami                 SAMI subtitle
-//   ..S... srt                  SubRip subtitle with embedded timing
-//   D.S... stl                  Spruce subtitle format
-//   DES... subrip               SubRip subtitle (decoders: srt subrip ) (encoders: srt subrip )
-//   D.S... subviewer            SubViewer subtitle
-//   D.S... subviewer1           SubViewer v1 subtitle
-//   D.S... vplayer              VPlayer subtitle
 
 export interface LiveTranscodeResult {
   readonly process: FfmpegProcess;
