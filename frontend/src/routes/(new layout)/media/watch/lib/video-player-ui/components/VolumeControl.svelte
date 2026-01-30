@@ -7,7 +7,7 @@
 
   let { volume = $bindable(), muted = $bindable() }: { volume: number, muted: boolean } = $props();
 
-  let sliderRef: HTMLDivElement;
+  let sliderContainerRef: HTMLDivElement;
   let isDragging = $state(false);
 
   let storeStateInLocalStorageDebounceTimeout: number | null = null;
@@ -17,7 +17,7 @@
   }
 
   function handleVolumeChange(clientX: number) {
-    const rect = sliderRef.getBoundingClientRect();
+    const rect = sliderContainerRef.getBoundingClientRect();
     const newVolume = Math.max(0, Math.min((clientX - rect.left) / rect.width, 1));
     volume = newVolume;
     if (muted && newVolume > 0) {
@@ -113,16 +113,17 @@
     <IconVolume0 />
   {/if}
 </button>
-<div class="volume-slider-container">
-  <div class="volume-slider"
-       bind:this={sliderRef}
-       onmousedown={handleMouseDown}
-       role="slider"
-       aria-label="Volume"
-       aria-valuemin="0"
-       aria-valuemax="100"
-       aria-valuenow={muted ? 0 : Math.round(volume * 100)}
-       tabindex="0">
+<div class="volume-slider-container"
+     bind:this={sliderContainerRef}
+     onmousedown={handleMouseDown}
+     role="slider"
+     aria-label="Volume"
+     aria-valuemin="0"
+     aria-valuemax="100"
+     aria-valuenow={muted ? 0 : Math.round(volume * 100)}
+     tabindex="0"
+>
+  <div class="volume-slider">
     <div class="volume-level" style:width="{muted ? 0 : volume * 100}%"></div>
     <div class="volume-handle"
          style:left="{muted ? 0 : volume * 100}%"
