@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { fastifyPlugin } from 'fastify-plugin';
-import { NotFoundError } from '../errors/HttpErrors.js';
-import type { RouteReturn } from '../routes/Router.js';
+import { NotFoundError } from '../../errors/HttpErrors.js';
+import type { RouteReturn } from '../../routes/Router.js';
 
 export default fastifyPlugin(registerPlugin);
 

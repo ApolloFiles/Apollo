@@ -11,12 +11,12 @@ import UserBySessionTokenProvider, { type SessionUser } from '../../auth/UserByS
 import { ContainerTokens } from '../../constants.js';
 import type ApolloUser from '../../user/ApolloUser.js';
 import { jsonStringifyWithBigInt } from '../../utils/json.js';
-import ORPCRequestHandler from '../../utils/orpc/ORPCRequestHandler.js';
+import ORPCRequestHandler from './ORPCRequestHandler.js';
 import { HttpError, UnauthorizedError } from '../errors/HttpErrors.js';
 import type Router from '../routes/Router.js';
 import FrontendRequestHandlerFactory from './FrontendRequestHandlerFactory.js';
 import InitialRequestRouter from './InitialRequestRouter.js';
-import NotFoundHandlerPlugin from './NotFoundHandlerPlugin.js';
+import NotFoundHandlerPlugin from './plugin/NotFoundHandlerPlugin.js';
 import ServerTimingHeaderPlugin from './plugin/ServerTiming/ServerTimingHeaderPlugin.js';
 
 declare module 'fastify' {

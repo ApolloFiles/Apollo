@@ -4,7 +4,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { BackendConfig } from '../../../../../../backend/src/utils/orpc/RouteTypes';
+  import type { PageProps } from './$types';
   import type { StartPlaybackResponse } from './legacy-types';
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte.js';
@@ -13,7 +13,7 @@
   import PlaybackSessionButton from './lib/PlaybackSessionButton.svelte';
   import VideoPlayerUI from './lib/video-player-ui/VideoPlayerUI.svelte';
 
-  let { data }: { data: { config: BackendConfig } } = $props();
+  let { data }: PageProps = $props();
 
   let mediaTitle = $state('');
   let episodeTitlePrefix = $state('');

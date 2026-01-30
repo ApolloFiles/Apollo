@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ fetch, cookies, params }) => {
     const libraryList = await rpcClient
       .media
       .management
-      .list({}, { context: { cookies, fetch } });
+      .list(undefined, { context: { cookies, fetch } });
 
     pageData = {
       ...libraryList,
