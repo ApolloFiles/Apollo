@@ -51,12 +51,12 @@
     "@fastify/formbody": "^8.0.2",
     "@fastify/websocket": "^11.2.0",
     "@orpc/server": "^1.13.4",
-    "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0",
-    "@sentry/node": "^10.34.0",
+    "@prisma/adapter-pg": "^7.3.0",
+    "@prisma/client": "^7.3.0",
+    "@sentry/node": "^10.38.0",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#9fbd01a9feae0fb7d521aa16684a04034490bac3",
     "@types/mime-types": "^3.0.1",
-    "fastify": "^5.6.2",
+    "fastify": "^5.7.2",
     "fastify-plugin": "^5.1.0",
     "fastify-type-provider-zod": "^6.1.0",
     "mime-types": "^3.0.2",
@@ -67,21 +67,21 @@
     "tsyringe": "^4.10.0",
     "ws": "^8.19.0",
     "xxhash-addon": "^2.0.3",
-    "zod": "^4.3.5"
+    "zod": "^4.3.6"
   },
   "optionalDependencies": {
     "bufferutil": "^4.1.0"
   },
   "devDependencies": {
     "@swc-node/register": "^1.11.1",
-    "@tsconfig/node24": "^24.0.3",
-    "@types/node": "^24.10.8",
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^24.10.9",
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^4.0.17",
-    "prisma": "^7.2.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "prisma": "^7.3.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.17",
+    "vitest": "^4.0.18",
     "vitest-mock-extended": "^3.1.0"
   }
 }
