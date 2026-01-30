@@ -31,8 +31,9 @@
     "test:coverage": "npm run test -- --coverage",
     "test:ci": "npm run test:coverage -- --reporter github-actions",
     "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
 
-    "dev": "node --watch --env-file .env --loader ts-node/esm --enable-source-maps src/main.ts",
+    "dev": "node --watch --env-file .env --import @swc-node/register/esm-register --enable-source-maps src/main.ts",
 
     "prisma:generate": "prisma generate --require-models",
     "prisma:migrate:dev": "prisma migrate dev && npm run prisma:generate",
@@ -72,13 +73,13 @@
     "bufferutil": "^4.1.0"
   },
   "devDependencies": {
+    "@swc-node/register": "^1.11.1",
     "@tsconfig/node24": "^24.0.3",
     "@types/node": "^24.10.8",
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.0.17",
     "prisma": "^7.2.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.17",
     "vitest-mock-extended": "^3.1.0"
