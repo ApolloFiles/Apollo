@@ -1,6 +1,8 @@
 import { singleton } from 'tsyringe';
+import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
+import FileTypeUtils from '../../_old/FileTypeUtils.js';
 import type MediaLibrary from '../database/MediaLibrary.js';
 import AbstractScanner, { type CommonVideoMetadata } from './AbstractScanner.js';
 import type MediaLibraryMediaWriter from './MediaLibraryMediaWriter.js';
@@ -16,7 +18,10 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
   private static EPISODE_FILE_REGEX_LONG = /Episode[\s_.-]*\d+/i;
   private static EPISODE_FILE_REGEX_SHORT = /S(\d+)[\s_.-]*E(\d+)/i;
 
-  constructor(ffprobeExecutor: FfprobeExecutor) {
+  constructor(
+    ffprobeExecutor: FfprobeExecutor,
+    private readonly fileTypeUtils: FileTypeUtils,
+  ) {
     super(ffprobeExecutor);
   }
 
@@ -78,6 +83,14 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
     file: VirtualFile,
     seasonNumber: number | null,
   ): Promise<boolean> {
+    // FIXME: this should also work for non-local files
+    if (file instanceof LocalFile) {
+      const mimeType = await this.fileTypeUtils.getMimeTypeTrustExtension(file.getAbsolutePathOnHost());
+      if (mimeType != null && !mimeType.startsWith('video/')) {
+        return false;
+      }
+    }
+
     const episodeInfo = this.extractEpisodeInfoFromFileName(file);
     if (episodeInfo.episodeNumber == null) {
       return false;

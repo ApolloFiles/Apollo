@@ -1,14 +1,19 @@
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
+import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
+import FileTypeUtils from '../../_old/FileTypeUtils.js';
 import type MediaLibrary from '../database/MediaLibrary.js';
 import AbstractScanner, { type MediaDirectoryInfo } from './AbstractScanner.js';
 import type MediaLibraryMediaWriter from './MediaLibraryMediaWriter.js';
 
 @singleton()
 export default class MovieDirectoryScanner extends AbstractScanner {
-  constructor(ffprobeExecutor: FfprobeExecutor) {
+  constructor(
+    ffprobeExecutor: FfprobeExecutor,
+    private readonly fileTypeUtils: FileTypeUtils,
+  ) {
     super(ffprobeExecutor);
   }
 
@@ -46,6 +51,14 @@ export default class MovieDirectoryScanner extends AbstractScanner {
     file: VirtualFile,
     mediaInfo: MediaDirectoryInfo,
   ): Promise<void> {
+    // FIXME: this should also work for non-local files
+    if (file instanceof LocalFile) {
+      const mimeType = await this.fileTypeUtils.getMimeTypeTrustExtension(file.getAbsolutePathOnHost());
+      if (mimeType != null && !mimeType.startsWith('video/')) {
+        return;
+      }
+    }
+
     const {
       title,
       synopsis,
