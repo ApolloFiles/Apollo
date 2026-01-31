@@ -36,10 +36,12 @@
     aria-label="Play Episode {episodeNumber}: {title}"
   >
     <div class="episode-thumbnail">
-      <picture>
-        <source srcset="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.avif" type="image/avif" />
-        <img src="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.jpeg" alt="" loading="lazy" />
-      </picture>
+      {#key mediaItemId}
+        <picture>
+          <source srcset="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.avif" type="image/avif" />
+          <img src="/api/_frontend/media-new/item/{mediaItemId}/thumbnail.jpeg" alt="" loading="lazy" />
+        </picture>
+      {/key}
       <div class="play-overlay">
         <IconPlay class="icon" role="presentation" />
       </div>

@@ -39,10 +39,16 @@
   <div class="media-grid">
     {#each items as item, index}
       <a href="/media/{item.libraryId}/{item.mediaId}" class="media-card" data-media-card>
-        <picture>
-          <source srcset="/api/_frontend/media-new/{item.mediaId}/poster.avif" type="image/avif" />
-          <img src="/api/_frontend/media-new/{item.mediaId}/poster.jpeg" alt="" loading={loadAllImagesLazy || index > 1 ? 'lazy' : 'eager'} data-media-img />
-        </picture>
+        {#key item.mediaId}
+          <picture>
+            <source srcset="/api/_frontend/media-new/{item.mediaId}/poster.avif" type="image/avif" />
+            <img src="/api/_frontend/media-new/{item.mediaId}/poster.jpeg"
+                 alt=""
+                 loading={loadAllImagesLazy || index > 1 ? 'lazy' : 'eager'}
+                 data-media-img
+            />
+          </picture>
+        {/key}
 
         {#if item.watchProgressPercentage != null}
           <div class="progress mt-2 progress-bar-container" data-progress-bar-container>

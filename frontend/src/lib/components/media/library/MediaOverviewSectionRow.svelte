@@ -19,10 +19,16 @@
   <div class="media-scroller">
     {#each items as item, index}
       <a href="/media/{item.libraryId}/{item.mediaId}" class="media-card">
-        <picture>
-          <source srcset="/api/_frontend/media-new/{item.mediaId}/poster.avif" type="image/avif" />
-          <img src="/api/_frontend/media-new/{item.mediaId}/poster.jpeg" alt="" loading={loadAllImagesLazy || index > 1 ? 'lazy' : 'eager'} />
-        </picture>
+        {#key item.mediaId}
+          <picture>
+            <source srcset="/api/_frontend/media-new/{item.mediaId}/poster.avif" type="image/avif" />
+            <img
+              src="/api/_frontend/media-new/{item.mediaId}/poster.jpeg"
+              alt=""
+              loading={loadAllImagesLazy || index > 1 ? 'lazy' : 'eager'}
+            />
+          </picture>
+        {/key}
 
         {#if item.watchProgressPercentage != null}
           <div class="progress mt-2 progress-bar-container">
