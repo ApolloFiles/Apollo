@@ -20,7 +20,10 @@ const ORPC_CREATE_LIBRARY_INPUT_SCHEMA = z.object({
 });
 
 const getMediaLibraryOverview = baseOc
-  .input(z.object({ libraryId: z.coerce.bigint().optional() }))
+  .input(z.object({
+    libraryId: z.coerce.bigint().optional(),
+    order: z.enum(['recentlyAdded', 'alphabetical']).optional(),
+  }))
   .output(z.strictObject({
     loggedInUser: ORPC_LOGGED_IN_USER_SCHEMA,
 
@@ -35,11 +38,14 @@ const getMediaLibraryOverview = baseOc
         seasonNumber: z.number().optional(),
         episodeNumber: z.number().optional(),
       })),
-      recentlyAdded: z.array(z.strictObject({
-        title: z.string(),
-        libraryId: z.string(),
-        mediaId: z.string(),
-      })),
+      result: z.strictObject({
+        order: z.enum(['recentlyAdded', 'alphabetical']),
+        items: z.array(z.strictObject({
+          title: z.string(),
+          libraryId: z.string(),
+          mediaId: z.string(),
+        })),
+      }),
     }),
   }));
 

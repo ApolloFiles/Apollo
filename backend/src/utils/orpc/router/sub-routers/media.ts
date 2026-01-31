@@ -1,5 +1,6 @@
 import { injectable } from 'tsyringe';
 import DatabaseClient from '../../../../database/DatabaseClient.js';
+import type * as PrismaClient from '../../../../database/prisma-client/client.js';
 import FileProvider from '../../../../files/FileProvider.js';
 import LibraryManager from '../../../../plugins/official/media/_old/libraries/LibraryManager.js';
 import MediaLibraryFinder from '../../../../plugins/official/media/library/database/finder/MediaLibraryFinder.js';
@@ -10,7 +11,7 @@ import FullLibraryIndexingHelper from '../../../../plugins/official/media/librar
 import MediaClearLogoImageProvider
   from '../../../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
 import ApolloFileURI from '../../../../uri/ApolloFileURI.js';
-import UserProvider from '../../../../user/UserProvider.js';
+import type { ORpcContractOutputs } from '../../contract/oRpcContract.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
 
 @injectable()
@@ -52,6 +53,28 @@ export default class MediaORpcRouterFactory {
             episodeNumber?: number,
           };
 
+          let libraryMediaSorting: ORpcContractOutputs['media']['getMediaLibraryOverview']['page']['result']['order'];
+          let mediaItems: Promise<PrismaClient.MediaLibraryMedia[]>;
+
+          if (libraryIdToFilterBy != null) {
+            if (input.order === 'alphabetical') {
+              libraryMediaSorting = 'alphabetical';
+              mediaItems = libraryManager.fetchMediaSortedAlphabetically(libraryIdToFilterBy);
+            } else {
+              libraryMediaSorting = 'recentlyAdded';
+              mediaItems = libraryManager.fetchMediaSortedByRecentlyAdded(libraryIdToFilterBy);
+            }
+          } else {
+            libraryMediaSorting = 'recentlyAdded';
+            mediaItems = libraryManager.fetchRecentlyAddedMedia(libraryIdToFilterBy);
+          }
+
+          const mediaResultItems: ORpcContractOutputs['media']['getMediaLibraryOverview']['page']['result']['items'] = (await mediaItems).map(i => ({
+            title: i.title,
+            libraryId: i.libraryId.toString(),
+            mediaId: i.id.toString(),
+          }));
+
           return {
             loggedInUser: {
               id: context.authSession.user.id,
@@ -80,11 +103,11 @@ export default class MediaORpcRouterFactory {
                 seasonNumber: i.item.seasonNumber ?? undefined,
                 episodeNumber: i.item.episodeNumber ?? undefined,
               }))) satisfies ContinueWatchingElement[],
-              recentlyAdded: ((await libraryManager.fetchRecentlyAddedMedia(libraryIdToFilterBy)).map(i => ({
-                title: i.title,
-                libraryId: i.libraryId.toString(),
-                mediaId: i.id.toString(),
-              }))) satisfies MediaElement[],
+
+              result: {
+                order: libraryMediaSorting,
+                items: mediaResultItems,
+              },
             },
           };
         }),

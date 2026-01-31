@@ -12,5 +12,7 @@
 
 <LibraryView
   continueWatchingItems={data.page.continueWatching}
-  recentlyAdded={data.page.recentlyAdded}
+  mediaItems={data.page.result.items}
+  mediaItemsOrder={data.page.result.order}
+  mediaItemsDisplayAsRow={false}
 />

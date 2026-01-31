@@ -5,15 +5,19 @@ import { error } from '@sveltejs/kit';
 import type { RenderingLayoutData } from '../../types';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, cookies, params }) => {
+export const load: PageServerLoad = async ({ fetch, cookies, params, url }) => {
   if (params.libraryId === 'search') {
     error(404, 'There is no search yet');
   }
 
+  const allowedOrders = ['recentlyAdded', 'alphabetical'];
+  const orderParam = url?.searchParams.get('order') || undefined;
+  const order = allowedOrders.includes(orderParam as string) ? (orderParam as 'recentlyAdded' | 'alphabetical') : undefined;
+
   const libraryOverviewResult = await safe(
     rpcClient
       .media
-      .getMediaLibraryOverview({ libraryId: params.libraryId }, { context: { cookies, fetch } }),
+      .getMediaLibraryOverview({ libraryId: params.libraryId, order }, { context: { cookies, fetch } }),
   );
 
   if (isDefinedError(libraryOverviewResult.error) && libraryOverviewResult.error.code === 'REQUESTED_ENTITY_NOT_FOUND') {

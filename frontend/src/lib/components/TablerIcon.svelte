@@ -20,6 +20,8 @@
   import IconSettings from 'virtual:icons/tabler/settings';
   import IconShieldCheckFilled from 'virtual:icons/tabler/shield-check-filled';
   import IconShieldLock from 'virtual:icons/tabler/shield-lock';
+  import IconSortAscendingLetters from 'virtual:icons/tabler/sort-ascending-letters';
+  import IconStopwatch from 'virtual:icons/tabler/stopwatch';
   import IconTrash from 'virtual:icons/tabler/trash';
   import IconUser from 'virtual:icons/tabler/user-filled';
   import IconUserPlus from 'virtual:icons/tabler/user-plus';
@@ -46,6 +48,8 @@
     | 'settings'
     | 'shield-check-filled'
     | 'shield-lock'
+    | 'sort-ascending-letters'
+    | 'stopwatch'
     | 'trash'
     | 'user-filled'
     | 'users'
@@ -100,6 +104,10 @@
         return IconShieldCheckFilled;
       case 'shield-lock':
         return IconShieldLock;
+      case 'sort-ascending-letters':
+        return IconSortAscendingLetters;
+      case 'stopwatch':
+        return IconStopwatch;
       case 'trash':
         return IconTrash;
       case 'user-filled':

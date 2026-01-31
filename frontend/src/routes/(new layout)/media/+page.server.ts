@@ -18,6 +18,11 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
   }
 
   const pageData = libraryOverviewResult.data;
+
+  if (pageData.page.result.order !== 'recentlyAdded') {
+    throw new Error('library overview with no library filter expected to be ordered as recentlyAdded, got ' + libraryOverviewResult.data.page.result.order);
+  }
+
   return {
     ...pageData,
     rendering: {

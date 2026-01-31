@@ -1,9 +1,6 @@
 <script lang="ts">
-  import IconChevronRight from 'virtual:icons/tabler/chevron-right';
-
-  let { title, viewAllLink, items, loadAllImagesLazy = true }: {
+  let { title, items, loadAllImagesLazy = true }: {
     title: string,
-    viewAllLink?: string,
     items: {
       title: string,
       libraryId: string,
@@ -17,11 +14,6 @@
 <section>
   <div class="section-title">
     <span>{title}</span>
-    {#if viewAllLink != null}
-      <a href={viewAllLink} class="text-decoration-none text-secondary fs-6">
-        View All&nbsp;<IconChevronRight class="icon ms-1" role="presentation" />
-      </a>
-    {/if}
   </div>
 
   <div class="media-scroller">
