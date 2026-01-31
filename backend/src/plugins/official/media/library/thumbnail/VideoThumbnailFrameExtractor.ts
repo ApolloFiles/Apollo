@@ -75,7 +75,12 @@ export default class VideoThumbnailFrameExtractor {
     );
 
     if (ffmpegProcess.exitCode !== 0) {
-      throw new Error(`Thumbnail extraction failed because ffmpeg exited with code ${ffmpegProcess.exitCode}: ${JSON.stringify(ffmpegProcess)}`);
+      throw new Error(`Thumbnail extraction failed because ffmpeg exited with code ${ffmpegProcess.exitCode}: ${JSON.stringify({
+        exitCode: ffmpegProcess.exitCode,
+        signal: ffmpegProcess.signal,
+        stdout: ffmpegProcess.stdout.toString(),
+        stderr: ffmpegProcess.stderr.toString(),
+      })}`);
     }
   }
 
