@@ -25,9 +25,9 @@ export default class AdminORpcRouterFactory {
 
           return {
             loggedInUser: {
-              id: context.sessionInfo.user.id,
-              displayName: context.sessionInfo.user.name,
-              isSuperUser: context.sessionInfo.user.isSuperUser,
+              id: context.authSession.user.id,
+              displayName: context.authSession.user.displayName,
+              isSuperUser: context.authSession.user.isSuperUser,
             },
 
             users: allUsers.map((user) => ({
@@ -70,9 +70,9 @@ export default class AdminORpcRouterFactory {
 
           return {
             loggedInUser: {
-              id: context.sessionInfo.user.id,
-              displayName: context.sessionInfo.user.name,
-              isSuperUser: context.sessionInfo.user.isSuperUser,
+              id: context.authSession.user.id,
+              displayName: context.authSession.user.displayName,
+              isSuperUser: context.authSession.user.isSuperUser,
             },
 
             user: {
@@ -104,7 +104,7 @@ export default class AdminORpcRouterFactory {
         }),
 
         updateBlock: os.users.updateBlock.handler(async ({ input, context, errors }) => {
-          if (input.id === context.sessionInfo.user.id) {
+          if (input.id === context.authSession.user.id) {
             throw errors.INVALID_INPUT({ message: 'You cannot (un-)block yourself' });
           }
 

@@ -21,9 +21,9 @@ export default class UserORpcRouterFactory {
     return {
       get: os.get.handler(({ context }) => {
         return {
-          id: context.sessionInfo.user.id,
-          displayName: context.sessionInfo.user.name,
-          isSuperUser: context.sessionInfo.user.isSuperUser,
+          id: context.authSession.user.id,
+          displayName: context.authSession.user.displayName,
+          isSuperUser: context.authSession.user.isSuperUser,
         };
       }),
 
@@ -32,7 +32,7 @@ export default class UserORpcRouterFactory {
           updateDisplayName: os.settings.profile.updateDisplayName
             .handler(async ({ input, context }) => {
               await this.databaseClient.authUser.update({
-                where: { id: context.sessionInfo.user.id },
+                where: { id: context.authSession.user.id },
                 data: {
                   displayName: input.displayName,
                 },
@@ -51,7 +51,7 @@ export default class UserORpcRouterFactory {
               }
 
               await this.databaseClient.authUser.update({
-                where: { id: context.sessionInfo.user.id },
+                where: { id: context.authSession.user.id },
                 data: {
                   profilePicture: profilePictureBytes != null ? Buffer.from(profilePictureBytes) : null,
                 },
@@ -62,11 +62,9 @@ export default class UserORpcRouterFactory {
         security: {
           get: os.settings.security.get
             .handler(async ({ context }) => {
-              const sessionInfo = context.sessionInfo;
-
               const linkedAuthProviders = await this.databaseClient.authUserLinkedProvider.findMany({
                 where: {
-                  userId: sessionInfo.user.id,
+                  userId: context.authSession.user.id,
                 },
                 select: {
                   providerId: true,
@@ -82,14 +80,14 @@ export default class UserORpcRouterFactory {
                 //       That would allow the user to update the profile picture in browser tab A, and see the new picture
                 //       in browser tab B without a full page reloading
                 loggedInUser: {
-                  id: sessionInfo.user.id,
-                  displayName: sessionInfo.user.name,
-                  isSuperUser: sessionInfo.user.isSuperUser,
+                  id: context.authSession.user.id,
+                  displayName: context.authSession.user.displayName,
+                  isSuperUser: context.authSession.user.isSuperUser,
                 },
 
                 sessions: {
-                  currentId: sessionInfo.session.id,
-                  all: await this.authSessionFinder.findByUserId(sessionInfo.user.id),
+                  currentId: context.authSession.id,
+                  all: await this.authSessionFinder.findByUserId(context.authSession.user.id),
                 },
                 linkedAuthProviders: linkedAuthProviders.map((linkedProvider) => {
                   const providerInfo: {
@@ -115,13 +113,12 @@ export default class UserORpcRouterFactory {
 
           revokeSingleSession: os.settings.security.revokeSingleSession
             .handler(async ({ input, context }) => {
-              await this.authSessionRevoker.revoke(input.sessionId, context.sessionInfo.user.id);
+              await this.authSessionRevoker.revoke(input.sessionId, context.authSession.user.id);
             }),
 
           revokeAllSessionsExceptCurrent: os.settings.security.revokeAllSessionsExceptCurrent
             .handler(async ({ context }) => {
-              const sessionInfo = context.sessionInfo;
-              await this.authSessionRevoker.revokeAllForUserExcept(sessionInfo.user.id, sessionInfo.session.id);
+              await this.authSessionRevoker.revokeAllForUserExcept(context.authSession.user.id, context.authSession.id);
             }),
         },
       },

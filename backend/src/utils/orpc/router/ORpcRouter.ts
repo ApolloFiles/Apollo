@@ -27,29 +27,18 @@ const plainImplementer = implement(oRpcContract).$context<ORpcInitialContext>();
 
 const baseImplementer = plainImplementer
   .use(async ({ context, next }) => {
-    // TODO: Throw proper Unauthorized errors
-    // FIXME: This logic is pretty similar to the one in FastifyWebServer.ts – Refactor!
+    const sessionCookieHelper = container.resolve(SessionCookieHelper);
+    const userBySessionTokenProvider = container.resolve(UserBySessionTokenProvider);
+
     const cookies = FastifyCookiePlugin.fastifyCookie.parse(context.headers.cookie || '');
-
-    const sessionToken = container.resolve(SessionCookieHelper).extractSessionCookieValue(cookies, false);
-    const sessionData = sessionToken != null
-      ? await container.resolve(UserBySessionTokenProvider).findBySessionTokenAndUpdateLastActivity(sessionToken)
-      : null;
-
-    // TODO: oRPC does not extend session lifetimes and does not unset invalid session cookies yet
+    const sessionToken = sessionCookieHelper.extractSessionCookieValue(cookies, false);
+    const sessionUser = sessionToken != null ? await userBySessionTokenProvider.findBySessionTokenAndUpdateLastActivity(sessionToken) : null;
 
     return next({
       context: {
-        // FIXME: 'sessionInfo' content/structure is based on better-auth; clean up/restructure as needed
-        sessionInfo: sessionData != null ? {
-          session: {
-            id: sessionData.session.id,
-          },
-          user: {
-            id: sessionData.user.id,
-            name: sessionData.user.displayName,
-            isSuperUser: sessionData.user.isSuperUser,
-          },
+        authSession: sessionUser != null ? {
+          id: sessionUser.session.id,
+          user: sessionUser.user,
         } : null,
       },
     });
@@ -57,20 +46,20 @@ const baseImplementer = plainImplementer
 
 const authenticatedImplementer = baseImplementer
   .use(async ({ context, next, errors }) => {
-    if (context.sessionInfo == null) {
+    if (context.authSession == null) {
       throw errors.UNAUTHORIZED();
     }
 
     return next({
       context: {
-        sessionInfo: context.sessionInfo,
+        authSession: context.authSession,
       },
     });
   });
 
 const authenticatedSuperUserImplementer = authenticatedImplementer
   .use(async ({ context, next, errors }) => {
-    if (context.sessionInfo?.user.isSuperUser !== true) {
+    if (context.authSession.user.isSuperUser !== true) {
       throw errors.NO_PERMISSIONS();
     }
     return next();

@@ -19,7 +19,6 @@ export default class MediaORpcRouterFactory {
     private readonly databaseClient: DatabaseClient,
     private readonly mediaLibraryFinder: MediaLibraryFinder,
     private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
-    private readonly userProvider: UserProvider,
     private readonly fileProvider: FileProvider,
     private readonly mediaLibraryWriter: MediaLibraryWriter,
     private readonly mediaClearLogoImageProvider: MediaClearLogoImageProvider,
@@ -33,19 +32,12 @@ export default class MediaORpcRouterFactory {
         .handler(async ({ input, context }) => {
           const libraryIdToFilterBy = input.libraryId;
 
-          const apolloUser = await this.userProvider.findById(context.sessionInfo.user.id);
-          if (apolloUser == null) {
-            // TODO: Proper error handling
-            console.debug('Unable to determine ApolloUser for the current session user');
-            throw new Error('Unable to determine ApolloUser for the current session user');
-          }
-
           const [ownedLibraries, sharedLibraries] = await Promise.all([
-            this.mediaLibraryFinder.findOwnedByUser(apolloUser),
-            this.mediaLibraryFinder.findSharedWithUser(apolloUser),
+            this.mediaLibraryFinder.findOwnedByUser(context.authSession.user),
+            this.mediaLibraryFinder.findSharedWithUser(context.authSession.user),
           ]);
 
-          const libraryManager = new LibraryManager(apolloUser);
+          const libraryManager = new LibraryManager(context.authSession.user);
 
           type MediaElement = {
             title: string,
@@ -62,9 +54,9 @@ export default class MediaORpcRouterFactory {
 
           return {
             loggedInUser: {
-              id: apolloUser.id,
-              displayName: apolloUser.displayName,
-              isSuperUser: apolloUser.isSuperUser,
+              id: context.authSession.user.id,
+              displayName: context.authSession.user.displayName,
+              isSuperUser: context.authSession.user.isSuperUser,
             },
 
             page: {
@@ -102,14 +94,7 @@ export default class MediaORpcRouterFactory {
           const libraryId = input.libraryId;
           const mediaId = input.mediaId;
 
-          const apolloUser = await this.userProvider.findById(context.sessionInfo.user.id);
-          if (apolloUser == null) {
-            // TODO: Proper error handling
-            console.debug('Unable to determine ApolloUser for the current session user');
-            throw new Error('Unable to determine ApolloUser for the current session user');
-          }
-
-          const libraryManager = new LibraryManager(apolloUser);
+          const libraryManager = new LibraryManager(context.authSession.user);
 
           const library = await libraryManager.getLibrary(libraryId.toString());
           if (library == null) {
@@ -122,7 +107,7 @@ export default class MediaORpcRouterFactory {
           }
 
           const mediaHasClearLogoPromise = this.mediaLibraryMediaFinder
-            .findForUserById(apolloUser, mediaId)
+            .findForUserById(context.authSession.user, mediaId)
             .then((mediaFromOtherFinder) => {
               if (mediaFromOtherFinder == null) {
                 throw new Error('Unexpected null media when checking for clear logo');
@@ -158,8 +143,8 @@ export default class MediaORpcRouterFactory {
           }
 
           const [ownedLibraries, sharedLibraries] = await Promise.all([
-            this.mediaLibraryFinder.findOwnedByUser(apolloUser),
-            this.mediaLibraryFinder.findSharedWithUser(apolloUser),
+            this.mediaLibraryFinder.findOwnedByUser(context.authSession.user),
+            this.mediaLibraryFinder.findSharedWithUser(context.authSession.user),
           ]);
 
           type SeasonData = {
@@ -213,9 +198,9 @@ export default class MediaORpcRouterFactory {
 
           return {
             loggedInUser: {
-              id: apolloUser.id,
-              displayName: apolloUser.displayName,
-              isSuperUser: apolloUser.isSuperUser,
+              id: context.authSession.user.id,
+              displayName: context.authSession.user.displayName,
+              isSuperUser: context.authSession.user.isSuperUser,
             },
 
             page: {
@@ -247,8 +232,6 @@ export default class MediaORpcRouterFactory {
       management: {
         get: os.management.get
           .handler(async ({ input, context, errors }) => {
-            const sessionInfo = context.sessionInfo;
-
             const mediaLibrary = await this.databaseClient.mediaLibrary.findUnique({
               where: { id: input.libraryId },
 
@@ -271,24 +254,20 @@ export default class MediaORpcRouterFactory {
               },
             });
 
-            if (mediaLibrary == null || mediaLibrary.ownerId !== sessionInfo.user.id) {
+            if (mediaLibrary == null || mediaLibrary.ownerId !== context.authSession.user.id) {
               throw errors.REQUESTED_ENTITY_NOT_FOUND();
             }
 
-            const apolloUser = await this.userProvider.findById(sessionInfo.user.id);
-            if (apolloUser == null) {
-              throw new Error('Unable to determine ApolloUser for the current session user');
-            }
             const [ownedLibraries, sharedLibraries] = await Promise.all([
-              this.mediaLibraryFinder.findOwnedByUser(apolloUser),
-              this.mediaLibraryFinder.findSharedWithUser(apolloUser),
+              this.mediaLibraryFinder.findOwnedByUser(context.authSession.user),
+              this.mediaLibraryFinder.findSharedWithUser(context.authSession.user),
             ]);
 
             return {
               loggedInUser: {
-                id: sessionInfo.user.id,
-                displayName: sessionInfo.user.name,
-                isSuperUser: sessionInfo.user.isSuperUser,
+                id: context.authSession.user.id,
+                displayName: context.authSession.user.displayName,
+                isSuperUser: context.authSession.user.isSuperUser,
               },
 
               library: {
@@ -316,21 +295,16 @@ export default class MediaORpcRouterFactory {
 
         list: os.management.list
           .handler(async ({ context }) => {
-            const apolloUser = await this.userProvider.findById(context.sessionInfo.user.id);
-            if (apolloUser == null) {
-              throw new Error('Unable to determine ApolloUser for the current session user');
-            }
-
             const [ownedLibraries, sharedLibraries] = await Promise.all([
-              this.mediaLibraryFinder.findOwnedByUser(apolloUser),
-              this.mediaLibraryFinder.findSharedWithUser(apolloUser),
+              this.mediaLibraryFinder.findOwnedByUser(context.authSession.user),
+              this.mediaLibraryFinder.findSharedWithUser(context.authSession.user),
             ]);
 
             return {
               loggedInUser: {
-                id: apolloUser.id,
-                displayName: apolloUser.displayName,
-                isSuperUser: apolloUser.isSuperUser,
+                id: context.authSession.user.id,
+                displayName: context.authSession.user.displayName,
+                isSuperUser: context.authSession.user.isSuperUser,
               },
 
               libraries: {
@@ -349,30 +323,23 @@ export default class MediaORpcRouterFactory {
 
         delete: os.management.delete
           .handler(async ({ input, context, errors }) => {
-            const sessionInfo = context.sessionInfo;
-
             const mediaLibrary = await this.mediaLibraryFinder.findById(input.libraryId);
-            if (mediaLibrary == null || mediaLibrary.ownerId !== sessionInfo.user.id) {
+            if (mediaLibrary == null || mediaLibrary.ownerId !== context.authSession.user.id) {
               throw errors.REQUESTED_ENTITY_NOT_FOUND();
             }
 
             await this.databaseClient.mediaLibrary.delete({
               where: {
                 id: input.libraryId,
-                ownerId: sessionInfo.user.id,
+                ownerId: context.authSession.user.id,
               },
             });
           }),
 
         createLibrary: os.management.createLibrary
           .handler(async ({ input, context, errors }) => {
-            if (input.sharedWithUserIds.includes(context.sessionInfo.user.id)) {
+            if (input.sharedWithUserIds.includes(context.authSession.user.id)) {
               throw errors.INVALID_INPUT({ message: 'Cannot share a media library with yourself' });
-            }
-
-            const apolloUser = await this.userProvider.findById(context.sessionInfo.user.id);
-            if (apolloUser == null) {
-              throw new Error('Unable to determine ApolloUser for the current session user');
             }
 
             const directoryUris: ApolloFileURI[] = [];
@@ -380,7 +347,7 @@ export default class MediaORpcRouterFactory {
               let fileURI;
               try {
                 fileURI = ApolloFileURI.parse(rawDirectoryUri);
-                await this.fileProvider.provideForUserByUri(apolloUser, fileURI);
+                await this.fileProvider.provideForUserByUri(context.authSession.user, fileURI);
               } catch (err) {
                 // TODO: Don't hardcode error message
                 if (err instanceof Error &&
@@ -403,7 +370,7 @@ export default class MediaORpcRouterFactory {
             }
 
             return await this.mediaLibraryWriter.create(
-              context.sessionInfo.user.id,
+              context.authSession.user.id,
               input.name,
               {
                 directoryUris: directoryUris,
@@ -414,20 +381,13 @@ export default class MediaORpcRouterFactory {
 
         updateLibrary: os.management.updateLibrary
           .handler(async ({ input, context, errors }) => {
-            const sessionInfo = context.sessionInfo;
-
-            if (input.sharedWithUserIds.includes(sessionInfo.user.id)) {
+            if (input.sharedWithUserIds.includes(context.authSession.user.id)) {
               throw errors.INVALID_INPUT({ message: 'Cannot share a media library with yourself' });
             }
 
             const mediaLibrary = await this.mediaLibraryFinder.findById(input.id);
-            if (mediaLibrary == null || mediaLibrary.ownerId !== sessionInfo.user.id) {
+            if (mediaLibrary == null || mediaLibrary.ownerId !== context.authSession.user.id) {
               throw errors.REQUESTED_ENTITY_NOT_FOUND();
-            }
-
-            const apolloUser = await this.userProvider.findById(sessionInfo.user.id);
-            if (apolloUser == null) {
-              throw new Error('Unable to determine ApolloUser for the current session user');
             }
 
             const directoryUris: ApolloFileURI[] = [];
@@ -435,7 +395,7 @@ export default class MediaORpcRouterFactory {
               let fileURI;
               try {
                 fileURI = ApolloFileURI.parse(rawDirectoryUri);
-                await this.fileProvider.provideForUserByUri(apolloUser, fileURI);
+                await this.fileProvider.provideForUserByUri(context.authSession.user, fileURI);
               } catch (err) {
                 // TODO: Don't hardcode error message
                 if (err instanceof Error &&
@@ -472,7 +432,7 @@ export default class MediaORpcRouterFactory {
             const deleteResult = await this.databaseClient.mediaLibrarySharedWith.deleteMany({
               where: {
                 libraryId: input.libraryId,
-                userId: context.sessionInfo.user.id,
+                userId: context.authSession.user.id,
               },
             });
 
@@ -506,7 +466,7 @@ export default class MediaORpcRouterFactory {
                     mediaLibrarySharedWiths: {
                       some: {
                         library: {
-                          ownerId: context.sessionInfo.user.id,
+                          ownerId: context.authSession.user.id,
                         },
                       },
                     },
@@ -526,7 +486,7 @@ export default class MediaORpcRouterFactory {
               ...(exactIdMatch != null ? [exactIdMatch] : []),
               ...nameMatches,
             ]
-              .filter((user) => user.id !== context.sessionInfo.user.id);
+              .filter((user) => user.id !== context.authSession.user.id);
 
             // Deduplicate by ID
             return Array.from(
@@ -537,26 +497,16 @@ export default class MediaORpcRouterFactory {
         debug: {
           fullReIndexStatus: os.management.debug.fullReIndexStatus
             .handler(async ({ context }) => {
-              const apolloUser = await this.userProvider.findById(context.sessionInfo.user.id);
-              if (apolloUser == null) {
-                throw new Error('Unable to determine ApolloUser for the current session user');
-              }
-
-              return this.fullLibraryIndexingHelper.isIndexingRunningForUser(apolloUser);
+              return this.fullLibraryIndexingHelper.isIndexingRunningForUser(context.authSession.user);
             }),
 
           startFullReIndex: os.management.debug.startFullReIndex
             .handler(async ({ context, errors }) => {
-              const apolloUser = await this.userProvider.findById(context.sessionInfo.user.id);
-              if (apolloUser == null) {
-                throw new Error('Unable to determine ApolloUser for the current session user');
-              }
-
-              if (this.fullLibraryIndexingHelper.isIndexingRunningForUser(apolloUser)) {
+              if (this.fullLibraryIndexingHelper.isIndexingRunningForUser(context.authSession.user)) {
                 throw errors.INVALID_INPUT({ message: 'A full re-index is already running for this user' });
               }
 
-              this.fullLibraryIndexingHelper.runForUser(apolloUser).catch(console.error);
+              this.fullLibraryIndexingHelper.runForUser(context.authSession.user).catch(console.error);
             }),
         },
       },

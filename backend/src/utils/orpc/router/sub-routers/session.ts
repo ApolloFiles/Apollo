@@ -10,12 +10,16 @@ export default class SessionORpcRouterFactory {
     return {
       get: os.session.get
         .handler(({ context }) => {
-          if (context.sessionInfo == null) {
+          if (context.authSession == null) {
             return null;
           }
 
           return {
-            user: context.sessionInfo.user,
+            user: {
+              id: context.authSession.user.id,
+              name: context.authSession.user.displayName,
+              isSuperUser: context.authSession.user.isSuperUser,
+            },
           };
         }),
     };

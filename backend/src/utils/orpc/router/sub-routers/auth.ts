@@ -16,8 +16,7 @@ export default class AuthORpcRouterFactory {
           .accountCreationInvitation
           .get
           .handler(async ({ input, context, errors }) => {
-            const sessionInfo = context.sessionInfo;
-            if (sessionInfo != null) {
+            if (context.authSession != null) {
               throw errors.NOT_AVAILABLE_FOR_LOGGED_IN_USER();
             }
 
