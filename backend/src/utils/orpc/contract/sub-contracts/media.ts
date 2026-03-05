@@ -19,6 +19,18 @@ const ORPC_CREATE_LIBRARY_INPUT_SCHEMA = z.object({
   sharedWithUserIds: z.array(z.string().trim().nonempty()),
 });
 
+const ORPC_WRITE_PROGRESS_OUTPUT_SCHEMA = z.strictObject({
+  startTime: z.number().transform(ms => new Date(ms)),
+  endTime: z.number().transform(ms => new Date(ms)).optional(),
+  error: z.strictObject({
+    fileIdentifier: z.string().nullable(),
+    message: z.string(),
+  }).optional(),
+
+  totalFileCount: z.number(),
+  currentFileIndex: z.number(),
+});
+
 const getMediaLibraryOverview = baseOc
   .input(z.object({
     libraryId: z.coerce.bigint().optional(),
@@ -135,6 +147,72 @@ const searchUserToShareWith = baseOc
     displayName: z.string(),
   })));
 
+const metadataEditorOpenPath = baseOc
+  .input(z.object({ path: z.string().nonempty() }))
+  .output(z.array(z.strictObject({
+    identifier: z.string(),
+    name: z.string(),
+
+    videoMeta: z.strictObject({
+      file: z.strictObject({
+        tags: z.array(z.strictObject({
+          key: z.string(),
+          value: z.string(),
+        })),
+      }),
+      streams: z.array(z.strictObject({
+        type: z.enum(['video', 'audio', 'subtitle', 'misc']),
+        streamContextText: z.string(),
+
+        tags: z.array(z.strictObject({
+          key: z.string(),
+          value: z.string(),
+        })),
+        disposition: z.record(z.string().nonempty(), z.boolean()),
+      })),
+    }),
+  })));
+
+const metadataEditorWriteChanges = baseOc
+  .errors({
+    ANOTHER_WRITE_ALREADY_IN_PROGRESS: {
+      data: z.object({ progress: ORPC_WRITE_PROGRESS_OUTPUT_SCHEMA }),
+    },
+  })
+  .input(z.strictObject({
+    files: z.array(z.strictObject({
+      identifier: z.string(),
+      desiredState: z.strictObject({
+        file: z.strictObject({
+          tags: z.array(z.strictObject({
+            key: z.string(),
+            value: z.string(),
+          })),
+        }),
+
+        streams: z.array(z.strictObject({
+          index: z.number(),
+          order: z.number(),
+
+          tags: z.array(z.strictObject({
+            key: z.string(),
+            value: z.string(),
+          })),
+          disposition: z.record(z.string().nonempty(), z.boolean()),
+        })),
+        streamsToDelete: z.array(z.number()),
+      }),
+    })).nonempty(),
+  }))
+  .output(ORPC_WRITE_PROGRESS_OUTPUT_SCHEMA);
+
+const metadataEditorGetWriteProgress = baseOc
+  .input(z.undefined())
+  .output(z.union([
+    z.null(),
+    ORPC_WRITE_PROGRESS_OUTPUT_SCHEMA,
+  ]));
+
 const getFullReIndexStatus = baseOc
   .input(z.undefined())
   .output(z.boolean());
@@ -161,5 +239,11 @@ export const mediaContract = {
       fullReIndexStatus: getFullReIndexStatus,
       startFullReIndex: startFullReIndex,
     },
+  },
+
+  editor: {
+    openPath: metadataEditorOpenPath,
+    writeChanges: metadataEditorWriteChanges,
+    getWriteProgress: metadataEditorGetWriteProgress,
   },
 };

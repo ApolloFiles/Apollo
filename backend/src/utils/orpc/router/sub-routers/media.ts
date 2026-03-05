@@ -13,10 +13,12 @@ import MediaClearLogoImageProvider
 import ApolloFileURI from '../../../../uri/ApolloFileURI.js';
 import type { ORpcContractOutputs } from '../../contract/oRpcContract.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
+import MediaEditorSubRouterFactory from './media/editor/MediaEditorSubRouterFactory.js';
 
 @injectable()
 export default class MediaORpcRouterFactory {
   constructor(
+    private readonly mediaEditorSubRouterFactory: MediaEditorSubRouterFactory,
     private readonly databaseClient: DatabaseClient,
     private readonly mediaLibraryFinder: MediaLibraryFinder,
     private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
@@ -29,6 +31,8 @@ export default class MediaORpcRouterFactory {
 
   create(os: ORpcImplementer['media']): SubRouter<'media'> {
     return {
+      ...this.mediaEditorSubRouterFactory.create(os),
+
       getMediaLibraryOverview: os.getMediaLibraryOverview
         .handler(async ({ input, context }) => {
           const libraryIdToFilterBy = input.libraryId;

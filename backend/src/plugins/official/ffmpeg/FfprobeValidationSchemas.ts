@@ -19,7 +19,7 @@ const STREAM_BASE = z.object({
   codec_tag: z.string().nonempty(),
   codec_tag_string: z.string().nonempty(),
   r_frame_rate: z.string(),
-  avg_frame_rate: z.string(),
+  avg_frame_rate: z.string().regex(/^\d+\/\d+$/),
   time_base: z.string().nonempty(),
   start_pts: z.number().optional(),
   start_time: z.string().nonempty().optional(),
