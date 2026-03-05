@@ -80,16 +80,12 @@
   }
 
   :global(body) {
-    background-color: var(--primary-bg);
-    color:            var(--text-primary);
-    font-family:      'Inter', sans-serif;
-    overflow-x:       hidden;
-    margin:           0;
-  }
-
-  /* TODO: Remove .icon as soon as TablerIcon-Component is used everywhere */
-  :global(.icon) {
-    vertical-align: text-top;
+    background-color:       var(--primary-bg);
+    color:                  var(--text-primary);
+    font-family:            'Inter', sans-serif;
+    font-variant-ligatures: none;
+    overflow-x:             hidden;
+    margin:                 0;
   }
 
   :global(*) {

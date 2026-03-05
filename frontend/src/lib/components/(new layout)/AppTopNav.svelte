@@ -2,7 +2,6 @@
   import type AppSideBar from '$lib/components/(new layout)/AppSideBar.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
-  import IconSearch from 'virtual:icons/tabler/search';
 
   let { appSideBarRef, renderAsOverlay = false, searchFormAction }: {
     appSideBarRef: AppSideBar,
@@ -25,7 +24,7 @@
   {#if searchFormAction != null}
     <form role="search" action={searchFormAction} method="GET">
       <div class="search-bar">
-        <span class="icon-search"><IconSearch role="presentation" /></span>
+        <span class="icon-search"><TablerIcon icon="search" /></span>
         <input type="search" name="q" placeholder="Search" />
       </div>
     </form>

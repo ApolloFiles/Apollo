@@ -1,5 +1,5 @@
 <script lang="ts">
-  import IconPlay from 'virtual:icons/tabler/player-play-filled';
+  import TablerIcon from '$lib/components/TablerIcon.svelte';
 
   let {
     mediaItemId,
@@ -43,7 +43,7 @@
         </picture>
       {/key}
       <div class="play-overlay">
-        <IconPlay class="icon" role="presentation" />
+        <TablerIcon icon="player-play-filled" />
       </div>
       {#if watchProgress != null}
         <div class="episode-progress">

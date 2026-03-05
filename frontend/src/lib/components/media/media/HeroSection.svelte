@@ -1,9 +1,6 @@
 <script lang="ts">
+  import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { onMount } from 'svelte';
-  import IconChevronDown from 'virtual:icons/tabler/chevron-down';
-  import IconChevronUp from 'virtual:icons/tabler/chevron-up';
-  import IconPlay from 'virtual:icons/tabler/player-play-filled';
-  import IconRotate from 'virtual:icons/tabler/rotate';
 
   let { mediaId, title, synopsis, hasClearLogo, nextMediaItem }: {
     mediaId: string,
@@ -95,9 +92,9 @@
             class="read-more-btn"
           >
             {#if isSynopsisExpanded}
-              Show Less <IconChevronUp class="icon" role="presentation" />
+              Show Less <TablerIcon icon="chevron-up" />
             {:else}
-              Read More <IconChevronDown class="icon" role="presentation" />
+              Read More <TablerIcon icon="chevron-down" />
             {/if}
           </button>
         {/if}
@@ -123,14 +120,14 @@
           <a
             href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=auto"
             class="btn-action">
-            <IconPlay class="icon" role="presentation" />
+            <TablerIcon icon="player-play-filled" />
             Resume
           </a>
 
           <a
             href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=0"
             class="btn-action btn-action-secondary">
-            <IconRotate class="icon" role="presentation" />
+            <TablerIcon icon="rotate" />
             Start Over
           </a>
         </div>
