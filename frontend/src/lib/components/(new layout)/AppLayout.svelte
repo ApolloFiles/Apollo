@@ -92,6 +92,10 @@
     vertical-align: text-top;
   }
 
+  :global(*) {
+    font-variant-ligatures: none;
+  }
+
   /* Main Content */
   .main-content {
     margin-left: var(--sidebar-width);
