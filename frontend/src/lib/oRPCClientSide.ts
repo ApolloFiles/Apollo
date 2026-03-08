@@ -1,7 +1,7 @@
 import { createORPCClient, onError, ORPCError } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import type { ContractRouterClient } from '@orpc/contract';
-import type { oRpcContract } from '../../../backend/src/utils/orpc/contract/oRpcContract';
+import type { oRpcContract } from '../../../backend/src/orpc/contract/oRpcContract';
 
 let rpcClient: ContractRouterClient<typeof oRpcContract>;
 

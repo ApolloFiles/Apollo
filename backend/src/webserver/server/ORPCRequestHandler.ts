@@ -3,7 +3,7 @@ import * as oRpcNodeJs from '@orpc/server/node';
 import * as oRpcPlugins from '@orpc/server/plugins';
 import { singleton } from 'tsyringe';
 import AppConfiguration from '../../config/AppConfiguration.js';
-import { ORPC_ROUTER, type ORpcInitialContext } from '../../utils/orpc/router/ORpcRouter.js';
+import { ORPC_ROUTER, type ORpcInitialContext } from '../../orpc/router/ORpcRouter.js';
 
 @singleton()
 export default class ORPCRequestHandler extends oRpcNodeJs.RPCHandler<ORpcInitialContext> {

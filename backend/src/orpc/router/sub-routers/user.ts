@@ -1,9 +1,9 @@
 import { injectable } from 'tsyringe';
-import OAuthConfigurationProvider from '../../../../auth/oauth/OAuthConfigurationProvider.js';
-import AuthSessionFinder from '../../../../auth/session/AuthSessionFinder.js';
-import AuthSessionRevoker from '../../../../auth/session/AuthSessionRevoker.js';
-import DatabaseClient from '../../../../database/DatabaseClient.js';
-import UploadedProfilePicturePreProcessor from '../../../../user/picture/UploadedProfilePicturePreProcessor.js';
+import OAuthConfigurationProvider from '../../../auth/oauth/OAuthConfigurationProvider.js';
+import AuthSessionFinder from '../../../auth/session/AuthSessionFinder.js';
+import AuthSessionRevoker from '../../../auth/session/AuthSessionRevoker.js';
+import DatabaseClient from '../../../database/DatabaseClient.js';
+import UploadedProfilePicturePreProcessor from '../../../user/picture/UploadedProfilePicturePreProcessor.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
 
 @injectable()

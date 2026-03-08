@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
-import OAuthConfigurationProvider from '../../../../auth/oauth/OAuthConfigurationProvider.js';
-import AppConfiguration from '../../../../config/AppConfiguration.js';
-import { IS_PRODUCTION } from '../../../../constants.js';
+import OAuthConfigurationProvider from '../../../auth/oauth/OAuthConfigurationProvider.js';
+import AppConfiguration from '../../../config/AppConfiguration.js';
+import { IS_PRODUCTION } from '../../../constants.js';
 import type { PlainORpcImplementer, SubRouter } from '../ORpcRouter.js';
 
 @injectable()

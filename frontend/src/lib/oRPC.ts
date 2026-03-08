@@ -3,7 +3,7 @@ import { createORPCClient, onError, ORPCError } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import type { ContractRouterClient } from '@orpc/contract';
 import { type Cookies, redirect } from '@sveltejs/kit';
-import { oRpcContract } from '../../../backend/src/utils/orpc/contract/oRpcContract';
+import { oRpcContract } from '../../../backend/src/orpc/contract/oRpcContract';
 
 type ClientContext = { cookies: Cookies, fetch: typeof fetch };
 

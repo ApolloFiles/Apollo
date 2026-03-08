@@ -1,16 +1,16 @@
 import { injectable } from 'tsyringe';
-import DatabaseClient from '../../../../database/DatabaseClient.js';
-import type * as PrismaClient from '../../../../database/prisma-client/client.js';
-import FileProvider from '../../../../files/FileProvider.js';
-import LibraryManager from '../../../../plugins/official/media/_old/libraries/LibraryManager.js';
-import MediaLibraryFinder from '../../../../plugins/official/media/library/database/finder/MediaLibraryFinder.js';
+import DatabaseClient from '../../../database/DatabaseClient.js';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
+import FileProvider from '../../../files/FileProvider.js';
+import LibraryManager from '../../../plugins/official/media/_old/libraries/LibraryManager.js';
+import MediaLibraryFinder from '../../../plugins/official/media/library/database/finder/MediaLibraryFinder.js';
 import MediaLibraryMediaFinder
-  from '../../../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
-import MediaLibraryWriter from '../../../../plugins/official/media/library/database/writer/MediaLibraryWriter.js';
-import FullLibraryIndexingHelper from '../../../../plugins/official/media/library/FullLibraryIndexingHelper.js';
+  from '../../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
+import MediaLibraryWriter from '../../../plugins/official/media/library/database/writer/MediaLibraryWriter.js';
+import FullLibraryIndexingHelper from '../../../plugins/official/media/library/FullLibraryIndexingHelper.js';
 import MediaClearLogoImageProvider
-  from '../../../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
-import ApolloFileURI from '../../../../uri/ApolloFileURI.js';
+  from '../../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
+import ApolloFileURI from '../../../uri/ApolloFileURI.js';
 import type { ORpcContractOutputs } from '../../contract/oRpcContract.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
 import MediaEditorSubRouterFactory from './media/editor/MediaEditorSubRouterFactory.js';

@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import FileSystemProvider from '../../../../files/FileSystemProvider.js';
+import FileSystemProvider from '../../../files/FileSystemProvider.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
 
 @injectable()

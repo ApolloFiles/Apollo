@@ -1,10 +1,10 @@
 import Fs from 'node:fs';
 import { injectable } from 'tsyringe';
-import AccountCreationInviteCreator from '../../../../auth/account_creation_invite/AccountCreationInviteCreator.js';
-import OAuthConfigurationProvider from '../../../../auth/oauth/OAuthConfigurationProvider.js';
-import DatabaseClient from '../../../../database/DatabaseClient.js';
-import ProcessBuilder from '../../../../plugins/official/media/_old/ProcessBuilder.js';
-import UserProvider from '../../../../user/UserProvider.js';
+import AccountCreationInviteCreator from '../../../auth/account_creation_invite/AccountCreationInviteCreator.js';
+import OAuthConfigurationProvider from '../../../auth/oauth/OAuthConfigurationProvider.js';
+import DatabaseClient from '../../../database/DatabaseClient.js';
+import ProcessBuilder from '../../../plugins/official/media/_old/ProcessBuilder.js';
+import UserProvider from '../../../user/UserProvider.js';
 import type { AuthenticatedSuperUserORpcImplementer, SubRouter } from '../ORpcRouter.js';
 
 @injectable()

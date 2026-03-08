@@ -2,13 +2,13 @@ import Crypto from 'node:crypto';
 import Fs from 'node:fs';
 import Path from 'node:path';
 import { injectable } from 'tsyringe';
-import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
-import LocalFile from '../../../../../../files/local/LocalFile.js';
-import type WriteableVirtualFile from '../../../../../../files/WriteableVirtualFile.js';
-import FfprobeExecutor from '../../../../../../plugins/official/ffmpeg/FfprobeExecutor.js';
+import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
+import LocalFile from '../../../../../files/local/LocalFile.js';
+import type WriteableVirtualFile from '../../../../../files/WriteableVirtualFile.js';
+import FfprobeExecutor from '../../../../../plugins/official/ffmpeg/FfprobeExecutor.js';
 import FfmpegVideoFileMetadataEditor
-  from '../../../../../../plugins/official/media/library/editor/FfmpegVideoFileMetadataEditor.js';
-import type ApolloUser from '../../../../../../user/ApolloUser.js';
+  from '../../../../../plugins/official/media/library/editor/FfmpegVideoFileMetadataEditor.js';
+import type ApolloUser from '../../../../../user/ApolloUser.js';
 import type { ORpcContractOutputs } from '../../../../contract/oRpcContract.js';
 import type { ORpcImplementer, SubRouter } from '../../../ORpcRouter.js';
 
@@ -284,7 +284,7 @@ export default class MediaEditorSubRouterFactory {
           }),
 
         getWriteProgress: os.editor.getWriteProgress
-          .handler(async ({ input, context, errors }) => {
+          .handler(async ({ context }) => {
             return this.mostRecentWriteLockInfo.get(context.authSession.user.id) ?? null;
           }),
       },

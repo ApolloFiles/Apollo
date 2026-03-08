@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import AccountCreationInviteFinder from '../../../../auth/account_creation_invite/AccountCreationInviteFinder.js';
+import AccountCreationInviteFinder from '../../../auth/account_creation_invite/AccountCreationInviteFinder.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
 
 @injectable()
