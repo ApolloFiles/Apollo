@@ -28,5 +28,11 @@ export const handle: Handle = async (input) => {
     'Cross-Origin-Opener-Policy': 'same-origin',
   });
 
-  return handleParaglide(input);
+  const response = await handleParaglide(input);
+
+  if (!response.headers.has('Cache-Control')) {
+    response.headers.set('Cache-Control', 'private, no-cache');
+  }
+
+  return response;
 };
