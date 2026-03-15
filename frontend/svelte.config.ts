@@ -31,6 +31,7 @@ const config: Config = {
         'base-uri': ['none'],
         'form-action': ['self'],
         'frame-ancestors': ['none'],
+        'object-src': ['none'],
       },
     },
     prerender: {
