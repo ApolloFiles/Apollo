@@ -1,11 +1,11 @@
+import { ORpcContract } from '$lib/ORpcHelper';
 import { createORPCClient, onError, ORPCError } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import type { ContractRouterClient } from '@orpc/contract';
-import type { oRpcContract } from '../../../backend/src/orpc/contract/oRpcContract';
 
-let rpcClient: ContractRouterClient<typeof oRpcContract>;
+let rpcClient: ContractRouterClient<typeof ORpcContract>;
 
-export function getClientSideRpcClient(customFetch?: typeof fetch): ContractRouterClient<typeof oRpcContract> {
+export function getClientSideRpcClient(customFetch?: typeof fetch): ContractRouterClient<typeof ORpcContract> {
   if (rpcClient == null) {
     rpcClient = createORPCClient(new RPCLink({
       url: new URL('/api/_frontend/oRPC/', location.href),
