@@ -33,14 +33,20 @@ export default class ApolloFileURI {
   }
 
   static create(userId: string, fileSystemId: string, filePath: string): ApolloFileURI {
-    // TODO: Have ApolloURI and ApolloFileURI handle path normalization the same way
-    if (filePath.startsWith('/')) {
-      filePath = filePath.substring(1);
-    }
-    if (filePath.endsWith('/')) {
-      filePath = filePath.substring(0, filePath.length - 1);
+    let filePathSegments: string[] = [];
+
+    if (filePath !== '/') {
+      // TODO: Have ApolloURI and ApolloFileURI handle path normalization the same way
+      if (filePath.startsWith('/')) {
+        filePath = filePath.substring(1);
+      }
+      if (filePath.endsWith('/')) {
+        filePath = filePath.substring(0, filePath.length - 1);
+      }
+
+      filePathSegments = filePath.split('/');
     }
 
-    return new ApolloFileURI(new ApolloUrl(['f', userId, fileSystemId, ...filePath.split('/')]));
+    return new ApolloFileURI(new ApolloUrl(['f', userId, fileSystemId, ...filePathSegments]));
   }
 }
