@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto, refreshAll } from '$app/navigation';
+  import ApolloFilePicker from '$lib/components/apollo-file-picker/ApolloFilePicker.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import { ORPCError } from '@orpc/client';
@@ -13,6 +14,7 @@
   let { data }: PageProps = $props();
 
   let saveModalRef: ProgressModal;
+  let apolloFilePickerRef: ApolloFilePicker;
   let saveModalBodyText = $state('');
   let saveReFetchingTimeoutId: number | undefined = undefined;
 
@@ -63,11 +65,10 @@
   // button user actions
 
   function promptUserForPathToOpen(): void {
-    const path = window.prompt('Enter path to open (absolute path on host system):');
-    if (path == null || path.trim() === '') {
-      return;
-    }
+    apolloFilePickerRef.show();
+  }
 
+  function openApolloFileUri(uri: string): void {
     if (files.some(file => file.hasUnsavedChanges)) {
       const proceed = window.confirm('There are unsaved changes that will be lost if you open a new path. Do you want to proceed?');
       if (proceed !== true) {
@@ -75,10 +76,10 @@
       }
     }
 
-    if (path === data.requestedOpenPath) {
+    if (uri === data.requestedOpenUri) {
       refreshAll();
     } else {
-      goto(`?path=${encodeURIComponent(path)}`);
+      goto(`?file=${encodeURIComponent(uri)}`);
     }
   }
 
@@ -323,12 +324,12 @@
   }
 
   async function refreshSelectedFiles(): Promise<void> {
-    if (data.requestedOpenPath == null) {
+    if (data.requestedOpenUri == null) {
       alert('No path is currently open, cannot refresh');
       return;
     }
 
-    const openPathResult = await getClientSideRpcClient().media.editor.openPath({ path: data.requestedOpenPath });
+    const openPathResult = await getClientSideRpcClient().media.editor.openPath({ fileUri: data.requestedOpenUri });
 
     for (const selectedFileIdentifier of selectedFiles.map(file => file.identifier)) {
       const newFileData = openPathResult.find(fileData => fileData.identifier === selectedFileIdentifier);
@@ -377,11 +378,11 @@
       window.clearTimeout(saveReFetchingTimeoutId);
 
       saveModalRef?.hide();
+      apolloFilePickerRef?.hide();
     };
   });
 
   // "v2" TODOs:
-  // TODO: Use Apollo URLs or something (or present a file select)
   // TODO: Present user with a drop-down for multi-file and multi-value tags case, so they can choose one of the values from a file to write into all, if they want to
   // TODO: Editing stream tags in multi-file-select, when only one stream of that type exists across all selected files
   // TODO: Heavy refactoring and re-design: split UI into multiple components, use icons where appropriate, unify text sizes etc., check accessibility, ...
@@ -405,6 +406,17 @@
   // TODO: Can we provide a 'preview' of changes that would/will be written to the user?
   // TODO: Can the backend send a file-hash/stat-hash and the frontend can warn the user (and ask for confirmation) that the file seems to have changed, and whether they want to proceed with saving
 </script>
+
+<ApolloFilePicker
+  bind:this={apolloFilePickerRef}
+  onResolve={(file) => openApolloFileUri(file.uri)}
+/>
+
+<ProgressModal
+  bind:this={saveModalRef}
+  title="Saving changes..."
+  bodyText={saveModalBodyText}
+/>
 
 <!-- Buttons -->
 <div>
@@ -473,13 +485,6 @@
     </ul>
   </div>
 </div>
-
-<!-- save progress modal -->
-<ProgressModal
-  bind:this={saveModalRef}
-  title="Saving changes..."
-  bodyText={saveModalBodyText}
-/>
 
 <!-- file list -->
 <div>

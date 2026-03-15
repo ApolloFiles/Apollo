@@ -13,6 +13,7 @@
   import IconDeviceFloppy from 'virtual:icons/tabler/device-floppy';
   import IconEdit from 'virtual:icons/tabler/edit';
   import IconEraser from 'virtual:icons/tabler/eraser';
+  import IconFile from 'virtual:icons/tabler/file';
   import IconFolderFilled from 'virtual:icons/tabler/folder-filled';
   import IconFolderOpen from 'virtual:icons/tabler/folder-open';
   import IconHeadphones from 'virtual:icons/tabler/headphones';
@@ -41,6 +42,7 @@
   import IconUserPlus from 'virtual:icons/tabler/user-plus';
   import IconUsers from 'virtual:icons/tabler/users';
   import IconVideo from 'virtual:icons/tabler/video';
+  import IconX from 'virtual:icons/tabler/x';
 
   export type TablerIconId =
     | 'arrow-left'
@@ -56,6 +58,7 @@
     | 'device-floppy'
     | 'edit'
     | 'eraser'
+    | 'file'
     | 'folder-filled'
     | 'folder-open'
     | 'headphones'
@@ -84,6 +87,7 @@
     | 'users'
     | 'user-plus'
     | 'video'
+    | 'x'
     ;
 
   let props: {
@@ -120,6 +124,8 @@
         return IconEdit;
       case 'eraser':
         return IconEraser;
+      case 'file':
+        return IconFile;
       case 'folder-filled':
         return IconFolderFilled;
       case 'folder-open':
@@ -176,6 +182,8 @@
         return IconUserPlus;
       case 'video':
         return IconVideo;
+      case 'x':
+        return IconX;
 
       default:
         console.warn(`No icon found for id: ${props.icon}`);

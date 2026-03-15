@@ -1,13 +1,13 @@
 import Crypto from 'node:crypto';
-import Fs from 'node:fs';
-import Path from 'node:path';
 import { injectable } from 'tsyringe';
+import FileProvider from '../../../../../files/FileProvider.js';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type WriteableVirtualFile from '../../../../../files/WriteableVirtualFile.js';
 import FfprobeExecutor from '../../../../../plugins/official/ffmpeg/FfprobeExecutor.js';
 import FfmpegVideoFileMetadataEditor
   from '../../../../../plugins/official/media/library/editor/FfmpegVideoFileMetadataEditor.js';
+import ApolloFileURI from '../../../../../uri/ApolloFileURI.js';
 import type ApolloUser from '../../../../../user/ApolloUser.js';
 import type { ORpcContractOutputs } from '../../../../contract/oRpcContract.js';
 import type { ORpcImplementer, SubRouter } from '../../../ORpcRouter.js';
@@ -38,6 +38,7 @@ export default class MediaEditorSubRouterFactory {
     private readonly ffprobeExecutor: FfprobeExecutor,
     private readonly ffmpegVideoFileMetadataEditor: FfmpegVideoFileMetadataEditor,
     private readonly fileSystemProvider: FileSystemProvider,
+    private readonly fileProvider: FileProvider,
   ) {
     setInterval(() => {
       const maxEndTime = Date.now() + 60 * 60 * 1000;
@@ -54,42 +55,40 @@ export default class MediaEditorSubRouterFactory {
       editor: {
         openPath: os.editor.openPath
           .handler(async ({ input, context, errors }) => {
-            // FIXME: path should be a Apollo URI or something with proper permission checks
+            // TODO handle errors properly and pass them to the user
+            const inputFileUri = ApolloFileURI.parse(input.fileUri);
+            const inputFile = await this.fileProvider.provideForUserByUri(context.authSession.user, inputFileUri);
 
-            const loggedInUser = context.authSession.user;
-            if (!loggedInUser.isSuperUser) {
-              // FIXME: Replace with proper (file) permission check
-              throw errors.NO_PERMISSIONS();
-            }
-
-            if (!Fs.existsSync(input.path)) {
+            if (!(await inputFile.exists())) {
               throw errors.REQUESTED_ENTITY_NOT_FOUND();
             }
 
-            const inputFileStat = await Fs.promises.stat(input.path);
+            if (!(inputFile instanceof LocalFile)) {
+              // TODO: Send proper error
+              throw errors.INVALID_INPUT();
+            }
 
-            let filePathsToAnalyze: string[] = [];
-
-            if (inputFileStat.isFile()) {
-              filePathsToAnalyze.push(input.path);
-            } else if (inputFileStat.isDirectory()) {
-              const dirEntries = await Fs.promises.readdir(input.path, { withFileTypes: true });
-              for (const entry of dirEntries) {
-                if (entry.isFile()) {
-                  filePathsToAnalyze.push(Path.join(entry.parentPath, entry.name));
+            let filesToAnalyze: LocalFile[] = [];
+            if (await inputFile.isFile()) {
+              filesToAnalyze.push(inputFile);
+            } else {
+              const childFiles = await inputFile.getFiles();
+              for (const childFile of childFiles) {
+                if (await childFile.isFile()) {
+                  filesToAnalyze.push(childFile);
                 }
               }
             }
 
             const result: ORpcContractOutputs['media']['editor']['openPath'] = [];
 
-            for (const filePath of filePathsToAnalyze) {
+            for (const file of filesToAnalyze) {
               try {
-                const ffprobeResult = await this.ffprobeExecutor.probe(filePath, true);
+                const ffprobeResult = await this.ffprobeExecutor.probe(file.getAbsolutePathOnHost(), true);
 
                 result.push({
-                  identifier: filePath,
-                  name: Path.basename(filePath),
+                  identifier: file.toURI().toString(),
+                  name: file.getFileName(),
 
                   videoMeta: {
                     file: {
@@ -213,12 +212,6 @@ export default class MediaEditorSubRouterFactory {
             let tmpDir: WriteableVirtualFile;
 
             try {
-              // FIXME: file identifier should be a Apollo URI or something with proper permission checks
-              if (!loggedInUser.isSuperUser) {
-                // FIXME: Replace with proper (file) permission check
-                throw errors.NO_PERMISSIONS();
-              }
-
               const tmpFileSystem = this.fileSystemProvider.provideApolloFileSystemsForUser(loggedInUser).tmp;
               const _tmpDirVirtualFile = tmpFileSystem.getFile('/_media-editor/' + Crypto.randomUUID());
               if (!(_tmpDirVirtualFile instanceof LocalFile)) {
@@ -244,8 +237,13 @@ export default class MediaEditorSubRouterFactory {
                 writeLockInfo.currentFileIndex = index;
 
                 try {
+                  const virtualFile = await this.fileProvider.provideForUserByUri(loggedInUser, ApolloFileURI.parse(file.identifier));
+                  if (!(virtualFile instanceof LocalFile)) {
+                    throw new Error(`Currently only local files are supported for media metadata editing`);
+                  }
+
                   await this.ffmpegVideoFileMetadataEditor.edit(
-                    file.identifier,
+                    virtualFile.getAbsolutePathOnHost(),
                     tmpDirVirtualFile.getAbsolutePathOnHost(),
                     file.desiredState,
                   );

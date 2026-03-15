@@ -148,7 +148,7 @@ const searchUserToShareWith = baseOc
   })));
 
 const metadataEditorOpenPath = baseOc
-  .input(z.object({ path: z.string().nonempty() }))
+  .input(z.object({ fileUri: z.string().nonempty() }))
   .output(z.array(z.strictObject({
     identifier: z.string(),
     name: z.string(),

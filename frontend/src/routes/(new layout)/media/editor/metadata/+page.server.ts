@@ -22,24 +22,24 @@ type File = {
   },
 };
 
-type PageData = AuthenticatedPageData & RenderingLayoutData & { files: File[], requestedOpenPath: string | null };
+type PageData = AuthenticatedPageData & RenderingLayoutData & { files: File[], requestedOpenUri: string | null };
 
 export const load: PageServerLoad = async ({ fetch, cookies, url }): Promise<PageData> => {
-  const path = url.searchParams.get('path');
+  const fileUri = url.searchParams.get('file');
 
   const loggedInUser = await rpcClient.user.get(undefined, { context: { cookies, fetch } });
 
-  if (path == null || path.length === 0) {
+  if (fileUri == null || fileUri.length === 0) {
     return {
       loggedInUser: loggedInUser,
       files: [],
-      requestedOpenPath: null,
+      requestedOpenUri: null,
 
       rendering: { layout: { sideBarMenuItems: [] } },
     };
   }
 
-  const openPathResult = await safe(rpcClient.media.editor.openPath({ path }, { context: { cookies, fetch } }));
+  const openPathResult = await safe(rpcClient.media.editor.openPath({ fileUri }, { context: { cookies, fetch } }));
 
   if (isDefinedError(openPathResult.error) && openPathResult.error.code === 'REQUESTED_ENTITY_NOT_FOUND') {
     error(404, 'The requested path could not be found/opened');
@@ -49,7 +49,7 @@ export const load: PageServerLoad = async ({ fetch, cookies, url }): Promise<Pag
 
   return {
     loggedInUser: loggedInUser,
-    requestedOpenPath: path,
+    requestedOpenUri: fileUri,
     files: openPathResult.data,
 
     rendering: { layout: { sideBarMenuItems: [] } },

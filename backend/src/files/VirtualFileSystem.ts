@@ -1,3 +1,4 @@
+import ApolloFileURI from '../uri/ApolloFileURI.js';
 import type ApolloUser from '../user/ApolloUser.js';
 import MutexManager, { type MutexAcquireOptions } from '../utils/mutex/MutexManager.js';
 import type VirtualFile from './VirtualFile.js';
@@ -75,5 +76,9 @@ export default abstract class VirtualFileSystem {
       throw new Error('The file system does not have an owner');
     }
     return this.owner;
+  }
+
+  toURI(): ApolloFileURI {
+    return ApolloFileURI.create(this.owner?.id ?? VirtualFileSystem.SYSTEM_USER_ID, this.id, '/');
   }
 }
