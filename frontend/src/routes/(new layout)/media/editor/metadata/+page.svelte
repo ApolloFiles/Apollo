@@ -381,10 +381,12 @@
   });
 
   // "v2" TODOs:
-  // TODO: Editing stream tags in multi-file-select, when only one stream of that type exists across all selected files
+  // TODO: Use Apollo URLs or something (or present a file select)
   // TODO: Present user with a drop-down for multi-file and multi-value tags case, so they can choose one of the values from a file to write into all, if they want to
+  // TODO: Editing stream tags in multi-file-select, when only one stream of that type exists across all selected files
   // TODO: Heavy refactoring and re-design: split UI into multiple components, use icons where appropriate, unify text sizes etc., check accessibility, ...
   // TODO: Add support for editing Chapters
+  // TODO: Maybe show a still-frame or a couple second clip for every chapter, so it is easier to identify it (or at least a live_transcode link with a startOffset and without watch progress tracking)
   // TODO: Maybe we can offer format-specific suggestions/features, when supported and a warning for not explicitly supported ones
   //       e.g. normalization of tag keys (e.g. MKV mostly/mainly uses upper-case), (common)tag key name suggestions as one is typing, language code suggestion/search/completion for LANGUAGE tags, ...
   // TODO: Warn the user (or come up with something) regarding changes that should be saved but could be lost (e.g. ffmpeg dropped a tag, because the file format only allows specific tags and not any user-supplied tag)
@@ -398,7 +400,6 @@
   //       (errors prevent saving, warnings just ask for confirmation before saving, weak-warnings show up in the UI but do not prevent/delay saving)
   //       Could allow for 'hey this tag value might be wrong/non-spec-compliant' scenarios, without preventing saving
   // TODO: Support fetching info from TheMovieDB/AniList/etc. for easier tagging of such media (maybe even use 'Apollo Media' metadata if available, e.g. to auto-detect IDs)
-  // TODO: Use Apollo URLs or something (or present a file select)
   // TODO: Having better UI for the disposition flags would be nice... Some flags are mutually exclusive and there are just so many...
   //       Maybe we can show some select view (incl. enabled= and offer some kind of select-search-box, for when you want to actively edit them and add one? Or move them somewhere to take less space or something?
   // TODO: Can we provide a 'preview' of changes that would/will be written to the user?

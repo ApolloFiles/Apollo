@@ -48,6 +48,17 @@
       }
     }
 
+    // files(/TagCollections) without a tag key, should count as having an empty value,
+    // so the UI displays that difference in value. So we check for that
+    for (const tag of collectedTags.values()) {
+      for (const tagCollection of tagCollections) {
+        if (!tagCollection.findByKeyIfUniqueOrNull(tag.key)) {
+          tag.uniqueValues.add('');
+          break;
+        }
+      }
+    }
+
     return Array.from(collectedTags.values())
       .sort((a, b) => TagCollection.compareKeysForSorting(a.key, b.key));
   });
