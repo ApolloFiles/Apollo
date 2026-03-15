@@ -154,27 +154,29 @@ export default class FileData {
     this._streams.sort((a, b) => a.order - b.order);
   }
 
+  static createFromBackendData(file: FileDataFromBackend): FileData {
+    return new FileData(
+      file.identifier,
+      file.name,
+      file.videoMeta.file,
+      file.videoMeta.streams.map((stream, index) => {
+        const tags = new TagCollection(stream.tags);
+
+        return {
+          identifier: index,
+          type: stream.type,
+          order: index,
+
+          streamContextText: stream.streamContextText,
+
+          tags,
+          disposition: stream.disposition,
+        };
+      }),
+    );
+  }
+
   static createMultipleFromBackendData(filesFromBackend: FileDataFromBackend[]): FileData[] {
-    return filesFromBackend.map((file) => {
-      return new FileData(
-        file.identifier,
-        file.name,
-        file.videoMeta.file,
-        file.videoMeta.streams.map((stream, index) => {
-          const tags = new TagCollection(stream.tags);
-
-          return {
-            identifier: index,
-            type: stream.type,
-            order: index,
-
-            streamContextText: stream.streamContextText,
-
-            tags,
-            disposition: stream.disposition,
-          };
-        }),
-      );
-    });
+    return filesFromBackend.map((file) => this.createFromBackendData(file));
   }
 }

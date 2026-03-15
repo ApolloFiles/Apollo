@@ -109,9 +109,7 @@
       return;
     }
 
-    sendSaveRequest(selectedFiles, () => {
-      // TODO: refresh selected files only, to show the actually saved data
-    })
+    sendSaveRequest(selectedFiles, () => refreshSelectedFiles())
       .catch((err) => {
         alert('Failed to save changes, see console for details');
         console.error('Failed to save changes:', err);
@@ -322,6 +320,31 @@
     };
 
     saveReFetchingTimeoutId = window.setTimeout(fetchProgressInfoAndUpdateUIAndReQueueNextUpdateIfNeeded, 750);
+  }
+
+  async function refreshSelectedFiles(): Promise<void> {
+    if (data.requestedOpenPath == null) {
+      alert('No path is currently open, cannot refresh');
+      return;
+    }
+
+    const openPathResult = await getClientSideRpcClient().media.editor.openPath({ path: data.requestedOpenPath });
+
+    for (const selectedFileIdentifier of selectedFiles.map(file => file.identifier)) {
+      const newFileData = openPathResult.find(fileData => fileData.identifier === selectedFileIdentifier);
+
+      if (newFileData == null) {
+        files = files.filter(file => file.identifier !== selectedFileIdentifier);
+        continue;
+      }
+
+      const fileIndex = files.findIndex(file => file.identifier === selectedFileIdentifier);
+      if (fileIndex === -1) {
+        continue;
+      }
+
+      files[fileIndex] = FileData.createFromBackendData(newFileData);
+    }
   }
 
   function capitalizeFirstLetter(str: string): string {
