@@ -36,10 +36,10 @@ export type FileDataFromBackend = {
 }
 
 export default class FileData {
-  public readonly globalTags = new TagCollection();
+  public readonly globalTags: TagCollection;
   private readonly _streamsMarkedForDeletion: StreamData['identifier'][] = [];
   private readonly _streams: StreamData[] = $state([]);
-
+  private _hasUnsavedChanges = $state(false);
 
   constructor(
     public readonly identifier: string,
@@ -47,7 +47,8 @@ export default class FileData {
     globalMetadata: FileMetadata,
     streams: StreamData[],
   ) {
-    this.globalTags.pushTags(globalMetadata.tags);
+    this.globalTags = new TagCollection(globalMetadata.tags);
+
     for (const stream of streams) {
       this._streams.push(stream);
     }
@@ -61,6 +62,12 @@ export default class FileData {
 
   get streamsMarkedForDeletion(): ReadonlyArray<StreamData['identifier']> {
     return this._streamsMarkedForDeletion;
+  }
+
+  get hasUnsavedChanges(): boolean {
+    return this._hasUnsavedChanges ||
+      this.globalTags.hasUnsavedChanges ||
+      this.streams.some(stream => stream.tags.hasUnsavedChanges);
   }
 
   sortTagsByKey(): void {
@@ -89,6 +96,7 @@ export default class FileData {
     currentStream.order = streamAbove.order;
     streamAbove.order = tempOrder;
 
+    this._hasUnsavedChanges = true;
     this.sortStreamsByOrder();
   }
 
@@ -111,6 +119,7 @@ export default class FileData {
     currentStream.order = streamBelow.order;
     streamBelow.order = tempOrder;
 
+    this._hasUnsavedChanges = true;
     this.sortStreamsByOrder();
   }
 
@@ -122,6 +131,7 @@ export default class FileData {
 
     this._streamsMarkedForDeletion.push(identifier);
     this._streams.splice(indexInArray, 1);
+    this._hasUnsavedChanges = true;
   }
 
   toggleDisposition(streamIdentifier: StreamData['identifier'], dispositionKey: string): void {
@@ -135,7 +145,9 @@ export default class FileData {
     if (!(dispositionKey in stream.disposition)) {
       throw new Error(`Disposition key ${dispositionKey} not found`);
     }
+
     stream.disposition[dispositionKey] = !stream.disposition[dispositionKey];
+    this._hasUnsavedChanges = true;
   }
 
   private sortStreamsByOrder(): void {

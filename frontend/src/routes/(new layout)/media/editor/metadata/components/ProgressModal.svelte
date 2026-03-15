@@ -11,7 +11,7 @@
   }
 
   export function hide(): void {
-    dialogElementRef.close();
+    dialogElementRef?.close();
   }
 </script>
 

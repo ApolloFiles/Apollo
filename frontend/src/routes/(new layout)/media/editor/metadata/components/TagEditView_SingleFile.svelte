@@ -18,9 +18,9 @@
          title={getMkvTagInfo(tag.key)?.info ?? '–'}
        ><TablerIcon icon="info-circle" /></span>
 
-      <input class="input-tag-key" bind:value={tag.key}>
+      <input class="input-tag-key" bind:value={() => tag.key, (key) => tagCollection.setKeyByUid(tag.uid, key)}>
       <TablerIcon icon="arrow-right" />
-      <input class="input-tag-value" bind:value={tag.value}>
+      <input class="input-tag-value" bind:value={() => tag.value, (value) => tagCollection.setValueByUid(tag.uid, value)}>
 
       <button
         class="btn btn-sm btn-danger ms-2"

@@ -68,7 +68,18 @@
       return;
     }
 
-    goto(`?path=${encodeURIComponent(path)}`);
+    if (files.some(file => file.hasUnsavedChanges)) {
+      const proceed = window.confirm('There are unsaved changes that will be lost if you open a new path. Do you want to proceed?');
+      if (proceed !== true) {
+        return;
+      }
+    }
+
+    if (path === data.requestedOpenPath) {
+      refreshAll();
+    } else {
+      goto(`?path=${encodeURIComponent(path)}`);
+    }
   }
 
   function selectAllFiles(): void {
@@ -295,9 +306,9 @@
           } else {
             // TODO: send success notification about completion
             alert('Successfully saved changes!');
+            onWriteDone();
           }
 
-          onWriteDone();
           return;
         }
 
@@ -321,9 +332,27 @@
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
+  //
+
+  function beforeUnloadEventListener(event: BeforeUnloadEvent): void {
+    event.preventDefault();
+    //noinspection JSDeprecatedSymbols
+    event.returnValue = true;
+  }
+
   onMount(() => {
+    $effect(() => {
+      if (files.some(file => file.hasUnsavedChanges)) {
+        window.addEventListener('beforeunload', beforeUnloadEventListener);
+      } else {
+        window.removeEventListener('beforeunload', beforeUnloadEventListener);
+      }
+    });
+
     return () => {
+      window.removeEventListener('beforeunload', beforeUnloadEventListener);
       window.clearTimeout(saveReFetchingTimeoutId);
+
       saveModalRef?.hide();
     };
   });
@@ -441,6 +470,9 @@
           role="option"
         >
           {file.name}
+          {#if file.hasUnsavedChanges}
+            <span title="Unsaved changes" style="color: orange"><em><strong>*</strong></em></span>
+          {/if}
         </div>
       {/each}
     </ul>

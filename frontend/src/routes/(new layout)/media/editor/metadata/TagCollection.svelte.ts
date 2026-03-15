@@ -4,15 +4,26 @@ export default class TagCollection {
   private static globalUidCounter = 0;
 
   private readonly _tags: TagData[] = $state([]);
+  private _hasUnsavedChanges = $state(false);
 
   constructor(tags?: Pick<TagData, 'key' | 'value'>[]) {
     if (tags != null) {
       this.pushTags(tags);
+
+      // #pushTags sets it to true, so we reset it in the constructor
+      this._hasUnsavedChanges = false;
     }
   }
 
+  /**
+   * DO NOT use `bind:` on {@code TagData#key} or {@code TagData#value}
+   */
   get tags(): ReadonlyArray<Readonly<TagData>> {
     return this._tags;
+  }
+
+  get hasUnsavedChanges(): boolean {
+    return this._hasUnsavedChanges;
   }
 
   hasKey(key: string): boolean {
@@ -26,6 +37,7 @@ export default class TagCollection {
     }
 
     this._tags.splice(index, 1);
+    this._hasUnsavedChanges = true;
   }
 
   deleteAllByKeyCaseInsensitive(key: string): void {
@@ -36,11 +48,15 @@ export default class TagCollection {
   setValueByUid(uid: number, newValue: string): void {
     const tag = this.findByUid(uid);
     tag.value = newValue;
+
+    this._hasUnsavedChanges = true;
   }
 
   setKeyByUid(uid: number, newKey: string): void {
     const tag = this.findByUid(uid);
     tag.key = newKey;
+
+    this._hasUnsavedChanges = true;
   }
 
   findByUid(uid: number): TagData {
@@ -62,7 +78,10 @@ export default class TagCollection {
 
   pushTag(key: string, value: string): TagData['uid'] {
     const uid = TagCollection.globalUidCounter++;
+
     this._tags.push({ uid, key, value });
+    this._hasUnsavedChanges = true;
+
     return uid;
   }
 

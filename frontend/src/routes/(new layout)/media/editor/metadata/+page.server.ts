@@ -22,7 +22,7 @@ type File = {
   },
 };
 
-type PageData = AuthenticatedPageData & RenderingLayoutData & { files: File[] };
+type PageData = AuthenticatedPageData & RenderingLayoutData & { files: File[], requestedOpenPath: string | null };
 
 export const load: PageServerLoad = async ({ fetch, cookies, url }): Promise<PageData> => {
   const path = url.searchParams.get('path');
@@ -33,6 +33,7 @@ export const load: PageServerLoad = async ({ fetch, cookies, url }): Promise<Pag
     return {
       loggedInUser: loggedInUser,
       files: [],
+      requestedOpenPath: null,
 
       rendering: { layout: { sideBarMenuItems: [] } },
     };
@@ -48,6 +49,7 @@ export const load: PageServerLoad = async ({ fetch, cookies, url }): Promise<Pag
 
   return {
     loggedInUser: loggedInUser,
+    requestedOpenPath: path,
     files: openPathResult.data,
 
     rendering: { layout: { sideBarMenuItems: [] } },
