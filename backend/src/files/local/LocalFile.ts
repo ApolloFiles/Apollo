@@ -23,7 +23,7 @@ export default class LocalFile extends VirtualFile<LocalFileSystem> {
   }
 
   // TODO: This is pretty bad for directories with many files, can we do better?
-  async getFiles(): Promise<VirtualFile<LocalFileSystem>[]> {
+  async getFiles(): Promise<LocalFile[]> {
     if (!(await this.isDirectory())) {
       // TODO: Proper Exception class
       throw new Error(`${this.path} is not a directory`);
@@ -31,7 +31,7 @@ export default class LocalFile extends VirtualFile<LocalFileSystem> {
 
     const fileNames = await NodeFsUtils.readdirIfExists(this.getAbsolutePathOnHost());
 
-    const result: VirtualFile<LocalFileSystem>[] = [];
+    const result: LocalFile[] = [];
     for (const file of fileNames) {
       result.push(this.fileSystem.getFile(Path.join(this.path, file)));
     }

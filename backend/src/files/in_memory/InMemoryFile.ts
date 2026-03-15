@@ -84,7 +84,7 @@ export default class InMemoryFile extends VirtualFile<InMemoryVirtualFileSystem>
     return stream;
   }
 
-  async getFiles(): Promise<VirtualFile<InMemoryVirtualFileSystem>[]> {
+  async getFiles(): Promise<InMemoryFile[]> {
     throw new Error('#getFiles is not implemented for in-memory files');
   }
 
