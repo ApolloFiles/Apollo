@@ -168,7 +168,7 @@ export default class MediaEditorSubRouterFactory {
                       }
 
                       return {
-                        type: stream.codec_type as 'video' | 'audio' | 'subtitle' | 'misc',
+                        type: stream.codec_type === 'data' ? 'misc' : stream.codec_type,
                         streamContextText: streamContext.filter(c => c != null && c !== '').join(' – '),
 
                         tags: Object.entries(stream.tags ?? {}).map(([key, value]) => ({ key, value })),

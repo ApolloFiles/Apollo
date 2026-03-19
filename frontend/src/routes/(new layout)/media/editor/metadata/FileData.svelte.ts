@@ -8,7 +8,7 @@ export type FileMetadata = {
 
 export type StreamData = {
   identifier: number,
-  type: 'video' | 'audio' | 'subtitle' | 'misc',
+  type: 'video' | 'audio' | 'subtitle' | 'attachment' | 'misc',
   order: number,
 
   streamContextText: string,

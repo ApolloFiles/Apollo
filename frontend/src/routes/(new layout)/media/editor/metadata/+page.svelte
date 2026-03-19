@@ -549,6 +549,8 @@
                   <TablerIcon icon="headphones" />
                 {:else if stream.type === 'subtitle'}
                   <TablerIcon icon="subtitles" />
+                {:else if stream.type === 'attachment'}
+                  <TablerIcon icon="file" />
                 {/if}
                 {capitalizeFirstLetter(stream.type)}
               </p>

@@ -13,7 +13,7 @@ type File = {
       tags: { key: string, value: string }[],
     },
     streams: {
-      type: 'video' | 'audio' | 'subtitle' | 'misc',
+      type: 'video' | 'audio' | 'subtitle' | 'attachment' | 'misc',
       streamContextText: string,
 
       tags: { key: string, value: string }[],

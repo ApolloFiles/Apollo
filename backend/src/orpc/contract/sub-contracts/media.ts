@@ -161,7 +161,7 @@ const metadataEditorOpenPath = baseOc
         })),
       }),
       streams: z.array(z.strictObject({
-        type: z.enum(['video', 'audio', 'subtitle', 'misc']),
+        type: z.enum(['video', 'audio', 'subtitle', 'attachment', 'misc']),
         streamContextText: z.string(),
 
         tags: z.array(z.strictObject({
