@@ -23,13 +23,41 @@
   let playerControlsBottomRef: ControlsBottomBar | undefined = $state(undefined);
   let closeOtherMenusRef = $derived(() => playerControlsBottomRef?.closeAllMenus);
 
+  const CONTROL_HIDE_DELAY_MS = 2000;
+  const TOUCH_CONTROL_HIDE_DELAY_MS = 2200;
+  const TOUCH_DOUBLE_TAP_WINDOW_MS = 300;
+  const TOUCH_CLICK_SUPPRESSION_MS = 600;
+  const DOUBLE_TAP_SEEK_SECONDS = 10;
+
+  type TapZone = 'left' | 'center' | 'right';
+
   let controlsVisible = $state(true);
   let videoPlayerIsInFullscreen = $state(document.fullscreenElement != null);
+  let isCoarsePointer = $state(false);
   let hideTimeout: number | undefined;
+  let suppressClickUntil = 0;
+  let lastTouchTapAt = 0;
+  let lastTouchTapZone: TapZone | null = null;
   let mainElement: HTMLElement | null = null;
 
   function isSomeMenuOpen(): boolean {
     return (videoContextMenuRef?.isVisible() || playerControlsBottomRef?.isAnyMenuOpen()) ?? false;
+  }
+
+  function getTapZone(targetElement: HTMLVideoElement, clientX: number): TapZone {
+    const rect = targetElement.getBoundingClientRect();
+    if (rect.width <= 0) {
+      return 'center';
+    }
+
+    const relativeX = (clientX - rect.left) / rect.width;
+    if (relativeX <= (1 / 3)) {
+      return 'left';
+    }
+    if (relativeX >= (2 / 3)) {
+      return 'right';
+    }
+    return 'center';
   }
 
   function showControls(): void {
@@ -51,7 +79,7 @@
     }
   }
 
-  function scheduleHide(): void {
+  function scheduleHide(delayMs = CONTROL_HIDE_DELAY_MS): void {
     if (hideTimeout) {
       clearTimeout(hideTimeout);
     }
@@ -60,11 +88,11 @@
         return;
       }
       hideControls();
-    }, 2000);
+    }, delayMs);
   }
 
   function handleMouseMove(event: MouseEvent): void {
-    if (!showCustomControls) {
+    if (!showCustomControls || isCoarsePointer) {
       return;
     }
 
@@ -79,14 +107,71 @@
   }
 
   function handleMouseLeave(): void {
+    if (isCoarsePointer) {
+      return;
+    }
+
     if (videoPlayer.$isPlaying && !isSomeMenuOpen()) {
       hideControls();
     }
   }
 
+  function handleVideoContainerTouchEnd(event: TouchEvent): void {
+    if (!showCustomControls) {
+      return;
+    }
+    if (!(event.target instanceof HTMLVideoElement)) {
+      return;
+    }
+    if (isSomeMenuOpen()) {
+      showControls();
+      return;
+    }
+
+    suppressClickUntil = performance.now() + TOUCH_CLICK_SUPPRESSION_MS;
+    showControls();
+
+    const touchPoint = event.changedTouches[0];
+    if (!touchPoint) {
+      return;
+    }
+
+    const tapZone = getTapZone(event.target, touchPoint.clientX);
+    const now = performance.now();
+    const isDoubleTap = (now - lastTouchTapAt) <= TOUCH_DOUBLE_TAP_WINDOW_MS;
+    const isSeekZone = tapZone === 'left' || tapZone === 'right';
+    const sameTapZone = tapZone === lastTouchTapZone;
+
+    if (isDoubleTap && isSeekZone && sameTapZone) {
+      const seekOffset = tapZone === 'left' ? -DOUBLE_TAP_SEEK_SECONDS : DOUBLE_TAP_SEEK_SECONDS;
+      videoPlayer.seek(videoPlayer.$currentTime + seekOffset, false, true);
+      scheduleHide(TOUCH_CONTROL_HIDE_DELAY_MS);
+
+      lastTouchTapAt = 0;
+      lastTouchTapZone = null;
+      return;
+    }
+
+    lastTouchTapAt = now;
+    lastTouchTapZone = tapZone;
+
+    if (videoPlayer.$isPlaying) {
+      scheduleHide(TOUCH_CONTROL_HIDE_DELAY_MS);
+    }
+  }
+
   onMount(() => {
+    const coarsePointerMediaQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
+    const updateIsCoarsePointer = (): void => {
+      isCoarsePointer = coarsePointerMediaQuery.matches;
+    };
+
+    updateIsCoarsePointer();
+    coarsePointerMediaQuery.addEventListener?.('change', updateIsCoarsePointer);
+
     mainElement = document.querySelector('main.watch-main');
     if (!mainElement) {
+      coarsePointerMediaQuery.removeEventListener?.('change', updateIsCoarsePointer);
       return;
     }
 
@@ -109,6 +194,17 @@
         return;
       }
       if (isSomeMenuOpen()) {
+        return;
+      }
+      if (performance.now() < suppressClickUntil) {
+        return;
+      }
+
+      if (isCoarsePointer) {
+        showControls();
+        if (videoPlayer.$isPlaying) {
+          scheduleHide(TOUCH_CONTROL_HIDE_DELAY_MS);
+        }
         return;
       }
 
@@ -173,13 +269,20 @@
     };
 
     document.addEventListener('keydown', handleKeyDown, { passive: true });
-    mainElement.querySelector<HTMLDivElement>('.video-container')!.addEventListener('click', handleVideoContainerClick, { passive: true });
+    const videoContainerElement = mainElement.querySelector<HTMLDivElement>('.video-container');
+    if (!videoContainerElement) {
+      coarsePointerMediaQuery.removeEventListener?.('change', updateIsCoarsePointer);
+      return;
+    }
+    videoContainerElement.addEventListener('click', handleVideoContainerClick, { passive: true });
+    videoContainerElement.addEventListener('touchend', handleVideoContainerTouchEnd, { passive: true });
 
     document.addEventListener('fullscreenchange', handleFullscreenChange, { passive: true });
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      coarsePointerMediaQuery.removeEventListener?.('change', updateIsCoarsePointer);
 
       if (hideTimeout) {
         clearTimeout(hideTimeout);
@@ -190,7 +293,9 @@
         mainElement.removeEventListener('mouseleave', handleMouseLeave);
         mainElement.style.cursor = '';
 
-        mainElement.querySelector<HTMLDivElement>('.video-container')!.removeEventListener('click', handleVideoContainerClick);
+        const videoContainerElement = mainElement.querySelector<HTMLDivElement>('.video-container');
+        videoContainerElement?.removeEventListener('click', handleVideoContainerClick);
+        videoContainerElement?.removeEventListener('touchend', handleVideoContainerTouchEnd);
       }
     };
   });

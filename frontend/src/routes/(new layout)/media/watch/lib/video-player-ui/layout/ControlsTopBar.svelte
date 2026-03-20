@@ -136,4 +136,48 @@
   .control-button:hover {
     background-color: rgba(255, 255, 255, 0.1);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .top-bar {
+      padding: 14px 12px;
+      gap: 10px;
+    }
+
+    .left-section {
+      gap: 12px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .right-section {
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .video-title-container {
+      min-width: 0;
+    }
+
+    .video-title,
+    .episode-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .back-button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .control-button {
+      width: 44px;
+      height: 44px;
+    }
+  }
 </style>

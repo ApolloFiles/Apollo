@@ -199,4 +199,27 @@
   .volume-slider-container:hover .volume-slider {
     height: 6px;
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .control-button {
+      width: 48px;
+      height: 48px;
+      padding: 10px;
+      font-size: 1.3rem;
+    }
+
+    .volume-slider-container {
+      width: 100px;
+      padding: 14px 0;
+    }
+
+    .volume-slider {
+      height: 6px;
+    }
+
+    .volume-handle {
+      width: 16px;
+      height: 16px;
+    }
+  }
 </style>

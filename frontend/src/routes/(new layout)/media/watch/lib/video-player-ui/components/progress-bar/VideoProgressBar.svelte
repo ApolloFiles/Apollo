@@ -163,4 +163,24 @@
   .progress-bar-container:hover .seek-handle {
     transform: translate(-50%, -50%) scale(1.25);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .seek-row {
+      gap: 10px;
+    }
+
+    .progress-bar-container {
+      padding: 18px 0;
+    }
+
+    .seek-handle {
+      width: 20px;
+      height: 20px;
+    }
+
+    .timestamp {
+      font-size: 1rem;
+      min-width: 52px;
+    }
+  }
 </style>

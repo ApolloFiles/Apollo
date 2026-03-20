@@ -46,12 +46,14 @@
           <IconPlay />
         {/if}
       </button>
-      {#key videoPlayer}
-        <VolumeControl
-          bind:volume={videoPlayer.$volume}
-          bind:muted={videoPlayer.$muted}
-        />
-      {/key}
+      <div class="desktop-audio-controls">
+        {#key videoPlayer}
+          <VolumeControl
+            bind:volume={videoPlayer.$volume}
+            bind:muted={videoPlayer.$muted}
+          />
+        {/key}
+      </div>
     </div>
 
     <div class="right-controls">
@@ -122,5 +124,34 @@
     gap:         10px;
     align-items: center;
     position:    relative;
+  }
+
+  .desktop-audio-controls {
+    display:     flex;
+    align-items: center;
+  }
+
+
+  @media (hover: none) and (pointer: coarse) {
+    .control-bar {
+      padding: 12px;
+      gap: 14px;
+    }
+
+    .control-button {
+      width: 48px;
+      height: 48px;
+      padding: 10px;
+      font-size: 1.3rem;
+    }
+
+    .left-controls,
+    .right-controls {
+      gap: 8px;
+    }
+
+    .desktop-audio-controls {
+      display: none;
+    }
   }
 </style>
