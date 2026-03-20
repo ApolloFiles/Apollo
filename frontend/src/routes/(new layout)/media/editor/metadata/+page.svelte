@@ -410,6 +410,10 @@
   // TODO: Can the backend send a file-hash/stat-hash and the frontend can warn the user (and ask for confirmation) that the file seems to have changed, and whether they want to proceed with saving
 </script>
 
+<svelte:head>
+  <title>Metadata Editor | Apollo Media</title>
+</svelte:head>
+
 <ApolloFilePicker
   bind:this={apolloFilePickerRef}
   onResolve={(file) => openApolloFileUri(file.uri)}
