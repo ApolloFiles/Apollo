@@ -76,6 +76,9 @@
       }
     }
 
+    files = [];
+    selectedFileIds = [];
+
     if (uri === data.requestedOpenUri) {
       refreshAll();
     } else {
