@@ -1,28 +1,16 @@
 import { rpcClient } from '$lib/oRPC';
+import type { ORpcContractOutputs } from '$lib/ORpcHelper';
 import { isDefinedError, safe } from '@orpc/client';
 import { error } from '@sveltejs/kit';
 import type { AuthenticatedPageData, RenderingLayoutData } from '../../../types';
 import type { PageServerLoad } from './$types';
 
-type File = {
-  identifier: string,
-  name: string,
-
-  videoMeta: {
-    file: {
-      tags: { key: string, value: string }[],
-    },
-    streams: {
-      type: 'video' | 'audio' | 'subtitle' | 'attachment' | 'misc',
-      streamContextText: string,
-
-      tags: { key: string, value: string }[],
-      disposition: Record<string, boolean>,
-    }[],
-  },
-};
-
-type PageData = AuthenticatedPageData & RenderingLayoutData & { files: File[], requestedOpenUri: string | null };
+type PageData = AuthenticatedPageData
+                & RenderingLayoutData
+                & {
+                  files: ORpcContractOutputs['media']['editor']['openPath'],
+                  requestedOpenUri: string | null
+                };
 
 export const load: PageServerLoad = async ({ fetch, cookies, url }): Promise<PageData> => {
   const fileUri = url.searchParams.get('file');

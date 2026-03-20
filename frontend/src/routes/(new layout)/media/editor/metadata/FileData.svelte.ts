@@ -1,3 +1,4 @@
+import type { ORpcContractOutputs } from '$lib/ORpcHelper';
 import TagCollection from './TagCollection.svelte';
 
 export type MetadataTag = { key: string, value: string };
@@ -17,23 +18,7 @@ export type StreamData = {
   disposition: Record<string, boolean>,
 }
 
-export type FileDataFromBackend = {
-  identifier: string,
-  name: string,
-
-  videoMeta: {
-    file: {
-      tags: MetadataTag[],
-    },
-    streams: {
-      type: StreamData['type'],
-      streamContextText: string,
-
-      tags: MetadataTag[],
-      disposition: Record<string, boolean>,
-    }[],
-  },
-}
+export type FileDataFromBackend = ORpcContractOutputs['media']['editor']['openPath'][number];
 
 export default class FileData {
   public readonly globalTags: TagCollection;
@@ -43,7 +28,7 @@ export default class FileData {
 
   constructor(
     public readonly identifier: string,
-    public readonly name: string,
+    public readonly displayName: string,
     globalMetadata: FileMetadata,
     streams: StreamData[],
   ) {
@@ -157,7 +142,7 @@ export default class FileData {
   static createFromBackendData(file: FileDataFromBackend): FileData {
     return new FileData(
       file.identifier,
-      file.name,
+      file.displayName,
       file.videoMeta.file,
       file.videoMeta.streams.map((stream, index) => {
         const tags = new TagCollection(stream.tags);

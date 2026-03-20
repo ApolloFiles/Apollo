@@ -498,7 +498,7 @@
           aria-selected={isSelected(file.identifier)}
           role="option"
         >
-          {file.name}
+          {file.displayName}
           {#if file.hasUnsavedChanges}
             <span title="Unsaved changes" style="color: orange"><em><strong>*</strong></em></span>
           {/if}

@@ -151,7 +151,7 @@ const metadataEditorOpenPath = baseOc
   .input(z.object({ fileUri: z.string().nonempty() }))
   .output(z.array(z.strictObject({
     identifier: z.string(),
-    name: z.string(),
+    displayName: z.string(),
 
     videoMeta: z.strictObject({
       file: z.strictObject({

@@ -1,10 +1,12 @@
 import Crypto from 'node:crypto';
+import Path from 'node:path';
 import { injectable } from 'tsyringe';
 import FileProvider from '../../../../../files/FileProvider.js';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type WriteableVirtualFile from '../../../../../files/WriteableVirtualFile.js';
 import FfprobeExecutor from '../../../../../plugins/official/ffmpeg/FfprobeExecutor.js';
+import FileTypeUtils from '../../../../../plugins/official/media/_old/FileTypeUtils.js';
 import FfmpegVideoFileMetadataEditor
   from '../../../../../plugins/official/media/library/editor/FfmpegVideoFileMetadataEditor.js';
 import ApolloFileURI from '../../../../../uri/ApolloFileURI.js';
@@ -39,6 +41,7 @@ export default class MediaEditorSubRouterFactory {
     private readonly ffmpegVideoFileMetadataEditor: FfmpegVideoFileMetadataEditor,
     private readonly fileSystemProvider: FileSystemProvider,
     private readonly fileProvider: FileProvider,
+    private readonly fileTypeUtils: FileTypeUtils,
   ) {
     setInterval(() => {
       const maxEndTime = Date.now() + 60 * 60 * 1000;
@@ -68,17 +71,7 @@ export default class MediaEditorSubRouterFactory {
               throw errors.INVALID_INPUT();
             }
 
-            let filesToAnalyze: LocalFile[] = [];
-            if (await inputFile.isFile()) {
-              filesToAnalyze.push(inputFile);
-            } else {
-              const childFiles = await inputFile.getFiles();
-              for (const childFile of childFiles) {
-                if (await childFile.isFile()) {
-                  filesToAnalyze.push(childFile);
-                }
-              }
-            }
+            const filesToAnalyze: LocalFile[] = await this.recursivelyFindVideoFiles(inputFile);
 
             const result: ORpcContractOutputs['media']['editor']['openPath'] = [];
 
@@ -88,7 +81,7 @@ export default class MediaEditorSubRouterFactory {
 
                 result.push({
                   identifier: file.toURI().toString(),
-                  name: file.getFileName(),
+                  displayName: Path.relative(inputFile.path, file.path),
 
                   videoMeta: {
                     file: {
@@ -287,5 +280,37 @@ export default class MediaEditorSubRouterFactory {
           }),
       },
     };
+  }
+
+  private async recursivelyFindVideoFiles(file: LocalFile): Promise<LocalFile[]> {
+    const videoFiles = await this.recursivelyFindVideoFilesInner(file, 150);
+    return videoFiles.files;
+  }
+
+  private async recursivelyFindVideoFilesInner(file: LocalFile, remainingFileIterations: number): Promise<{
+    files: LocalFile[],
+    remainingFileIterations: number,
+  }> {
+    const filesToAnalyze: LocalFile[] = [];
+
+    if (await file.isFile()) {
+      const mimeType = await this.fileTypeUtils.getMimeTypeTrustExtension(file.getAbsolutePathOnHost());
+
+      if (mimeType == null || mimeType.startsWith('video/')) {
+        filesToAnalyze.push(file);
+      }
+
+      return { files: filesToAnalyze, remainingFileIterations };
+    }
+
+    const childFiles = await file.getFiles();
+    for (const childFile of childFiles) {
+      const videoFileResult = await this.recursivelyFindVideoFilesInner(childFile, remainingFileIterations - 1);
+
+      remainingFileIterations = videoFileResult.remainingFileIterations;
+      filesToAnalyze.push(...videoFileResult.files);
+    }
+
+    return { files: filesToAnalyze, remainingFileIterations };
   }
 }
