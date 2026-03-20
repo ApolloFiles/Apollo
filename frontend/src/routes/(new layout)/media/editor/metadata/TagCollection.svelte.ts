@@ -26,10 +26,6 @@ export default class TagCollection {
     return this._hasUnsavedChanges;
   }
 
-  hasKey(key: string): boolean {
-    return this._tags.some(tag => tag.key === key);
-  }
-
   deleteByUid(uid: number): void {
     const index = this._tags.findIndex(tag => tag.uid === uid);
     if (index === -1) {
@@ -47,16 +43,22 @@ export default class TagCollection {
 
   setValueByUid(uid: number, newValue: string): void {
     const tag = this.findByUid(uid);
-    tag.value = newValue;
 
-    this._hasUnsavedChanges = true;
+    if (tag.value !== newValue) {
+      tag.value = newValue;
+
+      this._hasUnsavedChanges = true;
+    }
   }
 
   setKeyByUid(uid: number, newKey: string): void {
     const tag = this.findByUid(uid);
-    tag.key = newKey;
 
-    this._hasUnsavedChanges = true;
+    if (tag.key !== newKey) {
+      tag.key = newKey;
+
+      this._hasUnsavedChanges = true;
+    }
   }
 
   findByUid(uid: number): TagData {
