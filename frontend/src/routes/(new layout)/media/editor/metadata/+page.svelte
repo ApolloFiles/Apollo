@@ -113,7 +113,9 @@
       return;
     }
 
-    sendSaveRequest(selectedFiles, () => refreshSelectedFiles())
+    const selectedFileIdentifiersCopy = selectedFiles.map(file => file.identifier);
+
+    sendSaveRequest(selectedFiles, () => refreshSomeFiles(selectedFileIdentifiersCopy))
       .catch((err) => {
         alert('Failed to save changes, see console for details');
         console.error('Failed to save changes:', err);
@@ -326,7 +328,7 @@
     saveReFetchingTimeoutId = window.setTimeout(fetchProgressInfoAndUpdateUIAndReQueueNextUpdateIfNeeded, 750);
   }
 
-  async function refreshSelectedFiles(): Promise<void> {
+  async function refreshSomeFiles(selectedFileIdentifiers: string[]): Promise<void> {
     if (data.requestedOpenUri == null) {
       alert('No path is currently open, cannot refresh');
       return;
@@ -334,7 +336,7 @@
 
     const openPathResult = await getClientSideRpcClient().media.editor.openPath({ fileUri: data.requestedOpenUri });
 
-    for (const selectedFileIdentifier of selectedFiles.map(file => file.identifier)) {
+    for (const selectedFileIdentifier of selectedFileIdentifiers) {
       const newFileData = openPathResult.find(fileData => fileData.identifier === selectedFileIdentifier);
 
       if (newFileData == null) {
