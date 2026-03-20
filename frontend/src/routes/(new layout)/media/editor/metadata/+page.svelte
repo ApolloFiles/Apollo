@@ -100,7 +100,7 @@
       return;
     }
 
-    sendSaveRequest(files, () => refreshAll())
+    sendSaveRequest(files.filter(file => file.hasUnsavedChanges), () => refreshAll())
       .catch((err) => {
         alert('Failed to save changes, see console for details');
         console.error('Failed to save changes:', err);
