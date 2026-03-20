@@ -386,7 +386,6 @@
   });
 
   // "v2" TODOs:
-  // TODO: Present user with a drop-down for multi-file and multi-value tags case, so they can choose one of the values from a file to write into all, if they want to
   // TODO: Editing stream tags in multi-file-select, when only one stream of that type exists across all selected files
   // TODO: Heavy refactoring and re-design: split UI into multiple components, use icons where appropriate, unify text sizes etc., check accessibility, ...
   // TODO: Add support for editing Chapters

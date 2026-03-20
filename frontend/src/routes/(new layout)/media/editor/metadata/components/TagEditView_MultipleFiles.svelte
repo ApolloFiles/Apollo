@@ -134,6 +134,36 @@
         oninput={(event) => handleTagValueEdit(collectedTag, event.currentTarget.value)}
       >
 
+      <div class="dropdown d-inline-block">
+        <button
+          class="btn btn-sm btn-secondary dropdown-toggle"
+          type="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          aria-label="Open dropdown to show all unique values for this tag across the selected files"
+        >
+        </button>
+        <ul class="dropdown-menu">
+          <li><h6 class="dropdown-header">values across selected files</h6></li>
+          {#each collectedTag.uniqueValues as uniqueValue}
+            <li>
+              <button
+                type="button"
+                class="dropdown-item"
+                onclick={() => handleTagValueEdit(collectedTag, uniqueValue)}
+              >
+                {uniqueValue || '<Empty text>'}
+              </button>
+            </li>
+          {/each}
+
+          <li><hr class="dropdown-divider"></li>
+
+          <li><h6 class="dropdown-header">suggested values (TODO)</h6></li>
+
+        </ul>
+      </div>
+
       <button
         class="btn btn-sm btn-danger ms-2"
         onclick={() => deleteCollectedTag(collectedTag)}
