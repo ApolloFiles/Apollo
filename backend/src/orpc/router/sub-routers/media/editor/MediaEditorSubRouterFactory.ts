@@ -4,6 +4,7 @@ import { injectable } from 'tsyringe';
 import FileProvider from '../../../../../files/FileProvider.js';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
+import FileNameCollator from '../../../../../files/util/FileNameCollator.js';
 import type WriteableVirtualFile from '../../../../../files/WriteableVirtualFile.js';
 import FfprobeExecutor from '../../../../../plugins/official/ffmpeg/FfprobeExecutor.js';
 import FileTypeUtils from '../../../../../plugins/official/media/_old/FileTypeUtils.js';
@@ -176,6 +177,7 @@ export default class MediaEditorSubRouterFactory {
               }
             }
 
+            result.sort((a, b) => FileNameCollator.compare(a.displayName, b.displayName));
             return result;
           }),
 
