@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { page } from '$app/state';
   import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
   import { getAppSideBarExtras } from '$lib/stores/AppSideBarExtrasStore.svelte';
@@ -84,13 +85,54 @@
     return longestPartialHrefMatch;
   });
 
+  function closeSidebar(): void {
+    sidebarActive = false;
+  }
+
+  function closeSidebarOnMobile(): void {
+    if (browser && window.matchMedia('(max-width: 768px)').matches) {
+      closeSidebar();
+    }
+  }
+
+  function handleWindowKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && sidebarActive) {
+      closeSidebar();
+    }
+  }
+
+  $effect(() => {
+    page.url.pathname;
+    page.url.search;
+    closeSidebar();
+  });
+
   //noinspection JSUnusedGlobalSymbols
   export function toggleSidebar(): void {
     sidebarActive = !sidebarActive;
   }
 </script>
 
+<svelte:window onkeydown={handleWindowKeyDown} />
+
+<button
+  type="button"
+  class="sidebar-backdrop"
+  class:active={sidebarActive}
+  aria-label="Close sidebar menu"
+  onclick={closeSidebar}
+></button>
+
 <nav class="sidebar" class:active={sidebarActive}>
+  <button
+    type="button"
+    class="sidebar-close-button d-md-none"
+    aria-label="Close sidebar menu"
+    onclick={closeSidebar}
+  >
+    <TablerIcon icon="x" />
+  </button>
+
   <div class="sidebar-brand dropdown mb-4">
     <button
       type="button"
@@ -131,6 +173,7 @@
             <a href={subApp.href}
                class="dropdown-item"
                class:active={activeSubApp != null && subApp.href === activeSubApp.href}
+               onclick={closeSidebarOnMobile}
             >
               <TablerIcon icon={subApp.icon} class="me-2" />
               {subApp.label}
@@ -150,6 +193,7 @@
           href={menuItem.href}
           class="nav-link"
           class:active={menuItem.href === activeMenuItemHref}
+          onclick={closeSidebarOnMobile}
         >
           <TablerIcon icon={menuItem.icon} class="me-2" />
           {menuItem.label}
@@ -163,6 +207,7 @@
       href={bottomButton.href}
       class="nav-link"
       class:active={bottomButton.href === activeMenuItemHref}
+      onclick={closeSidebarOnMobile}
     >
       <TablerIcon icon={bottomButton.icon} class="me-2" />
       {bottomButton.label}
@@ -185,6 +230,32 @@
     border-right:     1px solid var(--border-color);
     display:          flex;
     flex-direction:   column;
+  }
+
+  .sidebar-backdrop {
+    display: none;
+  }
+
+  .sidebar-close-button {
+    position:         absolute;
+    top:              10px;
+    right:            10px;
+    z-index:          1;
+    border:           none;
+    background-color: transparent;
+    color:            var(--text-secondary);
+    display:          flex;
+    align-items:      center;
+    justify-content:  center;
+    width:            36px;
+    height:           36px;
+    border-radius:    8px;
+    transition:       all 0.2s ease;
+  }
+
+  .sidebar-close-button:hover {
+    color:            var(--text-primary);
+    background-color: var(--hover-bg);
   }
 
   .sidebar-brand button {
@@ -252,6 +323,25 @@
   }
 
   @media (max-width: 768px) {
+    .sidebar-backdrop {
+      display:          block;
+      position:         fixed;
+      inset:            0;
+      border:           none;
+      margin:           0;
+      padding:          0;
+      opacity:          0;
+      pointer-events:   none;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index:          999;
+      transition:       opacity 0.3s ease;
+    }
+
+    .sidebar-backdrop.active {
+      opacity:        1;
+      pointer-events: auto;
+    }
+
     .sidebar {
       transform: translateX(-100%);
     }
