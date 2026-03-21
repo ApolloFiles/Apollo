@@ -190,4 +190,19 @@
     height:           4px;
     background-color: #333;
   }
+
+  @media (max-width: 768px) {
+    .media-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    [data-media-img] {
+      height:           auto;
+      aspect-ratio:     2 / 3;
+      object-fit:       contain;
+      object-position:  center top;
+      background-color: #000;
+    }
+  }
 </style>
