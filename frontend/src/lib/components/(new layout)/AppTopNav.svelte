@@ -12,7 +12,7 @@
   const userProfile = getUserProfile();
 </script>
 
-<header class="top-navbar" class:overlay={renderAsOverlay}>
+<header class="top-navbar" class:overlay={renderAsOverlay} class:has-search={searchFormAction != null}>
   <button
     class="btn btn-dark d-md-none"
     aria-label="Toggle sidebar menu"
@@ -86,10 +86,17 @@
   /* Navbar */
   .top-navbar {
     display:         flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items:     center;
     margin-bottom:   30px;
     padding-top:     10px;
+    gap:             12px;
+    min-width:       0;
+  }
+
+  .top-navbar form {
+    flex:      1 1 auto;
+    min-width: 0;
   }
 
   .top-navbar.overlay {
@@ -100,6 +107,7 @@
     z-index:    100;
     padding:    20px 40px;
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+    box-sizing: border-box;
   }
 
   .icon-search {
@@ -115,14 +123,22 @@
   }
 
   .search-bar {
-    position: relative;
-    width:    400px;
+    position:  relative;
+    width:     min(100%, 400px);
+    min-width: 0;
+  }
+
+  .top-navbar.has-search .user-profile {
+    flex: 0 0 auto;
   }
 
   @media (max-width: 768px) {
+    .top-navbar {
+      gap: 8px;
+    }
+
     .search-bar {
-      margin-left:  15px;
-      margin-right: 15px;
+      width: 100%;
     }
   }
 
