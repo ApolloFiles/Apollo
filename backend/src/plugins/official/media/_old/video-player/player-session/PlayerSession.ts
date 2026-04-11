@@ -42,6 +42,7 @@ export default class PlayerSession {
   private lastConnectionId = 0;
 
   private currentMedia: VideoLiveTranscodeMedia | null = null;
+  private currentYouTubeMedia: { videoId: string; startSeconds?: number; title: string } | null = null;
   private playerState: { lastUpdated: Date, data: { currentTime: number } } | null = null;  // TODO
   public readonly tmpDir: TemporaryDirectory;
 
@@ -139,6 +140,10 @@ export default class PlayerSession {
 
   getCurrentMedia(): VideoLiveTranscodeMedia | null {
     return this.currentMedia;
+  }
+
+  getCurrentYouTubeMedia(): { videoId: string; startSeconds?: number; title: string } | null {
+    return this.currentYouTubeMedia;
   }
 
   getCurrentFile(): VirtualFile | null {
@@ -303,7 +308,7 @@ export default class PlayerSession {
   }
 
   private broadcastMediaChanged(): void {
-    this.broadcastMessage(WebSocketMessageBuilder.buildMediaChanged(this.id, this.currentMedia));
+    this.broadcastMessage(WebSocketMessageBuilder.buildMediaChanged(this.id, this.currentMedia, this.currentYouTubeMedia));
   }
 
   private broadcastClockSync(): void {
@@ -357,8 +362,17 @@ export default class PlayerSession {
     const newMedia = await videoLiveTranscodeMediaFactory.create(this.tmpDir, file, startOffsetInSeconds, mediaMetadata);
     this.currentMedia?.destroy().catch(console.error);
     this.currentMedia = newMedia;
+    this.currentYouTubeMedia = null;
 
     this.broadcastMediaChanged();
     return this.currentMedia;
+  }
+
+  startYouTube(videoId: string, startSeconds?: number, title?: string): void {
+    this.currentMedia?.destroy().catch(console.error);
+    this.currentMedia = null;
+    this.currentYouTubeMedia = { videoId, startSeconds, title: title ?? videoId };
+
+    this.broadcastMediaChanged();
   }
 }

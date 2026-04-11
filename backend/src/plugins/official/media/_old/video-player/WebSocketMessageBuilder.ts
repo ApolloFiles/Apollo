@@ -36,7 +36,21 @@ export default class WebSocketMessageBuilder {
     } satisfies SessionInfoMessage);
   }
 
-  static buildMediaChanged(sessionId: string, media: VideoLiveTranscodeMedia | null): string {
+  static buildMediaChanged(sessionId: string, media: VideoLiveTranscodeMedia | null, youTubeMedia?: { videoId: string; startSeconds?: number; title: string } | null): string {
+    if (youTubeMedia != null) {
+      return this.asString({
+        type: MESSAGE_TYPE.MEDIA_CHANGED,
+        data: {
+          media: {
+            type: 'youtube',
+            videoId: youTubeMedia.videoId,
+            startSeconds: youTubeMedia.startSeconds,
+            title: youTubeMedia.title,
+          },
+        },
+      } satisfies MediaChangedMessage);
+    }
+
     if (media == null) {
       return this.asString({
         type: MESSAGE_TYPE.MEDIA_CHANGED,
@@ -48,6 +62,7 @@ export default class WebSocketMessageBuilder {
       type: MESSAGE_TYPE.MEDIA_CHANGED,
       data: {
         media: {
+          type: 'live-transcode',
           hlsManifest: `/api/_frontend/media/player-session/${encodeURIComponent(sessionId)}/file/${this.encodeUriProperly(media.relativePublicPathToHlsManifest)}`,
           totalDurationInSeconds: media.totalDurationInSeconds,
           startOffsetInSeconds: media.startOffset,

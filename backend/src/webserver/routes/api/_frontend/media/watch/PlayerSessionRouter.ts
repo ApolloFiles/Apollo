@@ -22,6 +22,7 @@ import type {
   PlayerSessionInfoResponse,
   RegenerateJoinTokenResponse,
   StartPlaybackResponse,
+  YouTubeMediaInfo,
 } from '../../../../../../plugins/official/media/_old/video-player/legacy-types.js';
 import type VideoLiveTranscodeMedia
   from '../../../../../../plugins/official/media/_old/video-player/live-transcode/VideoLiveTranscodeMedia.js';
@@ -69,6 +70,7 @@ export default class PlayerSessionRouter implements Router {
       }
 
       const currentMedia = playerSession.getCurrentMedia();
+      const currentYouTubeMedia = playerSession.getCurrentYouTubeMedia();
 
       return reply
         .status(200)
@@ -87,7 +89,13 @@ export default class PlayerSessionRouter implements Router {
               otherParticipants: playerSession.participants,
             },
           },
-          playbackStatus: currentMedia != null ? {
+          playbackStatus: currentYouTubeMedia != null ? ({
+            type: 'youtube',
+            videoId: currentYouTubeMedia.videoId,
+            startSeconds: currentYouTubeMedia.startSeconds,
+            title: currentYouTubeMedia.title,
+          } satisfies YouTubeMediaInfo) : currentMedia != null ? ({
+            type: 'live-transcode',
             hlsManifest: `/api/_frontend/media/player-session/${encodeURIComponent(playerSession.id)}/file/${this.encodeUriProperly(currentMedia.relativePublicPathToHlsManifest)}`,
             totalDurationInSeconds: currentMedia.totalDurationInSeconds,
             startOffsetInSeconds: currentMedia.startOffset,
@@ -104,7 +112,7 @@ export default class PlayerSessionRouter implements Router {
                 })),
               })),
             },
-          } : null,
+          } satisfies StartPlaybackResponse) : null,
         } satisfies PlayerSessionInfoResponse);
     });
 
@@ -463,6 +471,7 @@ export default class PlayerSessionRouter implements Router {
         .status(200)
         .type('application/json')
         .send({
+          type: 'live-transcode',
           hlsManifest: `/api/_frontend/media/player-session/${encodeURIComponent(playerSession.id)}/file/${this.encodeUriProperly(videoLiveTranscodeMedia.relativePublicPathToHlsManifest)}`,
           totalDurationInSeconds: videoLiveTranscodeMedia.totalDurationInSeconds,
           startOffsetInSeconds: videoLiveTranscodeMedia.startOffset,
@@ -480,6 +489,46 @@ export default class PlayerSessionRouter implements Router {
             })),
           },
         } satisfies StartPlaybackResponse);
+    });
+
+    server.post('/:sessionId/change-media-youtube', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
+      const apolloUser = request.getAuthenticatedUser();
+
+      const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
+      if (playerSession?.owner.id !== apolloUser.id) {
+        return reply
+          .status(403)
+          .type('text/plain')
+          .send('Session not found or you are not the owner of this session');
+      }
+
+      const videoId: unknown = (request.body as any)?.videoId;
+      if (typeof videoId !== 'string' || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+        return reply
+          .status(400)
+          .type('application/json')
+          .send({ error: 'Invalid or missing videoId: expected an 11-character YouTube video ID' });
+      }
+
+      const startSeconds: number | undefined = typeof (request.body as any)?.startSeconds === 'number'
+        ? Math.max(0, (request.body as any).startSeconds)
+        : undefined;
+
+      const title: string = typeof (request.body as any)?.title === 'string' && (request.body as any).title.length > 0
+        ? (request.body as any).title
+        : videoId;
+
+      playerSession.startYouTube(videoId, startSeconds, title);
+
+      return reply
+        .status(200)
+        .type('application/json')
+        .send({
+          type: 'youtube',
+          videoId,
+          startSeconds,
+          title,
+        } satisfies YouTubeMediaInfo);
     });
 
     server.post('/:sessionId/regenerate-join-token', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {

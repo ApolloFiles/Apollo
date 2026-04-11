@@ -5,8 +5,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { PageProps } from './$types';
-  import type { StartPlaybackResponse } from './legacy-types';
+  import type { StartPlaybackResponse, YouTubeMediaInfo } from './legacy-types';
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
+  import YouTubePlayerBackend from './lib/client-side/backends/YouTubePlayerBackend';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte.js';
   import WebSocketClient from './lib/client-side/WebSocketClient.svelte.js';
   import { fetchPlaybackSessionInfo } from './lib/playback-session-backend-api';
@@ -35,27 +36,24 @@
       // TODO: Support direct links to video files (and HLS etc.)
       // TODO: Support Vimeo, Dailymotion
 
-      if (parsedUrl.host === 'www.youtube.com' || parsedUrl.host === 'music.youtube.com' || parsedUrl.host === 'youtube.com') {
-        const videoId = parsedUrl.searchParams.get('v');
+      let videoId: string | null = null;
+
+      if (parsedUrl.host === 'www.youtube.com' || parsedUrl.host === 'music.youtube.com' || parsedUrl.host === 'youtube.com' || parsedUrl.host === 'm.youtube.com') {
+        videoId = parsedUrl.searchParams.get('v');
         if (videoId == null) {
           alert('Invalid YouTube URL: missing video ID');
-        } else {
-          alert('Detected YouTube video ID: ' + videoId + '\n\n(Note: actual playback not implemented yet)');
         }
       } else if (parsedUrl.host === 'youtu.be') {
-        const videoId = parsedUrl.pathname.slice(1);
-        if (videoId.length === 0) {
+        videoId = parsedUrl.pathname.slice(1) || null;
+        if (videoId == null) {
           alert('Invalid YouTube URL: missing video ID');
-        } else {
-          alert('Detected YouTube video ID: ' + videoId + '\n\n(Note: actual playback not implemented yet)');
         }
       } else if (parsedUrl.host === 'www.youtube-nocookie.com' || parsedUrl.host === 'youtube-nocookie.com') {
         const pathParts = parsedUrl.pathname.slice(1).split('/');
         if (pathParts.length !== 2 || pathParts[0] !== 'embed') {
           alert('Invalid YouTube-nocookie URL: unable to detect video ID');
         } else {
-          const videoId = pathParts[1];
-          alert('Detected YouTube video ID: ' + videoId + '\n\n(Note: actual playback not implemented yet)');
+          videoId = pathParts[1];
         }
       } else if (parsedUrl.host === 'www.twitch.tv' || parsedUrl.host === 'twitch.tv') {
         // TODO: Add support for clips and VODs, if Twitch API/Player allows it
@@ -63,17 +61,92 @@
         if (channelName.length === 0 || channelName.includes('/')) {
           alert('Invalid Twitch URL: Unable to detect channel name');
         } else {
-          alert('Detected Twitch Channel: ' + channelName + '\n\n(Note: actual playback not implemented yet)');
+          alert('Detected Twitch Channel: ' + channelName + '\n\n(Note: Twitch playback not implemented yet)');
         }
+        return false;
       } else {
         alert('Unsupported URL (Expected to work: YouTube Video-URLs, Twitch Channel-URLs)');
         return false;
+      }
+
+      if (videoId != null) {
+        startYouTubeVideo(videoId).catch((err) => {
+          console.error('Failed to start YouTube video:', err);
+          alert('Failed to start YouTube video: ' + (err instanceof Error ? err.message : String(err)));
+        });
       }
     } catch (err) {
       alert('Error parsing URL: expected a valid URL');
     }
 
     return false;
+  }
+
+  async function startYouTubeVideo(videoId: string): Promise<void> {
+    if (sessionId == null) {
+      alert('No active session, cannot start YouTube video');
+      return;
+    }
+
+    const response = await fetch(`/api/_frontend/media/player-session/${encodeURIComponent(sessionId)}/change-media-youtube`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify({ videoId }),
+    });
+
+    if (response.status === 403) {
+      alert('Only the session owner can change the media');
+      return;
+    }
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      alert('Failed to start YouTube video: ' + (body?.error ?? response.statusText));
+      return;
+    }
+
+    const mediaInfo: YouTubeMediaInfo = await response.json();
+    videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
+    videoPlayerPromise = createYouTubeVideoPlayer(mediaInfo);
+    videoPlayerPromise.then((videoPlayer) => webSocketClient?.setVideoPlayer(videoPlayer));
+  }
+
+  async function createYouTubeVideoPlayer(mediaInfo: YouTubeMediaInfo): Promise<VideoPlayer> {
+    const backend = await YouTubePlayerBackend.create(videoContainerRef, {
+      backend: { videoUrlOrId: mediaInfo.videoId },
+    });
+
+    mediaTitle = mediaInfo.title;
+    episodeTitlePrefix = '';
+
+    if (sessionId == null) {
+      throw new Error('Session ID is not set, cannot create YouTube VideoPlayer');
+    }
+
+    return new VideoPlayer(
+      backend,
+      { mediaItemId: '', title: mediaInfo.title },
+      sessionId,
+      (): void => { /* no autoplay for YouTube */ },
+      (player, seeked, forceSend) => {
+        webSocketClient?.updatePlaybackState(player, seeked, forceSend);
+      },
+      () => {
+        return webSocketClient?.$referencePlayerState ?? null;
+      },
+      (paused) => {
+        if (!webSocketClient?.isReferencePlayerSelf()) {
+          webSocketClient?.sendRequestStateChangePlaying(paused);
+        }
+      },
+      (time) => {
+        if (!webSocketClient?.isReferencePlayerSelf()) {
+          webSocketClient?.sendRequestStateChangeTime(time);
+        }
+      },
+    );
   }
 
   async function createVideoPlayer(playbackStatus: StartPlaybackResponse, initialAudioTrack?: number, initialSubtitleTrack?: number): Promise<VideoPlayer> {
@@ -200,12 +273,10 @@
     const playbackStatusResponse = await fetchPlaybackSessionInfo();
     sessionId = playbackStatusResponse.session.id;
 
-    //    return new VideoPlayer(await HtmlVideoPlayerBackend.create(videoContainerRef, { backend: { src: '/_dev/BigBuckBunny_320x180.mp4' } }), {
-    //      mediaItemId: '',
-    //      title: 'Big Buck Bunny',
-    //    });
-
     if (playbackStatusResponse.playbackStatus != null) {
+      if (playbackStatusResponse.playbackStatus.type === 'youtube') {
+        return createYouTubeVideoPlayer(playbackStatusResponse.playbackStatus);
+      }
       return createVideoPlayer(playbackStatusResponse.playbackStatus);
     }
     return null;
@@ -229,7 +300,11 @@
           return;
         }
 
-        videoPlayerPromise = createVideoPlayer(media);
+        if (media.type === 'youtube') {
+          videoPlayerPromise = createYouTubeVideoPlayer(media);
+        } else {
+          videoPlayerPromise = createVideoPlayer(media);
+        }
         videoPlayerPromise.then((videoPlayer) => webSocketClient?.setVideoPlayer(videoPlayer));
       },
     );

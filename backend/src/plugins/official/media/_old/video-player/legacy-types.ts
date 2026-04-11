@@ -3,6 +3,7 @@
 // TODO: Maybe rename? It's not really the whole playback stuff but only limited to media
 // FIXME: Limited to LiveTranscode right now
 export type StartPlaybackResponse = {
+  type: 'live-transcode',
   hlsManifest: string,
   totalDurationInSeconds: number,
   startOffsetInSeconds: number,
@@ -46,6 +47,15 @@ export type StartPlaybackResponse = {
   }
 }
 
+export type YouTubeMediaInfo = {
+  type: 'youtube',
+  videoId: string,
+  startSeconds?: number,
+  title: string,
+}
+
+export type MediaInfo = StartPlaybackResponse | YouTubeMediaInfo | null
+
 export type PlayerSessionInfoResponse = {
   session: {
     id: string,
@@ -56,7 +66,7 @@ export type PlayerSessionInfoResponse = {
       otherParticipants: { id: string, displayName: string, connected: boolean }[],
     }
   },
-  playbackStatus: StartPlaybackResponse | null
+  playbackStatus: MediaInfo
 }
 
 export type RegenerateJoinTokenResponse = {
@@ -101,7 +111,7 @@ export interface SessionInfoMessage extends WebSocketMessage {
 export interface MediaChangedMessage extends WebSocketMessage {
   type: MESSAGE_TYPE.MEDIA_CHANGED,
   data: {
-    media: StartPlaybackResponse | null,
+    media: MediaInfo,
   },
 }
 
