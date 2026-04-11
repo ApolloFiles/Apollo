@@ -50,11 +50,11 @@
     "@fastify/cookie": "^11.0.2",
     "@fastify/formbody": "^8.0.2",
     "@fastify/websocket": "^11.2.0",
-    "@orpc/contract": "^1.13.13",
-    "@orpc/server": "^1.13.13",
-    "@prisma/adapter-pg": "^7.5.0",
-    "@prisma/client": "^7.5.0",
-    "@sentry/node": "^10.46.0",
+    "@orpc/contract": "^1.13.14",
+    "@orpc/server": "^1.13.14",
+    "@prisma/adapter-pg": "^7.6.0",
+    "@prisma/client": "^7.6.0",
+    "@sentry/node": "^10.48.0",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#4a609c65c4a07aaae47cbeb0eb713b21e6621ceb",
     "@types/mime-types": "^3.0.1",
     "fastify": "^5.8.4",
@@ -76,13 +76,13 @@
   "devDependencies": {
     "@swc-node/register": "^1.11.1",
     "@tsconfig/node24": "^24.0.4",
-    "@types/node": "^24.12.0",
+    "@types/node": "^24.12.2",
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^4.1.2",
-    "prisma": "^7.5.0",
+    "@vitest/coverage-v8": "^4.1.4",
+    "prisma": "^7.6.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.2",
-    "vitest-mock-extended": "^3.1.0"
+    "vitest": "^4.1.4",
+    "vitest-mock-extended": "^4.0.0"
   }
 }
