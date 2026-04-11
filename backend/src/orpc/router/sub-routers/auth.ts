@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import AccountCreationInviteFinder from '../../../auth/account_creation_invite/AccountCreationInviteFinder.js';
-import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
+import type { OptionallyAuthenticatedORpcImplementer, SubRouter } from '../ORpcRouter.js';
 
 @injectable()
 export default class AuthORpcRouterFactory {
@@ -9,10 +9,11 @@ export default class AuthORpcRouterFactory {
   ) {
   }
 
-  create(os: ORpcImplementer['auth']): SubRouter<'auth'> {
+  create(os: OptionallyAuthenticatedORpcImplementer): SubRouter<'auth'> {
     return {
       accountCreationInvitation: {
         get: os
+          .auth
           .accountCreationInvitation
           .get
           .handler(async ({ input, context, errors }) => {

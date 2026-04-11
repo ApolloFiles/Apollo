@@ -71,7 +71,7 @@ export const ORPC_ROUTER = plainImplementer.router({
   user: container.resolve(UserORpcRouterFactory).create(authenticatedImplementer.user),
   session: container.resolve(SessionORpcRouterFactory).create(baseImplementer),
 
-  auth: container.resolve(AuthORpcRouterFactory).create(authenticatedImplementer.auth),
+  auth: container.resolve(AuthORpcRouterFactory).create(baseImplementer),
 
   files: container.resolve(FilesORpcRouterFactory).create(authenticatedImplementer.files),
   media: container.resolve(MediaORpcRouterFactory).create(authenticatedImplementer.media),
