@@ -60,20 +60,15 @@ export default class VideoThumbnailProvider {
   }
 
 
-  private async findMediaItemFile(media: MediaLibraryMediaItem): Promise<VirtualFile> {
-    const mediaOwner = await this.userProvider.findById(media.libraryOwnerId);
-    if (mediaOwner == null) {
-      throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(media.libraryOwnerId)}`);
-    }
-
-    const fileSystems = await this.getOwnerFileSystems(media);
-    return fileSystems.user[0].getFile(Path.join(media.mediaBaseDirectoryUri.filePath, media.relativeFilePath));
+  private async findMediaItemFile(mediaItem: MediaLibraryMediaItem): Promise<VirtualFile> {
+    const fileSystems = await this.getOwnerFileSystems(mediaItem);
+    return fileSystems.user[0].getFile(Path.join(mediaItem.mediaBaseDirectoryUri.filePath, mediaItem.relativeFilePath));
   }
 
-  private async getOwnerFileSystems(media: MediaLibraryMediaItem) {
-    const mediaOwner = await this.userProvider.findById(media.libraryOwnerId);
+  private async getOwnerFileSystems(mediaItem: MediaLibraryMediaItem) {
+    const mediaOwner = await this.userProvider.findById(mediaItem.libraryOwnerId);
     if (mediaOwner == null) {
-      throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(media.libraryOwnerId)}`);
+      throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(mediaItem.libraryOwnerId)}`);
     }
 
     return await this.fileSystemProvider.provideForUser(mediaOwner);

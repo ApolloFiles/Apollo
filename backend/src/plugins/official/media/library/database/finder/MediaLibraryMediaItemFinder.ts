@@ -10,6 +10,41 @@ export default class MediaLibraryMediaItemFinder {
   ) {
   }
 
+  async findByMediaId(mediaId: bigint): Promise<MediaLibraryMediaItem[]> {
+    const fetchedMediaItems = await this.databaseClient.mediaLibraryMediaItem.findMany({
+      where: { mediaId },
+
+      select: {
+        id: true,
+        relativeFilePath: true,
+        title: true,
+        synopsis: true,
+        lastScannedAt: true,
+        addedAt: true,
+        externalApiFetchedAt: true,
+        durationInSec: true,
+        episodeNumber: true,
+        seasonNumber: true,
+
+        media: {
+          select: {
+            id: true,
+            directoryUri: true,
+            library: {
+              select: {
+                id: true,
+                ownerId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return fetchedMediaItems
+      .map((mediaItem) => MediaLibraryMediaItem.fromData(mediaItem));
+  }
+
   async findForUserById(apolloUser: ApolloUser, mediaItemId: bigint): Promise<MediaLibraryMediaItem | null> {
     const fetchedMediaItem = await this.databaseClient.mediaLibraryMediaItem.findUnique({
       where: {

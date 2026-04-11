@@ -3,12 +3,14 @@ import type ApolloUser from '../../../../user/ApolloUser.js';
 import UserProvider from '../../../../user/UserProvider.js';
 import MediaLibraryFinder from './database/finder/MediaLibraryFinder.js';
 import MediaLibraryMediaFinder from './database/finder/MediaLibraryMediaFinder.js';
+import MediaLibraryMediaItemFinder from './database/finder/MediaLibraryMediaItemFinder.js';
 import type MediaLibrary from './database/MediaLibrary.js';
 import LibraryMetadataHydrator from './hydrator/LibraryMetadataHydrator.js';
 import MediaBackdropImageProvider from './images/MediaBackdropImageProvider.js';
 import MediaClearLogoImageProvider from './images/MediaClearLogoImageProvider.js';
 import MediaPosterImageProvider from './images/MediaPosterImageProvider.js';
 import MediaLibraryScanner from './scanner/MediaLibraryScanner.js';
+import VideoThumbnailProvider from './thumbnail/VideoThumbnailProvider.js';
 
 @singleton()
 export default class FullLibraryIndexingHelper {
@@ -20,9 +22,11 @@ export default class FullLibraryIndexingHelper {
     private readonly mediaLibraryScanner: MediaLibraryScanner,
     private readonly mediaLibraryHydrator: LibraryMetadataHydrator,
     private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
+    private readonly mediaLibraryMediaItemFinder: MediaLibraryMediaItemFinder,
     private readonly mediaPosterImageProvider: MediaPosterImageProvider,
     private readonly mediaClearLogoImageProvider: MediaClearLogoImageProvider,
     private readonly mediaBackdropImageProvider: MediaBackdropImageProvider,
+    private readonly videoThumbnailProvider: VideoThumbnailProvider,
   ) {
   }
 
@@ -94,6 +98,13 @@ export default class FullLibraryIndexingHelper {
         this.mediaClearLogoImageProvider.provide(media, 'avif'),
         this.mediaBackdropImageProvider.provide(media, 'avif'),
       ]);
+    }
+
+    for (const media of allMedia) {
+      const mediaItems = await this.mediaLibraryMediaItemFinder.findByMediaId(media.id);
+      for (const mediaItem of mediaItems) {
+        await this.videoThumbnailProvider.provide(mediaItem, 'avif');
+      }
     }
   }
 }
