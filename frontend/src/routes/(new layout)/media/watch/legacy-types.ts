@@ -54,7 +54,13 @@ export type YouTubeMediaInfo = {
   title: string,
 }
 
-export type MediaInfo = StartPlaybackResponse | YouTubeMediaInfo | null
+export type TwitchMediaInfo = {
+  type: 'twitch',
+  channelName: string,
+  title: string,
+}
+
+export type MediaInfo = StartPlaybackResponse | YouTubeMediaInfo | TwitchMediaInfo | null
 
 export type PlayerSessionInfoResponse = {
   session: {

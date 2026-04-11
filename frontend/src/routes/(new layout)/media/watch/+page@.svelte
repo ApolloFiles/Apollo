@@ -5,8 +5,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { PageProps } from './$types';
-  import type { StartPlaybackResponse, YouTubeMediaInfo } from './legacy-types';
+  import type { StartPlaybackResponse, TwitchMediaInfo, YouTubeMediaInfo } from './legacy-types';
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
+  import TwitchPlayerBackend from './lib/client-side/backends/TwitchPlayerBackend';
   import YouTubePlayerBackend from './lib/client-side/backends/YouTubePlayerBackend';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte.js';
   import WebSocketClient from './lib/client-side/WebSocketClient.svelte.js';
@@ -61,7 +62,10 @@
         if (channelName.length === 0 || channelName.includes('/')) {
           alert('Invalid Twitch URL: Unable to detect channel name');
         } else {
-          alert('Detected Twitch Channel: ' + channelName + '\n\n(Note: Twitch playback not implemented yet)');
+          startTwitchChannel(channelName).catch((err) => {
+            console.error('Failed to start Twitch channel:', err);
+            alert('Failed to start Twitch channel: ' + (err instanceof Error ? err.message : String(err)));
+          });
         }
         return false;
       } else {
@@ -111,6 +115,73 @@
     videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
     videoPlayerPromise = createYouTubeVideoPlayer(mediaInfo);
     videoPlayerPromise.then((videoPlayer) => webSocketClient?.setVideoPlayer(videoPlayer));
+  }
+
+  async function startTwitchChannel(channelName: string): Promise<void> {
+    if (sessionId == null) {
+      alert('No active session, cannot start Twitch channel');
+      return;
+    }
+
+    const response = await fetch(`/api/_frontend/media/player-session/${encodeURIComponent(sessionId)}/change-media-twitch`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify({ channelName }),
+    });
+
+    if (response.status === 403) {
+      alert('Only the session owner can change the media');
+      return;
+    }
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      alert('Failed to start Twitch channel: ' + (body?.error ?? response.statusText));
+      return;
+    }
+
+    const mediaInfo: TwitchMediaInfo = await response.json();
+    videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
+    videoPlayerPromise = createTwitchVideoPlayer(mediaInfo);
+    videoPlayerPromise.then((videoPlayer) => webSocketClient?.setVideoPlayer(videoPlayer));
+  }
+
+  async function createTwitchVideoPlayer(mediaInfo: TwitchMediaInfo): Promise<VideoPlayer> {
+    const backend = await TwitchPlayerBackend.create(videoContainerRef, {
+      backend: { channelName: mediaInfo.channelName },
+    });
+
+    mediaTitle = mediaInfo.title;
+    episodeTitlePrefix = '';
+
+    if (sessionId == null) {
+      throw new Error('Session ID is not set, cannot create Twitch VideoPlayer');
+    }
+
+    return new VideoPlayer(
+      backend,
+      { mediaItemId: '', title: mediaInfo.title },
+      sessionId,
+      (): void => { /* no autoplay for Twitch */ },
+      (player, seeked, forceSend) => {
+        webSocketClient?.updatePlaybackState(player, seeked, forceSend);
+      },
+      () => {
+        return webSocketClient?.$referencePlayerState ?? null;
+      },
+      (paused) => {
+        if (!webSocketClient?.isReferencePlayerSelf()) {
+          webSocketClient?.sendRequestStateChangePlaying(paused);
+        }
+      },
+      (time) => {
+        if (!webSocketClient?.isReferencePlayerSelf()) {
+          webSocketClient?.sendRequestStateChangeTime(time);
+        }
+      },
+    );
   }
 
   async function createYouTubeVideoPlayer(mediaInfo: YouTubeMediaInfo): Promise<VideoPlayer> {
@@ -277,6 +348,9 @@
       if (playbackStatusResponse.playbackStatus.type === 'youtube') {
         return createYouTubeVideoPlayer(playbackStatusResponse.playbackStatus);
       }
+      if (playbackStatusResponse.playbackStatus.type === 'twitch') {
+        return createTwitchVideoPlayer(playbackStatusResponse.playbackStatus);
+      }
       return createVideoPlayer(playbackStatusResponse.playbackStatus);
     }
     return null;
@@ -302,6 +376,8 @@
 
         if (media.type === 'youtube') {
           videoPlayerPromise = createYouTubeVideoPlayer(media);
+        } else if (media.type === 'twitch') {
+          videoPlayerPromise = createTwitchVideoPlayer(media);
         } else {
           videoPlayerPromise = createVideoPlayer(media);
         }

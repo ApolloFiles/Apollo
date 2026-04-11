@@ -19,12 +19,12 @@ const config: Config = {
     csp: {
       directives: {
         'default-src': ['none'],
-        'script-src': ['self', 'https://www.youtube.com/'],
+        'script-src': ['self', 'https://www.youtube.com/', 'https://player.twitch.tv/'],
         'style-src': ['self', 'unsafe-inline'],
         'font-src': ['self'],
         'img-src': ['self', 'data:', 'blob:'],
         'media-src': ['self', 'blob:'],
-        'frame-src': ['https://www.youtube.com/embed/'],
+        'frame-src': ['https://www.youtube.com/embed/', 'https://player.twitch.tv/'],
         'manifest-src': ['self'],
         'connect-src': ['self', ...(isDevMode ? ['ws://localhost:8081'] satisfies Csp.Sources : [])],
         'worker-src': isDevMode ? ['self', 'blob:'] : undefined,

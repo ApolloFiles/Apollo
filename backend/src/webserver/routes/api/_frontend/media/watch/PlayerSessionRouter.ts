@@ -22,6 +22,7 @@ import type {
   PlayerSessionInfoResponse,
   RegenerateJoinTokenResponse,
   StartPlaybackResponse,
+  TwitchMediaInfo,
   YouTubeMediaInfo,
 } from '../../../../../../plugins/official/media/_old/video-player/legacy-types.js';
 import type VideoLiveTranscodeMedia
@@ -71,6 +72,7 @@ export default class PlayerSessionRouter implements Router {
 
       const currentMedia = playerSession.getCurrentMedia();
       const currentYouTubeMedia = playerSession.getCurrentYouTubeMedia();
+      const currentTwitchMedia = playerSession.getCurrentTwitchMedia();
 
       return reply
         .status(200)
@@ -89,7 +91,11 @@ export default class PlayerSessionRouter implements Router {
               otherParticipants: playerSession.participants,
             },
           },
-          playbackStatus: currentYouTubeMedia != null ? ({
+          playbackStatus: currentTwitchMedia != null ? ({
+            type: 'twitch',
+            channelName: currentTwitchMedia.channelName,
+            title: currentTwitchMedia.title,
+          } satisfies TwitchMediaInfo) : currentYouTubeMedia != null ? ({
             type: 'youtube',
             videoId: currentYouTubeMedia.videoId,
             startSeconds: currentYouTubeMedia.startSeconds,
@@ -529,6 +535,41 @@ export default class PlayerSessionRouter implements Router {
           startSeconds,
           title,
         } satisfies YouTubeMediaInfo);
+    });
+
+    server.post('/:sessionId/change-media-twitch', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
+      const apolloUser = request.getAuthenticatedUser();
+
+      const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
+      if (playerSession?.owner.id !== apolloUser.id) {
+        return reply
+          .status(403)
+          .type('text/plain')
+          .send('Session not found or you are not the owner of this session');
+      }
+
+      const channelName: unknown = (request.body as any)?.channelName;
+      if (typeof channelName !== 'string' || !/^[A-Za-z0-9_]{1,25}$/.test(channelName)) {
+        return reply
+          .status(400)
+          .type('application/json')
+          .send({ error: 'Invalid or missing channelName: expected a Twitch channel name (1-25 alphanumeric characters or underscores)' });
+      }
+
+      const title: string = typeof (request.body as any)?.title === 'string' && (request.body as any).title.length > 0
+        ? (request.body as any).title
+        : channelName;
+
+      playerSession.startTwitch(channelName, title);
+
+      return reply
+        .status(200)
+        .type('application/json')
+        .send({
+          type: 'twitch',
+          channelName,
+          title,
+        } satisfies TwitchMediaInfo);
     });
 
     server.post('/:sessionId/regenerate-join-token', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {

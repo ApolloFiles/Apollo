@@ -43,6 +43,7 @@ export default class PlayerSession {
 
   private currentMedia: VideoLiveTranscodeMedia | null = null;
   private currentYouTubeMedia: { videoId: string; startSeconds?: number; title: string } | null = null;
+  private currentTwitchMedia: { channelName: string; title: string } | null = null;
   private playerState: { lastUpdated: Date, data: { currentTime: number } } | null = null;  // TODO
   public readonly tmpDir: TemporaryDirectory;
 
@@ -144,6 +145,10 @@ export default class PlayerSession {
 
   getCurrentYouTubeMedia(): { videoId: string; startSeconds?: number; title: string } | null {
     return this.currentYouTubeMedia;
+  }
+
+  getCurrentTwitchMedia(): { channelName: string; title: string } | null {
+    return this.currentTwitchMedia;
   }
 
   getCurrentFile(): VirtualFile | null {
@@ -308,7 +313,7 @@ export default class PlayerSession {
   }
 
   private broadcastMediaChanged(): void {
-    this.broadcastMessage(WebSocketMessageBuilder.buildMediaChanged(this.id, this.currentMedia, this.currentYouTubeMedia));
+    this.broadcastMessage(WebSocketMessageBuilder.buildMediaChanged(this.id, this.currentMedia, this.currentYouTubeMedia, this.currentTwitchMedia));
   }
 
   private broadcastClockSync(): void {
@@ -363,6 +368,7 @@ export default class PlayerSession {
     this.currentMedia?.destroy().catch(console.error);
     this.currentMedia = newMedia;
     this.currentYouTubeMedia = null;
+    this.currentTwitchMedia = null;
 
     this.broadcastMediaChanged();
     return this.currentMedia;
@@ -372,6 +378,16 @@ export default class PlayerSession {
     this.currentMedia?.destroy().catch(console.error);
     this.currentMedia = null;
     this.currentYouTubeMedia = { videoId, startSeconds, title: title ?? videoId };
+    this.currentTwitchMedia = null;
+
+    this.broadcastMediaChanged();
+  }
+
+  startTwitch(channelName: string, title?: string): void {
+    this.currentMedia?.destroy().catch(console.error);
+    this.currentMedia = null;
+    this.currentYouTubeMedia = null;
+    this.currentTwitchMedia = { channelName, title: title ?? channelName };
 
     this.broadcastMediaChanged();
   }

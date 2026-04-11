@@ -36,7 +36,20 @@ export default class WebSocketMessageBuilder {
     } satisfies SessionInfoMessage);
   }
 
-  static buildMediaChanged(sessionId: string, media: VideoLiveTranscodeMedia | null, youTubeMedia?: { videoId: string; startSeconds?: number; title: string } | null): string {
+  static buildMediaChanged(sessionId: string, media: VideoLiveTranscodeMedia | null, youTubeMedia?: { videoId: string; startSeconds?: number; title: string } | null, twitchMedia?: { channelName: string; title: string } | null): string {
+    if (twitchMedia != null) {
+      return this.asString({
+        type: MESSAGE_TYPE.MEDIA_CHANGED,
+        data: {
+          media: {
+            type: 'twitch',
+            channelName: twitchMedia.channelName,
+            title: twitchMedia.title,
+          },
+        },
+      } satisfies MediaChangedMessage);
+    }
+
     if (youTubeMedia != null) {
       return this.asString({
         type: MESSAGE_TYPE.MEDIA_CHANGED,
