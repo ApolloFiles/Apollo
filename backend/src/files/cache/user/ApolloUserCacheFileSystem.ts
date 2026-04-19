@@ -66,6 +66,10 @@ export default class ApolloUserCacheFileSystem {
   }
 
   private async isCacheStillUpToDate(file: VirtualFile): Promise<boolean> {
+    if (!(await file.exists())) {
+      return false;
+    }
+
     const cacheStatFile = this.cacheFileSystem.getFile(`${this.createCachePathForFile(file)}.stat`);
     if (!(await cacheStatFile.exists())) {
       return true;

@@ -73,8 +73,11 @@ export default abstract class AbstractMediaImageProvider {
 
   protected async findImageFileInDirectory(media: MediaLibraryMedia): Promise<VirtualFile | null> {
     const mediaDirectory = await this.findMediaDirectory(media);
-    const fullFileList = await mediaDirectory.getFiles();
+    if (!(await mediaDirectory.isDirectory())) {
+      return null;
+    }
 
+    const fullFileList = await mediaDirectory.getFiles();
     for (const fileNamePattern of this.fileNamePatterns) {
       for (const file of fullFileList) {
         if (fileNamePattern.test(file.getFileName()) && (await file.isFile())) {
