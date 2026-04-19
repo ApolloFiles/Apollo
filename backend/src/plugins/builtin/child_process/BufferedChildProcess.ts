@@ -6,7 +6,7 @@ type SpawnOptions = {
   cwd?: string;
 }
 
-type ProcessResult = {
+export type ProcessResult = {
   stdout: Buffer;
   stderr: Buffer;
   exitCode: number | null;

@@ -4,6 +4,7 @@ import { injectable } from 'tsyringe';
 import FsUtils from '../../../../../utils/FsUtils.js';
 import BufferedChildProcess from '../../../../builtin/child_process/BufferedChildProcess.js';
 import FfprobeExecutor, { type ExtendedProbeResult } from '../../../ffmpeg/FfprobeExecutor.js';
+import FfmpegProcessError from './FfmpegProcessError.js';
 import UnexpectedDesiredMetadataError from './UnexpectedDesiredMetadataError.js';
 
 type Tag = {
@@ -102,7 +103,23 @@ export default class FfmpegVideoFileMetadataEditor {
     }
 
     ffmpegArgs.push(tempOutputFilePath);
-    await this.runFfmpeg(ffmpegArgs, tmpDirPath);
+
+    try {
+      await this.runFfmpeg(ffmpegArgs, tmpDirPath);
+    } catch (err) {
+      if (err instanceof FfmpegProcessError &&
+        err.exitCode === 234 &&
+        err.stderr.includes(`Can't write packet with unknown timestamp`) &&
+        err.stderr.includes('Error submitting a packet to the muxer: Invalid argument')) {
+        console.warn(`ffmpeg was unable to write video metadata changes, because of missing/unknown timestamps in the input file. Retrying with '-fflags +genpts', which will try to generate them`);
+
+        ffmpegArgs.unshift('-fflags', '+genpts');
+        await this.runFfmpeg(ffmpegArgs, tmpDirPath);
+        return tempOutputFilePath;
+      }
+
+      throw err;
+    }
 
     return tempOutputFilePath;
   }
@@ -233,13 +250,7 @@ export default class FfmpegVideoFileMetadataEditor {
     const ffmpegProcess = await BufferedChildProcess.spawn('ffmpeg', args, { cwd });
 
     if (ffmpegProcess.exitCode !== 0) {
-      throw new Error(`Editing a video file's metadata failed because ffmpeg exited with code ${ffmpegProcess.exitCode}: ${JSON.stringify({
-        exitCode: ffmpegProcess.exitCode,
-        signal: ffmpegProcess.signal,
-        stdout: ffmpegProcess.stdout.toString(),
-        stderr: ffmpegProcess.stderr.toString(),
-        args,
-      })}`);
+      throw FfmpegProcessError.create(ffmpegProcess, args);
     }
   }
 }
