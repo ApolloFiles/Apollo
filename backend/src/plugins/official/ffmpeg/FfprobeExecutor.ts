@@ -36,11 +36,11 @@ export default class FfprobeExecutor {
       probeResult = PROBE_RESULT_SCHEMA.parse(stdOutJson);
     }
 
-    this.logWarningsForUnexpectedKeys(probeResult, stdOutJson);
+    this.logWarningsForUnexpectedKeys(filePath, probeResult, stdOutJson);
     return probeResult;
   }
 
-  private logWarningsForUnexpectedKeys(parsed: unknown, raw: unknown, path: string = ''): void {
+  private logWarningsForUnexpectedKeys(filePath: string, parsed: unknown, raw: unknown, path: string = ''): void {
     if (typeof parsed !== 'object' || parsed == null) {
       return;
     }
@@ -53,9 +53,9 @@ export default class FfprobeExecutor {
         const currentPath = `${path}.${key}`;
 
         if (!Object.prototype.hasOwnProperty.call(parsedObj, key)) {
-          console.warn(`Unexpected key in ffprobe output: {path=${currentPath}, value=${JSON.stringify(rawObj[key])}}`);
+          console.warn(`Unexpected key in ffprobe output: {path=${currentPath}, value=${JSON.stringify(rawObj[key])}, file=${filePath}}`);
         } else {
-          this.logWarningsForUnexpectedKeys(parsedObj[key], rawObj[key], currentPath);
+          this.logWarningsForUnexpectedKeys(filePath, parsedObj[key], rawObj[key], currentPath);
         }
       }
     }
