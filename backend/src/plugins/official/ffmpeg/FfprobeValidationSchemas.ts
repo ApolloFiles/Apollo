@@ -64,6 +64,10 @@ const VIDEO_STREAM = STREAM_BASE.extend({
   // MP4 specific
   id: z.string().optional(),
   nb_frames: z.string().optional(),
+
+  // MPEG‑4 Part 2 / ASP (DivX/Xvid/mpeg4) specific
+  quarter_sample: z.coerce.boolean().optional(),
+  divx_packed: z.coerce.boolean().optional(),
 });
 const AUDIO_STREAM = STREAM_BASE.extend({
   codec_type: z.literal('audio'),
@@ -104,6 +108,9 @@ const DATA_STREAM = STREAM_BASE.extend({
   // MP4
   id: z.string().optional(),
   nb_frames: z.string().optional(),
+
+  // MP4 (bin_data (text)) specific
+  bit_rate: z.string().optional(),
 });
 
 // Probe result
