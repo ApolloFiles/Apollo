@@ -79,6 +79,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Manage Library | Apollo Media</title>
+</svelte:head>
+
 <div class="page-container">
   <header>
     <h1>{isCreateMode ? 'Create' : 'Edit'} Media Library</h1>

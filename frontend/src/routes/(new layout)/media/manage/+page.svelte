@@ -53,6 +53,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Manage Libraries | Apollo Media</title>
+</svelte:head>
+
 <div class="page-container">
   <header>
     <div class="header-top">
