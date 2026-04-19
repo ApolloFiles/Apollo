@@ -14,6 +14,7 @@ export default class FsUtils {
       if (err instanceof Error && (err as any).code === 'EXDEV') {
         const newPathWithPartSuffix = newPath + '.part';
         if (Fs.existsSync(newPathWithPartSuffix)) {
+          // FIXME: Maybe generate a UUIDv4 instead of overwriting the target path and making it non-atomic?
           await Fs.promises.copyFile(oldPath, newPath);
         } else {
           // First copy to a '.part' file, without overwriting an existing file, so we can replace the target file atomically
@@ -26,7 +27,10 @@ export default class FsUtils {
         }
 
         await Fs.promises.rm(oldPath, { force: true });
+        return;
       }
+
+      throw err;
     }
   }
 }
