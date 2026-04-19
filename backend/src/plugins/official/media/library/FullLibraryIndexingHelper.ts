@@ -103,7 +103,11 @@ export default class FullLibraryIndexingHelper {
     for (const media of allMedia) {
       const mediaItems = await this.mediaLibraryMediaItemFinder.findByMediaId(media.id);
       for (const mediaItem of mediaItems) {
-        await this.videoThumbnailProvider.provide(mediaItem, 'avif');
+        try {
+          await this.videoThumbnailProvider.provide(mediaItem, 'avif');
+        } catch (err) {
+          console.error(err);
+        }
       }
     }
   }
