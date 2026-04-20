@@ -22,12 +22,6 @@ import { getAppInfo, IS_PRODUCTION } from './constants.js';
       contexts: {
         Machine: {
           hostname: Os.hostname(),
-          os_type: Os.type(),
-          os_release: Os.release(),
-
-          cpus: Os.cpus().length,
-          memory_total: (Os.totalmem() / 1024 / 1024 / 1024).toFixed(2) + ' GiB',
-          memory_free: null,
         },
       },
     },
