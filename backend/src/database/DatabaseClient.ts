@@ -32,7 +32,20 @@ export default class DatabaseClient extends PrismaClient implements Disposable {
   }
 
   async runDatabaseMigrations(): Promise<void> {
-    ChildProcess.execSync('npm run prisma:migrate:production', { stdio: 'inherit', cwd: APP_ROOT_DIR });
+    const dbMigrations = ChildProcess.spawnSync(
+      'node',
+      ['node_modules/.bin/prisma', 'migrate', 'deploy'],
+      { stdio: 'inherit', cwd: APP_ROOT_DIR },
+    );
+
+    if (dbMigrations.status !== 0) {
+      if (dbMigrations.error != null) {
+        console.error(dbMigrations.error);
+      }
+
+      console.error('Database migrations failed with exit code', dbMigrations.status);
+      process.exit(dbMigrations.status ?? 6);
+    }
   }
 
   async dispose(): Promise<void> {

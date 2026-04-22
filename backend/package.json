@@ -21,7 +21,7 @@
   "main": "src/main.ts",
   "type": "module",
   "scripts": {
-    "postinstall": "npm run prisma:generate",
+    "postinstall": "npm run prisma:generate || true",
 
     "build": "tsc",
     "build:podman": "cd .. && podman build --file Containerfile --pull=newer --rm --target ffmpeg-cuda --tag localhost/spraxdev/apollo:latest .",
@@ -37,7 +37,6 @@
 
     "prisma:generate": "prisma generate --require-models",
     "prisma:migrate:dev": "prisma migrate dev && npm run prisma:generate",
-    "prisma:migrate:production": "prisma migrate deploy",
 
     "contributors:add": "npx all-contributors add --config ../.all-contributorsrc",
     "contributors:generate": "npx all-contributors generate --config ../.all-contributorsrc"
@@ -62,6 +61,7 @@
     "fastify-type-provider-zod": "^6.1.0",
     "mime-types": "^3.0.2",
     "openid-client": "^6.8.3",
+    "prisma": "^7.6.0",
     "range-parser": "^1.2.1",
     "reflect-metadata": "^0.2.2",
     "sharp": "^0.34.5",
@@ -80,7 +80,6 @@
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.1.4",
-    "prisma": "^7.6.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.4",
     "vitest-mock-extended": "^4.0.0"
