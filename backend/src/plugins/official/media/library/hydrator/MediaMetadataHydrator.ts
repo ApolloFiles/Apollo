@@ -2,7 +2,7 @@ import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaExternalIdSource } from '../../../../../database/prisma-client/enums.js';
 import type { PrismaPromise } from '../../../../../database/prisma-client/internal/prismaNamespace.js';
-import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
+import type ReadContentsLibraryMedia from '../database/media/ReadContentsLibraryMedia.js';
 import CachedTheMovieDbApiClient from '../external_metadata/TMDB/CachedTheMovieDbApiClient.js';
 import type { TMDBMovieDetails, TMDBTvSeriesDetails } from '../external_metadata/TMDB/TMDBApiResponseSchemas.js';
 
@@ -18,7 +18,7 @@ export default class MediaMetadataHydrator {
   ) {
   }
 
-  async hydrate(media: MediaLibraryMedia): Promise<void> {
+  async hydrate(media: ReadContentsLibraryMedia): Promise<void> {
     const mediaMetadata = await this.fetchTheMovieDbMetadata(media);
     if (mediaMetadata == null) {
       await this.databaseClient.mediaLibraryMedia.update({
@@ -42,7 +42,7 @@ export default class MediaMetadataHydrator {
     await this.fetchAndPersistFallbackImages(media, mediaMetadata);
   }
 
-  private async fetchAndPersistFallbackImages(media: MediaLibraryMedia, mediaMetadata: TheMovieDbMetadata): Promise<void> {
+  private async fetchAndPersistFallbackImages(media: ReadContentsLibraryMedia, mediaMetadata: TheMovieDbMetadata): Promise<void> {
     const fallbackImageDatabaseOperations: PrismaPromise<unknown>[] = [
       this.databaseClient.mediaLibraryMediaFallbackImages.deleteMany({
         where: { mediaId: media.id },
@@ -148,7 +148,7 @@ export default class MediaMetadataHydrator {
     await this.databaseClient.$transaction(fallbackImageDatabaseOperations);
   }
 
-  private async fetchTheMovieDbMetadata(media: MediaLibraryMedia): Promise<TheMovieDbMetadata | null> {
+  private async fetchTheMovieDbMetadata(media: ReadContentsLibraryMedia): Promise<TheMovieDbMetadata | null> {
     const externalIds = await this.findExternalIds(media);
 
     if (externalIds['THE_MOVIE_DB'] != null) {
@@ -198,7 +198,7 @@ export default class MediaMetadataHydrator {
     return null;
   }
 
-  private async findExternalIds(media: MediaLibraryMedia): Promise<Partial<Record<MediaLibraryMediaExternalIdSource, string>>> {
+  private async findExternalIds(media: ReadContentsLibraryMedia): Promise<Partial<Record<MediaLibraryMediaExternalIdSource, string>>> {
     const externalIds = await this.databaseClient.mediaLibraryMediaExternalIds.findMany({
       where: {
         mediaId: media.id,

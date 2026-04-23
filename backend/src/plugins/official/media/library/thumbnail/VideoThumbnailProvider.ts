@@ -4,7 +4,7 @@ import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
-import type MediaLibraryMediaItem from '../database/MediaLibraryMediaItem.js';
+import type FullLibraryMediaItem from '../database/media-item/FullLibraryMediaItem.js';
 import ImageFileConstants from '../images/ImageFileConstants.js';
 import MediaImageCache from '../images/MediaImageCache.js';
 import VideoThumbnailFrameExtractor from './VideoThumbnailFrameExtractor.js';
@@ -19,7 +19,7 @@ export default class VideoThumbnailProvider {
   ) {
   }
 
-  async provide(mediaItem: MediaLibraryMediaItem, format: 'jpeg' | 'avif'): Promise<Buffer> {
+  async provide(mediaItem: FullLibraryMediaItem, format: 'jpeg' | 'avif'): Promise<Buffer> {
     const file = await this.findMediaItemFile(mediaItem);
 
     if (!(file instanceof LocalFile)) {
@@ -60,12 +60,12 @@ export default class VideoThumbnailProvider {
   }
 
 
-  private async findMediaItemFile(mediaItem: MediaLibraryMediaItem): Promise<VirtualFile> {
+  private async findMediaItemFile(mediaItem: FullLibraryMediaItem): Promise<VirtualFile> {
     const fileSystems = await this.getOwnerFileSystems(mediaItem);
     return fileSystems.user[0].getFile(Path.join(mediaItem.mediaBaseDirectoryUri.filePath, mediaItem.relativeFilePath));
   }
 
-  private async getOwnerFileSystems(mediaItem: MediaLibraryMediaItem) {
+  private async getOwnerFileSystems(mediaItem: FullLibraryMediaItem) {
     const mediaOwner = await this.userProvider.findById(mediaItem.libraryOwnerId);
     if (mediaOwner == null) {
       throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(mediaItem.libraryOwnerId)}`);

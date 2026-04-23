@@ -8,7 +8,7 @@ import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
 import FileProvider from '../../../../../files/FileProvider.js';
 import UserProvider from '../../../../../user/UserProvider.js';
-import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
+import FullLibraryMedia from '../database/media/FullLibraryMedia.js';
 import AbstractMediaImageProvider, { type ImageFormat, type ImageType } from './AbstractMediaImageProvider.js';
 import FallbackMediaPosterGenerator from './FallbackMediaPosterGenerator.js';
 import ImageFileConstants from './ImageFileConstants.js';
@@ -61,7 +61,7 @@ export default class MediaPosterImageProvider extends AbstractMediaImageProvider
     return poster.toBuffer();
   }
 
-  protected async generatedFallback(media: MediaLibraryMedia, format: 'jpeg' | 'avif'): Promise<Buffer> {
+  protected async generatedFallback(media: FullLibraryMedia, format: 'jpeg' | 'avif'): Promise<Buffer> {
     const mediaTitleHash = Crypto.createHash('sha256').update(media.title).digest('hex');
 
     const tmpDir = Path.join(this.apolloDirectoryProvider.getAppTemporaryDirectory(), 'apollo_media', 'fallback-posters');

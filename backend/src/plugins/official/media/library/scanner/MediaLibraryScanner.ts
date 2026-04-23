@@ -4,7 +4,7 @@ import FileProvider from '../../../../../files/FileProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import ApolloFileURI from '../../../../../uri/ApolloFileURI.js';
 import UserProvider from '../../../../../user/UserProvider.js';
-import MediaLibrary from '../database/MediaLibrary.js';
+import type FullLibrary from '../database/library/FullLibrary.js';
 import MediaDirectoryDetector from './MediaDirectoryDetector.js';
 import MediaLibraryMediaWriter from './MediaLibraryMediaWriter.js';
 import MovieDirectoryScanner from './MovieDirectoryScanner.js';
@@ -22,7 +22,7 @@ export default class MediaLibraryScanner {
   ) {
   }
 
-  async scan(library: MediaLibrary): Promise<void> {
+  async scan(library: FullLibrary): Promise<void> {
     const libraryOwner = await this.userProvider.findById(library.ownerId);
     if (libraryOwner == null) {
       throw new Error(`Library owner with id '${library.ownerId}' not found`);
@@ -42,7 +42,7 @@ export default class MediaLibraryScanner {
     await mediaWriter.deleteOldMediaItems(library.id);
   }
 
-  private async scanDirectory(library: MediaLibrary, directory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {
+  private async scanDirectory(library: FullLibrary, directory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {
     for (const file of (await directory.getFiles())) {
       const fileStat = await file.stat();
 

@@ -1,7 +1,7 @@
 import type { SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
 
 type Libraries = {
-  owned: { id: string, name: string, directoryUris: string[] }[],
+  owned: { id: string, name: string }[],
   sharedWith: { id: string, name: string }[],
 };
 

@@ -3,7 +3,7 @@ import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
 import FileTypeUtils from '../../_old/FileTypeUtils.js';
-import type MediaLibrary from '../database/MediaLibrary.js';
+import type ReadContentsLibrary from '../database/library/ReadContentsLibrary.js';
 import AbstractScanner, { type CommonVideoMetadata } from './AbstractScanner.js';
 import type MediaLibraryMediaWriter from './MediaLibraryMediaWriter.js';
 
@@ -25,7 +25,7 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
     super(ffprobeExecutor);
   }
 
-  async scan(library: MediaLibrary, mediaDirectory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {
+  async scan(library: ReadContentsLibrary, mediaDirectory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {
     const mediaInfo = this.extractInfoFromMediaDirectoryName(mediaDirectory);
 
     // TODO: It might make sense to 'overtake' other existing media here, in case the directory got renamed or so (and the other media directory no longer exists)

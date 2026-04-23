@@ -1,23 +1,26 @@
-export default class MediaLibrary {
+export default class ReadContentsLibrary {
+  /**
+   * @internal
+   */
   constructor(
     public readonly id: bigint,
     public readonly ownerId: string,
     public readonly name: string,
-    public readonly directoryUris: string[],
   ) {
   }
 
+  /**
+   * @internal
+   */
   public static fromData(data: {
     id: bigint,
     ownerId: string,
     name: string,
-    directoryUris: string[],
-  }): MediaLibrary {
-    return new MediaLibrary(
+  }): ReadContentsLibrary {
+    return new ReadContentsLibrary(
       data.id,
       data.ownerId,
       data.name,
-      data.directoryUris,
     );
   }
 }

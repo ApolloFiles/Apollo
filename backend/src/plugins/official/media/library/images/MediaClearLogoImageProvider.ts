@@ -4,7 +4,7 @@ import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
 import FileProvider from '../../../../../files/FileProvider.js';
 import UserProvider from '../../../../../user/UserProvider.js';
-import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
+import FullLibraryMedia from '../database/media/FullLibraryMedia.js';
 import AbstractMediaImageProvider, { type ImageFormat, type ImageType } from './AbstractMediaImageProvider.js';
 import ImageFileConstants from './ImageFileConstants.js';
 import MediaImageCache from './MediaImageCache.js';
@@ -51,7 +51,7 @@ export default class MediaClearLogoImageProvider extends AbstractMediaImageProvi
     return logo.toBuffer();
   }
 
-  protected generatedFallback(_media: MediaLibraryMedia, _format: ImageFormat): Promise<Buffer | null> {
+  protected generatedFallback(_media: FullLibraryMedia, _format: ImageFormat): Promise<Buffer | null> {
     return Promise.resolve(null);
   }
 }

@@ -3,14 +3,17 @@ import DatabaseClient from '../../../database/DatabaseClient.js';
 import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import FileProvider from '../../../files/FileProvider.js';
 import LibraryManager from '../../../plugins/official/media/_old/libraries/LibraryManager.js';
-import MediaLibraryFinder from '../../../plugins/official/media/library/database/finder/MediaLibraryFinder.js';
+import MediaLibraryByUserFinder
+  from '../../../plugins/official/media/library/database/library/MediaLibraryByUserFinder.js';
 import MediaLibraryMediaFinder
-  from '../../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
+  from '../../../plugins/official/media/library/database/media/MediaLibraryMediaFinder.js';
 import MediaLibraryWriter from '../../../plugins/official/media/library/database/writer/MediaLibraryWriter.js';
 import FullLibraryIndexingHelper from '../../../plugins/official/media/library/FullLibraryIndexingHelper.js';
-import MediaClearLogoImageProvider
-  from '../../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
+import MediaClearLogoImageProvider from '../../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
+import PermissionAwareLibraryProvider
+  from '../../../plugins/official/media/library/permission-aware/PermissionAwareLibraryProvider.js';
 import ApolloFileURI from '../../../uri/ApolloFileURI.js';
+import type ApolloUser from '../../../user/ApolloUser.js';
 import type { ORpcContractOutputs } from '../../contract/oRpcContract.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
 import MediaEditorSubRouterFactory from './media/editor/MediaEditorSubRouterFactory.js';
@@ -20,12 +23,13 @@ export default class MediaORpcRouterFactory {
   constructor(
     private readonly mediaEditorSubRouterFactory: MediaEditorSubRouterFactory,
     private readonly databaseClient: DatabaseClient,
-    private readonly mediaLibraryFinder: MediaLibraryFinder,
     private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
+    private readonly mediaLibraryByUserFinder: MediaLibraryByUserFinder,
     private readonly fileProvider: FileProvider,
     private readonly mediaLibraryWriter: MediaLibraryWriter,
     private readonly mediaClearLogoImageProvider: MediaClearLogoImageProvider,
     private readonly fullLibraryIndexingHelper: FullLibraryIndexingHelper,
+    private readonly permissionAwareLibraryProvider: PermissionAwareLibraryProvider,
   ) {
   }
 
@@ -33,16 +37,10 @@ export default class MediaORpcRouterFactory {
     return {
       ...this.mediaEditorSubRouterFactory.create(os),
 
+      // FIXME: getMediaLibraryOverview still heavily relies on old code
       getMediaLibraryOverview: os.getMediaLibraryOverview
         .handler(async ({ input, context }) => {
-          const libraryIdToFilterBy = input.libraryId;
-
-          const [ownedLibraries, sharedLibraries] = await Promise.all([
-            this.mediaLibraryFinder.findOwnedByUser(context.authSession.user),
-            this.mediaLibraryFinder.findSharedWithUser(context.authSession.user),
-          ]);
-
-          const libraryManager = new LibraryManager(context.authSession.user);
+          const mediaLibrary = input.libraryId != null ? (await this.permissionAwareLibraryProvider.provideForReadContents(input.libraryId, context.authSession.user)) : null;
 
           type MediaElement = {
             title: string,
@@ -57,20 +55,22 @@ export default class MediaORpcRouterFactory {
             episodeNumber?: number,
           };
 
+          const libraryManager = new LibraryManager(context.authSession.user);
+
           let libraryMediaSorting: ORpcContractOutputs['media']['getMediaLibraryOverview']['page']['result']['order'];
           let mediaItems: Promise<PrismaClient.MediaLibraryMedia[]>;
 
-          if (libraryIdToFilterBy != null) {
+          if (mediaLibrary != null) {
             if (input.order === 'alphabetical') {
               libraryMediaSorting = 'alphabetical';
-              mediaItems = libraryManager.fetchMediaSortedAlphabetically(libraryIdToFilterBy);
+              mediaItems = libraryManager.fetchMediaSortedAlphabetically(mediaLibrary.library.id);
             } else {
               libraryMediaSorting = 'recentlyAdded';
-              mediaItems = libraryManager.fetchMediaSortedByRecentlyAdded(libraryIdToFilterBy);
+              mediaItems = libraryManager.fetchMediaSortedByRecentlyAdded(mediaLibrary.library.id);
             }
           } else {
             libraryMediaSorting = 'recentlyAdded';
-            mediaItems = libraryManager.fetchRecentlyAddedMedia(libraryIdToFilterBy);
+            mediaItems = libraryManager.fetchRecentlyAddedMedia();
           }
 
           const mediaResultItems: ORpcContractOutputs['media']['getMediaLibraryOverview']['page']['result']['items'] = (await mediaItems).map(i => ({
@@ -87,18 +87,8 @@ export default class MediaORpcRouterFactory {
             },
 
             page: {
-              libraries: {
-                owned: ownedLibraries.map(lib => ({
-                  id: lib.id.toString(),
-                  name: lib.name,
-                  directoryUris: lib.directoryUris,
-                })),
-                sharedWith: sharedLibraries.map(lib => ({
-                  id: lib.id.toString(),
-                  name: lib.name,
-                })),
-              },
-              continueWatching: ((await libraryManager.fetchContinueWatchingItems(libraryIdToFilterBy)).map(i => ({
+              libraries: await this.collectLibrariesData(context.authSession.user),
+              continueWatching: ((await libraryManager.fetchContinueWatchingItems(mediaLibrary?.library.id)).map(i => ({
                 title: i.media.title,
                 watchProgressPercentage: Math.max(0, Math.min(1, 1 - ((i.item.durationInSec - i.watchProgressInSec) / i.item.durationInSec))),
                 libraryId: i.media.libraryId.toString(),
@@ -117,35 +107,18 @@ export default class MediaORpcRouterFactory {
         }),
 
       getMedia: os.getMedia
-        .handler(async ({ input, context, errors }) => {
-          const libraryId = input.libraryId;
-          const mediaId = input.mediaId;
+        .handler(async ({ input, context }) => {
+          const mediaLibrary = await this.permissionAwareLibraryProvider.provideForReadContents(input.libraryId, context.authSession.user);
+          const libraryMedia = await mediaLibrary.findMedia(input.mediaId);
 
-          const libraryManager = new LibraryManager(context.authSession.user);
-
-          const library = await libraryManager.getLibrary(libraryId.toString());
-          if (library == null) {
-            throw errors.REQUESTED_ENTITY_NOT_FOUND();
+          let mediaHasClearLogoPromise: boolean;
+          {
+            const fullLibraryMedia = await this.mediaLibraryMediaFinder.findFullById(libraryMedia.media.id);
+            mediaHasClearLogoPromise = (await this.mediaClearLogoImageProvider.provide(fullLibraryMedia!, 'avif')) != null;
           }
-
-          const media = await library.fetchMediaFull(mediaId);
-          if (media == null) {
-            throw errors.REQUESTED_ENTITY_NOT_FOUND();
-          }
-
-          const mediaHasClearLogoPromise = this.mediaLibraryMediaFinder
-            .findForUserById(context.authSession.user, mediaId)
-            .then((mediaFromOtherFinder) => {
-              if (mediaFromOtherFinder == null) {
-                throw new Error('Unexpected null media when checking for clear logo');
-              }
-
-              return this.mediaClearLogoImageProvider.provide(mediaFromOtherFinder!, 'avif');
-            })
-            .then((imageData) => imageData != null);
 
           const seasonsMap: Map<number, SeasonData> = new Map();
-          for (const item of media.items) {
+          for (const item of (await libraryMedia.findAllItems())) {
             const seasonNumber = item.seasonNumber ?? 0;
             if (!seasonsMap.has(seasonNumber)) {
               seasonsMap.set(seasonNumber, {
@@ -154,7 +127,18 @@ export default class MediaORpcRouterFactory {
               });
             }
 
-            const watchProgressInSec = await library.fetchMediaWatchProgressInSeconds(item.id);
+            const watchProgress = await this.databaseClient.mediaLibraryUserWatchProgress.findUnique({
+              where: {
+                userId_mediaItemId: {
+                  userId: context.authSession.user.id,
+                  mediaItemId: item.id,
+                },
+              },
+              select: {
+                durationInSec: true,
+              },
+            });
+            const watchProgressInSec = watchProgress ? watchProgress.durationInSec : null;
 
             seasonsMap.get(seasonNumber)!.episodes.push({
               id: item.id.toString(),
@@ -168,11 +152,6 @@ export default class MediaORpcRouterFactory {
               } : null,
             });
           }
-
-          const [ownedLibraries, sharedLibraries] = await Promise.all([
-            this.mediaLibraryFinder.findOwnedByUser(context.authSession.user),
-            this.mediaLibraryFinder.findSharedWithUser(context.authSession.user),
-          ]);
 
           type SeasonData = {
             seasonNumber: number,
@@ -210,7 +189,7 @@ export default class MediaORpcRouterFactory {
             })) : undefined;
 
           // TODO: nextMediaItemToWatch should be similar to continue watching logic and fall back to the first episode
-          const continueWatchingResultItem = await libraryManager.determineContinueOrNextWatchItemForMedia(mediaId);
+          const continueWatchingResultItem = await new LibraryManager(context.authSession.user).determineContinueOrNextWatchItemForMedia(libraryMedia.media.id);
           let nextMediaItemToWatch: MediaDetail['nextMediaItemToWatch'] = continueWatchingResultItem != null ? {
             id: continueWatchingResultItem.item.id.toString(),
             title: '',
@@ -231,22 +210,12 @@ export default class MediaORpcRouterFactory {
             },
 
             page: {
-              libraries: {
-                owned: ownedLibraries.map(lib => ({
-                  id: lib.id.toString(),
-                  name: lib.name,
-                  directoryUris: lib.directoryUris,
-                })),
-                sharedWith: sharedLibraries.map(lib => ({
-                  id: lib.id.toString(),
-                  name: lib.name,
-                })),
-              },
+              libraries: await this.collectLibrariesData(context.authSession.user),
               media: {
-                id: media.id.toString(),
+                id: libraryMedia.media.id.toString(),
                 type: (seasonsMap.size > 1 || !seasonsMap.has(0)) ? 'tv_show' : 'movie',
-                title: media.title,
-                synopsis: media.synopsis,
+                title: libraryMedia.media.title,
+                synopsis: libraryMedia.media.synopsis,
                 hasClearLogo: await mediaHasClearLogoPromise,
                 genres: [],
                 nextMediaItemToWatch,
@@ -258,37 +227,8 @@ export default class MediaORpcRouterFactory {
 
       management: {
         get: os.management.get
-          .handler(async ({ input, context, errors }) => {
-            const mediaLibrary = await this.databaseClient.mediaLibrary.findUnique({
-              where: { id: input.libraryId },
-
-              select: {
-                id: true,
-                ownerId: true,
-                name: true,
-                directoryUris: true,
-
-                MediaLibrarySharedWith: {
-                  select: {
-                    user: {
-                      select: {
-                        id: true,
-                        displayName: true,
-                      },
-                    },
-                  },
-                },
-              },
-            });
-
-            if (mediaLibrary == null || mediaLibrary.ownerId !== context.authSession.user.id) {
-              throw errors.REQUESTED_ENTITY_NOT_FOUND();
-            }
-
-            const [ownedLibraries, sharedLibraries] = await Promise.all([
-              this.mediaLibraryFinder.findOwnedByUser(context.authSession.user),
-              this.mediaLibraryFinder.findSharedWithUser(context.authSession.user),
-            ]);
+          .handler(async ({ input, context }) => {
+            const mediaLibrary = await this.permissionAwareLibraryProvider.provideForWrite(input.libraryId, context.authSession.user);
 
             return {
               loggedInUser: {
@@ -301,32 +241,17 @@ export default class MediaORpcRouterFactory {
                 id: mediaLibrary.id.toString(),
                 name: mediaLibrary.name,
                 directoryUris: mediaLibrary.directoryUris,
-                sharedWith: mediaLibrary.MediaLibrarySharedWith.map(user => ({
-                  id: user.user.id,
-                  displayName: user.user.displayName,
+                sharedWith: mediaLibrary.sharedWithUsers.map(user => ({
+                  id: user.id,
+                  displayName: user.displayName,
                 })),
               },
-              libraries: {
-                owned: ownedLibraries.map(lib => ({
-                  id: lib.id.toString(),
-                  name: lib.name,
-                  directoryUris: lib.directoryUris,
-                })),
-                sharedWith: sharedLibraries.map(lib => ({
-                  id: lib.id.toString(),
-                  name: lib.name,
-                })),
-              },
+              libraries: await this.collectLibrariesData(context.authSession.user),
             };
           }),
 
         list: os.management.list
           .handler(async ({ context }) => {
-            const [ownedLibraries, sharedLibraries] = await Promise.all([
-              this.mediaLibraryFinder.findOwnedByUser(context.authSession.user),
-              this.mediaLibraryFinder.findSharedWithUser(context.authSession.user),
-            ]);
-
             return {
               loggedInUser: {
                 id: context.authSession.user.id,
@@ -334,30 +259,17 @@ export default class MediaORpcRouterFactory {
                 isSuperUser: context.authSession.user.isSuperUser,
               },
 
-              libraries: {
-                owned: ownedLibraries.map(lib => ({
-                  id: lib.id.toString(),
-                  name: lib.name,
-                  directoryUris: lib.directoryUris,
-                })),
-                sharedWith: sharedLibraries.map(lib => ({
-                  id: lib.id.toString(),
-                  name: lib.name,
-                })),
-              },
+              libraries: await this.collectLibrariesData(context.authSession.user),
             };
           }),
 
         delete: os.management.delete
-          .handler(async ({ input, context, errors }) => {
-            const mediaLibrary = await this.mediaLibraryFinder.findById(input.libraryId);
-            if (mediaLibrary == null || mediaLibrary.ownerId !== context.authSession.user.id) {
-              throw errors.REQUESTED_ENTITY_NOT_FOUND();
-            }
+          .handler(async ({ input, context }) => {
+            const mediaLibrary = await this.permissionAwareLibraryProvider.provideForWrite(input.libraryId, context.authSession.user);
 
             await this.databaseClient.mediaLibrary.delete({
               where: {
-                id: input.libraryId,
+                id: mediaLibrary.id,
                 ownerId: context.authSession.user.id,
               },
             });
@@ -412,17 +324,14 @@ export default class MediaORpcRouterFactory {
               throw errors.INVALID_INPUT({ message: 'Cannot share a media library with yourself' });
             }
 
-            const mediaLibrary = await this.mediaLibraryFinder.findById(input.id);
-            if (mediaLibrary == null || mediaLibrary.ownerId !== context.authSession.user.id) {
-              throw errors.REQUESTED_ENTITY_NOT_FOUND();
-            }
+            const mediaLibrary = await this.permissionAwareLibraryProvider.provideForWrite(input.id, context.authSession.user);
 
             const directoryUris: ApolloFileURI[] = [];
             for (const rawDirectoryUri of input.directoryUris) {
               let fileURI;
               try {
                 fileURI = ApolloFileURI.parse(rawDirectoryUri);
-                await this.fileProvider.provideForUserByUri(context.authSession.user, fileURI);
+                await this.fileProvider.provideForUserByUri(context.authSession.user, fileURI); // TODO: Use another/new class here? We want to continue to enforce owning the file/dir tho
               } catch (err) {
                 // TODO: Don't hardcode error message
                 if (err instanceof Error &&
@@ -537,6 +446,24 @@ export default class MediaORpcRouterFactory {
             }),
         },
       },
+    };
+  }
+
+  private async collectLibrariesData(user: ApolloUser): Promise<ORpcContractOutputs['media']['getMediaLibraryOverview']['page']['libraries']> {
+    const [ownedLibraries, sharedLibraries] = await Promise.all([
+      this.mediaLibraryByUserFinder.findOwnedSortedByName(user.id),
+      this.mediaLibraryByUserFinder.findSharedSortedByName(user.id),
+    ]);
+
+    return {
+      owned: ownedLibraries.map(lib => ({
+        id: lib.id.toString(),
+        name: lib.name,
+      })),
+      sharedWith: sharedLibraries.map(lib => ({
+        id: lib.id.toString(),
+        name: lib.name,
+      })),
     };
   }
 }

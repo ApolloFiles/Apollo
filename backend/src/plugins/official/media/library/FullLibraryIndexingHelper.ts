@@ -1,10 +1,10 @@
 import { singleton } from 'tsyringe';
 import type ApolloUser from '../../../../user/ApolloUser.js';
 import UserProvider from '../../../../user/UserProvider.js';
-import MediaLibraryFinder from './database/finder/MediaLibraryFinder.js';
-import MediaLibraryMediaFinder from './database/finder/MediaLibraryMediaFinder.js';
-import MediaLibraryMediaItemFinder from './database/finder/MediaLibraryMediaItemFinder.js';
-import type MediaLibrary from './database/MediaLibrary.js';
+import MediaLibraryByUserFinder from './database/library/MediaLibraryByUserFinder.js';
+import ReadContentsLibrary from './database/library/ReadContentsLibrary.js';
+import MediaLibraryMediaFinder from './database/media/MediaLibraryMediaFinder.js';
+import MediaLibraryMediaItemFinder from './database/media-item/MediaLibraryMediaItemFinder.js';
 import LibraryMetadataHydrator from './hydrator/LibraryMetadataHydrator.js';
 import MediaBackdropImageProvider from './images/MediaBackdropImageProvider.js';
 import MediaClearLogoImageProvider from './images/MediaClearLogoImageProvider.js';
@@ -18,7 +18,7 @@ export default class FullLibraryIndexingHelper {
 
   constructor(
     private readonly userProvider: UserProvider,
-    private readonly mediaLibraryFinder: MediaLibraryFinder,
+    private readonly mediaLibraryByUserFinder: MediaLibraryByUserFinder,
     private readonly mediaLibraryScanner: MediaLibraryScanner,
     private readonly mediaLibraryHydrator: LibraryMetadataHydrator,
     private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
@@ -47,7 +47,7 @@ export default class FullLibraryIndexingHelper {
     this.activeScansByUserId.push(user.id);
 
     try {
-      const libraries = await this.mediaLibraryFinder.findOwnedByUser(user);
+      const libraries = await this.mediaLibraryByUserFinder.findOwnedFull(user.id);
 
       for (const library of libraries) {
         try {
@@ -90,8 +90,8 @@ export default class FullLibraryIndexingHelper {
     return this.activeScansByUserId.includes(user.id);
   }
 
-  private async preGenerateImagesForLibrary(library: MediaLibrary): Promise<void> {
-    const allMedia = await this.mediaLibraryMediaFinder.findByLibraryId(library.id);
+  private async preGenerateImagesForLibrary(library: ReadContentsLibrary): Promise<void> {
+    const allMedia = await this.mediaLibraryMediaFinder.findFullByLibraryId(library.id);
     for (const media of allMedia) {
       await Promise.allSettled([
         this.mediaPosterImageProvider.provide(media, 'avif'),
@@ -101,7 +101,7 @@ export default class FullLibraryIndexingHelper {
     }
 
     for (const media of allMedia) {
-      const mediaItems = await this.mediaLibraryMediaItemFinder.findByMediaId(media.id);
+      const mediaItems = await this.mediaLibraryMediaItemFinder.findFullByMediaId(media.id);
       for (const mediaItem of mediaItems) {
         try {
           await this.videoThumbnailProvider.provide(mediaItem, 'avif');

@@ -6,7 +6,6 @@ const ORPC_LIBRARIES_SCHEMA = z.strictObject({
   owned: z.array(z.strictObject({
     id: z.string(),
     name: z.string(),
-    directoryUris: z.array(z.string()),
   })),
   sharedWith: z.array(z.strictObject({
     id: z.string(),

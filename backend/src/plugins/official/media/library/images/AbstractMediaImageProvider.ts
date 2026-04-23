@@ -3,7 +3,7 @@ import type { MediaLibraryMediaFallbackImageType } from '../../../../../database
 import type FileProvider from '../../../../../files/FileProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import type UserProvider from '../../../../../user/UserProvider.js';
-import type MediaLibraryMedia from '../database/MediaLibraryMedia.js';
+import FullLibraryMedia from '../database/media/FullLibraryMedia.js';
 import ImageFormatNotSupportedError from './error/ImageFormatNotSupportedError.js';
 import type MediaImageCache from './MediaImageCache.js';
 
@@ -37,12 +37,12 @@ export default abstract class AbstractMediaImageProvider {
 
   protected abstract processImageBytes(imageBytes: Buffer, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer>;
 
-  protected abstract generatedFallback(media: MediaLibraryMedia, format: ImageFormat): Promise<Buffer | null>;
+  protected abstract generatedFallback(media: FullLibraryMedia, format: ImageFormat): Promise<Buffer | null>;
 
   /**
    * @throws ImageFormatNotSupported
    */
-  async provide(media: MediaLibraryMedia, format: ImageFormat): Promise<Buffer | null> {
+  async provide(media: FullLibraryMedia, format: ImageFormat): Promise<Buffer | null> {
     if (!this.supportedFormats.includes(format)) {
       throw new ImageFormatNotSupportedError(`The format '${format}' is not supported for image type '${this.imageType}'`);
     }
@@ -71,7 +71,7 @@ export default abstract class AbstractMediaImageProvider {
     return this.processImageBytes(await imageFile.read(), format);
   }
 
-  protected async findImageFileInDirectory(media: MediaLibraryMedia): Promise<VirtualFile | null> {
+  protected async findImageFileInDirectory(media: FullLibraryMedia): Promise<VirtualFile | null> {
     const mediaDirectory = await this.findMediaDirectory(media);
     if (!(await mediaDirectory.isDirectory())) {
       return null;
@@ -89,7 +89,7 @@ export default abstract class AbstractMediaImageProvider {
     return null;
   }
 
-  private async provideFallbackFromDatabase(media: MediaLibraryMedia, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer | null> {
+  private async provideFallbackFromDatabase(media: FullLibraryMedia, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer | null> {
     if (this.databaseImageType == null) {
       return null;
     }
@@ -117,7 +117,7 @@ export default abstract class AbstractMediaImageProvider {
     return imageData;
   }
 
-  private async findMediaDirectory(media: MediaLibraryMedia): Promise<VirtualFile> {
+  private async findMediaDirectory(media: FullLibraryMedia): Promise<VirtualFile> {
     const mediaOwner = await this.userProvider.findById(media.libraryOwnerId);
     if (mediaOwner == null) {
       throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(media.libraryOwnerId)}`);

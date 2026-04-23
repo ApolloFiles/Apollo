@@ -2,7 +2,7 @@ import { injectable } from 'tsyringe';
 import { z } from 'zod';
 import { ContainerTokens } from '../../../../../../constants.js';
 import MediaLibraryMediaFinder
-  from '../../../../../../plugins/official/media/library/database/finder/MediaLibraryMediaFinder.js';
+  from '../../../../../../plugins/official/media/library/database/media/MediaLibraryMediaFinder.js';
 import ImageFormatNotSupportedError
   from '../../../../../../plugins/official/media/library/images/error/ImageFormatNotSupportedError.js';
 import MediaBackdropImageProvider
@@ -11,6 +11,8 @@ import MediaClearLogoImageProvider
   from '../../../../../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
 import MediaPosterImageProvider
   from '../../../../../../plugins/official/media/library/images/MediaPosterImageProvider.js';
+import PermissionAwareLibraryMediaProvider
+  from '../../../../../../plugins/official/media/library/permission-aware/PermissionAwareLibraryMediaProvider.js';
 import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
 import type { default as Router, RouteReturn } from '../../../../Router.js';
 
@@ -23,6 +25,7 @@ export default class MediaImageRouter implements Router {
     private readonly mediaPosterImageProvider: MediaPosterImageProvider,
     private readonly mediaBackdropImageProvider: MediaBackdropImageProvider,
     private readonly mediaClearLogoImageProvider: MediaClearLogoImageProvider,
+    private readonly permissionAwareLibraryMediaProvider: PermissionAwareLibraryMediaProvider,
   ) {
   }
 
@@ -45,7 +48,7 @@ export default class MediaImageRouter implements Router {
         const [fileName, fileFormat] = request.params.fileName.split('.') as ['poster' | 'backdrop' | 'logo', 'jpeg' | 'png' | 'avif'];
         const fileFormatMimeType = `image/${fileFormat}`;
 
-        const media = await this.mediaLibraryMediaFinder.findForUserById(request.getAuthenticatedUser(), requestedMediaId);
+        const media = await this.permissionAwareLibraryMediaProvider.provideForReadContents(requestedMediaId, request.getAuthenticatedUser());
         if (media == null) {
           return reply
             .status(404)
@@ -57,12 +60,14 @@ export default class MediaImageRouter implements Router {
         let responseBody: Buffer | null;
 
         try {
+          const fullMedia = await this.mediaLibraryMediaFinder.findFullById(media.media.id);
+
           if (fileName === 'poster') {
-            responseBody = await this.mediaPosterImageProvider.provide(media, fileFormat);
+            responseBody = await this.mediaPosterImageProvider.provide(fullMedia!, fileFormat);
           } else if (fileName === 'backdrop') {
-            responseBody = await this.mediaBackdropImageProvider.provide(media, fileFormat);
+            responseBody = await this.mediaBackdropImageProvider.provide(fullMedia!, fileFormat);
           } else if (fileName === 'logo') {
-            responseBody = await this.mediaClearLogoImageProvider.provide(media, fileFormat);
+            responseBody = await this.mediaClearLogoImageProvider.provide(fullMedia!, fileFormat);
           } else {
             //noinspection ExceptionCaughtLocallyJS
             throw new Error(`Unsupported fileName: ${JSON.stringify(fileName)}`);
