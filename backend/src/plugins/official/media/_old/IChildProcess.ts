@@ -4,6 +4,9 @@ import type { IProcess, IProcessEvents, IProcessOptions } from './IProcess.js';
 export type ChildProcessExitCode = number | null;
 export type ChildProcessExitSignal = NodeJS.Signals | null;
 
+/**
+ * @deprecated
+ */
 export interface IChildProcess extends IProcess {
   readonly pid: number | undefined;
 

@@ -1,6 +1,9 @@
 import ApolloUrl from './ApolloUrl.js';
 import InvalidApolloUrlError from './InvalidApolloUrlError.js';
 
+/**
+ * @deprecated
+ */
 export default class ApolloFileUrl extends ApolloUrl {
   constructor(url: string) {
     super(url);

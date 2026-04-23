@@ -1,10 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { container, singleton } from 'tsyringe';
-import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
+import FileProvider from '../../../../../../files/FileProvider.js';
 import LocalFile from '../../../../../../files/local/LocalFile.js';
+import ApolloFileURI from '../../../../../../uri/ApolloFileURI.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
-import ApolloFileUrl from '../../url/ApolloFileUrl.js';
-import InvalidApolloUrlError from '../../url/InvalidApolloUrlError.js';
 import type PlayerSession from '../player-session/PlayerSession.js';
 
 type RequestInputs = {
@@ -17,7 +16,7 @@ export default class VideoSeekThumbnailControllerHelper {
   private readonly requestLocks = new Map<string, Promise<void>>();
 
   constructor(
-//    private readonly seekThumbnailProvider: SeekThumbnailProvider,
+    //    private readonly seekThumbnailProvider: SeekThumbnailProvider,
   ) {
   }
 
@@ -93,12 +92,12 @@ export default class VideoSeekThumbnailControllerHelper {
       return null;
     }
 
-    const apolloFileUrl = this.parseApolloFileUrl(res, fileInput);
-    if (apolloFileUrl == null) {
+    const apolloFileUri = this.parseApolloFileUri(res, fileInput);
+    if (apolloFileUri == null) {
       return null;
     }
 
-    const requestedFile = await this.determineRequestedFile(res, loggedInUser, apolloFileUrl);
+    const requestedFile = await this.determineRequestedFile(res, loggedInUser, apolloFileUri);
     if (requestedFile == null) {
       return null;
     }
@@ -140,27 +139,10 @@ export default class VideoSeekThumbnailControllerHelper {
     });
   }
 
-  async determineRequestedFile(res: FastifyReply, user: ApolloUser, fileUrl: ApolloFileUrl): Promise<LocalFile | null> {
-    const fileSystemProvider = container.resolve(FileSystemProvider);
-    const fileSystems = await fileSystemProvider.provideForUser(user);
+  async determineRequestedFile(res: FastifyReply, user: ApolloUser, fileUri: ApolloFileURI): Promise<LocalFile | null> {
+    const fileProvider = container.resolve(FileProvider);
+    const requestedFile = await fileProvider.provideForUserByUri(user, fileUri);
 
-    if (user.id !== fileUrl.apolloUserIdentifier) {
-      throw new Error('Not implemented yet: getFileByUrl() for files not owned by the current user');
-    }
-
-    const fileSystem = fileSystems.user.find(fs => fs.id === fileUrl.apolloFileSystemIdentifier);
-    if (fileSystem == null) {
-      throw new Error('Unable to find file system with ID ' + JSON.stringify(fileUrl.apolloFileSystemIdentifier));
-    }
-
-    const requestedFile = fileSystem.getFile(fileUrl.apolloFilePath);
-    if (!(await requestedFile.exists())) {
-      res
-        .status(404)
-        .type('application/json')
-        .send({ error: `The requested file does not exist` });
-      return null;
-    }
     if (!(requestedFile instanceof LocalFile)) {
       res
         .status(501)
@@ -168,37 +150,47 @@ export default class VideoSeekThumbnailControllerHelper {
         .send({ error: `The requested file is not stored in the local file system (Missing implementation)` });
       return null;
     }
+    if (!(await requestedFile.exists())) {
+      console.log({
+        userId: fileUri.userId,
+        fileSystemId: fileUri.fileSystemId,
+        filePath: fileUri.filePath,
+        absolutePathOnHost: requestedFile.getAbsolutePathOnHost(),
+      });
+
+      res
+        .status(404)
+        .type('application/json')
+        .send({ error: `The requested file does not exist` });
+      return null;
+    }
 
     return requestedFile;
   }
 
-  async acquireGenerationLock(apolloFileUrl: ApolloFileUrl): Promise<() => void> {
-    await this.requestLocks.get(apolloFileUrl.toString());
+  async acquireGenerationLock(apolloFileUri: ApolloFileURI): Promise<() => void> {
+    await this.requestLocks.get(apolloFileUri.toString());
 
     // TODO: Use `Promise.withResolvers()` when available in future Node.js versions
     return new Promise((resolve) => {
-      this.requestLocks.set(apolloFileUrl.toString(), new Promise(releaseGenerationLock => {
+      this.requestLocks.set(apolloFileUri.toString(), new Promise(releaseGenerationLock => {
         resolve(() => {
-          this.requestLocks.delete(apolloFileUrl.toString());
+          this.requestLocks.delete(apolloFileUri.toString());
           releaseGenerationLock();
         });
       }));
     });
   }
 
-  private parseApolloFileUrl(res: FastifyReply, userInput: string): ApolloFileUrl | null {
+  private parseApolloFileUri(res: FastifyReply, userInput: string): ApolloFileURI | null {
     try {
-      return new ApolloFileUrl(userInput);
+      return ApolloFileURI.parse(userInput);
     } catch (err: any) {
-      if (err instanceof InvalidApolloUrlError) {
-        res
-          .status(400)
-          .type('application/json')
-          .send({ error: `Parameter 'file' is not a valid ApolloFileUrl` });
-        return null;
-      }
-
-      throw err;
+      res
+        .status(400)
+        .type('application/json')
+        .send({ error: `Parameter 'file' is not a valid ApolloFileURI` });
+      return null;
     }
   }
 

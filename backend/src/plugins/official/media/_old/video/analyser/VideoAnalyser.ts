@@ -1,6 +1,9 @@
 import ProcessBuilder from '../../ProcessBuilder.js';
 import type * as type from './VideoAnalyser.Types.js';
 
+/**
+ * @deprecated
+ */
 export default class VideoAnalyser {
   static async analyze(absolutePath: string, extendedAnalysis: true): Promise<type.ExtendedVideoAnalysis>;
   static async analyze(absolutePath: string, extendedAnalysis?: false): Promise<type.VideoFileAnalysis>;

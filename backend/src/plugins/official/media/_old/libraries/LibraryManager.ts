@@ -17,6 +17,9 @@ type ContinueWatchingResultItem = {
   watchProgressInSec: number,
 }
 
+/**
+ * @deprecated
+ */
 export default class LibraryManager {
   private readonly user: ApolloUser;
 
@@ -81,43 +84,6 @@ export default class LibraryManager {
       library.MediaLibrarySharedWith.map(v => Number(v.userId)),
       await this.mapLibraryPathUrisToUserFile(library.directoryUris),
     );
-  }
-
-  async getLibraries(): Promise<Library[]> {
-    const libraries = await this.databaseClient.mediaLibrary.findMany({
-      where: this.FILTER_LIBRARY_FOR_USER,
-      select: {
-        id: true,
-        ownerId: true,
-        name: true,
-        directoryUris: true,
-        MediaLibrarySharedWith: {
-          select: {
-            userId: true,
-          },
-        },
-      },
-    });
-
-    const result: Library[] = [];
-    for (const library of libraries) {
-      let user: ApolloUser | null = this.user;
-      if (library.ownerId !== this.user.id) {
-        user = await this.userProvider.findById(library.ownerId);
-      }
-      if (user == null) {
-        throw new Error('Library is owned by a user that does not exist');
-      }
-
-      result.push(new Library(
-        user,
-        library.id.toString(),
-        library.name, library.MediaLibrarySharedWith.map(v => Number(v.userId)),
-        await this.mapLibraryPathUrisToUserFile(library.directoryUris),
-      ));
-    }
-
-    return result;
   }
 
   async fetchMediaSortedByRecentlyAdded(libraryId: bigint): Promise<PrismaClient.MediaLibraryMedia[]> {
@@ -251,9 +217,7 @@ export default class LibraryManager {
     return result;
   }
 
-  async determineContinueOrNextWatchItemForMedia(mediaId: bigint): Promise<ContinueWatchingResultItem & {
-    item: { title: string, synopsis: string | null }
-  } | null> {
+  async determineContinueOrNextWatchItemForMedia(mediaId: bigint): Promise<ContinueWatchingResultItem & { item: { title: string, synopsis: string | null } } | null> {
     const watchProgressItem = await this.databaseClient
       .mediaLibraryUserWatchProgress
       .findFirst({

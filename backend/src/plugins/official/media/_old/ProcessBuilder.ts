@@ -15,6 +15,9 @@ import ProcessManager from './ProcessManager.js';
 
 // TODO: Allow configuring uid and gui for processes and use them to ensure that only the cwd can be accessed (or at least written to).
 //       Alternatively maybe chroot could be used to isolate the process?
+/**
+ * @deprecated
+ */
 export default class ProcessBuilder {
   private _command: string;
   private _args: string[];

@@ -4,6 +4,9 @@ import * as PrismaClient from '../../../../../database/prisma-client/client.js';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
 import type ApolloUser from '../../../../../user/ApolloUser.js';
 
+/**
+ * @deprecated
+ */
 export default class Library {
   private readonly databaseClient = container.resolve(DatabaseClient);
 

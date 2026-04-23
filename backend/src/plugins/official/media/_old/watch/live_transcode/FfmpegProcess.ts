@@ -8,6 +8,9 @@ export type FfmpegMetrics = { [key: string]: string | number } & {
   time?: string;
 }
 
+/**
+ * @deprecated
+ */
 export default class FfmpegProcess extends EventEmitter {
   private static readonly EXECUTABLE = 'ffmpeg';  // TODO: Make this configurable
 

@@ -2,7 +2,9 @@ import { injectable } from 'tsyringe';
 import { z } from 'zod';
 import { ContainerTokens } from '../../../../../../constants.js';
 import MediaLibraryMediaItemFinder
-  from '../../../../../../plugins/official/media/library/database/finder/MediaLibraryMediaItemFinder.js';
+  from '../../../../../../plugins/official/media/library/database/media-item/MediaLibraryMediaItemFinder.js';
+import PermissionAwareLibraryMediaItemProvider
+  from '../../../../../../plugins/official/media/library/permission-aware/PermissionAwareLibraryMediaItemProvider.js';
 import VideoThumbnailProvider
   from '../../../../../../plugins/official/media/library/thumbnail/VideoThumbnailProvider.js';
 import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
@@ -13,6 +15,7 @@ export default class MediaImageRouter implements Router {
   private static readonly FILE_NAME_REGEX = /^(thumbnail)\.(jpeg|avif)$/;
 
   constructor(
+    private readonly permissionAwareLibraryMediaItemProvider: PermissionAwareLibraryMediaItemProvider,
     private readonly mediaLibraryMediaItemFinder: MediaLibraryMediaItemFinder,
     private readonly videoThumbnailProvider: VideoThumbnailProvider,
   ) {
@@ -37,19 +40,13 @@ export default class MediaImageRouter implements Router {
         const [fileName, fileFormat] = request.params.fileName.split('.') as ['thumbnail', 'jpeg' | 'avif'];
         const fileFormatMimeType = `image/${fileFormat}`;
 
-        const mediaItem = await this.mediaLibraryMediaItemFinder.findForUserById(request.getAuthenticatedUser(), requestedMediaItemId);
-        if (mediaItem == null) {
-          return reply
-            .status(404)
-            .send({
-              error: `MediaItem with id '${requestedMediaItemId.toString()}' does not exist or you do not have access to it`,
-            });
-        }
+        const mediaItem = await this.permissionAwareLibraryMediaItemProvider.provideForReadContents(requestedMediaItemId, request.getAuthenticatedUser());
 
         let responseBody: Buffer | null;
 
         if (fileName === 'thumbnail') {
-          responseBody = await this.videoThumbnailProvider.provide(mediaItem, fileFormat);
+          const fullMediaItem = await this.mediaLibraryMediaItemFinder.findFullById(mediaItem.mediaItem.id);
+          responseBody = await this.videoThumbnailProvider.provide(fullMediaItem!, fileFormat);
         } else {
           throw new Error(`Unsupported fileName: ${JSON.stringify(fileName)}`);
         }

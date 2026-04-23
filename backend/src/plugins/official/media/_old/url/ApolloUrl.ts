@@ -1,5 +1,8 @@
 import InvalidApolloUrlError from './InvalidApolloUrlError.js';
 
+/**
+ * @deprecated
+ */
 export default class ApolloUrl {
   protected readonly url: URL;
 

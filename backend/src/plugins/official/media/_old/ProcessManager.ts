@@ -5,6 +5,9 @@ import type ApolloUser from '../../../../user/ApolloUser.js';
 import type { ChildProcessOptions, IChildProcess } from './IChildProcess.js';
 import type { IProcess } from './IProcess.js';
 
+/**
+ * @deprecated
+ */
 @singleton()
 export default class ProcessManager {
   private readonly runningProcesses: IChildProcess[] = [];

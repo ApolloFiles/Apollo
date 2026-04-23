@@ -1,6 +1,9 @@
 import EventEmitter from 'events';
 import type ApolloUser from '../../../../user/ApolloUser.js';
 
+/**
+ * @deprecated
+ */
 export interface IProcess extends EventEmitter {
   readonly uniqueId: string;
   readonly started: Date;

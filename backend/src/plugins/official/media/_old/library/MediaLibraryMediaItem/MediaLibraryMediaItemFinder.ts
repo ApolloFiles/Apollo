@@ -3,6 +3,9 @@ import DatabaseClient from '../../../../../../database/DatabaseClient.js';
 import type { Prisma } from '../../../../../../database/prisma-client/client.js';
 import MediaLibraryMediaItem from './MediaLibraryMediaItem.js';
 
+/**
+ * @deprecated
+ */
 @singleton()
 export default class MediaLibraryMediaItemFinder {
   private static readonly DEFAULT_SELECT_OPTIONS = {
@@ -49,10 +52,6 @@ export default class MediaLibraryMediaItemFinder {
       return null;
     }
     return MediaLibraryMediaItem.create(mediaLibraryMediaItemData);
-  }
-
-  findByMediaId(mediaId: bigint): Promise<MediaLibraryMediaItem[]> {
-    return this.executeFindMany({ mediaId });
   }
 
   async findSurroundingMediaItems(mediaItemId: bigint, mediaId: bigint): Promise<{

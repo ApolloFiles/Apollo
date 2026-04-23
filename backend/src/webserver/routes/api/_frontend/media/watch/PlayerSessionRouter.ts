@@ -11,13 +11,9 @@ import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
 import LocalFileSystem from '../../../../../../files/local/LocalFileSystem.js';
 import FileTypeUtils from '../../../../../../plugins/official/media/_old/FileTypeUtils.js';
 import LibraryManager from '../../../../../../plugins/official/media/_old/libraries/LibraryManager.js';
-import MediaLibraryMediaFinder
-  from '../../../../../../plugins/official/media/_old/library/MediaLibraryMedia/MediaLibraryMediaFinder.js';
-import type MediaLibraryMediaItem
-  from '../../../../../../plugins/official/media/_old/library/MediaLibraryMediaItem/MediaLibraryMediaItem.js';
-import MediaLibraryMediaItemFinder
-  from '../../../../../../plugins/official/media/_old/library/MediaLibraryMediaItem/MediaLibraryMediaItemFinder.js';
-import ApolloFileUrl from '../../../../../../plugins/official/media/_old/url/ApolloFileUrl.js';
+import {
+  default as MediaLibraryMediaItemFinderOld,
+} from '../../../../../../plugins/official/media/_old/library/MediaLibraryMediaItem/MediaLibraryMediaItemFinder.js';
 import type {
   PlayerSessionInfoResponse,
   RegenerateJoinTokenResponse,
@@ -35,6 +31,16 @@ import SeekThumbnailProvider
   from '../../../../../../plugins/official/media/_old/video-player/seek-thumbnails/SeekThumbnailProvider.js';
 import VideoSeekThumbnailControllerHelper
   from '../../../../../../plugins/official/media/_old/video-player/seek-thumbnails/VideoSeekThumbnailControllerHelper.js';
+import {
+  default as MediaLibraryMediaItemFinderNew,
+} from '../../../../../../plugins/official/media/library/database/media-item/MediaLibraryMediaItemFinder.js';
+import PermissionAwareLibraryMediaItemProvider
+  from '../../../../../../plugins/official/media/library/permission-aware/PermissionAwareLibraryMediaItemProvider.js';
+import PermissionAwareLibraryMediaProvider
+  from '../../../../../../plugins/official/media/library/permission-aware/PermissionAwareLibraryMediaProvider.js';
+import ReadContentsAwareLibraryMediaItem
+  from '../../../../../../plugins/official/media/library/permission-aware/ReadContentsAwareLibraryMediaItem.js';
+import ApolloFileURI from '../../../../../../uri/ApolloFileURI.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import UserProvider from '../../../../../../user/UserProvider.js';
 import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
@@ -48,8 +54,10 @@ export default class PlayerSessionRouter implements Router {
     private readonly userProvider: UserProvider,
     private readonly playerSessionStorage: PlayerSessionStorage,
     private readonly videoSeekThumbnailControllerHelper: VideoSeekThumbnailControllerHelper,
-    private readonly libraryMediaFinder: MediaLibraryMediaFinder,
-    private readonly libraryMediaItemFinder: MediaLibraryMediaItemFinder,
+    private readonly libraryMediaItemFinder_old: MediaLibraryMediaItemFinderOld,
+    private readonly libraryMediaItemFinder_new: MediaLibraryMediaItemFinderNew,
+    private readonly permissionAwareLibraryMediaProvider: PermissionAwareLibraryMediaProvider,
+    private readonly permissionAwareLibraryMediaItemProvider: PermissionAwareLibraryMediaItemProvider,
     private readonly fileSystemProvider: FileSystemProvider,
     private readonly fileTypeUtils: FileTypeUtils,
     private readonly seekThumbnailProvider: SeekThumbnailProvider,
@@ -181,17 +189,11 @@ export default class PlayerSessionRouter implements Router {
         }
 
         const mediaItem = await this.findMediaItem(mediaItemId, apolloUser);
-        if (mediaItem == null || !mediaItem.canRead(apolloUser)) {
-          return reply
-            .status(404)
-            .type('text/plain')
-            .send('The requested media file does not exist or you do not have permission to read it');
-        }
 
         let startOffset: number | null = null;
 
         if (request.query.startOffset === 'auto') {
-          const watchProgress = await (await new LibraryManager(apolloUser).getLibrary(mediaItem.libraryId.toString()))!.fetchMediaWatchProgressInSeconds(mediaItemId);
+          const watchProgress = await (await new LibraryManager(apolloUser).getLibrary(mediaItem.mediaItem.libraryId.toString()))!.fetchMediaWatchProgressInSeconds(mediaItemId);
           startOffset = watchProgress ?? 0;
         }
 
@@ -202,7 +204,7 @@ export default class PlayerSessionRouter implements Router {
           }
         }
 
-        const owningUser = await this.userProvider.findById(mediaItem.libraryOwnerId);
+        const owningUser = await this.userProvider.findById(mediaItem.mediaItem.libraryOwnerId);
         if (owningUser == null) {
           throw new Error('The owning user of the MediaItem does not exist');  // TODO: show 404 page
         }
@@ -215,21 +217,19 @@ export default class PlayerSessionRouter implements Router {
             .send({ error: `The requested file is not stored in the local file system (Missing implementation)` });
         }
 
-        const apolloFile = owningUserDefaultFileSystem.getFile(Path.join(mediaItem.mediaBaseDir.filePath, mediaItem.relativeFilePath));
-        const surroundingMediaItems = await this.libraryMediaItemFinder.findSurroundingMediaItems(mediaItem.id, mediaItem.libraryMediaId);
+        const fullMediaItem = await this.libraryMediaItemFinder_new.findFullById(mediaItem.mediaItem.id);
+        const apolloFile = owningUserDefaultFileSystem.getFile(Path.join(fullMediaItem!.mediaBaseDirectoryUri.filePath, fullMediaItem!.relativeFilePath));
+        const surroundingMediaItems = await this.libraryMediaItemFinder_old.findSurroundingMediaItems(mediaItem.mediaItem.id, mediaItem.mediaItem.mediaId);
 
-        const libraryMedia = await this.libraryMediaFinder.find(mediaItem.libraryMediaId);
-        if (libraryMedia == null) {
-          throw new Error('Unable to find the LibraryMedia for the MediaItem (this should never happen)');
-        }
+        const libraryMedia = await this.permissionAwareLibraryMediaProvider.provideForReadContents(mediaItem.mediaItem.mediaId, apolloUser);
 
         await playerSession.startLiveTranscode(apolloFile, startOffset, {
-          mediaItemId: mediaItem.id.toString(),
-          title: libraryMedia.title,
-          episode: ((mediaItem.seasonNumber != null && mediaItem.episodeNumber != null) ? {
-            title: mediaItem.title,
-            season: mediaItem.seasonNumber,
-            episode: mediaItem.episodeNumber,
+          mediaItemId: mediaItem.mediaItem.id.toString(),
+          title: libraryMedia.media.title,
+          episode: ((mediaItem.mediaItem.seasonNumber != null && mediaItem.mediaItem.episodeNumber != null) ? {
+            title: mediaItem.mediaItem.title,
+            season: mediaItem.mediaItem.seasonNumber,
+            episode: mediaItem.mediaItem.episodeNumber,
 
             nextMedia: surroundingMediaItems.next ? {
               mediaItemId: surroundingMediaItems.next.id.toString(),
@@ -263,12 +263,18 @@ export default class PlayerSessionRouter implements Router {
       // TODO: Support for Anonymous users?
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
-      if (playerSession?.owner.id !== apolloUser.id) {
+      if (playerSession == null) {
         return reply
           .status(403)
           .type('text/plain')
-          .send('Session not found or you are not the owner of this session');
+          .send('Session not found');
       }
+//      if (playerSession?.owner.id !== apolloUser.id) {
+//        return reply
+//          .status(403)
+//          .type('text/plain')
+//          .send('Session not found or you are not the owner of this session');
+//      }
 
       let requestedFilePath = new URL(request.url, 'https://localhost').pathname;
       requestedFilePath = requestedFilePath.substring(requestedFilePath.indexOf('/file/') + 6);
@@ -317,16 +323,16 @@ export default class PlayerSessionRouter implements Router {
       // TODO: Support for Anonymous users?
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
-      if (playerSession?.owner.id !== apolloUser.id) {
+      if (playerSession == null || !playerSession.checkAccessForUser(apolloUser)) {
         return reply
           .status(403)
           .type('text/plain')
-          .send('Session not found or you are not the owner of this session');
+          .send('Session not found or you do not have access to it');
       }
 
       const currentFile = playerSession.getCurrentMedia()?.sourceFile;
       if (currentFile != null) {
-        (request.query as any).file = ApolloFileUrl.create(currentFile.fileSystem.getOwnerOrThrow().id, currentFile.fileSystem.id, currentFile.path).toString();
+        (request.query as any).file = ApolloFileURI.create(currentFile.fileSystem.getOwnerOrThrow().id, currentFile.fileSystem.id, currentFile.path).toString();
       }
 
       const inputs = await this.videoSeekThumbnailControllerHelper.parseRequestFileAndThumbnailIndex(request, reply, apolloUser);
@@ -336,7 +342,7 @@ export default class PlayerSessionRouter implements Router {
 
       let responseBody: string | Buffer;
 
-      const releaseGenerationLock = await this.videoSeekThumbnailControllerHelper.acquireGenerationLock(ApolloFileUrl.create(inputs.file.fileSystem.getOwnerOrThrow().id, inputs.file.fileSystem.id, inputs.file.path)); // acquire lock before any further async operations
+      const releaseGenerationLock = await this.videoSeekThumbnailControllerHelper.acquireGenerationLock(ApolloFileURI.create(inputs.file.fileSystem.getOwnerOrThrow().id, inputs.file.fileSystem.id, inputs.file.path)); // acquire lock before any further async operations
       try {
         if (inputs.thumbnailIndex === -1) {
           const parsedOriginalRequestUrl = new URL(request.originalUrl, 'https://localhost');
@@ -375,12 +381,18 @@ export default class PlayerSessionRouter implements Router {
       // TODO: Support for Anonymous users?
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
-      if (playerSession?.owner.id !== apolloUser.id) {
+      if (playerSession == null) {
         return reply
           .status(403)
           .type('text/plain')
-          .send('Session not found or you are not the owner of this session');
+          .send('Session not found');
       }
+//      if (playerSession?.owner.id !== apolloUser.id) {
+//        return reply
+//          .status(403)
+//          .type('text/plain')
+//          .send('Session not found or you are not the owner of this session');
+//      }
 
       const releaseStartPlaybackLock = await this.videoSeekThumbnailControllerHelper.acquireStartPlaybackLockNonBlocking(playerSession);
       if (releaseStartPlaybackLock === false) {
@@ -403,21 +415,12 @@ export default class PlayerSessionRouter implements Router {
         const mediaItemId = this.parseUserInputBigInt((request.body as any)?.mediaItemId, 0n);
         if (mediaItemId > 0) {
           const mediaItem = await this.findMediaItem(mediaItemId, apolloUser);
-          if (mediaItem == null) {
-            return reply;
-          }
-          if (!mediaItem.canRead(apolloUser)) {
-            throw new Error('The requested media file does not exist or you do not have permission to read it');
-          }
 
-          const libraryMedia = await this.libraryMediaFinder.find(mediaItem.libraryMediaId);
-          if (libraryMedia == null) {
-            throw new Error('Unable to find the LibraryMedia for the MediaItem (this should never happen)');
-          }
+          const libraryMedia = await this.permissionAwareLibraryMediaProvider.provideForReadContents(mediaItem.mediaItem.mediaId, apolloUser);
 
-          const surroundingMediaItems = await this.libraryMediaItemFinder.findSurroundingMediaItems(mediaItem.id, mediaItem.libraryMediaId);
+          const surroundingMediaItems = await this.libraryMediaItemFinder_old.findSurroundingMediaItems(mediaItem.mediaItem.id, mediaItem.mediaItem.mediaId);
 
-          const owningUser = await this.userProvider.findById(mediaItem.libraryOwnerId);
+          const owningUser = await this.userProvider.findById(mediaItem.mediaItem.libraryOwnerId);
           if (owningUser == null) {
             throw new Error('The owning user of the MediaItem does not exist');  // TODO: show 404 page
           }
@@ -430,13 +433,14 @@ export default class PlayerSessionRouter implements Router {
               .send({ error: `The requested file is not stored in the local file system (Missing implementation)` });
           }
 
-          videoLiveTranscodeMedia = await playerSession.startLiveTranscode(owningUserDefaultFileSystem.getFile(Path.join(mediaItem.mediaBaseDir.filePath, mediaItem.relativeFilePath)), startOffset, {
+          const fullMediaItem = await this.libraryMediaItemFinder_new.findFullById(mediaItem.mediaItem.id);
+          videoLiveTranscodeMedia = await playerSession.startLiveTranscode(owningUserDefaultFileSystem.getFile(Path.join(fullMediaItem!.mediaBaseDirectoryUri.filePath, fullMediaItem!.relativeFilePath)), startOffset, {
             mediaItemId: mediaItemId.toString(),
-            title: libraryMedia.title,
-            episode: ((mediaItem.seasonNumber != null && mediaItem.episodeNumber != null) ? {
-              title: mediaItem.title,
-              season: mediaItem.seasonNumber,
-              episode: mediaItem.episodeNumber,
+            title: libraryMedia.media.title,
+            episode: ((mediaItem.mediaItem.seasonNumber != null && mediaItem.mediaItem.episodeNumber != null) ? {
+              title: mediaItem.mediaItem.title,
+              season: mediaItem.mediaItem.seasonNumber,
+              episode: mediaItem.mediaItem.episodeNumber,
 
               nextMedia: surroundingMediaItems.next ? {
                 mediaItemId: surroundingMediaItems.next.id.toString(),
@@ -501,12 +505,18 @@ export default class PlayerSessionRouter implements Router {
       const apolloUser = request.getAuthenticatedUser();
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
-      if (playerSession?.owner.id !== apolloUser.id) {
+      if (playerSession == null) {
         return reply
           .status(403)
           .type('text/plain')
-          .send('Session not found or you are not the owner of this session');
+          .send('Session not found');
       }
+//      if (playerSession?.owner.id !== apolloUser.id) {
+//        return reply
+//          .status(403)
+//          .type('text/plain')
+//          .send('Session not found or you are not the owner of this session');
+//      }
 
       const videoId: unknown = (request.body as any)?.videoId;
       if (typeof videoId !== 'string' || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
@@ -541,12 +551,18 @@ export default class PlayerSessionRouter implements Router {
       const apolloUser = request.getAuthenticatedUser();
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
-      if (playerSession?.owner.id !== apolloUser.id) {
+      if (playerSession == null) {
         return reply
           .status(403)
           .type('text/plain')
-          .send('Session not found or you are not the owner of this session');
+          .send('Session not found');
       }
+//      if (playerSession?.owner.id !== apolloUser.id) {
+//        return reply
+//          .status(403)
+//          .type('text/plain')
+//          .send('Session not found or you are not the owner of this session');
+//      }
 
       const channelName: unknown = (request.body as any)?.channelName;
       if (typeof channelName !== 'string' || !/^[A-Za-z0-9_]{1,25}$/.test(channelName)) {
@@ -622,9 +638,7 @@ export default class PlayerSessionRouter implements Router {
     return playerSession;
   }
 
-  private findPlayerSessionFromPath(req: FastifyRequest<{
-    Params: { sessionId: string }
-  }>, reply: FastifyReply, apolloUser: ApolloUser): PlayerSession | null {
+  private findPlayerSessionFromPath(req: FastifyRequest<{ Params: { sessionId: string } }>, reply: FastifyReply, apolloUser: ApolloUser): PlayerSession | null {
     const playerSession = this.playerSessionStorage.findById(req.params.sessionId);
     if (playerSession == null || !playerSession.checkAccessForUser(apolloUser)) {
       reply
@@ -757,13 +771,8 @@ export default class PlayerSessionRouter implements Router {
     return defaultValue;
   }
 
-  private async findMediaItem(mediaItemId: bigint, accessingUser: ApolloUser): Promise<MediaLibraryMediaItem | null> {
-    const mediaItem = await this.libraryMediaItemFinder.find(mediaItemId);
-
-    if (mediaItem != null && !mediaItem.canRead(accessingUser)) {
-      throw new Error('Media Item does not exist or you do not have permission to read it');  // TODO: show 404 page
-    }
-    return mediaItem;
+  private findMediaItem(mediaItemId: bigint, accessingUser: ApolloUser): Promise<ReadContentsAwareLibraryMediaItem> {
+    return this.permissionAwareLibraryMediaItemProvider.provideForReadContents(mediaItemId, accessingUser);
   }
 
   private async fileExists(path: string): Promise<boolean> {
