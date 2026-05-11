@@ -49,7 +49,7 @@ const VIDEO_STREAM = STREAM_BASE.extend({
   color_transfer: z.string().optional(),
   color_primaries: z.string().optional(),
   chroma_location: z.string().optional(),
-  refs: z.number().nonnegative(),
+  refs: z.number().nonnegative().optional(),
   view_ids_available: z.string().optional(),
   view_pos_available: z.string().optional(),
   bit_rate: z.string().optional(),
@@ -68,6 +68,9 @@ const VIDEO_STREAM = STREAM_BASE.extend({
   // MPEG‑4 Part 2 / ASP (DivX/Xvid/mpeg4) specific
   quarter_sample: z.coerce.boolean().optional(),
   divx_packed: z.coerce.boolean().optional(),
+
+  // dunno
+  mime_codec_string: z.string().optional(),
 });
 const AUDIO_STREAM = STREAM_BASE.extend({
   codec_type: z.literal('audio'),
@@ -91,6 +94,9 @@ const AUDIO_STREAM = STREAM_BASE.extend({
   // MP4 specific
   id: z.string().optional(),
   nb_frames: z.string().optional(),
+
+  // dunno
+  mime_codec_string: z.string().optional(),
 });
 const SUBTITLE_STREAM = STREAM_BASE.extend({
   codec_type: z.literal('subtitle'),
