@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { container, singleton } from 'tsyringe';
-import FileProvider from '../../../../../../files/FileProvider.js';
 import LocalFile from '../../../../../../files/local/LocalFile.js';
+import PermissionAwareFileProvider from '../../../../../../files/provider/PermissionAwareFileProvider.js';
 import ApolloFileURI from '../../../../../../uri/ApolloFileURI.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import type PlayerSession from '../player-session/PlayerSession.js';
@@ -140,8 +140,8 @@ export default class VideoSeekThumbnailControllerHelper {
   }
 
   async determineRequestedFile(res: FastifyReply, user: ApolloUser, fileUri: ApolloFileURI): Promise<LocalFile | null> {
-    const fileProvider = container.resolve(FileProvider);
-    const requestedFile = await fileProvider.provideForUserByUri(user, fileUri);
+    const fileProvider = container.resolve(PermissionAwareFileProvider);
+    const requestedFile = await fileProvider.provideForMediaContextRead(fileUri, user);
 
     if (!(requestedFile instanceof LocalFile)) {
       res

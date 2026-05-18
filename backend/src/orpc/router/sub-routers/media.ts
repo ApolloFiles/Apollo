@@ -1,12 +1,11 @@
 import { injectable } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
 import type * as PrismaClient from '../../../database/prisma-client/client.js';
-import FileProvider from '../../../files/FileProvider.js';
+import PermissionAwareFileProvider from '../../../files/provider/PermissionAwareFileProvider.js';
 import LibraryManager from '../../../plugins/official/media/_old/libraries/LibraryManager.js';
 import MediaLibraryByUserFinder
   from '../../../plugins/official/media/library/database/library/MediaLibraryByUserFinder.js';
-import MediaLibraryMediaFinder
-  from '../../../plugins/official/media/library/database/media/MediaLibraryMediaFinder.js';
+import MediaLibraryMediaFinder from '../../../plugins/official/media/library/database/media/MediaLibraryMediaFinder.js';
 import MediaLibraryWriter from '../../../plugins/official/media/library/database/writer/MediaLibraryWriter.js';
 import FullLibraryIndexingHelper from '../../../plugins/official/media/library/FullLibraryIndexingHelper.js';
 import MediaClearLogoImageProvider from '../../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
@@ -25,7 +24,7 @@ export default class MediaORpcRouterFactory {
     private readonly databaseClient: DatabaseClient,
     private readonly mediaLibraryMediaFinder: MediaLibraryMediaFinder,
     private readonly mediaLibraryByUserFinder: MediaLibraryByUserFinder,
-    private readonly fileProvider: FileProvider,
+    private readonly fileProvider: PermissionAwareFileProvider,
     private readonly mediaLibraryWriter: MediaLibraryWriter,
     private readonly mediaClearLogoImageProvider: MediaClearLogoImageProvider,
     private readonly fullLibraryIndexingHelper: FullLibraryIndexingHelper,
@@ -286,7 +285,10 @@ export default class MediaORpcRouterFactory {
               let fileURI;
               try {
                 fileURI = ApolloFileURI.parse(rawDirectoryUri);
-                await this.fileProvider.provideForUserByUri(context.authSession.user, fileURI);
+                const file = await this.fileProvider.provideForRead(fileURI, context.authSession.user);
+                if (file.fileSystem.owner?.id !== fileURI.userId) {
+                  throw new Error('User does not own the requested file');
+                }
               } catch (err) {
                 // TODO: Don't hardcode error message
                 if (err instanceof Error &&
@@ -331,7 +333,10 @@ export default class MediaORpcRouterFactory {
               let fileURI;
               try {
                 fileURI = ApolloFileURI.parse(rawDirectoryUri);
-                await this.fileProvider.provideForUserByUri(context.authSession.user, fileURI); // TODO: Use another/new class here? We want to continue to enforce owning the file/dir tho
+                const file = await this.fileProvider.provideForRead(fileURI, context.authSession.user);
+                if (file.fileSystem.owner?.id !== fileURI.userId) {
+                  throw new Error('User does not own the requested file');
+                }
               } catch (err) {
                 // TODO: Don't hardcode error message
                 if (err instanceof Error &&

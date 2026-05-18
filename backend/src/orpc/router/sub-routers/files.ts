@@ -1,8 +1,8 @@
 import Path from 'node:path';
 import { injectable } from 'tsyringe';
-import FileProvider from '../../../files/FileProvider.js';
 import FileSystemProvider from '../../../files/FileSystemProvider.js';
 import LocalFileSystem from '../../../files/local/LocalFileSystem.js';
+import PermissionAwareFileProvider from '../../../files/provider/PermissionAwareFileProvider.js';
 import FileNameCollator from '../../../files/util/FileNameCollator.js';
 import type VirtualFile from '../../../files/VirtualFile.js';
 import ApolloFileURI from '../../../uri/ApolloFileURI.js';
@@ -13,7 +13,7 @@ import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
 export default class FilesORpcRouterFactory {
   constructor(
     private readonly fileSystemProvider: FileSystemProvider,
-    private readonly fileProvider: FileProvider,
+    private readonly fileProvider: PermissionAwareFileProvider,
   ) {
   }
 
@@ -80,7 +80,7 @@ export default class FilesORpcRouterFactory {
         }),
         openDirectory: os.filePicker.openDirectory.handler(async ({ input, context, errors }) => {
           // TODO: catch and nicely handle errors (permission denied, invalid URI, etc.)
-          const requestedFile = await this.fileProvider.provideForUserByUri(context.authSession.user, ApolloFileURI.parse(input.uri));
+          const requestedFile = await this.fileProvider.provideForRead(ApolloFileURI.parse(input.uri), context.authSession.user);
 
           if (!(await requestedFile.isDirectory())) {
             // TODO: throw nicer error that can be caught in the frontend

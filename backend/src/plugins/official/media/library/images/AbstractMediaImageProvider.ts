@@ -1,6 +1,6 @@
 import type DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
-import type FileProvider from '../../../../../files/FileProvider.js';
+import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import type UserProvider from '../../../../../user/UserProvider.js';
 import FullLibraryMedia from '../database/media/FullLibraryMedia.js';
@@ -15,7 +15,7 @@ export default abstract class AbstractMediaImageProvider {
 
   protected constructor(
     private readonly userProvider: UserProvider,
-    private readonly fileProvider: FileProvider,
+    private readonly fileProvider: PermissionAwareFileProvider,
     private readonly mediaImageCache: MediaImageCache,
     private readonly databaseClient: DatabaseClient,
     baseFileNamesInPrioritySort: string[],
@@ -123,6 +123,6 @@ export default abstract class AbstractMediaImageProvider {
       throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(media.libraryOwnerId)}`);
     }
 
-    return this.fileProvider.provideForUserByUri(mediaOwner, media.directoryUri);
+    return this.fileProvider.provideForRead(media.directoryUri, mediaOwner);
   }
 }

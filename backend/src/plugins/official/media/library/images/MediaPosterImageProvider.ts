@@ -6,7 +6,7 @@ import { singleton } from 'tsyringe';
 import ApolloDirectoryProvider from '../../../../../config/ApolloDirectoryProvider.js';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
-import FileProvider from '../../../../../files/FileProvider.js';
+import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import FullLibraryMedia from '../database/media/FullLibraryMedia.js';
 import AbstractMediaImageProvider, { type ImageFormat, type ImageType } from './AbstractMediaImageProvider.js';
@@ -21,7 +21,7 @@ export default class MediaPosterImageProvider extends AbstractMediaImageProvider
 
   constructor(
     userProvider: UserProvider,
-    fileProvider: FileProvider,
+    fileProvider: PermissionAwareFileProvider,
     mediaImageCache: MediaImageCache,
     databaseClient: DatabaseClient,
     private readonly fallbackPosterGenerator: FallbackMediaPosterGenerator,

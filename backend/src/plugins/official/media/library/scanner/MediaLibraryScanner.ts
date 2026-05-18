@@ -1,6 +1,6 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
-import FileProvider from '../../../../../files/FileProvider.js';
+import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import ApolloFileURI from '../../../../../uri/ApolloFileURI.js';
 import UserProvider from '../../../../../user/UserProvider.js';
@@ -14,7 +14,7 @@ import TvShowDirectoryScanner from './TvShowDirectoryScanner.js';
 export default class MediaLibraryScanner {
   constructor(
     private readonly userProvider: UserProvider,
-    private readonly fileProvider: FileProvider,
+    private readonly fileProvider: PermissionAwareFileProvider,
     private readonly databaseClient: DatabaseClient,
     private readonly mediaDirectoryDetector: MediaDirectoryDetector,
     private readonly tvShowDirectoryScanner: TvShowDirectoryScanner,
@@ -31,7 +31,7 @@ export default class MediaLibraryScanner {
     const mediaWriter = new MediaLibraryMediaWriter(this.databaseClient);
 
     for (const directoryUri of library.directoryUris) {
-      const directory = await this.fileProvider.provideForUserByUri(libraryOwner, ApolloFileURI.parse(directoryUri));
+      const directory = await this.fileProvider.provideForRead(ApolloFileURI.parse(directoryUri), libraryOwner);
       if (!(await directory.isDirectory())) {
         continue;
       }

@@ -1,9 +1,9 @@
 import Crypto from 'node:crypto';
 import Path from 'node:path';
 import { injectable } from 'tsyringe';
-import FileProvider from '../../../../../files/FileProvider.js';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
+import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import FileNameCollator from '../../../../../files/util/FileNameCollator.js';
 import type WriteableVirtualFile from '../../../../../files/WriteableVirtualFile.js';
 import FfprobeExecutor from '../../../../../plugins/official/ffmpeg/FfprobeExecutor.js';
@@ -41,7 +41,7 @@ export default class MediaEditorSubRouterFactory {
     private readonly ffprobeExecutor: FfprobeExecutor,
     private readonly ffmpegVideoFileMetadataEditor: FfmpegVideoFileMetadataEditor,
     private readonly fileSystemProvider: FileSystemProvider,
-    private readonly fileProvider: FileProvider,
+    private readonly fileProvider: PermissionAwareFileProvider,
     private readonly fileTypeUtils: FileTypeUtils,
   ) {
     setInterval(() => {
@@ -61,9 +61,9 @@ export default class MediaEditorSubRouterFactory {
           .handler(async ({ input, context, errors }) => {
             // TODO handle errors properly and pass them to the user
             const inputFileUri = ApolloFileURI.parse(input.fileUri);
-            const inputFile = await this.fileProvider.provideForUserByUri(context.authSession.user, inputFileUri);
+            const inputFile = await this.fileProvider.provideForWrite(inputFileUri, context.authSession.user);
 
-            if (!(await inputFile.exists())) {
+            if (!(await inputFile.file.exists())) {
               throw errors.REQUESTED_ENTITY_NOT_FOUND();
             }
 
@@ -232,7 +232,7 @@ export default class MediaEditorSubRouterFactory {
                 writeLockInfo.currentFileIndex = index;
 
                 try {
-                  const virtualFile = await this.fileProvider.provideForUserByUri(loggedInUser, ApolloFileURI.parse(file.identifier));
+                  const virtualFile = await this.fileProvider.provideForWrite(ApolloFileURI.parse(file.identifier), loggedInUser);
                   if (!(virtualFile instanceof LocalFile)) {
                     throw new Error(`Currently only local files are supported for media metadata editing`);
                   }

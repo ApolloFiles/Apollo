@@ -2,8 +2,8 @@ import { container } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type * as PrismaClient from '../../../../../database/prisma-client/client.js';
 import type { MediaLibraryFindManyArgs } from '../../../../../database/prisma-client/models.js';
-import FileProvider from '../../../../../files/FileProvider.js';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
+import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import ApolloFileURI from '../../../../../uri/ApolloFileURI.js';
 import type ApolloUser from '../../../../../user/ApolloUser.js';
@@ -25,7 +25,7 @@ export default class LibraryManager {
 
   private readonly databaseClient = container.resolve(DatabaseClient);
   private readonly userProvider = container.resolve(UserProvider);
-  private readonly fileProvider = container.resolve(FileProvider);
+  private readonly fileProvider = container.resolve(PermissionAwareFileProvider);
   private readonly mediaLibraryMediaItemFinder = container.resolve(MediaLibraryMediaItemFinder);
 
   private readonly FILTER_LIBRARY_FOR_USER: MediaLibraryFindManyArgs['where'];
@@ -344,7 +344,7 @@ export default class LibraryManager {
     const files: VirtualFile[] = [];
 
     for (const uri of uris) {
-      files.push(await this.fileProvider.provideForUserByUri(this.user, ApolloFileURI.parse(uri)));
+      files.push(await this.fileProvider.provideForMediaContextRead(ApolloFileURI.parse(uri), this.user));
     }
 
     return files as LocalFile[];
