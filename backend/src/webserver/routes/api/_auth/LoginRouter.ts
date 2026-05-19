@@ -129,11 +129,12 @@ export default class LoginRouter extends AbstractLoginRouter {
   private async initiateOAuthLoginFlow(reply: FastifyReply, oAuthConfig: OAuthConfig, loginState?: Pick<LoginStateData, 'returnTo' | 'specialAction'>): Promise<URL> {
     const code_verifier = OpenIdClient.randomPKCECodeVerifier();
     const state = OpenIdClient.randomState();
-    const nonce: string | undefined = undefined;// OpenIdClient.randomNonce();  // TODO: Only generate nonce for OpenID providers (OAuth itself won't work with nonce)
+    const nonce = oAuthConfig.isOpenIdProvider ? OpenIdClient.randomNonce() : undefined;
 
     await this.createAnonymousSession(reply, {
       code_verifier,
       state,
+      nonce,
       ...loginState,
     });
 
@@ -144,7 +145,7 @@ export default class LoginRouter extends AbstractLoginRouter {
         redirect_uri: `${this.appConfig.config.baseUrl}/api/_auth/login/${oAuthConfig.identifier}/callback`,
 
         state,
-        // nonce: nonce, // TODO
+        ...(nonce != null ? { nonce } : {}),
         code_challenge: await OpenIdClient.calculatePKCECodeChallenge(code_verifier),
         code_challenge_method: 'S256',
       },

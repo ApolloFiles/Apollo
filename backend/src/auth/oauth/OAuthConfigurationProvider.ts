@@ -11,6 +11,7 @@ export type OAuthProviderInfo = {
 
 export type OAuthConfig = OAuthProviderInfo & {
   openIdConfig: OpenIdClient.Configuration,
+  isOpenIdProvider: boolean,
   scopes: string[],
   fetchUserInfo: (openIdConfig: OpenIdClient.Configuration, accessToken: string, expectedSubjectId: string | undefined) => Promise<OAuthUserInfo>,
 }
@@ -186,6 +187,7 @@ export default class OAuthConfigurationProvider {
           ...this.getProviderInfo(type),
           // TODO: Cache discovery
           openIdConfig: await OpenIdClient.discovery(new URL('https://accounts.google.com/'), oAuthConfig[type].clientId, oAuthConfig[type].clientSecret),
+          isOpenIdProvider: true,
           scopes,
           fetchUserInfo,
         };
@@ -226,6 +228,7 @@ export default class OAuthConfigurationProvider {
           ...this.getProviderInfo(type),
           // TODO: Cache discovery
           openIdConfig: await OpenIdClient.discovery(new URL('https://login.microsoftonline.com/consumers/v2.0'), oAuthConfig[type].clientId, oAuthConfig[type].clientSecret),
+          isOpenIdProvider: true,
           scopes,
           fetchUserInfo,
         };
@@ -237,6 +240,7 @@ export default class OAuthConfigurationProvider {
     return {
       ...this.getProviderInfo(type),
       openIdConfig: new OpenIdClient.Configuration(serverMetadata, oAuthConfig[type].clientId, oAuthConfig[type].clientSecret),
+      isOpenIdProvider: false,
       scopes,
       fetchUserInfo,
     };
