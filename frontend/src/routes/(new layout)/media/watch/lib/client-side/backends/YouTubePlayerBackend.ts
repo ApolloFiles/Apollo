@@ -8,7 +8,7 @@ export interface YouTubePlayerBackendOptions extends BackendOptions {
 }
 
 export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions = YouTubePlayerBackendOptions> extends VideoPlayerBackend<T> {
-  private static youTubeIframeApiLoaded = false;
+  private static youTubeIframeApiPromise: Promise<void> | null = null;
 
   public readonly shouldShowCustomControls = false;
   public readonly backendOptions: T;
@@ -263,19 +263,23 @@ export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions 
   }
 
   private static async loadYouTubeIframeApi(): Promise<void> {
-    if (this.youTubeIframeApiLoaded) {
-      return;
+    if (this.youTubeIframeApiPromise != null) {
+      return this.youTubeIframeApiPromise;
     }
-    this.youTubeIframeApiLoaded = true;
 
-    return new Promise(async (resolve): Promise<void> => {
+    this.youTubeIframeApiPromise = new Promise<void>((resolve, reject) => {
       (window as any).onYouTubeIframeAPIReady = () => {
         delete (window as any).onYouTubeIframeAPIReady;
         resolve();
       };
 
-      await this.loadJsScript('https://www.youtube.com/iframe_api');
+      this.loadJsScript('https://www.youtube.com/iframe_api').catch((err) => {
+        this.youTubeIframeApiPromise = null;
+        reject(err);
+      });
     });
+
+    return this.youTubeIframeApiPromise;
   }
 
   private static async loadJsScript(url: string): Promise<void> {

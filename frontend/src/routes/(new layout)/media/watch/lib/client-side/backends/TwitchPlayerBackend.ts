@@ -8,7 +8,7 @@ export interface TwitchPlayerBackendOptions extends BackendOptions {
 }
 
 export default class TwitchPlayerBackend<T extends TwitchPlayerBackendOptions = TwitchPlayerBackendOptions> extends VideoPlayerBackend<T> {
-  private static twitchEmbedApiLoaded = false;
+  private static twitchEmbedApiPromise: Promise<void> | null = null;
 
   public readonly shouldShowCustomControls = false;
   public readonly backendOptions: T;
@@ -192,17 +192,21 @@ export default class TwitchPlayerBackend<T extends TwitchPlayerBackendOptions = 
   }
 
   private static async loadTwitchEmbedApi(): Promise<void> {
-    if (this.twitchEmbedApiLoaded) {
-      return;
+    if (this.twitchEmbedApiPromise != null) {
+      return this.twitchEmbedApiPromise;
     }
-    this.twitchEmbedApiLoaded = true;
 
-    return new Promise((resolve, reject) => {
+    this.twitchEmbedApiPromise = new Promise((resolve, reject) => {
       const scriptElement = document.createElement('script');
       scriptElement.setAttribute('src', 'https://player.twitch.tv/js/embed/v1.js');
       scriptElement.addEventListener('load', () => resolve());
-      scriptElement.addEventListener('error', () => reject(new Error('Unable to load Twitch Embed API')));
+      scriptElement.addEventListener('error', () => {
+        this.twitchEmbedApiPromise = null;
+        reject(new Error('Unable to load Twitch Embed API'));
+      });
       document.querySelector('head')!.appendChild(scriptElement);
     });
+
+    return this.twitchEmbedApiPromise;
   }
 }
