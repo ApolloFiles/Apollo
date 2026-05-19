@@ -14,11 +14,15 @@ export async function fetchPlaybackSessionInfo(): Promise<PlayerSessionInfoRespo
   return await playbackStatusResponse.json();
 }
 
-export async function regenerateJoinToken(sessionId: string): Promise<RegenerateJoinTokenResponse> {
+export async function regenerateJoinToken(sessionId: string, csrfToken: string): Promise<RegenerateJoinTokenResponse> {
   const playbackStatusResponse = await fetch(
     `/api/_frontend/media/player-session/${encodeURIComponent(sessionId)}/regenerate-join-token`, {
       method: 'POST',
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify({ csrfToken }),
     });
   if (!playbackStatusResponse.ok) {
     throw new Error(`player-session/info endpoint responded with Status ${playbackStatusResponse.status}: ${await playbackStatusResponse.text()}`);

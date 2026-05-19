@@ -10,5 +10,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 
   return {
     config: backendConfig.data,
+    loggedInUser: await rpcClient.user.get(undefined, { context: { cookies, fetch } }),
   };
 };

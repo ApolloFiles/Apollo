@@ -4,6 +4,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { setUserProfileContext } from '$lib/stores/UserProfileStore.svelte';
   import type { PageProps } from './$types';
   import type { StartPlaybackResponse, TwitchMediaInfo, YouTubeMediaInfo } from './legacy-types';
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
@@ -16,6 +17,8 @@
   import VideoPlayerUI from './lib/video-player-ui/VideoPlayerUI.svelte';
 
   let { data }: PageProps = $props();
+
+  const userProfile = setUserProfileContext(() => data);
 
   let mediaTitle = $state('');
   let episodeTitlePrefix = $state('');
@@ -98,7 +101,7 @@
         Accept: 'application/json',
         'Content-Type': 'application/json; charset=utf-8',
       },
-      body: JSON.stringify({ videoId }),
+      body: JSON.stringify({ csrfToken: userProfile.csrfToken, videoId }),
     });
 
     if (response.status === 403) {
@@ -129,7 +132,7 @@
         Accept: 'application/json',
         'Content-Type': 'application/json; charset=utf-8',
       },
-      body: JSON.stringify({ channelName }),
+      body: JSON.stringify({ csrfToken: userProfile.csrfToken, channelName }),
     });
 
     if (response.status === 403) {
@@ -307,6 +310,7 @@
         'Content-Type': 'application/json; charset=utf-8',
       },
       body: JSON.stringify({
+        csrfToken: userProfile.csrfToken,
         mediaItemId,
         startOffset,
       }),
@@ -328,6 +332,7 @@
         'Content-Type': 'application/json; charset=utf-8',
       },
       body: JSON.stringify({
+        csrfToken: userProfile.csrfToken,
         mediaItemId,
         startOffset,
       }),

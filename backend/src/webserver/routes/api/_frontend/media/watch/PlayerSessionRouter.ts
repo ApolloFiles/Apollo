@@ -380,6 +380,8 @@ export default class PlayerSessionRouter implements Router {
       const apolloUser = request.getAuthenticatedUser();
       // TODO: Support for Anonymous users?
 
+      request.requireCsrf((request.body as any)?.csrfToken);
+
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
       if (playerSession == null) {
         return reply
@@ -504,6 +506,8 @@ export default class PlayerSessionRouter implements Router {
     server.post('/:sessionId/change-media-youtube', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
       const apolloUser = request.getAuthenticatedUser();
 
+      request.requireCsrf((request.body as any)?.csrfToken);
+
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
       if (playerSession == null) {
         return reply
@@ -550,6 +554,8 @@ export default class PlayerSessionRouter implements Router {
     server.post('/:sessionId/change-media-twitch', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
       const apolloUser = request.getAuthenticatedUser();
 
+      request.requireCsrf((request.body as any)?.csrfToken);
+
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
       if (playerSession == null) {
         return reply
@@ -591,6 +597,8 @@ export default class PlayerSessionRouter implements Router {
     server.post('/:sessionId/regenerate-join-token', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
       const apolloUser = request.getAuthenticatedUser();
       // TODO: Support for Anonymous users?
+
+      request.requireCsrf((request.body as any)?.csrfToken);
 
       const playerSession = this.findPlayerSessionFromPath(request, reply, apolloUser);
       if (playerSession?.owner.id !== apolloUser.id) {
