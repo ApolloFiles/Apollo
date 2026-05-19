@@ -72,10 +72,13 @@
       </li>
 
       <li>
-        <a class="dropdown-item text-danger" href="/logout">
-          <TablerIcon icon="logout" class="me-2" />
-          Logout
-        </a>
+        <form action="/api/_auth/logout" method="POST" enctype="application/x-www-form-urlencoded">
+          <input type="hidden" name="csrfToken" value={userProfile.csrfToken} />
+          <button type="submit" class="dropdown-item text-danger">
+            <TablerIcon icon="logout" class="me-2" />
+            Logout
+          </button>
+        </form>
       </li>
     </ul>
   </div>
@@ -205,5 +208,13 @@
   .dropdown-item:focus {
     background-color: var(--hover-bg);
     color:            var(--text-primary);
+  }
+
+  .dropdown-menu form {
+    margin: 0;
+  }
+
+  button.dropdown-item {
+    padding: var(--bs-dropdown-item-padding-y) var(--bs-dropdown-item-padding-x);
   }
 </style>

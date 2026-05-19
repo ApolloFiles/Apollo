@@ -36,7 +36,7 @@ export default class AccountCreationInviteFinder {
     }
 
     return {
-      hashedToken: this.secureTokenHelper.stringifyHashedToken(inviteToken.hashedToken),
+      hashedToken: this.secureTokenHelper.stringifyToken(inviteToken.hashedToken),
       createdAt: inviteToken.createdAt,
       expiresAt: inviteToken.expiresAt,
       createSuperUserAccount: inviteToken.createSuperUserAccount,

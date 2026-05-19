@@ -6,16 +6,17 @@ import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import * as FastifyTypeProviderZod from 'fastify-type-provider-zod';
 import Http from 'node:http';
 import { injectAll, singleton } from 'tsyringe';
+import CsrfTokenValidator from '../../auth/CsrfTokenValidator.js';
 import SessionCookieHelper from '../../auth/session/SessionCookieHelper.js';
 import UserBySessionTokenProvider, { type SessionUser } from '../../auth/UserBySessionTokenProvider.js';
 import { ContainerTokens } from '../../constants.js';
 import type ApolloUser from '../../user/ApolloUser.js';
 import { jsonStringifyWithBigInt } from '../../utils/json.js';
-import ORPCRequestHandler from './ORPCRequestHandler.js';
-import { HttpError, UnauthorizedError } from '../errors/HttpErrors.js';
+import { BadRequestError, HttpError, UnauthorizedError } from '../errors/HttpErrors.js';
 import type Router from '../routes/Router.js';
 import FrontendRequestHandlerFactory from './FrontendRequestHandlerFactory.js';
 import InitialRequestRouter from './InitialRequestRouter.js';
+import ORPCRequestHandler from './ORPCRequestHandler.js';
 import NotFoundHandlerPlugin from './plugin/NotFoundHandlerPlugin.js';
 import ServerTimingHeaderPlugin from './plugin/ServerTiming/ServerTimingHeaderPlugin.js';
 
@@ -35,6 +36,12 @@ declare module 'fastify' {
      * @throws {Error} If no user is authenticated for this request
      */
     getAuthenticatedUser(): ApolloUser;
+
+    /**
+     * Validates `sentToken` against the current authenticated session's CSRF token.
+     * @throws {BadRequestError} If no session exists for this request, or the token is missing or does not match
+     */
+    requireCsrf(sentToken: string | undefined): void;
   }
 }
 
@@ -55,6 +62,7 @@ export default class FastifyWebServer {
     oRPCRequestHandler: ORPCRequestHandler,
     sessionCookieHelper: SessionCookieHelper,
     userBySessionTokenProvider: UserBySessionTokenProvider,
+    csrfTokenValidator: CsrfTokenValidator,
   ) {
     this.fastify = Fastify({
       routerOptions: {
@@ -85,6 +93,7 @@ export default class FastifyWebServer {
 
     this.fastify.register(FastifyCookiePlugin);
     this.decorateRequestForAuthentication(sessionCookieHelper, userBySessionTokenProvider);
+    this.decorateRequestForCsrfValidation(csrfTokenValidator);
 
     this.fastify.register(FastifyFormBodyPlugin, { bodyLimit: 1024 * 1024 /* 1 MiB */ });
     this.fastify.register(FastifyWebSocketPlugin);
@@ -170,6 +179,15 @@ export default class FastifyWebServer {
 
     this.fastify.decorateRequest('getAuthenticatedUser', function(): ApolloUser {
       return this.getSessionUser().user;
+    });
+  }
+
+  private decorateRequestForCsrfValidation(csrfTokenValidator: CsrfTokenValidator): void {
+    this.fastify.decorateRequest('requireCsrf', function(sentToken: string | undefined): void {
+      const session = this.getSessionUserOptional()?.session;
+      if (session == null || !csrfTokenValidator.validate(sentToken ?? '', session.csrfToken)) {
+        throw new BadRequestError('CSRF token is invalid');
+      }
     });
   }
 

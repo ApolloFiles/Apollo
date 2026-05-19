@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private';
 import { ORpcContract } from '$lib/ORpcHelper';
 import { createORPCClient, onError, ORPCError } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
+import * as oRpcPlugins from '@orpc/client/plugins';
 import type { ContractRouterClient } from '@orpc/contract';
 import { type Cookies, redirect } from '@sveltejs/kit';
 
@@ -10,6 +11,9 @@ type ClientContext = { cookies: Cookies, fetch: typeof fetch };
 export const rpcClient: ContractRouterClient<typeof ORpcContract, ClientContext> = createORPCClient(new RPCLink<ClientContext>({
   // TODO: Normalize APOLLO_BASE_URL trailing slash; Maybe even use another env-var that is set @runtime for prod by the backend process
   url: (env.APOLLO_BASE_URL ? env.APOLLO_BASE_URL : 'http://localhost:8081') + '/api/_frontend/oRPC/',
+  plugins: [
+    new oRpcPlugins.SimpleCsrfProtectionLinkPlugin(),
+  ],
   headers: ({ context }) => {
     let cookieHeaderValue = '';
     for (const cookie of context.cookies.getAll()) {

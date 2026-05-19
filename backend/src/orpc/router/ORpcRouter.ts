@@ -38,6 +38,7 @@ const baseImplementer = plainImplementer
       context: {
         authSession: sessionUser != null ? {
           id: sessionUser.session.id,
+          csrfToken: sessionUser.session.csrfToken,
           user: sessionUser.user,
         } : null,
       },

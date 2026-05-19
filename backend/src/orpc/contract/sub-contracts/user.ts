@@ -3,6 +3,7 @@ import { baseOc } from '../SubContractHelpers.js';
 
 export const ORPC_LOGGED_IN_USER_SCHEMA = z.strictObject({
   id: z.string(),
+  csrfToken: z.string(),
   displayName: z.string(),
   isSuperUser: z.boolean(),
 });

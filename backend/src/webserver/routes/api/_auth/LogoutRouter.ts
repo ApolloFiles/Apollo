@@ -1,4 +1,5 @@
 import { injectable } from 'tsyringe';
+import { z } from 'zod';
 import AuthSessionRevoker from '../../../../auth/session/AuthSessionRevoker.js';
 import SessionCookieHelper from '../../../../auth/session/SessionCookieHelper.js';
 import { ContainerTokens } from '../../../../constants.js';
@@ -22,16 +23,25 @@ export default class LogoutRouter implements Router {
   }
 
   register(server: FastifyInstanceWithZod): void {
-    server.get('/logout', async (request, reply): Promise<RouteReturn> => {
-      const activeSession = request.getSessionUserOptional()?.session;
-      if (activeSession != null) {
-        await this.authSessionRevoker.revoke(activeSession.id, activeSession.user.id);
-      }
+    server.post(
+      '/logout',
+      {
+        schema: {
+          body: z.object({ csrfToken: z.string().optional() }),
+        },
+      },
+      async (request, reply): Promise<RouteReturn> => {
+        const activeSession = request.getSessionUserOptional()?.session;
 
-      this.sessionCookieHelper.unsetCookie(reply, false);
-      this.sessionCookieHelper.unsetCookie(reply, true);
+        if (activeSession != null) {
+          request.requireCsrf(request.body.csrfToken);
+          await this.authSessionRevoker.revoke(activeSession.id, activeSession.user.id);
+        }
 
-      return reply.redirect('/', 302);
-    });
+        this.sessionCookieHelper.unsetCookie(reply, false);
+        this.sessionCookieHelper.unsetCookie(reply, true);
+
+        return reply.redirect('/', 302);
+      });
   }
 }

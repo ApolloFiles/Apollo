@@ -13,7 +13,9 @@ export default class ORPCRequestHandler extends oRpcNodeJs.RPCHandler<ORpcInitia
     super(
       ORPC_ROUTER,
       {
+        strictGetMethodPluginEnabled: false,
         plugins: [
+          new oRpcPlugins.SimpleCsrfProtectionHandlerPlugin(),
           new oRpcPlugins.CORSPlugin({
             origin: () => appConfig.config.baseUrl,
           }),

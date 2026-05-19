@@ -36,7 +36,6 @@ export default class LoginRouter extends AbstractLoginRouter {
     return true;
   }
 
-  // TODO: Add CSRF protection
   // TODO: refactor into individual router classes
   register(server: FastifyInstanceWithZod): void {
     server.get('/login/:providerType', this.ROUTE_OPTIONS_GET, async (request, reply): Promise<RouteReturn> => {
@@ -53,6 +52,8 @@ export default class LoginRouter extends AbstractLoginRouter {
       if (sessionUser == null) {
         throw new BadRequestError('You must be logged in to link an OAuth provider to your account');
       }
+
+      request.requireCsrf(request.body.csrfToken);
 
       const oAuthConfig = await this.determineOAuthConfig(request.body.providerType);
       const authorizationUrl = await this.initiateOAuthLoginFlow(
@@ -75,6 +76,8 @@ export default class LoginRouter extends AbstractLoginRouter {
       if (sessionUser == null) {
         throw new BadRequestError('You must be logged in to link an OAuth provider to your account');
       }
+
+      request.requireCsrf(request.body.csrfToken);
 
       const providerType = request.body.providerType;
       if (!this.oAuthConfigurationProvider.isAvailable(providerType)) {

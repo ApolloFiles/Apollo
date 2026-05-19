@@ -37,6 +37,7 @@ model AuthUserLinkedProvider {
 model AuthSession {
   id                BigInt   @id @default(dbgenerated("generate_snowflake('auth_sessions_id_seq'::text)"))
   hashedToken       Bytes    @unique @map("hashed_token")
+  csrfToken         String   @map("csrf_token")
   userId            String   @map("user_id")
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
   expiresAt         DateTime @map("expires_at") @db.Timestamptz()

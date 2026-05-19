@@ -34,6 +34,7 @@ export default abstract class AbstractLoginRouter implements Router {
   protected readonly ROUTE_OPTIONS_POST = {
     schema: {
       body: z.object({
+        csrfToken: z.string().optional(),
         providerType: z.string().nonempty(),
       }),
     },

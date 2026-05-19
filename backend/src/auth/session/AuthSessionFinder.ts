@@ -5,6 +5,7 @@ import SecureTokenHelper from '../SecureTokenHelper.js';
 
 export type SessionData = {
   id: bigint,
+  csrfToken: string,
   createdAt: Date,
   expiresAt: Date,
   roughLastActivity: Date,
@@ -40,6 +41,7 @@ export default class AuthSessionFinder {
       },
       select: {
         id: true,
+        csrfToken: true,
         createdAt: true,
         expiresAt: true,
         roughLastActivity: true,
@@ -65,6 +67,7 @@ export default class AuthSessionFinder {
       },
       select: {
         id: true,
+        csrfToken: true,
         createdAt: true,
         expiresAt: true,
         roughLastActivity: true,

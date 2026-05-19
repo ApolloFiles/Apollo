@@ -14,18 +14,18 @@ export default class SecureTokenHelper {
 
   hashToken(token: string | Buffer): Buffer<ArrayBuffer> {
     if (!Buffer.isBuffer(token)) {
-      token = this.decodeHashedToken(token);
+      token = this.decodeToken(token);
     }
     return Crypto.hash('sha256', token, { outputEncoding: 'buffer' });
   }
 
-  stringifyHashedToken(hashedToken: NodeJS.ArrayBufferView): string {
+  stringifyToken(tokenValue: NodeJS.ArrayBufferView): string {
     return Buffer
-      .from(hashedToken.buffer, hashedToken.byteOffset, hashedToken.byteLength)
+      .from(tokenValue.buffer, tokenValue.byteOffset, tokenValue.byteLength)
       .toString('base64url');
   }
 
-  decodeHashedToken(hashedToken: string): Buffer<ArrayBuffer> {
-    return Buffer.from(hashedToken, 'base64url');
+  decodeToken(tokenValue: string): Buffer<ArrayBuffer> {
+    return Buffer.from(tokenValue, 'base64url');
   }
 }

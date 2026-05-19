@@ -52,6 +52,7 @@ export default class AuthSessionCreator {
   }
 
   private async createNewSession(userId: string, userAgent: string, transaction: Prisma.TransactionClient): Promise<SessionResult> {
+    const csrfToken = this.secureTokenHelper.create();
     const token = this.secureTokenHelper.create();
 
     const now = await this.databaseClient.fetchNow(transaction);
@@ -60,6 +61,7 @@ export default class AuthSessionCreator {
     const session = await transaction.authSession.create({
       data: {
         hashedToken: token.sha256sum,
+        csrfToken: csrfToken.value,
         userId,
         userAgent,
         expiresAt: expiresAt.value,

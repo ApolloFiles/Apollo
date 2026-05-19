@@ -22,6 +22,7 @@ export default class UserORpcRouterFactory {
       get: os.get.handler(({ context }) => {
         return {
           id: context.authSession.user.id,
+          csrfToken: context.authSession.csrfToken,
           displayName: context.authSession.user.displayName,
           isSuperUser: context.authSession.user.isSuperUser,
         };
@@ -81,13 +82,22 @@ export default class UserORpcRouterFactory {
                 //       in browser tab B without a full page reloading
                 loggedInUser: {
                   id: context.authSession.user.id,
+                  csrfToken: context.authSession.csrfToken,
                   displayName: context.authSession.user.displayName,
                   isSuperUser: context.authSession.user.isSuperUser,
                 },
 
                 sessions: {
                   currentId: context.authSession.id,
-                  all: await this.authSessionFinder.findByUserId(context.authSession.user.id),
+                  all: (await this.authSessionFinder.findByUserId(context.authSession.user.id)).map(s => {
+                    return {
+                      id: s.id,
+                      createdAt: s.createdAt,
+                      expiresAt: s.expiresAt,
+                      roughLastActivity: s.roughLastActivity,
+                      userAgent: s.userAgent,
+                    };
+                  }),
                 },
                 linkedAuthProviders: linkedAuthProviders.map((linkedProvider) => {
                   const providerInfo: {

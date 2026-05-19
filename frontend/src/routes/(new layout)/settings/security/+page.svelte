@@ -105,6 +105,7 @@
                 method="POST"
                 enctype="application/x-www-form-urlencoded"
               >
+                <input type="hidden" name="csrfToken" value={data.loggedInUser.csrfToken} />
                 <input type="hidden" name="providerType" value={authProvider.identifier} />
                 <button
                   type="submit"

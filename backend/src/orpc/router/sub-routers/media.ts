@@ -81,6 +81,7 @@ export default class MediaORpcRouterFactory {
           return {
             loggedInUser: {
               id: context.authSession.user.id,
+              csrfToken: context.authSession.csrfToken,
               displayName: context.authSession.user.displayName,
               isSuperUser: context.authSession.user.isSuperUser,
             },
@@ -204,6 +205,7 @@ export default class MediaORpcRouterFactory {
           return {
             loggedInUser: {
               id: context.authSession.user.id,
+              csrfToken: context.authSession.csrfToken,
               displayName: context.authSession.user.displayName,
               isSuperUser: context.authSession.user.isSuperUser,
             },
@@ -232,6 +234,7 @@ export default class MediaORpcRouterFactory {
             return {
               loggedInUser: {
                 id: context.authSession.user.id,
+                csrfToken: context.authSession.csrfToken,
                 displayName: context.authSession.user.displayName,
                 isSuperUser: context.authSession.user.isSuperUser,
               },
@@ -254,6 +257,7 @@ export default class MediaORpcRouterFactory {
             return {
               loggedInUser: {
                 id: context.authSession.user.id,
+                csrfToken: context.authSession.csrfToken,
                 displayName: context.authSession.user.displayName,
                 isSuperUser: context.authSession.user.isSuperUser,
               },
