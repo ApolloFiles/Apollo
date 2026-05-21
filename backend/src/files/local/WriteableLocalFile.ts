@@ -39,6 +39,8 @@ export default class WriteableLocalFile extends WriteableVirtualFile<LocalFile> 
   }
 
   async delete(recursive?: boolean): Promise<void> {
+    this.throwIfWriteableFileIsNoLongerUsable();
+
     await Fs.promises.rm(this.file.getAbsolutePathOnHost(), { recursive: recursive ?? false, force: true });
   }
 }

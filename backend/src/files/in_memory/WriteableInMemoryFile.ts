@@ -35,6 +35,8 @@ export default class WriteableInMemoryFile extends WriteableVirtualFile<InMemory
   }
 
   async delete(_recursive?: boolean): Promise<void> {
+    this.throwIfWriteableFileIsNoLongerUsable();
+
     this.file.deleteFileData();
   }
 }
