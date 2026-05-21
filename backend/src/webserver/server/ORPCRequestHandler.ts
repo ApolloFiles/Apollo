@@ -19,6 +19,9 @@ export default class ORPCRequestHandler extends oRpcNodeJs.RPCHandler<ORpcInitia
           new oRpcPlugins.CORSPlugin({
             origin: () => appConfig.config.baseUrl,
           }),
+          new oRpcNodeJs.BodyLimitPlugin({
+            maxBodySize: 12 * 1024 * 1024,
+          }),
         ],
         interceptors: [
           onError((err) => {
