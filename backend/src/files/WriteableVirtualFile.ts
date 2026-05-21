@@ -3,6 +3,11 @@ import VirtualFile from './VirtualFile.js';
 
 // TODO: Add streaming support
 export default abstract class WriteableVirtualFile<T extends VirtualFile = VirtualFile> {
+  /**
+   * A WriteableVirtualFile is 'single-use'.
+   * As soon as the lock has been released, all (write) operations should throw.
+   * This flag MUST NEVER be reset, for the instance to become usable again – A new instance has to be created.
+   */
   private lockHasBeenRelease = false;
 
   protected constructor(
