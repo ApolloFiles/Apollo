@@ -20,7 +20,7 @@ export default class FileRouter implements Router {
       schema: {
         querystring: z.object({
           fileSystemId: z.string(),
-          path:  z.string(),
+          path: z.string(),
         }),
       },
       handler: async (request, reply): Promise<RouteReturn> => {
@@ -49,10 +49,28 @@ export default class FileRouter implements Router {
           // TODO: Try to send the correct MIME type
           // TODO: Support streaming and range requests for large files
           .header('Content-Type', 'application/octet-stream')
-          // TODO: Sanitize filename or encode it properly
-          .header('Content-Disposition', `filename="${requestedFile.getFileName()}"`)
+          .header('Content-Disposition', this.generateContentDispositionHeaderValueForFileName(requestedFile.getFileName()))
           .send(requestedFile.supportsStreaming() ? requestedFile.createReadStream() : await requestedFile.read());
       },
     });
+  }
+
+  private generateContentDispositionHeaderValueForFileName(name: string): string {
+    // Strip control chars (esp. CR/LF/NUL) and replace path separators (just in case)
+    const cleaned = name
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      .replace(/[\\/]/g, '_')
+      .trim() || 'download';
+
+    // Replace non-ASCII with '_' and Backslash-escape `"` and `\`
+    const asciiFallback = cleaned
+      .replace(/[^\x20-\x7E]/g, '_')
+      .replace(/(["\\])/g, '\\$1');
+
+    // RFC 5987/8187 (encodeURIComponent leaves `!*'()` unencoded; `*'()` are not *attr-char* and need encoding)
+    const utf8Encoded = encodeURIComponent(cleaned)
+      .replace(/['()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+
+    return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`;
   }
 }
