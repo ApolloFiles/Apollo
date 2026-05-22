@@ -38,7 +38,7 @@ export default class UserCreatorByInvite {
 
       return transaction.authUser.create({
         data: {
-          displayName: providerUserDisplayName,
+          displayName: providerUserDisplayName.substring(0, 50),
           profilePicture: profilePicture?.user,
           isSuperUser: inviteToken.createSuperUserAccount,
 
