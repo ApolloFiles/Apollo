@@ -15,6 +15,7 @@ import type { RouteReturn } from '../../Router.js';
 import AbstractLoginRouter, { type LoginStateData } from './AbstractLoginRouter.js';
 
 // TODO: Instead of sending error response, redirect to SvelteKit with error query param?
+// TODO: Add some sane rate-limiting – Apollo only has OAuth logins right now, but too many attempts are still suspicious (also invite token tries/uses)
 @injectable({ token: ContainerTokens.ROUTER })
 export default class LoginRouter extends AbstractLoginRouter {
   public constructor(

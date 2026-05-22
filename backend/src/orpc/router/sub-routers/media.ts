@@ -388,6 +388,7 @@ export default class MediaORpcRouterFactory {
 
         searchUserToShareWith: os.management.searchUserToShareWith
           .handler(async ({ input, context }) => {
+            // TODO: rate-limit to hinder userId enumeration (which might expose display names etc.; They are public info but I think a rate-limit would still make sense)
             const exactIdMatch = await this.databaseClient.authUser.findUnique({
               where: { id: input.searchQuery },
 
