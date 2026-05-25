@@ -3,6 +3,7 @@ import Path from 'node:path';
 import { injectable } from 'tsyringe';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
+import WriteableLocalFile from '../../../../../files/local/WriteableLocalFile.js';
 import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import FileNameCollator from '../../../../../files/util/FileNameCollator.js';
 import type WriteableVirtualFile from '../../../../../files/WriteableVirtualFile.js';
@@ -61,9 +62,10 @@ export default class MediaEditorSubRouterFactory {
           .handler(async ({ input, context, errors }) => {
             // TODO handle errors properly and pass them to the user
             const inputFileUri = ApolloFileURI.parse(input.fileUri);
-            const inputFile = await this.fileProvider.provideForWrite(inputFileUri, context.authSession.user);
+            const writeableInputFile = await this.fileProvider.provideForWrite(inputFileUri, context.authSession.user);
+            const inputFile = writeableInputFile.file;
 
-            if (!(await inputFile.file.exists())) {
+            if (!(await inputFile.exists())) {
               throw errors.REQUESTED_ENTITY_NOT_FOUND();
             }
 
@@ -233,12 +235,12 @@ export default class MediaEditorSubRouterFactory {
 
                 try {
                   const virtualFile = await this.fileProvider.provideForWrite(ApolloFileURI.parse(file.identifier), loggedInUser);
-                  if (!(virtualFile instanceof LocalFile)) {
+                  if (!(virtualFile instanceof WriteableLocalFile)) {
                     throw new Error(`Currently only local files are supported for media metadata editing`);
                   }
 
                   await this.ffmpegVideoFileMetadataEditor.edit(
-                    virtualFile.getAbsolutePathOnHost(),
+                    virtualFile.file.getAbsolutePathOnHost(),
                     tmpDirVirtualFile.getAbsolutePathOnHost(),
                     file.desiredState,
                   );
