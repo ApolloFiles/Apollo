@@ -84,7 +84,7 @@ export default class MediaEditorSubRouterFactory {
 
                 result.push({
                   identifier: file.toURI().toString(),
-                  displayName: Path.relative(inputFile.path, file.path),
+                  displayName: inputFile.path === file.path ? file.getFileName() : Path.relative(inputFile.path, file.path),
 
                   videoMeta: {
                     file: {
