@@ -39,6 +39,7 @@ export default class MediaEditorSubRouterFactory {
   private readonly mostRecentWriteLockInfo = new Map<ApolloUser['id'], WriteLockInfo>();
 
   constructor(
+    // We do not use the cached ffprobe implementation in the editor *just in case*
     private readonly ffprobeExecutor: FfprobeExecutor,
     private readonly ffmpegVideoFileMetadataEditor: FfmpegVideoFileMetadataEditor,
     private readonly fileSystemProvider: FileSystemProvider,
@@ -80,7 +81,7 @@ export default class MediaEditorSubRouterFactory {
 
             for (const file of filesToAnalyze) {
               try {
-                const ffprobeResult = await this.ffprobeExecutor.probe(file.getAbsolutePathOnHost(), true);
+                const ffprobeResult = await this.ffprobeExecutor.probeFull(file.getAbsolutePathOnHost());
 
                 result.push({
                   identifier: file.toURI().toString(),

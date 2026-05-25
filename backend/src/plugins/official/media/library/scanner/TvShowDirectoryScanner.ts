@@ -1,7 +1,7 @@
 import { singleton } from 'tsyringe';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
-import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
+import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
 import FileTypeUtils from '../../_old/FileTypeUtils.js';
 import type ReadContentsLibrary from '../database/library/ReadContentsLibrary.js';
 import AbstractScanner, { type CommonVideoMetadata } from './AbstractScanner.js';
@@ -19,7 +19,7 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
   private static EPISODE_FILE_REGEX_SHORT = /S(\d+)[\s_.-]*E(\d+)/i;
 
   constructor(
-    ffprobeExecutor: FfprobeExecutor,
+    ffprobeExecutor: CachedFfprobeExecutor,
     private readonly fileTypeUtils: FileTypeUtils,
   ) {
     super(ffprobeExecutor);

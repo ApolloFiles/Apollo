@@ -10,8 +10,8 @@ const OPTIONAL_TAGS = z
 // Streams
 
 const STREAM_DISPOSITION = z
-  .record(z.string().nonempty(), z.union([z.literal(0), z.literal(1)])
-    .transform((value) => value === 1));
+  .record(z.string().nonempty(), z.union([z.boolean(), z.literal(0), z.literal(1)])
+    .transform((value) => value === true || value === 1));
 const STREAM_BASE = z.object({
   index: z.number().nonnegative(),
   codec_name: z.string().nonempty().optional(),

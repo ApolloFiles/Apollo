@@ -4,7 +4,7 @@ import { singleton } from 'tsyringe';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
 import ApolloTemporaryDirectory from '../../../../../files/temporary/ApolloTemporaryDirectory.js';
 import BufferedChildProcess from '../../../../builtin/child_process/BufferedChildProcess.js';
-import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
+import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
 import BestVideoThumbnailFrameSelector from './BestVideoThumbnailFrameSelector.js';
 
 @singleton()
@@ -16,12 +16,12 @@ export default class VideoThumbnailFrameExtractor {
   constructor(
     private readonly apolloTemporaryDirectory: ApolloTemporaryDirectory,
     private readonly bestVideoThumbnailFrameDetector: BestVideoThumbnailFrameSelector,
-    private readonly ffprobeExecutor: FfprobeExecutor,
+    private readonly ffprobeExecutor: CachedFfprobeExecutor,
   ) {
   }
 
   async extractThumbnailFrame(file: LocalFile): Promise<Sharp.Sharp> {
-    const videoDurationInSecondsPromise = this.determineVideoDurationInSeconds(file.getAbsolutePathOnHost());
+    const videoDurationInSecondsPromise = this.determineVideoDurationInSeconds(file);
 
     return this.apolloTemporaryDirectory.createScoped(async (tmpDir) => {
       const videoDurationInSeconds = await videoDurationInSecondsPromise;
@@ -84,8 +84,8 @@ export default class VideoThumbnailFrameExtractor {
     }
   }
 
-  private async determineVideoDurationInSeconds(videoFilePath: string): Promise<number> {
-    const videoAnalysis = await this.ffprobeExecutor.probe(videoFilePath);
+  private async determineVideoDurationInSeconds(file: LocalFile): Promise<number> {
+    const videoAnalysis = await this.ffprobeExecutor.probeFormat(file);
     return parseInt(videoAnalysis.format.duration ?? '0', 10);
   }
 }

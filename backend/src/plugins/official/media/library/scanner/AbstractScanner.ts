@@ -1,7 +1,8 @@
 import type { MediaLibraryMediaExternalIdSource } from '../../../../../database/prisma-client/enums.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
-import FfprobeExecutor, { type ExtendedProbeResult } from '../../../ffmpeg/FfprobeExecutor.js';
+import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
+import { type ExtendedProbeResult } from '../../../ffmpeg/FfprobeExecutor.js';
 
 type ExternalIds = Partial<Record<MediaLibraryMediaExternalIdSource, string>>;
 
@@ -32,7 +33,7 @@ export default abstract class AbstractScanner {
   };
 
   protected constructor(
-    private readonly ffprobeExecutor: FfprobeExecutor,
+    private readonly ffprobeExecutor: CachedFfprobeExecutor,
   ) {
   }
 
@@ -73,7 +74,7 @@ export default abstract class AbstractScanner {
     const externalIds: CommonVideoMetadata['externalIds'] = {};
 
     if (file instanceof LocalFile) {
-      const fileProbe = await this.ffprobeExecutor.probe(file.getAbsolutePathOnHost(), true);
+      const fileProbe = await this.ffprobeExecutor.probeFull(file);
       durationInSec = Math.ceil(parseInt(fileProbe.format.duration ?? '0', 10));
 
       const extractedTitle = this.extractMetadataFromProbe(fileProbe, 'title');

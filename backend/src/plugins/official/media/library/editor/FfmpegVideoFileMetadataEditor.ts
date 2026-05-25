@@ -33,6 +33,7 @@ export default class FfmpegVideoFileMetadataEditor {
   // TODO: Add support for chapters (remember to update #isDesiredStateIsAlreadyPresent)
 
   constructor(
+    // We do not use the cached ffprobe implementation in the editor *just in case*
     private readonly ffprobeExecutor: FfprobeExecutor,
   ) {
   }
@@ -45,7 +46,7 @@ export default class FfmpegVideoFileMetadataEditor {
     tmpDirPath: string,
     desiredMetadata: DesiredMetadata,
   ): Promise<void> {
-    const inputFileProbe = await this.ffprobeExecutor.probe(inputFilePath, true);
+    const inputFileProbe = await this.ffprobeExecutor.probeFull(inputFilePath);
 
     this.ensureDesiredMetadataLooksPlausible(desiredMetadata, inputFileProbe);
 

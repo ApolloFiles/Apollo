@@ -2,7 +2,7 @@ import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
-import FfprobeExecutor from '../../../ffmpeg/FfprobeExecutor.js';
+import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
 import FileTypeUtils from '../../_old/FileTypeUtils.js';
 import type ReadContentsLibrary from '../database/library/ReadContentsLibrary.js';
 import AbstractScanner, { type MediaDirectoryInfo } from './AbstractScanner.js';
@@ -11,7 +11,7 @@ import type MediaLibraryMediaWriter from './MediaLibraryMediaWriter.js';
 @singleton()
 export default class MovieDirectoryScanner extends AbstractScanner {
   constructor(
-    ffprobeExecutor: FfprobeExecutor,
+    ffprobeExecutor: CachedFfprobeExecutor,
     private readonly fileTypeUtils: FileTypeUtils,
   ) {
     super(ffprobeExecutor);

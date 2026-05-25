@@ -8,36 +8,43 @@ export type ExtendedProbeResult = z.infer<typeof PROBE_RESULT_FULL_SCHEMA>;
 
 @singleton()
 export default class FfprobeExecutor {
-  async probe(filePath: string, extendedAnalysis?: false): Promise<ProbeResult>;
-  async probe(filePath: string, extendedAnalysis: true): Promise<ExtendedProbeResult>;
-  async probe(filePath: string, extendedAnalysis = false): Promise<ProbeResult | ExtendedProbeResult> {
-    const processArgs = ['-print_format', 'json=compact=1', '-show_format'];
-    if (extendedAnalysis) {
-      processArgs.push('-show_streams', '-show_chapters');
-    }
-    processArgs.push(filePath);
+  private readonly BASE_CMD_ARGS = ['-print_format', 'json=compact=1', '-show_format'];
 
-    const childProcess = await BufferedChildProcess.spawn('ffprobe', processArgs);
-    if (childProcess.exitCode !== 0) {
-      throw new Error(`ffprobe exited with code ${childProcess.exitCode}: {stderr=${childProcess.stderr.toString('utf-8')}, stdout=${childProcess.stdout.toString('utf-8')}}`);
-    }
+  async probeFormat(filePath: string): Promise<ProbeResult> {
+    const ffprobeJson = await this.runFfprobe([...this.BASE_CMD_ARGS, filePath]);
+    const probeResult = PROBE_RESULT_SCHEMA.parse(ffprobeJson);
 
-    let stdOutJson: unknown;
-    try {
-      stdOutJson = JSON.parse(childProcess.stdout.toString('utf-8'));
-    } catch (err) {
-      throw new Error(`Failed to parse ffprobe output as JSON: {stderr=${childProcess.stderr.toString('utf-8')}, stdout=${childProcess.stdout.toString('utf-8')}}`, { cause: err });
-    }
-
-    let probeResult;
-    if (extendedAnalysis) {
-      probeResult = PROBE_RESULT_FULL_SCHEMA.parse(stdOutJson);
-    } else {
-      probeResult = PROBE_RESULT_SCHEMA.parse(stdOutJson);
-    }
-
-    this.logWarningsForUnexpectedKeys(filePath, probeResult, stdOutJson);
+    this.logWarningsForUnexpectedKeys(filePath, probeResult, ffprobeJson);
     return probeResult;
+  }
+
+  async probeFull(filePath: string): Promise<ExtendedProbeResult> {
+    const processArgs = [
+      ...this.BASE_CMD_ARGS,
+      '-show_streams',
+      '-show_chapters',
+      filePath,
+    ];
+    const ffprobeJson = await this.runFfprobe(processArgs);
+    const probeResult = PROBE_RESULT_FULL_SCHEMA.parse(ffprobeJson);
+
+    this.logWarningsForUnexpectedKeys(filePath, probeResult, ffprobeJson);
+    return probeResult;
+  }
+
+  private async runFfprobe(processArgs: string[]): Promise<unknown> {
+    const childProcess = await BufferedChildProcess.spawn('ffprobe', processArgs);
+    const stdoutText = childProcess.stdout.toString('utf-8');
+
+    if (childProcess.exitCode !== 0) {
+      throw new Error(`ffprobe exited with code ${childProcess.exitCode}: {stderr=${childProcess.stderr.toString('utf-8')}, stdout=${stdoutText}}`);
+    }
+
+    try {
+      return JSON.parse(stdoutText);
+    } catch (err) {
+      throw new Error(`Failed to parse ffprobe output as JSON: {stderr=${childProcess.stderr.toString('utf-8')}, stdout=${stdoutText}}`, { cause: err });
+    }
   }
 
   private logWarningsForUnexpectedKeys(filePath: string, parsed: unknown, raw: unknown, path: string = ''): void {
