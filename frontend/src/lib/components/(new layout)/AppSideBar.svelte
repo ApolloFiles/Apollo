@@ -1,17 +1,26 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { page } from '$app/state';
+  import SideBarMenuGroup from '$lib/components/(new layout)/SideBarMenuGroup.svelte';
   import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
   import { getAppSideBarExtras } from '$lib/stores/AppSideBarExtrasStore.svelte';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
 
-  export type SideBarMenuItems = ({
-                                    label: string,
-                                    href: string,
-                                    icon: TablerIconId,
-                                  } | 'divider')[];
+  export type SideBarMenuItem = {
+    label: string,
+    href: string,
+    icon: TablerIconId,
+  };
+  export type SideBarMenuItemGroup = {
+    kind: 'group',
+    label: string,
+    items: SideBarMenuItem[],
+  };
+  export type SideBarMenuItems = (SideBarMenuItem | 'divider' | SideBarMenuItemGroup)[];
 
-  const baseApolloSubApps: SideBarMenuItems = [
+  type SimpleSideBarMenuItems = (SideBarMenuItem | 'divider')[];
+
+  const baseApolloSubApps: SimpleSideBarMenuItems = [
     {
       label: 'File Browser',
       href: '/browse/',
@@ -30,7 +39,7 @@
   let sidebarActive = $state(false);
 
   const bottomButton = $derived(appSideBarExtras.bottomButton);
-  const apolloSubApps: SideBarMenuItems = $derived.by(() => {
+  const apolloSubApps: SimpleSideBarMenuItems = $derived.by(() => {
     if (!getUserProfile().isSuperUser) {
       return baseApolloSubApps;
     }
@@ -56,33 +65,50 @@
   const activeMenuItemHref = $derived.by(() => {
     let longestPartialHrefMatch: string | null = null;
     let longestPartialHrefLength = -1;
+    let exactMatch: string | null = null;
 
     const path = page.url.pathname;
 
-    const itemsToCheck = bottomButton ? [...menuItems, bottomButton] : menuItems;
+    const considerHref = (href: string): void => {
+      if (exactMatch != null) {
+        return;
+      }
+
+      if (path === href) {
+        exactMatch = href;
+        return;
+      }
+
+      if (path.startsWith(href)) {
+        let hrefLength = href.split('/').length;
+        if (href.endsWith('/')) {
+          hrefLength -= 1;
+        }
+
+        if (hrefLength > longestPartialHrefLength) {
+          longestPartialHrefMatch = href;
+          longestPartialHrefLength = hrefLength;
+        }
+      }
+    };
+
+    const itemsToCheck: (SideBarMenuItem | 'divider' | SideBarMenuItemGroup)[] = bottomButton ? [...menuItems, bottomButton] : menuItems;
     for (const item of itemsToCheck) {
       if (item === 'divider') {
         continue;
       }
 
-      if (path === item.href) {
-        return item.href;
+      if ('href' in item) {
+        considerHref(item.href);
+        continue;
       }
 
-      if (path.startsWith(item.href)) {
-        let hrefLength = item.href.split('/').length;
-        if (item.href.endsWith('/')) {
-          hrefLength -= 1;
-        }
-
-        if (hrefLength > longestPartialHrefLength) {
-          longestPartialHrefMatch = item.href;
-          longestPartialHrefLength = hrefLength;
-        }
+      for (const sub of item.items) {
+        considerHref(sub.href);
       }
     }
 
-    return longestPartialHrefMatch;
+    return exactMatch ?? longestPartialHrefMatch;
   });
 
   function closeSidebar(): void {
@@ -188,7 +214,7 @@
     {#each menuItems as menuItem}
       {#if menuItem === 'divider'}
         <hr class="border-secondary my-3">
-      {:else}
+      {:else if 'href' in menuItem}
         <a
           href={menuItem.href}
           class="nav-link"
@@ -198,6 +224,12 @@
           <TablerIcon icon={menuItem.icon} class="me-2" />
           {menuItem.label}
         </a>
+      {:else}
+        <SideBarMenuGroup
+          group={menuItem}
+          {activeMenuItemHref}
+          onNavigate={closeSidebarOnMobile}
+        />
       {/if}
     {/each}
   </div>

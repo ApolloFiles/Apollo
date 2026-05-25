@@ -6,10 +6,12 @@ const ORPC_LIBRARIES_SCHEMA = z.strictObject({
   owned: z.array(z.strictObject({
     id: z.string(),
     name: z.string(),
+    hideFromSidebar: z.boolean(),
   })),
   sharedWith: z.array(z.strictObject({
     id: z.string(),
     name: z.string(),
+    hideFromSidebar: z.boolean(),
   })),
 });
 const ORPC_CREATE_LIBRARY_INPUT_SCHEMA = z.object({
@@ -107,14 +109,26 @@ const getLibraryManagementInfo = baseOc
   .output(z.strictObject({
     loggedInUser: ORPC_LOGGED_IN_USER_SCHEMA,
 
-    library: z.strictObject({
-      id: z.string(),
-      name: z.string(),
-      directoryUris: z.array(z.string()),
-      sharedWith: z.array(z.strictObject({
+    library: z.discriminatedUnion('canManage', [
+      z.strictObject({
+        canManage: z.literal(false),
         id: z.string(),
-        displayName: z.string(),
-      })),
+        name: z.string(),
+      }),
+      z.strictObject({
+        canManage: z.literal(true),
+        id: z.string(),
+        name: z.string(),
+        directoryUris: z.array(z.string()),
+        sharedWith: z.array(z.strictObject({
+          id: z.string(),
+          displayName: z.string(),
+        })),
+      }),
+    ]),
+    libraryUserPreferences: z.strictObject({
+      hideFromOverview: z.boolean(),
+      hideFromSidebar: z.boolean(),
     }),
     libraries: ORPC_LIBRARIES_SCHEMA,
   }));
@@ -133,6 +147,15 @@ const createLibrary = baseOc
   .output(z.bigint());
 const updateLibrary = baseOc
   .input(ORPC_CREATE_LIBRARY_INPUT_SCHEMA.extend({ id: z.coerce.bigint() }))
+  .output(z.undefined());
+const updateLibraryUserPreferences = baseOc
+  .input(z.strictObject({
+    libraryId: z.coerce.bigint(),
+    preferences: z.strictObject({
+      hideFromOverview: z.boolean(),
+      hideFromSidebar: z.boolean(),
+    }),
+  }))
   .output(z.undefined());
 
 const unshareMyselfFromOtherLibrary = baseOc
@@ -230,6 +253,7 @@ export const mediaContract = {
     delete: deleteLibrary,
     createLibrary: createLibrary,
     updateLibrary: updateLibrary,
+    updateLibraryUserPreferences: updateLibraryUserPreferences,
     unshareMyselfFromOther: unshareMyselfFromOtherLibrary,
 
     searchUserToShareWith: searchUserToShareWith,

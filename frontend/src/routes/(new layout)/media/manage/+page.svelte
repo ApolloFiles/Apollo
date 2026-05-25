@@ -108,9 +108,14 @@
           {#each sharedWithLibraries as lib}
             <li>
               <span class="lib-name">{lib.name}</span>
-              <button onclick={() => leaveLibrary(lib.id, lib.name)} title="Unlink" class="danger-hover">
-                <TablerIcon icon="link-off" />
-              </button>
+              <div class="actions">
+                <a href="/media/manage/{lib.id}" title="Edit" class="icon-btn">
+                  <TablerIcon icon="edit" />
+                </a>
+                <button onclick={() => leaveLibrary(lib.id, lib.name)} title="Unlink" class="danger-hover">
+                  <TablerIcon icon="link-off" />
+                </button>
+              </div>
             </li>
           {/each}
           {#if sharedWithLibraries.length === 0}

@@ -112,16 +112,15 @@ export default class LibraryManager {
     });
   }
 
-  async fetchRecentlyAddedMedia(libraryIdToFilterBy?: bigint, limit = 12): Promise<PrismaClient.MediaLibraryMedia[]> {
+  async fetchRecentlyAddedMediaExcludingSome(librariesToExclude: bigint[], limit = 12): Promise<PrismaClient.MediaLibraryMedia[]> {
     const libraryIdsUserHasAccessTo = await this.findLibraryIds();
-    if (libraryIdToFilterBy != null && !libraryIdsUserHasAccessTo.includes(libraryIdToFilterBy)) {
-      console.warn(`[WARN] 'Recently added' requested for a library the user has no access to`);
-      return [];
-    }
 
     return this.databaseClient.mediaLibraryMedia.findMany({
       where: {
-        libraryId: libraryIdToFilterBy != null ? { equals: libraryIdToFilterBy } : { in: libraryIdsUserHasAccessTo },
+        libraryId: {
+          in: libraryIdsUserHasAccessTo,
+          notIn: librariesToExclude,
+        },
       },
       orderBy: {
         addedAt: 'desc',

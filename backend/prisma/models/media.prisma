@@ -4,9 +4,10 @@ model MediaLibrary {
   name          String   @db.VarChar(256)
   directoryUris String[] @map("directory_uris")
 
-  owner                  AuthUser                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  media                  MediaLibraryMedia[]
-  MediaLibrarySharedWith MediaLibrarySharedWith[]
+  owner                       AuthUser                      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  media                       MediaLibraryMedia[]
+  MediaLibrarySharedWith      MediaLibrarySharedWith[]
+  mediaLibraryUserPreferences MediaLibraryUserPreferences[]
 
   @@map("media_libraries")
 }
@@ -20,6 +21,19 @@ model MediaLibrarySharedWith {
 
   @@id([libraryId, userId])
   @@map("media_libraries_shared_with")
+}
+
+model MediaLibraryUserPreferences {
+  userId       String @map("user_id")
+  libraryId    BigInt @map("library_id")
+  preferenceId Int    @map("preference_id")
+  value        String
+
+  library MediaLibrary @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  user    AuthUser     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, libraryId, preferenceId])
+  @@map("media_libraries_user_preferences")
 }
 
 model MediaLibraryMedia {

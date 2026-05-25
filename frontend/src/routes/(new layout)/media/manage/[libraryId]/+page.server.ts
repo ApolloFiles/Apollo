@@ -1,17 +1,13 @@
 import { buildMediaSideBarMenuItems } from '$lib/components/media/MediaSideBarMenuItemsBuilder';
 import { rpcClient } from '$lib/oRPC';
+import type { ORpcContractOutputs } from '$lib/ORpcHelper';
 import type { RenderingLayoutData } from '../../../types';
 import type { PageServerLoad } from './$types';
-
-// TODO: load function should be ready; Next: implement/update the page/rendering
-// TODO: nope, sharedWithUsers is missing and I want an endpoint for 'user suggestions/completions'
-//       the completion endpoint should show other users I have shared libraries with before and on exact ID matches
 
 export const load: PageServerLoad = async ({ fetch, cookies, params }) => {
   const createMode = params.libraryId === 'create';
 
-  // TODO: proper type-hint
-  let pageData;
+  let pageData: ORpcContractOutputs['media']['management']['get'];
 
   if (!createMode) {
     pageData = await rpcClient
@@ -27,10 +23,17 @@ export const load: PageServerLoad = async ({ fetch, cookies, params }) => {
     pageData = {
       ...libraryList,
       library: {
+        canManage: true,
         id: '',
         name: '',
         directoryUris: [],
         sharedWith: [],
+      },
+
+      // TODO: fetch preference defaults from backend
+      libraryUserPreferences: {
+        hideFromOverview: false,
+        hideFromSidebar: false,
       },
     };
   }

@@ -7,13 +7,19 @@
   let { data } = $props();
 
   const isCreateMode = $derived(data.createMode);
+  const canManage = $derived(data.library.canManage);
 
   // svelte-ignore state_referenced_locally
   let editValueName: string = $state(data.library.name);
   // svelte-ignore state_referenced_locally
-  let editValueDirectoryUris: string[] = $state(data.library.directoryUris);
+  let editValueDirectoryUris: string[] = $state(data.library.canManage ? data.library.directoryUris : []);
   // svelte-ignore state_referenced_locally
-  let editValueSharedWithUserIds: { id: string, displayName: string }[] = $state(data.library.sharedWith);
+  let editValueSharedWithUserIds: { id: string, displayName: string }[] = $state(data.library.canManage ? data.library.sharedWith : []);
+
+  // svelte-ignore state_referenced_locally
+  let editValueHideFromOverview: boolean = $state(data.libraryUserPreferences.hideFromOverview);
+  // svelte-ignore state_referenced_locally
+  let editValueHideFromSidebar: boolean = $state(data.libraryUserPreferences.hideFromSidebar);
 
   let searchQuery = $state('');
   let searchResults = $state<{ id: string, displayName: string }[]>([]);
@@ -45,26 +51,41 @@
   }
 
   async function saveChanges(): Promise<void> {
-    const payload = {
-      name: editValueName,
-      directoryUris: editValueDirectoryUris.filter(uri => uri.trim().length > 0),
-      sharedWithUserIds: editValueSharedWithUserIds.map(u => u.id),
+    const preferences = {
+      hideFromOverview: editValueHideFromOverview,
+      hideFromSidebar: editValueHideFromSidebar,
     };
+    const client = getClientSideRpcClient();
 
     try {
       if (isCreateMode) {
-        await getClientSideRpcClient()
-          .media
-          .management
-          .createLibrary(payload);
-      } else {
-        await getClientSideRpcClient()
-          .media
-          .management
-          .updateLibrary({
-            ...payload,
+        const newLibraryId = await client.media.management.createLibrary({
+          name: editValueName,
+          directoryUris: editValueDirectoryUris.filter(uri => uri.trim().length > 0),
+          sharedWithUserIds: editValueSharedWithUserIds.map(u => u.id),
+        });
+        await client.media.management.updateLibraryUserPreferences({
+          libraryId: newLibraryId,
+          preferences,
+        });
+      } else if (canManage) {
+        await Promise.all([
+          client.media.management.updateLibrary({
             id: data.library.id,
-          });
+            name: editValueName,
+            directoryUris: editValueDirectoryUris.filter(uri => uri.trim().length > 0),
+            sharedWithUserIds: editValueSharedWithUserIds.map(u => u.id),
+          }),
+          client.media.management.updateLibraryUserPreferences({
+            libraryId: data.library.id,
+            preferences,
+          }),
+        ]);
+      } else {
+        await client.media.management.updateLibraryUserPreferences({
+          libraryId: data.library.id,
+          preferences,
+        });
       }
 
       return redirectToManagePage();
@@ -85,7 +106,7 @@
 
 <div class="page-container">
   <header>
-    <h1>{isCreateMode ? 'Create' : 'Edit'} Media Library</h1>
+    <h1>{isCreateMode ? 'Create' : canManage ? 'Edit' : 'View'} Media Library</h1>
   </header>
 
   <main>
@@ -93,104 +114,130 @@
       <div class="form-group">
         <label for="lib-name">Name</label>
         <input
+          id="lib-name"
           type="text"
           bind:value={editValueName}
           maxlength="256"
           required
+          readonly={!canManage}
           placeholder="e.g. My Movies"
           class="form-control"
+          class:readonly={!canManage}
         />
       </div>
 
-      <div class="form-group">
-        <p class="p-label">Directory Paths</p>
-        {#if editValueDirectoryUris.length > 0}
-          <ul class="directory-list">
-            {#each editValueDirectoryUris as _uri, index}
-              <li class="directory-item">
-                <input
-                  type="text"
-                  bind:value={editValueDirectoryUris[index]}
-                  maxlength="500"
-                  required
-                  placeholder="Full ApolloURL needed right now (e.g. apollo:///f/{getUserProfile().id}/default/my-media/)"
-                  class="form-control"
-                />
-                <button type="button" onclick={() => editValueDirectoryUris.splice(index, 1)} class="icon-btn danger">
-                  <TablerIcon icon="trash" />
-                </button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-        <button type="button" onclick={() => editValueDirectoryUris.push('')} class="add-btn text-sm">
-          <TablerIcon icon="plus" />
-          Add Path
-        </button>
-      </div>
-
-      <div class="form-group">
-        <p class="p-label">Shared With</p>
-        {#if editValueSharedWithUserIds.length > 0}
-          <ul class="user-list">
-            {#each editValueSharedWithUserIds as _uri, index}
-              <li class="user-item">
-                <div class="user-info">
-                  <img
-                    src="/api/_frontend/user/{encodeURIComponent(editValueSharedWithUserIds[index].id)}/picture.png"
-                    alt=""
-                    role="presentation"
-                    class="user-avatar"
-                  >
-
-                  <div>
-                    <strong>{editValueSharedWithUserIds[index].displayName}</strong>
-                    <br>
-                    <small class="text-muted">{editValueSharedWithUserIds[index].id}</small>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onclick={() => editValueSharedWithUserIds.splice(index, 1)}
-                  class="icon-btn danger">
-                  <TablerIcon icon="trash" />
-                </button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-
-        <div class="user-search-container">
-          <input
-            type="text"
-            bind:value={searchQuery}
-            maxlength="75"
-            oninput={handleSearchInput}
-            placeholder="Search User ID or Name..."
-            class="form-control"
-          />
-
-          {#if searchResults.length > 0}
-            <ul class="search-results-dropdown">
-              {#each searchResults as user}
-                <li>
-                  <button type="button" class="search-result-item" onclick={() => selectUser(user)}>
-                    <img
-                      src="/api/_frontend/user/{encodeURIComponent(user.id)}/picture.png"
-                      alt=""
-                      class="user-avatar small"
-                    />
-                    <span class="search-user-text">
-                      <span class="d-block">{user.displayName}</span>
-                      <small class="text-muted">{user.id}</small>
-                    </span>
+      {#if canManage}
+        <div class="form-group">
+          <p class="p-label">Directory Paths</p>
+          {#if editValueDirectoryUris.length > 0}
+            <ul class="directory-list">
+              {#each editValueDirectoryUris as _uri, index}
+                <li class="directory-item">
+                  <input
+                    type="text"
+                    bind:value={editValueDirectoryUris[index]}
+                    maxlength="500"
+                    required
+                    placeholder="Full ApolloURL needed right now (e.g. apollo:///f/{getUserProfile().id}/default/my-media/)"
+                    class="form-control"
+                  />
+                  <button type="button" onclick={() => editValueDirectoryUris.splice(index, 1)} class="icon-btn danger">
+                    <TablerIcon icon="trash" />
                   </button>
                 </li>
               {/each}
             </ul>
           {/if}
+          <button type="button" onclick={() => editValueDirectoryUris.push('')} class="add-btn text-sm">
+            <TablerIcon icon="plus" />
+            Add Path
+          </button>
         </div>
-      </div>
+
+        <div class="form-group">
+          <p class="p-label">Shared With</p>
+          {#if editValueSharedWithUserIds.length > 0}
+            <ul class="user-list">
+              {#each editValueSharedWithUserIds as _uri, index}
+                <li class="user-item">
+                  <div class="user-info">
+                    <img
+                      src="/api/_frontend/user/{encodeURIComponent(editValueSharedWithUserIds[index].id)}/picture.png"
+                      alt=""
+                      role="presentation"
+                      class="user-avatar"
+                    >
+
+                    <div>
+                      <strong>{editValueSharedWithUserIds[index].displayName}</strong>
+                      <br>
+                      <small class="text-muted">{editValueSharedWithUserIds[index].id}</small>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onclick={() => editValueSharedWithUserIds.splice(index, 1)}
+                    class="icon-btn danger">
+                    <TablerIcon icon="trash" />
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+
+          <div class="user-search-container">
+            <input
+              type="text"
+              bind:value={searchQuery}
+              maxlength="75"
+              oninput={handleSearchInput}
+              placeholder="Search User ID or Name..."
+              class="form-control"
+            />
+
+            {#if searchResults.length > 0}
+              <ul class="search-results-dropdown">
+                {#each searchResults as user}
+                  <li>
+                    <button type="button" class="search-result-item" onclick={() => selectUser(user)}>
+                      <img
+                        src="/api/_frontend/user/{encodeURIComponent(user.id)}/picture.png"
+                        alt=""
+                        class="user-avatar small"
+                      />
+                      <span class="search-user-text">
+                        <span class="d-block">{user.displayName}</span>
+                        <small class="text-muted">{user.id}</small>
+                      </span>
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        </div>
+      {/if}
+
+      <section class="personal-prefs">
+        <header class="personal-prefs-header">
+          <span class="personal-prefs-badge">
+            <TablerIcon icon="user-filled" />
+            Just for you
+          </span>
+          <p class="personal-prefs-subtitle">
+            Personal preferences for this library — they only affect your view.
+          </p>
+        </header>
+
+        <label class="checkbox-row">
+          <input type="checkbox" bind:checked={editValueHideFromOverview} />
+          <span>Hide from overview</span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" bind:checked={editValueHideFromSidebar} />
+          <span>Hide from sidebar</span>
+        </label>
+      </section>
 
       <div class="form-actions right">
         <button type="button" onclick={redirectToManagePage} class="btn btn-secondary">Cancel</button>
@@ -254,6 +301,64 @@
   .form-control:focus {
     outline:      none;
     border-color: var(--primary-color, #3b82f6);
+  }
+
+  .form-control.readonly {
+    opacity: 0.7;
+    cursor:  default;
+  }
+  .form-control.readonly:focus {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .personal-prefs {
+    position:       relative;
+    margin-top:     24px;
+    padding:        18px 18px 18px 22px;
+    border:         1px solid rgba(255, 255, 255, 0.08);
+    border-left:    4px solid var(--primary-color, #3b82f6);
+    border-radius:  8px;
+    background:     rgba(59, 130, 246, 0.06);
+    display:        flex;
+    flex-direction: column;
+    gap:            12px;
+  }
+
+  .personal-prefs-header {
+    display:        flex;
+    flex-direction: column;
+    gap:            4px;
+  }
+
+  .personal-prefs-badge {
+    display:       inline-flex;
+    align-items:   center;
+    gap:           6px;
+    align-self:    flex-start;
+    padding:       2px 10px;
+    border-radius: 999px;
+    background:    rgba(59, 130, 246, 0.18);
+    color:         var(--primary-color, #3b82f6);
+    font-size:     0.8rem;
+    font-weight:   600;
+  }
+
+  .personal-prefs-subtitle {
+    margin:    0;
+    font-size: 0.85rem;
+    color:     var(--text-secondary, #ccc);
+  }
+
+  .checkbox-row {
+    display:     flex;
+    align-items: center;
+    gap:         10px;
+    cursor:      pointer;
+    font-size:   0.95rem;
+  }
+
+  .checkbox-row input[type=checkbox] {
+    accent-color: var(--primary-color, #3b82f6);
   }
 
   .directory-list {

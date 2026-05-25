@@ -2,10 +2,21 @@ import { injectable } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
 import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import PermissionAwareFileProvider from '../../../files/provider/PermissionAwareFileProvider.js';
+import AccessForbiddenError from '../../../permission/error/AccessForbiddenError.js';
 import LibraryManager from '../../../plugins/official/media/_old/libraries/LibraryManager.js';
+import HiddenFromOverviewMediaLibraryFinder
+  from '../../../plugins/official/media/library/database/library/HiddenFromOverviewMediaLibraryFinder.js';
+import HiddenFromSidebarMediaLibraryFinder
+  from '../../../plugins/official/media/library/database/library/HiddenFromSidebarMediaLibraryFinder.js';
 import MediaLibraryByUserFinder
   from '../../../plugins/official/media/library/database/library/MediaLibraryByUserFinder.js';
 import MediaLibraryMediaFinder from '../../../plugins/official/media/library/database/media/MediaLibraryMediaFinder.js';
+import MediaLibraryUserPreferences
+  from '../../../plugins/official/media/library/database/user-preferences/MediaLibraryUserPreferences.js';
+import MediaLibraryUserPreferencesFinder
+  from '../../../plugins/official/media/library/database/user-preferences/MediaLibraryUserPreferencesFinder.js';
+import MediaLibraryUserPreferencesWriter
+  from '../../../plugins/official/media/library/database/writer/MediaLibraryUserPreferencesWriter.js';
 import MediaLibraryWriter from '../../../plugins/official/media/library/database/writer/MediaLibraryWriter.js';
 import FullLibraryIndexingHelper from '../../../plugins/official/media/library/FullLibraryIndexingHelper.js';
 import MediaClearLogoImageProvider from '../../../plugins/official/media/library/images/MediaClearLogoImageProvider.js';
@@ -29,6 +40,10 @@ export default class MediaORpcRouterFactory {
     private readonly mediaClearLogoImageProvider: MediaClearLogoImageProvider,
     private readonly fullLibraryIndexingHelper: FullLibraryIndexingHelper,
     private readonly permissionAwareLibraryProvider: PermissionAwareLibraryProvider,
+    private readonly mediaLibraryUserPreferencesFinder: MediaLibraryUserPreferencesFinder,
+    private readonly mediaLibraryUserPreferencesWriter: MediaLibraryUserPreferencesWriter,
+    private readonly hiddenFromOverviewMediaLibraryFinder: HiddenFromOverviewMediaLibraryFinder,
+    private readonly hiddenFromSidebarMediaLibraryFinder: HiddenFromSidebarMediaLibraryFinder,
   ) {
   }
 
@@ -69,7 +84,7 @@ export default class MediaORpcRouterFactory {
             }
           } else {
             libraryMediaSorting = 'recentlyAdded';
-            mediaItems = libraryManager.fetchRecentlyAddedMedia();
+            mediaItems = libraryManager.fetchRecentlyAddedMediaExcludingSome(await this.hiddenFromOverviewMediaLibraryFinder.findLibraryIds(context.authSession.user.id));
           }
 
           const mediaResultItems: ORpcContractOutputs['media']['getMediaLibraryOverview']['page']['result']['items'] = (await mediaItems).map(i => ({
@@ -229,7 +244,33 @@ export default class MediaORpcRouterFactory {
       management: {
         get: os.management.get
           .handler(async ({ input, context }) => {
-            const mediaLibrary = await this.permissionAwareLibraryProvider.provideForWrite(input.libraryId, context.authSession.user);
+            let library: ORpcContractOutputs['media']['management']['get']['library'];
+
+            const mediaLibrary = await this.permissionAwareLibraryProvider.provideForReadContents(input.libraryId, context.authSession.user);
+            library = {
+              canManage: false,
+              id: mediaLibrary.library.id.toString(),
+              name: mediaLibrary.library.name,
+            };
+
+            try {
+              const mediaLibrary = await this.permissionAwareLibraryProvider.provideForWrite(input.libraryId, context.authSession.user);
+              library = {
+                canManage: true,
+                id: mediaLibrary.id.toString(),
+                name: mediaLibrary.name,
+                directoryUris: mediaLibrary.directoryUris,
+                sharedWith: mediaLibrary.sharedWithUsers.map(user => ({
+                  id: user.id,
+                  displayName: user.displayName,
+                })),
+              };
+            } catch (err) {
+              if (!(err instanceof AccessForbiddenError)) {
+                // only ignore AccessForbiddenError
+                throw err;
+              }
+            }
 
             return {
               loggedInUser: {
@@ -239,15 +280,8 @@ export default class MediaORpcRouterFactory {
                 isSuperUser: context.authSession.user.isSuperUser,
               },
 
-              library: {
-                id: mediaLibrary.id.toString(),
-                name: mediaLibrary.name,
-                directoryUris: mediaLibrary.directoryUris,
-                sharedWith: mediaLibrary.sharedWithUsers.map(user => ({
-                  id: user.id,
-                  displayName: user.displayName,
-                })),
-              },
+              library,
+              libraryUserPreferences: await this.mediaLibraryUserPreferencesFinder.findByLibraryAndUser(mediaLibrary.library.id, context.authSession.user.id),
               libraries: await this.collectLibrariesData(context.authSession.user),
             };
           }),
@@ -372,6 +406,15 @@ export default class MediaORpcRouterFactory {
             );
           }),
 
+        updateLibraryUserPreferences: os.management.updateLibraryUserPreferences
+          .handler(async ({ input, context }) => {
+            const userId = context.authSession.user.id;
+            const libraryId = input.libraryId;
+            const preferences = input.preferences;
+
+            await this.mediaLibraryUserPreferencesWriter.update(userId, libraryId, new MediaLibraryUserPreferences(preferences.hideFromOverview, preferences.hideFromSidebar));
+          }),
+
         unshareMyselfFromOther: os.management.unshareMyselfFromOther
           .handler(async ({ input, context, errors }) => {
             const deleteResult = await this.databaseClient.mediaLibrarySharedWith.deleteMany({
@@ -460,19 +503,23 @@ export default class MediaORpcRouterFactory {
   }
 
   private async collectLibrariesData(user: ApolloUser): Promise<ORpcContractOutputs['media']['getMediaLibraryOverview']['page']['libraries']> {
-    const [ownedLibraries, sharedLibraries] = await Promise.all([
+    const [ownedLibraries, sharedLibraries, hiddenFromSidebarIds] = await Promise.all([
       this.mediaLibraryByUserFinder.findOwnedSortedByName(user.id),
       this.mediaLibraryByUserFinder.findSharedSortedByName(user.id),
+      this.hiddenFromSidebarMediaLibraryFinder.findLibraryIds(user.id),
     ]);
+    const hiddenFromSidebarSet = new Set(hiddenFromSidebarIds);
 
     return {
       owned: ownedLibraries.map(lib => ({
         id: lib.id.toString(),
         name: lib.name,
+        hideFromSidebar: hiddenFromSidebarSet.has(lib.id),
       })),
       sharedWith: sharedLibraries.map(lib => ({
         id: lib.id.toString(),
         name: lib.name,
+        hideFromSidebar: hiddenFromSidebarSet.has(lib.id),
       })),
     };
   }

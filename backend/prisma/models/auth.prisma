@@ -12,6 +12,7 @@ model AuthUser {
   sessions                        AuthSession[]
   mediaLibraries                  MediaLibrary[]
   mediaLibrarySharedWiths         MediaLibrarySharedWith[]
+  mediaLibraryUserPreferences     MediaLibraryUserPreferences[]
   mediaLibraryUserWatchProgresses MediaLibraryUserWatchProgress[]
 
   @@index([createdAt])

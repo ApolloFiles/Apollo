@@ -1,33 +1,47 @@
-import type { SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
+import type { SideBarMenuItem, SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
 
+type LibraryEntry = { id: string, name: string, hideFromSidebar: boolean };
 type Libraries = {
-  owned: { id: string, name: string }[],
-  sharedWith: { id: string, name: string }[],
+  owned: LibraryEntry[],
+  sharedWith: LibraryEntry[],
 };
 
 // TODO: Drop support for array of Library once all usages are migrated
 export function buildMediaSideBarMenuItems(libraries: Libraries): SideBarMenuItems {
+  const toMenuItem = (library: LibraryEntry): SideBarMenuItem => ({
+    label: library.name,
+    href: `/media/${library.id}`,
+    icon: 'device-desktop',
+  });
+
+  const ownedVisible = libraries.owned.filter(l => !l.hideFromSidebar);
+  const sharedVisible = libraries.sharedWith.filter(l => !l.hideFromSidebar);
+  const hidden = [
+    ...libraries.owned.filter(l => l.hideFromSidebar),
+    ...libraries.sharedWith.filter(l => l.hideFromSidebar),
+  ];
+
   const sideBarMenuItems: SideBarMenuItems = [
     { label: 'Overview', href: '/media/', icon: 'device-desktop' },
   ];
 
-  for (const library of libraries.owned) {
-    sideBarMenuItems.push({
-      label: library.name,
-      href: `/media/${library.id}`,
-      icon: 'device-desktop',
-    });
+  for (const library of ownedVisible) {
+    sideBarMenuItems.push(toMenuItem(library));
   }
 
-  if (libraries.owned.length > 0 && libraries.sharedWith.length > 0) {
+  if (ownedVisible.length > 0 && sharedVisible.length > 0) {
     sideBarMenuItems.push('divider');
   }
 
-  for (const library of libraries.sharedWith) {
+  for (const library of sharedVisible) {
+    sideBarMenuItems.push(toMenuItem(library));
+  }
+
+  if (hidden.length > 0) {
     sideBarMenuItems.push({
-      label: library.name,
-      href: `/media/${library.id}`,
-      icon: 'device-desktop',
+      kind: 'group',
+      label: 'Weitere',
+      items: hidden.map(toMenuItem),
     });
   }
 
