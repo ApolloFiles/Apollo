@@ -46,6 +46,11 @@ export default class VideoThumbnailFrameExtractor {
   }
 
   private async runFrameExtraction(durationToSeekTo: number, filePath: string, cwd: string, favorGettingSomeResultOverPerformance: boolean): Promise<void> {
+    let videoFilter = 'scale=' + VideoThumbnailFrameExtractor.THUMBNAIL_WIDTH + ':-2';
+    if (!favorGettingSomeResultOverPerformance) {
+      videoFilter += ',select=gt(scene\\,0.5)';
+    }
+
     const ffmpegProcess = await BufferedChildProcess.spawn('ffmpeg', [
         '-loglevel', 'warning',
 
@@ -63,7 +68,7 @@ export default class VideoThumbnailFrameExtractor {
         '-fps_mode', 'vfr', // do not duplicate frames
         '-t', (5 * 60).toString(),  // Limit analyze to a maximum of 5 minutes of video
 
-        '-vf', 'scale=' + VideoThumbnailFrameExtractor.THUMBNAIL_WIDTH + ':-2,select=gt(scene\\,0.5)',
+        '-vf', videoFilter,
 
         '-frames:v', VideoThumbnailFrameExtractor.SAMPLE_SIZE.toString(),
 
