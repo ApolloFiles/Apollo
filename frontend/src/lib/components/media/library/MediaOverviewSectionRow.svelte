@@ -106,16 +106,10 @@
     width:           100%;
     height:          100%;
     background:      linear-gradient(to top, var(--overlay-gradient-start) 0%, rgba(0, 0, 0, 0) 50%);
-    opacity:         0;
-    transition:      opacity 0.3s ease;
     display:         flex;
     flex-direction:  column;
     justify-content: flex-end;
     padding:         15px;
-  }
-
-  .media-card:hover .media-overlay {
-    opacity: 1;
   }
 
   .media-title {
