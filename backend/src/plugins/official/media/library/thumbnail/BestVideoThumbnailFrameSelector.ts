@@ -12,23 +12,24 @@ type ReadImage = {
 export default class BestVideoThumbnailFrameSelector {
   async determineBestFrame(directoryPath: string): Promise<Sharp.Sharp> {
     const frameImages = await this.findFrameImages(directoryPath);
-    if (frameImages.length === 0) {
-      throw new Error(`No frame images found in directory: ${directoryPath}`);
-    }
 
-    let bestFrame: Sharp.Sharp;
-    let bestScore = -1;
+    let bestFrame: Sharp.Sharp | null = null;
+    let bestScore = -Infinity;
     for (const frameImagePromise of frameImages) {
       const frameImage = await frameImagePromise;
       const score = this.calculateThumbnailScore(frameImage.stats);
+      const effectiveScore = Number.isFinite(score) ? score : -Infinity;
 
-      if (score > bestScore) {
+      if (bestFrame == null || effectiveScore > bestScore) {
         bestFrame = frameImage.sharpInstance;
-        bestScore = score;
+        bestScore = effectiveScore;
       }
     }
 
-    return bestFrame!;
+    if (bestFrame == null) {
+      throw new Error(`No selectable frame in directory: ${directoryPath}`);
+    }
+    return bestFrame;
   }
 
   private async findFrameImages(directoryPath: string): Promise<Promise<ReadImage>[]> {
