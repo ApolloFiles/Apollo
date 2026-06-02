@@ -34,7 +34,7 @@ export default class MediaMetadataHydrator {
       where: { id: media.id },
       data: {
         title: mediaMetadata.type === 'movie' ? mediaMetadata.details.title : mediaMetadata.details.name,
-        synopsis: mediaMetadata.details.overview,
+        synopsis: mediaMetadata.details.overview.trim() || undefined,
         externalApiFetchedAt: await this.databaseClient.fetchNow(),
       },
     });
