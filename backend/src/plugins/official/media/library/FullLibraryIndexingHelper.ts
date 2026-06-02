@@ -1,6 +1,7 @@
 import { singleton } from 'tsyringe';
 import type ApolloUser from '../../../../user/ApolloUser.js';
 import UserProvider from '../../../../user/UserProvider.js';
+import { runWithConcurrency } from '../../../../utils/concurrency.js';
 import MediaLibraryByUserFinder from './database/library/MediaLibraryByUserFinder.js';
 import ReadContentsLibrary from './database/library/ReadContentsLibrary.js';
 import MediaLibraryMediaFinder from './database/media/MediaLibraryMediaFinder.js';
@@ -11,6 +12,8 @@ import MediaClearLogoImageProvider from './images/MediaClearLogoImageProvider.js
 import MediaPosterImageProvider from './images/MediaPosterImageProvider.js';
 import MediaLibraryScanner from './scanner/MediaLibraryScanner.js';
 import VideoThumbnailProvider from './thumbnail/VideoThumbnailProvider.js';
+
+const THUMBNAIL_GENERATION_CONCURRENCY = 4;
 
 @singleton()
 export default class FullLibraryIndexingHelper {
@@ -102,13 +105,13 @@ export default class FullLibraryIndexingHelper {
 
     for (const media of allMedia) {
       const mediaItems = await this.mediaLibraryMediaItemFinder.findFullByMediaId(media.id);
-      for (const mediaItem of mediaItems) {
+      await runWithConcurrency(mediaItems, THUMBNAIL_GENERATION_CONCURRENCY, async (mediaItem) => {
         try {
           await this.videoThumbnailProvider.provide(mediaItem, 'avif');
         } catch (err) {
           console.error(err);
         }
-      }
+      });
     }
   }
 }
