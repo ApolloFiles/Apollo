@@ -39,6 +39,7 @@ export default class MediaLibraryScanner {
       await this.scanDirectory(library, directory, mediaWriter);
     }
 
+    await mediaWriter.flushPendingMediaItems();
     await mediaWriter.deleteOldMediaItems(library.id);
   }
 
