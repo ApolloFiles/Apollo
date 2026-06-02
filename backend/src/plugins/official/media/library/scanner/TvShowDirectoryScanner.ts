@@ -1,6 +1,7 @@
 import { singleton } from 'tsyringe';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
+import { runWithConcurrency } from '../../../../../utils/concurrency.js';
 import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
 import FileTypeUtils from '../../_old/FileTypeUtils.js';
 import type ReadContentsLibrary from '../database/library/ReadContentsLibrary.js';
@@ -17,6 +18,7 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
   private static SEASON_DIR_REGEX = /^(?:S(?:eason)?|Volume)[\s_.-]*(\d+)/i;
   private static EPISODE_FILE_REGEX_LONG = /Episode[\s_.-]*\d+/i;
   private static EPISODE_FILE_REGEX_SHORT = /S(\d+)[\s_.-]*E(\d+)/i;
+  private static EPISODE_PROCESS_CONCURRENCY = 4;
 
   constructor(
     ffprobeExecutor: CachedFfprobeExecutor,
@@ -30,15 +32,11 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
 
     // TODO: It might make sense to 'overtake' other existing media here, in case the directory got renamed or so (and the other media directory no longer exists)
     const mediaId = await writer.createIfNotExists(library.id, mediaDirectory.toURI().toString(), mediaInfo.title);
-    let firstEpisodeFile: VirtualFile | null = null;
 
+    const candidateEpisodeFiles: VirtualFile[] = [];
     for (const file of (await mediaDirectory.getFiles())) {
       if (await file.isFile()) {
-        const isEpisodeFile = await this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, file, null);
-        if (isEpisodeFile && firstEpisodeFile == null) {
-          firstEpisodeFile = file;
-        }
-
+        candidateEpisodeFiles.push(file);
         continue;
       }
 
@@ -48,10 +46,21 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
       }
 
       for (const potentialEpisodeFile of (await file.getFiles())) {
-        const isEpisodeFile = await this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, potentialEpisodeFile, null);
-        if (isEpisodeFile && firstEpisodeFile == null) {
-          firstEpisodeFile = potentialEpisodeFile;
-        }
+        candidateEpisodeFiles.push(potentialEpisodeFile);
+      }
+    }
+
+    const episodeResults = await runWithConcurrency(
+      candidateEpisodeFiles,
+      TvShowDirectoryScanner.EPISODE_PROCESS_CONCURRENCY,
+      (file) => this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, file, null),
+    );
+
+    let firstEpisodeFile: VirtualFile | null = null;
+    for (let i = 0; i < candidateEpisodeFiles.length; i++) {
+      if (episodeResults[i]) {
+        firstEpisodeFile = candidateEpisodeFiles[i];
+        break;
       }
     }
 
