@@ -67,7 +67,7 @@
         <div class="media-overlay" data-media-overlay>
           <div class="media-title" data-media-title>{item.title}</div>
           {#if item.year != null}
-            <div class="media-meta" data-media-meta>{item.year} • Action • 1h 54m</div>
+            <div class="media-meta" data-media-meta>{item.year}</div>
           {/if}
         </div>
       </a>

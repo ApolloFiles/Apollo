@@ -79,7 +79,6 @@
           <span>{year}</span>
         {/if}
         <span class="rating-badge">FSK -1</span>
-        <!-- <span>1h 54m</span> -->
         <span class="badge bg-secondary">40K Hyper HD</span>
       </div>
 
