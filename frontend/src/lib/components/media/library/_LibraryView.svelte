@@ -7,6 +7,7 @@
       title: string,
       libraryId: string,
       mediaId: string,
+      year: number | null,
       watchProgressPercentage?: number,
     }[],
 
@@ -14,6 +15,7 @@
       title: string,
       libraryId: string,
       mediaId: string,
+      year: number | null,
       watchProgressPercentage?: number,
     }[],
     mediaItemsOrder: 'recentlyAdded' | 'alphabetical',

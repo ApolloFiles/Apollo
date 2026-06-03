@@ -5,6 +5,7 @@
       title: string,
       libraryId: string,
       mediaId: string,
+      year: number | null,
       watchProgressPercentage?: number,
     }[],
     loadAllImagesLazy?: boolean,
@@ -45,7 +46,9 @@
 
         <div class="media-overlay">
           <div class="media-title">{item.title}</div>
-          <div class="media-meta">2024 • Action • 1h 54m</div>
+          {#if item.year != null}
+            <div class="media-meta">{item.year} • Action • 1h 54m</div>
+          {/if}
         </div>
       </a>
     {/each}

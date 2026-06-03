@@ -30,11 +30,18 @@ export default class MediaMetadataHydrator {
       return;
     }
 
+    let firstAirYear: number | undefined = undefined;
+    const firstAirDate = mediaMetadata.type === 'movie' ? mediaMetadata.details.release_date : mediaMetadata.details.first_air_date;
+    if (firstAirDate != null && /^\d{4}-\d{2}-\d{2}$/.test(firstAirDate)) {
+      firstAirYear = parseInt(firstAirDate.substring(0, 4));
+    }
+
     await this.databaseClient.mediaLibraryMedia.update({
       where: { id: media.id },
       data: {
         title: mediaMetadata.type === 'movie' ? mediaMetadata.details.title : mediaMetadata.details.name,
         synopsis: mediaMetadata.details.overview.trim() || undefined,
+        year: firstAirYear,
         externalApiFetchedAt: await this.databaseClient.fetchNow(),
       },
     });

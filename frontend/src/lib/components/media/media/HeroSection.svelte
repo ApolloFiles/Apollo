@@ -2,10 +2,11 @@
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { onMount } from 'svelte';
 
-  let { mediaId, title, synopsis, hasClearLogo, nextMediaItem }: {
+  let { mediaId, title, synopsis, year, hasClearLogo, nextMediaItem }: {
     mediaId: string,
     title: string,
     synopsis: string | null,
+    year: number | null,
     hasClearLogo: boolean,
     nextMediaItem: {
                      id: string,
@@ -74,7 +75,9 @@
 
       <!-- FIXME: Fill with real data -->
       <div class="hero-meta">
-        <span>YYYY</span>
+        {#if year != null}
+          <span>{year}</span>
+        {/if}
         <span class="rating-badge">FSK -1</span>
         <!-- <span>1h 54m</span> -->
         <span class="badge bg-secondary">40K Hyper HD</span>

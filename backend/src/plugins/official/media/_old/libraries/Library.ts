@@ -74,6 +74,7 @@ export default class Library {
         libraryId: true,
         title: true,
         synopsis: true,
+        year: true,
         items: {
           select: {
             id: true,

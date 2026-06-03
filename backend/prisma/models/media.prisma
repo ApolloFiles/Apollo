@@ -41,6 +41,7 @@ model MediaLibraryMedia {
   libraryId            BigInt    @map("library_id")
   title                String
   synopsis             String?
+  year                 Int?
   directoryUri         String    @map("directory_uri")
   addedAt              DateTime  @default(now()) @map("added_at") @db.Timestamptz()
   externalApiFetchedAt DateTime? @map("external_api_fetched_at") @db.Timestamptz()

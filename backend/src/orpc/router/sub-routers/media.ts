@@ -60,6 +60,7 @@ export default class MediaORpcRouterFactory {
             title: string,
             libraryId: string,
             mediaId: string,
+            year: number | null,
           }
 
           type ContinueWatchingElement = MediaElement & {
@@ -91,6 +92,7 @@ export default class MediaORpcRouterFactory {
             title: i.title,
             libraryId: i.libraryId.toString(),
             mediaId: i.id.toString(),
+            year: i.year,
           }));
 
           return {
@@ -111,6 +113,7 @@ export default class MediaORpcRouterFactory {
                 mediaItemId: i.item.id.toString(),
                 seasonNumber: i.item.seasonNumber ?? undefined,
                 episodeNumber: i.item.episodeNumber ?? undefined,
+                year: i.media.year,
               }))) satisfies ContinueWatchingElement[],
 
               result: {
@@ -190,6 +193,7 @@ export default class MediaORpcRouterFactory {
             type: 'movie' | 'tv_show',
             title: string,
             synopsis: string | null,
+            year: number | null,
             hasClearLogo: boolean,
             genres: string[],
             nextMediaItemToWatch: MediaItemData | null,
@@ -232,6 +236,7 @@ export default class MediaORpcRouterFactory {
                 type: (seasonsMap.size > 1 || !seasonsMap.has(0)) ? 'tv_show' : 'movie',
                 title: libraryMedia.media.title,
                 synopsis: libraryMedia.media.synopsis,
+                year: libraryMedia.media.year,
                 hasClearLogo: await mediaHasClearLogoPromise,
                 genres: [],
                 nextMediaItemToWatch,

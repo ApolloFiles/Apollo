@@ -9,13 +9,14 @@ export default class FullLibraryMedia extends ReadContentsLibraryMedia {
     id: bigint,
     title: string,
     synopsis: string | null,
+    year: number | null,
     addedAt: Date,
     libraryId: bigint,
     libraryOwnerId: string,
     public readonly directoryUri: ApolloFileURI,
     public readonly externalApiFetchedAt: Date | null,
   ) {
-    super(id, title, synopsis, addedAt, libraryId, libraryOwnerId);
+    super(id, title, synopsis, year, addedAt, libraryId, libraryOwnerId);
   }
 
   /**
@@ -25,6 +26,7 @@ export default class FullLibraryMedia extends ReadContentsLibraryMedia {
     id: bigint,
     title: string,
     synopsis: string | null,
+    year: number | null,
     addedAt: Date,
     library: { id: bigint, ownerId: string },
     directoryUri: string,
@@ -34,6 +36,7 @@ export default class FullLibraryMedia extends ReadContentsLibraryMedia {
       data.id,
       data.title,
       data.synopsis,
+      data.year,
       data.addedAt,
 
       data.library.id,

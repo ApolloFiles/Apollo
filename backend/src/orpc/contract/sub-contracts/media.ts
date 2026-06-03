@@ -50,6 +50,7 @@ const getMediaLibraryOverview = baseOc
         mediaItemId: z.string(),
         seasonNumber: z.number().optional(),
         episodeNumber: z.number().optional(),
+        year: z.number().nullable(),
       })),
       result: z.strictObject({
         order: z.enum(['recentlyAdded', 'alphabetical']),
@@ -57,6 +58,7 @@ const getMediaLibraryOverview = baseOc
           title: z.string(),
           libraryId: z.string(),
           mediaId: z.string(),
+          year: z.number().nullable(),
         })),
       }),
     }),
@@ -73,6 +75,7 @@ const getMedia = baseOc
         type: z.enum(['movie', 'tv_show']),
         title: z.string(),
         synopsis: z.string().nullable(),
+        year: z.number().nullable(),
         hasClearLogo: z.boolean(),
         genres: z.array(z.string()),
         nextMediaItemToWatch: z.strictObject({

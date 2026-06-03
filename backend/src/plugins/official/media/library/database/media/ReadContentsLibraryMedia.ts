@@ -6,6 +6,7 @@ export default class ReadContentsLibraryMedia {
     public readonly id: bigint,
     public readonly title: string,
     public readonly synopsis: string | null,
+    public readonly year: number | null,
     public readonly addedAt: Date,
     public readonly libraryId: bigint,
     public readonly libraryOwnerId: string,
@@ -19,6 +20,7 @@ export default class ReadContentsLibraryMedia {
     id: bigint,
     title: string,
     synopsis: string | null,
+    year: number | null,
     addedAt: Date,
     library: { id: bigint, ownerId: string },
   }): ReadContentsLibraryMedia {
@@ -26,6 +28,7 @@ export default class ReadContentsLibraryMedia {
       data.id,
       data.title,
       data.synopsis,
+      data.year,
       data.addedAt,
 
       data.library.id,

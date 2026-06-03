@@ -21,6 +21,7 @@ export default class ReadContentsAwareLibrary {
         id: true,
         title: true,
         synopsis: true,
+        year: true,
         addedAt: true,
 
         library: {
@@ -47,6 +48,7 @@ export default class ReadContentsAwareLibrary {
         id: true,
         title: true,
         synopsis: true,
+        year: true,
         addedAt: true,
 
         library: {

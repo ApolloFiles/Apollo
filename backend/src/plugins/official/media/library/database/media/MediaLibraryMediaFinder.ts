@@ -17,6 +17,7 @@ export default class MediaLibraryMediaFinder {
         id: true,
         title: true,
         synopsis: true,
+        year: true,
         addedAt: true,
 
         library: {
@@ -41,6 +42,7 @@ export default class MediaLibraryMediaFinder {
         id: true,
         title: true,
         synopsis: true,
+        year: true,
         addedAt: true,
 
         externalApiFetchedAt: true,
@@ -68,6 +70,7 @@ export default class MediaLibraryMediaFinder {
         id: true,
         title: true,
         synopsis: true,
+        year: true,
         addedAt: true,
 
         externalApiFetchedAt: true,

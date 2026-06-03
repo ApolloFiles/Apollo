@@ -30,6 +30,7 @@
   mediaId={data.page.media.id}
   title={data.page.media.title}
   synopsis={data.page.media.synopsis}
+  year={data.page.media.year}
   hasClearLogo={data.page.media.hasClearLogo}
   nextMediaItem={data.page.media.nextMediaItemToWatch}
 />
