@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto, refreshAll } from '$app/navigation';
-  import ApolloFilePicker from '$lib/components/apollo-file-picker/ApolloFilePicker.svelte';
+  import ApolloFilePicker from '$lib/components/apollo-file-picker/_new/ApolloFilePicker.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import { ORPCError } from '@orpc/client';
