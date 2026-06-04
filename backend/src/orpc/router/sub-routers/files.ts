@@ -96,10 +96,13 @@ export default class FilesORpcRouterFactory {
   private async constructOpenDirectoryResponse(directory: VirtualFile): Promise<ORpcContractOutputs['files']['filePicker']['openDirectory']> {
     const currentDirectoryFiles = [];
     for (const file of (await directory.getFiles())) {
+      const stats = await file.stat();
       currentDirectoryFiles.push({
         name: file.getFileName(),
         uri: file.toURI().toString(),
-        isDirectory: await file.isDirectory(),
+        isDirectory: stats.isDirectory(),
+        lastModified: stats.mtimeMs,
+        sizeBytes: stats.size,
       });
     }
 

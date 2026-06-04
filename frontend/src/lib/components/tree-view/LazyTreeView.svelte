@@ -43,6 +43,8 @@
   // svelte-ignore state_referenced_locally
   let nodes = $state(roots);
 
+  let treeRef: { expandAll: () => void, collapseAll: () => void } | undefined = $state();
+
   const loadingIds = new SvelteSet<string>();
   const errorIds = new SvelteSet<string>();
 
@@ -91,9 +93,51 @@
     node.children = undefined;
     void load(node);
   }
+
+  /** Collapse every node. */
+  export function collapseAll(): void {
+    treeRef?.collapseAll();
+  }
+
+  /**
+   * Reveal a node by walking `pathIds` from the roots, lazily loading and expanding each
+   * ancestor along the way (reusing the children cache), then selecting the final node.
+   *
+   * With `reloadLast`, the final directory is force-refetched (its cached children are
+   * discarded first) — ancestors still come from cache. Stops gracefully if a segment
+   * can't be found among the loaded children.
+   */
+  export async function expandToPath(pathIds: string[], opts?: { reloadLast?: boolean }): Promise<void> {
+    let level: TreeNode<T>[] = nodes;
+
+    for (let i = 0; i < pathIds.length; i++) {
+      const id = pathIds[i];
+      const node = level.find((candidate) => candidate.id === id);
+      if (node == null) {
+        return; // segment not found among loaded children — stop gracefully
+      }
+
+      const isLast = i === pathIds.length - 1;
+      if (isLast && opts?.reloadLast) {
+        node.children = undefined;
+      }
+
+      if (node.children === undefined) {
+        await load(node);
+      }
+
+      expandedIds.add(node.id);
+      level = node.children ?? [];
+    }
+
+    if (pathIds.length > 0) {
+      selectedId = pathIds[pathIds.length - 1];
+    }
+  }
 </script>
 
 <TreeView
+  bind:this={treeRef}
   {nodes}
   {label}
   {selectionFollowsFocus}
@@ -114,7 +158,7 @@
     <button type="button" class="lazy-tree-retry" tabindex={-1} onclick={(event) => retry(event, ctx.node)}>
       <TablerIcon icon="refresh" /> retry
     </button>
-  {:else if ctx.expanded && ctx.node.children != null && ctx.node.children.length === 0}
+  {:else if emptyLabel && ctx.expanded && ctx.node.children != null && ctx.node.children.length === 0}
     <span class="lazy-tree-empty">{emptyLabel}</span>
   {/if}
 {/snippet}

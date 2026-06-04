@@ -2,6 +2,7 @@
   import type { HTMLAttributes } from 'svelte/elements';
   import IconArrowLeft from 'virtual:icons/tabler/arrow-left';
   import IconArrowRight from 'virtual:icons/tabler/arrow-right';
+  import IconArrowsDiagonalMinimize from 'virtual:icons/tabler/arrows-diagonal-minimize';
   import IconBan from 'virtual:icons/tabler/ban';
   import IconBug from 'virtual:icons/tabler/bug';
   import IconCheck from 'virtual:icons/tabler/check';
@@ -9,6 +10,7 @@
   import IconChevronRight from 'virtual:icons/tabler/chevron-right';
   import IconChevronUp from 'virtual:icons/tabler/chevron-up';
   import IconCircleCaretRight from 'virtual:icons/tabler/circle-caret-right';
+  import IconCurrentLocation from 'virtual:icons/tabler/current-location';
   import IconDeviceDesktop from 'virtual:icons/tabler/device-desktop';
   import IconDeviceFloppy from 'virtual:icons/tabler/device-floppy';
   import IconEdit from 'virtual:icons/tabler/edit';
@@ -34,7 +36,10 @@
   import IconShieldLock from 'virtual:icons/tabler/shield-lock';
   import IconSortAscending2 from 'virtual:icons/tabler/sort-ascending-2';
   import IconSortAscendingLetters from 'virtual:icons/tabler/sort-ascending-letters';
+  import IconSortAscendingNumbers from 'virtual:icons/tabler/sort-ascending-numbers';
   import IconSortDescending2 from 'virtual:icons/tabler/sort-descending-2';
+  import IconSortDescendingLetters from 'virtual:icons/tabler/sort-descending-letters';
+  import IconSortDescendingNumbers from 'virtual:icons/tabler/sort-descending-numbers';
   import IconStopwatch from 'virtual:icons/tabler/stopwatch';
   import IconSubtitles from 'virtual:icons/tabler/subtitles';
   import IconTrash from 'virtual:icons/tabler/trash';
@@ -47,6 +52,7 @@
   export type TablerIconId =
     | 'arrow-left'
     | 'arrow-right'
+    | 'arrows-diagonal-minimize'
     | 'ban'
     | 'bug'
     | 'check'
@@ -54,6 +60,7 @@
     | 'chevron-right'
     | 'chevron-up'
     | 'circle-caret-right'
+    | 'current-location'
     | 'device-desktop'
     | 'device-floppy'
     | 'edit'
@@ -79,7 +86,10 @@
     | 'shield-lock'
     | 'sort-ascending-2'
     | 'sort-ascending-letters'
+    | 'sort-ascending-numbers'
     | 'sort-descending-2'
+    | 'sort-descending-letters'
+    | 'sort-descending-numbers'
     | 'stopwatch'
     | 'subtitles'
     | 'trash'
@@ -102,6 +112,8 @@
         return IconArrowLeft;
       case 'arrow-right':
         return IconArrowRight;
+      case 'arrows-diagonal-minimize':
+        return IconArrowsDiagonalMinimize;
       case 'ban':
         return IconBan;
       case 'bug':
@@ -116,6 +128,8 @@
         return IconChevronUp;
       case 'circle-caret-right':
         return IconCircleCaretRight;
+      case 'current-location':
+        return IconCurrentLocation;
       case 'device-desktop':
         return IconDeviceDesktop;
       case 'device-floppy':
@@ -166,8 +180,14 @@
         return IconSortAscending2;
       case 'sort-ascending-letters':
         return IconSortAscendingLetters;
+      case 'sort-ascending-numbers':
+        return IconSortAscendingNumbers;
       case 'sort-descending-2':
         return IconSortDescending2;
+      case 'sort-descending-letters':
+        return IconSortDescendingLetters;
+      case 'sort-descending-numbers':
+        return IconSortDescendingNumbers;
       case 'stopwatch':
         return IconStopwatch;
       case 'subtitles':

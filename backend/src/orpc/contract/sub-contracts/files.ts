@@ -46,6 +46,8 @@ const filePickerStart = baseOc
         name: z.string(),
         uri: z.string(),
         isDirectory: z.boolean(),
+        lastModified: z.number(),
+        sizeBytes: z.number(),
       })),
     }),
   }));
@@ -81,6 +83,8 @@ const filePickerOpenDirectory = baseOc
         name: z.string(),
         uri: z.string(),
         isDirectory: z.boolean(),
+        lastModified: z.number(),
+        sizeBytes: z.number(),
       })),
     }),
   }));
