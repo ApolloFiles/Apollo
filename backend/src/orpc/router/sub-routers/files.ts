@@ -65,11 +65,32 @@ export default class FilesORpcRouterFactory {
         start: os.filePicker.start.handler(async ({ input, context, errors }) => {
           const allFileSystems = await this.fileSystemProvider.provideForUser(context.authSession.user);
 
-          const directory = allFileSystems.user[0].getFile('/');
+          // Default: the root of the user's primary filesystem. If a `startUri` is given, open that
+          // directory (or, for a file, its parent directory and pre-select the file). Fall back to the
+          // default on any resolution error (invalid uri / permission denied / not found).
+          let directory: VirtualFile = allFileSystems.user[0].getFile('/');
+          let selectedUri: string | null = null;
+
+          if (input?.startUri != null && input.startUri.length > 0) {
+            try {
+              const requested = await this.fileProvider.provideForRead(ApolloFileURI.parse(input.startUri), context.authSession.user);
+              if (await requested.isDirectory()) {
+                directory = requested;
+              } else if (await requested.exists()) {
+                directory = requested.fileSystem.getFile(Path.dirname(requested.path));
+                selectedUri = requested.toURI().toString();
+              }
+            } catch {
+              // keep the default directory
+            }
+          }
+
           const openDirectoryResult = await this.constructOpenDirectoryResponse(directory);
 
           return {
             ...openDirectoryResult,
+
+            selectedUri,
 
             allFileSystems: allFileSystems.user.map(fs => ({
               displayName: fs.id,

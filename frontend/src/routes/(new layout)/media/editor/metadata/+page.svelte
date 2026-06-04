@@ -417,6 +417,7 @@
 
 <ApolloFilePicker
   bind:this={apolloFilePickerRef}
+  startUri={data.requestedOpenUri}
   onResolve={(file) => openApolloFileUri(file.uri)}
 />
 

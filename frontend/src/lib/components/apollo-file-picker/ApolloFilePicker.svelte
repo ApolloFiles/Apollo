@@ -13,9 +13,11 @@
 
   type ResolvedEntry = { name: string, uri: string, isDirectory: boolean };
 
-  let { mode = 'any', dataSource, onResolve }: {
+  let { mode = 'any', startUri = null, dataSource, onResolve }: {
     /** Which kind of entry may be confirmed: `'file'`, `'directory'`, or either (`'any'`). */
     mode?: PickerMode,
+    /** Where to anchor on open: a directory, or a file (opens its parent and pre-selects it). */
+    startUri?: string | null,
     /** Override the data source (defaults to the oRPC backend). Used by the demo/tests. */
     dataSource?: FilePickerDataSource,
     onResolve: (entry: ResolvedEntry) => void,
@@ -41,11 +43,11 @@
 
   export function show(): void {
     hide();
-    controller.highlight(null); // start each session targeting the current folder, not a stale pick
     dialogRef.showModal();
     // showModal() inerts background interaction but not scrolling — lock the page scroll too.
     document.documentElement.style.overflow = 'hidden';
-    initPromise ??= controller.init();
+    // Re-anchor on every open: the host may pass an updated startUri (e.g. after navigating files).
+    initPromise = controller.open(startUri ?? undefined);
     void focusFileListWhenReady();
   }
 

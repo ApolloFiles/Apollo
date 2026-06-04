@@ -63,7 +63,8 @@ function writeStoredSort(key: SortKey, dir: SortDir): void {
  * (see {@link createORpcDataSource}) or an in-memory mock (demo / tests) without auth.
  */
 export interface FilePickerDataSource {
-  start(): Promise<StartResult>;
+  /** Open the picker, optionally anchored at `startUri` (a directory, or a file whose parent opens). */
+  start(startUri?: string): Promise<StartResult>;
 
   openDirectory(uri: string): Promise<DirResult>;
 }
@@ -71,7 +72,7 @@ export interface FilePickerDataSource {
 /** The default data source: the oRPC `files.filePicker` procedures. */
 export function createORpcDataSource(): FilePickerDataSource {
   return {
-    start: () => getClientSideRpcClient().files.filePicker.start(),
+    start: (startUri) => getClientSideRpcClient().files.filePicker.start(startUri != null ? { startUri } : undefined),
     openDirectory: (uri) => getClientSideRpcClient().files.filePicker.openDirectory({ uri }),
   };
 }
@@ -211,10 +212,15 @@ export default class ApolloFilePickerState {
 
   /* ---- actions ---- */
 
-  async init(): Promise<void> {
-    const data = await this.dataSource.start();
+  /**
+   * (Re)open the picker. With `startUri`, the backend anchors at that directory (or, for a file, its
+   * parent directory) and may return a `selectedUri` to pre-select; otherwise it opens the default root.
+   */
+  async open(startUri?: string): Promise<void> {
+    const data = await this.dataSource.start(startUri);
     this._allFileSystems = data.allFileSystems;
     this.applyDirResult(data);
+    this._highlightedUri = data.selectedUri ?? null;
   }
 
   selectFileSystem(fileSystemUri: string): Promise<void> {

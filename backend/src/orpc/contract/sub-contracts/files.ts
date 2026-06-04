@@ -12,8 +12,11 @@ const getFileListForVirtualFileSystem = baseOc
   }));
 
 const filePickerStart = baseOc
-  .input(z.undefined())
+  .input(z.object({ startUri: z.string().optional() }).optional())
   .output(z.strictObject({
+    /** The file to pre-select on open (set when `startUri` pointed at a file), or `null`. */
+    selectedUri: z.string().nullable(),
+
     allFileSystems: z.array(z.strictObject({
       displayName: z.string(),
       uri: z.string(),
