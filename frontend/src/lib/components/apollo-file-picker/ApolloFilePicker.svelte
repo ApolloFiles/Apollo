@@ -10,6 +10,7 @@
   import FileList from './FileList.svelte';
   import FileListToolbar from './FileListToolbar.svelte';
   import FileSystemSelect from './FileSystemSelect.svelte';
+  import { m } from '$lib/paraglide/messages.js';
 
   type ResolvedEntry = { name: string, uri: string, isDirectory: boolean };
 
@@ -34,11 +35,11 @@
   let initPromise: Promise<void> | null = $state(null);
 
   const confirmLabel = $derived(
-    mode === 'file' ? 'Select file' : mode === 'directory' ? 'Select directory' : 'Select',
+    mode === 'file' ? m.component_apollo_file_picker_select_file() : mode === 'directory' ? m.component_apollo_file_picker_select_directory() : m.component_apollo_file_picker_select_any(),
   );
 
   const dialogLabel = $derived(
-    mode === 'file' ? 'Choose a file' : mode === 'directory' ? 'Choose a folder' : 'Choose a file or folder',
+    mode === 'file' ? m.component_apollo_file_picker_dialog_label_file() : mode === 'directory' ? m.component_apollo_file_picker_dialog_label_directory() : m.component_apollo_file_picker_dialog_label_any(),
   );
 
   export function show(): void {
@@ -91,7 +92,7 @@
 
 <dialog class="file-picker" bind:this={dialogRef} aria-label={dialogLabel} closedby="closerequest" onclose={onDialogClose}>
   {#await initPromise}
-    <div class="picker-loading"><TablerIcon icon="loader-2" spin /> Loading…</div>
+    <div class="picker-loading"><TablerIcon icon="loader-2" spin /> {m.common_text_loading()}</div>
   {:then _}
     <div class="picker-body">
       <aside class="sidebar">
@@ -132,10 +133,10 @@
       <button type="button" class="btn-primary" disabled={!controller.canConfirm || controller.isLoadingDir} onclick={onConfirm}>
         {confirmLabel}
       </button>
-      <button type="button" class="btn-secondary" onclick={() => hide()}>Cancel</button>
+      <button type="button" class="btn-secondary" onclick={() => hide()}>{m.common_btn_label_cancel()}</button>
     </footer>
   {:catch error}
-    <p class="picker-error"><strong>Failed to load:</strong> {error.message}</p>
+    <p class="picker-error"><strong>{m.component_apollo_file_picker_error_loading()}:</strong> {error.message}</p>
   {/await}
 </dialog>
 

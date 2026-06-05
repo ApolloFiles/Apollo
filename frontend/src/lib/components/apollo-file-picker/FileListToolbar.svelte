@@ -2,6 +2,7 @@
   import Breadcrumbs from '$lib/components/breadcrumbs/Breadcrumbs.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import SortControl from './SortControl.svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import type { Breadcrumb, SortDir, SortKey } from './ApolloFilePickerState.svelte.js';
 
   let { breadcrumbs, rootUri, loading = false, onNavigate, onRefresh, sortKey, sortDir, onSort }: {
@@ -20,7 +21,13 @@
 <div class="list-toolbar">
   <div class="actions">
     <SortControl {sortKey} {sortDir} onChange={onSort} />
-    <button type="button" class="icon-btn" title="Refresh" aria-label="Refresh" onclick={onRefresh}>
+    <button
+      type="button"
+      class="icon-btn"
+      title={m.component_apollo_file_picker_toolbar_refresh()}
+      aria-label={m.component_apollo_file_picker_toolbar_refresh()}
+      onclick={onRefresh}
+    >
       <TablerIcon icon="refresh" spin={loading} />
     </button>
   </div>
@@ -30,7 +37,7 @@
       segments={breadcrumbs.map((crumb) => ({ name: crumb.name, uri: crumb.uri }))}
       {rootUri}
       {onNavigate}
-      label="Current path"
+      label={m.component_apollo_file_picker_breadcrumbs_label()}
     />
   </div>
 </div>

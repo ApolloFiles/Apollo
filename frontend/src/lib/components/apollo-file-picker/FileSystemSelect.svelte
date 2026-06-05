@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages.js';
   import type { FileSystemInfo } from './ApolloFilePickerState.svelte.js';
 
   let { fileSystems, currentUri, onChange }: {
@@ -9,7 +10,7 @@
 </script>
 
 <label class="fs-select">
-  <span class="fs-select-label">File system</span>
+  <span class="fs-select-label">{m.component_apollo_file_picker_filesystem_label()}</span>
   <select value={currentUri ?? ''} onchange={(event) => onChange(event.currentTarget.value)}>
     {#each fileSystems as fileSystem (fileSystem.uri)}
       <option value={fileSystem.uri}>{fileSystem.displayName}</option>

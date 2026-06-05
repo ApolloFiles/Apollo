@@ -1,4 +1,26 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "hello_world": "Hello, {name} from EN!"
+  "hello_world": "Hello, {name} from EN!",
+  "common_btn_label_cancel": "Cancel",
+  "common_text_loading": "Loading…",
+  "component_apollo_file_picker_breadcrumbs_label": "Current path",
+  "component_apollo_file_picker_dialog_label_any": "Choose a file or directory",
+  "component_apollo_file_picker_dialog_label_directory": "Choose a directory",
+  "component_apollo_file_picker_dialog_label_file": "Choose a file",
+  "component_apollo_file_picker_error_loading": "Failed to load",
+  "component_apollo_file_picker_filesystem_label": "File system",
+  "component_apollo_file_picker_list_empty": "This folder is empty",
+  "component_apollo_file_picker_list_label": "Files and folders",
+  "component_apollo_file_picker_select_any": "Select",
+  "component_apollo_file_picker_select_directory": "Select directory",
+  "component_apollo_file_picker_select_file": "Select file",
+  "component_apollo_file_picker_sort_by_modified": "Sort by modified",
+  "component_apollo_file_picker_sort_by_name": "Sort by name",
+  "component_apollo_file_picker_sort_label": "Sort entries",
+  "component_apollo_file_picker_sort_modified": "Modified",
+  "component_apollo_file_picker_sort_name": "Name",
+  "component_apollo_file_picker_toolbar_refresh": "Refresh",
+  "component_apollo_file_picker_tree_collapse_all": "Collapse all",
+  "component_apollo_file_picker_tree_label": "Directories",
+  "component_apollo_file_picker_tree_locate": "Locate current folder in tree"
 }

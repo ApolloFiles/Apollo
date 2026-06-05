@@ -1,6 +1,7 @@
 <script lang="ts">
   import LazyTreeView from '$lib/components/tree-view/LazyTreeView.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import type { TreeItemContext, TreeNode } from '$lib/components/tree-view/TreeView.types.js';
   import type ApolloFilePickerState from './ApolloFilePickerState.svelte.js';
   import type { DirRef } from './ApolloFilePickerState.svelte.js';
@@ -39,14 +40,20 @@
 
 <div class="tree-pane">
   <div class="tree-toolbar">
-    <button type="button" class="icon-btn" title="Collapse all" aria-label="Collapse all" onclick={collapseAll}>
+    <button
+      type="button"
+      class="icon-btn"
+      title={m.component_apollo_file_picker_tree_collapse_all()}
+      aria-label={m.component_apollo_file_picker_tree_collapse_all()}
+      onclick={collapseAll}
+    >
       <TablerIcon icon="arrows-diagonal-minimize" />
     </button>
     <button
       type="button"
       class="icon-btn"
-      title="Locate current folder in tree"
-      aria-label="Locate current folder in tree"
+      title={m.component_apollo_file_picker_tree_locate()}
+      aria-label={m.component_apollo_file_picker_tree_locate()}
       onclick={locate}
     >
       <TablerIcon icon="current-location" />
@@ -58,7 +65,7 @@
       {#if roots.length > 0}
         <LazyTreeView
           {roots}
-          label="Directories"
+          label={m.component_apollo_file_picker_tree_label()}
           {loadChildren}
           bind:this={treeRef}
           bind:selectedId={treeSelectedId}

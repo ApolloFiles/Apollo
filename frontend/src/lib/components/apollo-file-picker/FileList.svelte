@@ -1,6 +1,7 @@
 <script lang="ts">
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { typeahead } from '$lib/attachments/typeahead.svelte.js';
+  import { m } from '$lib/paraglide/messages.js';
   import type { FsEntry } from './ApolloFilePickerState.svelte.js';
 
   let { entries, highlightedUri, loading = false, onHighlight, onOpen, onNavigateUp }: {
@@ -108,7 +109,7 @@
     class="file-list"
     class:dimmed={loading && entries.length > 0}
     role="listbox"
-    aria-label="Files and folders"
+    aria-label={m.component_apollo_file_picker_list_label()}
     aria-activedescendant={activeDescendant}
     tabindex="0"
     onkeydown={onKeyDown}
@@ -133,13 +134,13 @@
       </li>
     {:else}
       {#if !loading}
-        <li class="empty" role="presentation">This folder is empty</li>
+        <li class="empty" role="presentation">{m.component_apollo_file_picker_list_empty()}</li>
       {/if}
     {/each}
   </ul>
 
   {#if loading && entries.length === 0}
-    <div class="file-loading"><TablerIcon icon="loader-2" spin /> Loading…</div>
+    <div class="file-loading"><TablerIcon icon="loader-2" spin /> {m.common_text_loading()}</div>
   {/if}
 </div>
 
