@@ -1,5 +1,6 @@
 <script lang="ts">
   import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { typeahead } from '$lib/attachments/typeahead.svelte.js';
   import type { FsEntry } from './ApolloFilePickerState.svelte.js';
 
   let { entries, highlightedUri, loading = false, onHighlight, onOpen, onNavigateUp }: {
@@ -80,6 +81,24 @@
   export function focus(): void {
     listEl?.focus();
   }
+
+  // JetBrains-style typeahead find. Created once (stable identity) so changing entries doesn't
+  // tear the attachment down; closures read the current props/entries reactively.
+  const typeaheadAttach = typeahead({
+    isEnabled: () => entries.length > 0,
+    onMatchChange: (el) => {
+      const uri = el?.dataset.uri;
+      if (uri != null) {
+        onHighlight(uri);
+      }
+    },
+    onActivate: (el) => {
+      const entry = entries.find((candidate) => candidate.uri === el.dataset.uri);
+      if (entry != null) {
+        onOpen(entry);
+      }
+    },
+  });
 </script>
 
 <div class="file-list-wrap">
@@ -93,6 +112,7 @@
     aria-activedescendant={activeDescendant}
     tabindex="0"
     onkeydown={onKeyDown}
+    {@attach typeaheadAttach}
   >
     {#each entries as entry, index (entry.uri)}
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
@@ -103,12 +123,13 @@
         class="file-row"
         class:selected={entry.uri === highlightedUri}
         class:is-directory={entry.isDirectory}
+        data-typeahead-item
         data-uri={entry.uri}
         onclick={() => onRowClick(entry)}
         ondblclick={() => onOpen(entry)}
       >
         <TablerIcon icon={entry.isDirectory ? 'folder-filled' : 'file'} />
-        <span class="file-name">{entry.name}</span>
+        <span class="file-name" data-typeahead-text>{entry.name}</span>
       </li>
     {:else}
       {#if !loading}

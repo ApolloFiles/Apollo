@@ -3,6 +3,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import TreeItem from './TreeItem.svelte';
   import { setTreeViewState, TreeViewState } from './TreeViewState.svelte.js';
+  import { typeahead } from '$lib/attachments/typeahead.svelte.js';
   import type { TreeItemContext, TreeNode } from './TreeView.types.js';
 
   let {
@@ -12,6 +13,7 @@
     expandedIds = $bindable(new SvelteSet<string>()),
     selectionFollowsFocus = true,
     enableExpandSiblingsShortcut = false,
+    enableTypeahead = true,
     item,
     onActivate,
     onSelect,
@@ -30,6 +32,8 @@
     selectionFollowsFocus?: boolean,
     /** Enable the `*` (asterisk) keyboard shortcut, which expands all sibling nodes at the focused level. */
     enableExpandSiblingsShortcut?: boolean,
+    /** Enable JetBrains-style typeahead find. Only matches currently-rendered (expanded) nodes. */
+    enableTypeahead?: boolean,
     /** Renders a node's row content (e.g. an icon + the label). */
     item: Snippet<[TreeItemContext<T>]>,
     onActivate?: (node: TreeNode<T>) => void,
@@ -57,6 +61,24 @@
   export function collapseAll(): void {
     state.collapseAll();
   }
+
+  // JetBrains-style typeahead find. Matches currently-rendered tree items only (the lazy tree does
+  // not auto-expand collapsed children). Created once so it isn't torn down as nodes change.
+  const typeaheadAttach = typeahead({
+    isEnabled: () => enableTypeahead,
+    onMatchChange: (el) => {
+      const id = el?.dataset.nodeId;
+      if (id != null) {
+        void state.focusNode(id);
+      }
+    },
+    onActivate: (el) => {
+      const id = el.dataset.nodeId;
+      if (id != null) {
+        state.activate(id);
+      }
+    },
+  });
 
   function onKeyDown(event: KeyboardEvent): void {
     const id = state.focusedId ?? state.tabbableId;
@@ -113,6 +135,7 @@
   aria-label={label}
   class="tree-view"
   onkeydown={onKeyDown}
+  {@attach typeaheadAttach}
 >
   {#each nodes as node (node.id)}
     <TreeItem {node} depth={0} {item} />

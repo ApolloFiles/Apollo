@@ -73,6 +73,7 @@
   class:focused
   class:disabled={node.disabled}
   style:--depth={depth}
+  data-typeahead-item
   data-node-id={node.id}
   onfocus={() => tree.onItemFocused(node.id)}
 >
@@ -87,7 +88,7 @@
       <span class="twistie-spacer" aria-hidden="true"></span>
     {/if}
 
-    <span class="tree-label">
+    <span class="tree-label" data-typeahead-text>
       {@render item({ node, expanded, selected, focused, depth })}
     </span>
   </div>
