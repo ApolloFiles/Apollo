@@ -122,6 +122,7 @@
             loading={controller.isLoadingDir}
             onHighlight={(uri) => controller.highlight(uri)}
             onOpen={onListOpen}
+            onNavigateUp={() => void controller.navigateToParent()}
           />
         </div>
       </section>

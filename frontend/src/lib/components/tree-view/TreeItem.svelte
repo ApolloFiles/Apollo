@@ -73,6 +73,7 @@
   class:focused
   class:disabled={node.disabled}
   style:--depth={depth}
+  data-node-id={node.id}
   onfocus={() => tree.onItemFocused(node.id)}
 >
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->

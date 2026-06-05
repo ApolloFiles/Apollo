@@ -264,6 +264,36 @@ export default class ApolloFilePickerState {
     }
   }
 
+  /**
+   * The parent directory of the current one, or `null` when already at the filesystem root.
+   * Breadcrumbs run root-most → current with the current directory as the last entry and the
+   * filesystem root excluded, so the parent is the second-to-last crumb, or the root itself when
+   * the current directory is a direct child of root.
+   */
+  get parentUri(): string | null {
+    const breadcrumbs = this._currentDirectory?.breadcrumbs ?? [];
+    if (breadcrumbs.length >= 2) {
+      return breadcrumbs[breadcrumbs.length - 2].uri;
+    }
+    if (breadcrumbs.length === 1) {
+      return this._currentFileSystem?.uri ?? null;
+    }
+    return null;
+  }
+
+  /** Navigate to the parent directory (no-op at root), highlighting the folder we came from. */
+  async navigateToParent(): Promise<void> {
+    const parent = this.parentUri;
+    if (parent == null) {
+      return;
+    }
+    const childUri = this._currentDirectory?.uri ?? null;
+    await this.navigateTo(parent);
+    if (childUri != null) {
+      this.highlight(childUri);
+    }
+  }
+
   /** Re-fetch the current directory (revalidates while keeping current contents visible). */
   async refresh(): Promise<void> {
     const current = this._currentDirectory;

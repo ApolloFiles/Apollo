@@ -2,13 +2,15 @@
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import type { FsEntry } from './ApolloFilePickerState.svelte.js';
 
-  let { entries, highlightedUri, loading = false, onHighlight, onOpen }: {
+  let { entries, highlightedUri, loading = false, onHighlight, onOpen, onNavigateUp }: {
     entries: ReadonlyArray<FsEntry>,
     highlightedUri: string | null,
     /** A background refresh is in flight: dim the list, or show a spinner if there's nothing cached. */
     loading?: boolean,
     onHighlight: (uri: string) => void,
     onOpen: (entry: FsEntry) => void,
+    /** Navigate up one level (Backspace). No-op at the filesystem root. */
+    onNavigateUp: () => void,
   } = $props();
 
   // Focus lives on the listbox itself (aria-activedescendant), never on a row — so reloading the
@@ -31,6 +33,14 @@
   }
 
   function onKeyDown(event: KeyboardEvent): void {
+    // Backspace goes up a level — handled before the empty-list guard so you can leave an empty
+    // folder. (While a typeahead search is active, the typeahead consumes Backspace to edit the
+    // query before this handler runs.)
+    if (event.key === 'Backspace') {
+      event.preventDefault();
+      onNavigateUp();
+      return;
+    }
     if (entries.length === 0) {
       return;
     }
@@ -93,6 +103,7 @@
         class="file-row"
         class:selected={entry.uri === highlightedUri}
         class:is-directory={entry.isDirectory}
+        data-uri={entry.uri}
         onclick={() => onRowClick(entry)}
         ondblclick={() => onOpen(entry)}
       >
