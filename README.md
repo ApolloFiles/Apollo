@@ -23,6 +23,21 @@ But I think that shifted a bit by now.
     * I might write a Plex/Jellyfin alternative, but some other tool for e.g. images might be good already, so maybe I can integrate it instead?
     * But also, maybe somebody else is very happy with their existing Plex/Jellyfin setup, so maybe I can integrate these into Apollo using a plugin (e.g. direct links for a file to Plex)
 
+## Licenses
+You can find the project's primary license in [LICENSE](./LICENSE).
+The translation files at [frontend/messages/](./frontend/messages)
+are licensed under the [MIT license](./frontend/messages/LICENSE).
+
+### Personal note
+To be honest... I want this project to be Open Source, but at the same time it is one of my biggest and complexest
+projects I have ever worked on.
+So while I usually just choose the MIT license, because I like the spirit of Open Source, and it honestly
+usually fits my projects pretty well,
+I chose the GNU GPL v3 license for this project *for now*, which does e.g. allow commercial use but there are some extra
+conditions like 'Disclose source' and 'State changes'.
+
+I am open for suggestions regarding the project's licensing (in case somebody or something finds enough interest in this project).
+
 ## Special Thanks ✨
 Special thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
