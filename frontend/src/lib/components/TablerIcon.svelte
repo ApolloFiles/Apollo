@@ -1,8 +1,10 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
+  import IconAlertTriangle from 'virtual:icons/tabler/alert-triangle';
   import IconArrowLeft from 'virtual:icons/tabler/arrow-left';
   import IconArrowRight from 'virtual:icons/tabler/arrow-right';
   import IconArrowsDiagonalMinimize from 'virtual:icons/tabler/arrows-diagonal-minimize';
+  import IconArrowsSort from 'virtual:icons/tabler/arrows-sort';
   import IconBan from 'virtual:icons/tabler/ban';
   import IconBug from 'virtual:icons/tabler/bug';
   import IconCheck from 'virtual:icons/tabler/check';
@@ -16,6 +18,7 @@
   import IconEdit from 'virtual:icons/tabler/edit';
   import IconEraser from 'virtual:icons/tabler/eraser';
   import IconFile from 'virtual:icons/tabler/file';
+  import IconFlag from 'virtual:icons/tabler/flag';
   import IconFolderFilled from 'virtual:icons/tabler/folder-filled';
   import IconFolderOpen from 'virtual:icons/tabler/folder-open';
   import IconHeadphones from 'virtual:icons/tabler/headphones';
@@ -25,6 +28,8 @@
   import IconLoader2 from 'virtual:icons/tabler/loader-2';
   import IconLogout from 'virtual:icons/tabler/logout';
   import IconMenu2 from 'virtual:icons/tabler/menu-2';
+  import IconMinus from 'virtual:icons/tabler/minus';
+  import IconPencil from 'virtual:icons/tabler/pencil';
   import IconPlayerPlayFilled from 'virtual:icons/tabler/player-play-filled';
   import IconPlus from 'virtual:icons/tabler/plus';
   import IconRefresh from 'virtual:icons/tabler/refresh';
@@ -50,9 +55,11 @@
   import IconX from 'virtual:icons/tabler/x';
 
   export type TablerIconId =
+    | 'alert-triangle'
     | 'arrow-left'
     | 'arrow-right'
     | 'arrows-diagonal-minimize'
+    | 'arrows-sort'
     | 'ban'
     | 'bug'
     | 'check'
@@ -66,6 +73,7 @@
     | 'edit'
     | 'eraser'
     | 'file'
+    | 'flag'
     | 'folder-filled'
     | 'folder-open'
     | 'headphones'
@@ -75,6 +83,8 @@
     | 'loader-2'
     | 'logout'
     | 'menu-2'
+    | 'minus'
+    | 'pencil'
     | 'player-play-filled'
     | 'plus'
     | 'refresh'
@@ -108,12 +118,16 @@
 
   const IconComponent = $derived.by(() => {
     switch (props.icon) {
+      case 'alert-triangle':
+        return IconAlertTriangle;
       case 'arrow-left':
         return IconArrowLeft;
       case 'arrow-right':
         return IconArrowRight;
       case 'arrows-diagonal-minimize':
         return IconArrowsDiagonalMinimize;
+      case 'arrows-sort':
+        return IconArrowsSort;
       case 'ban':
         return IconBan;
       case 'bug':
@@ -140,6 +154,8 @@
         return IconEraser;
       case 'file':
         return IconFile;
+      case 'flag':
+        return IconFlag;
       case 'folder-filled':
         return IconFolderFilled;
       case 'folder-open':
@@ -158,6 +174,10 @@
         return IconLogout;
       case 'menu-2':
         return IconMenu2;
+      case 'minus':
+        return IconMinus;
+      case 'pencil':
+        return IconPencil;
       case 'player-play-filled':
         return IconPlayerPlayFilled;
       case 'plus':

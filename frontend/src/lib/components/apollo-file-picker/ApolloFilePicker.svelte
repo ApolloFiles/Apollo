@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { tick } from 'svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
+  import { tick } from 'svelte';
   import ApolloFilePickerState, {
     type FilePickerDataSource,
     type FsEntry,
@@ -10,7 +11,6 @@
   import FileList from './FileList.svelte';
   import FileListToolbar from './FileListToolbar.svelte';
   import FileSystemSelect from './FileSystemSelect.svelte';
-  import { m } from '$lib/paraglide/messages.js';
 
   type ResolvedEntry = { name: string, uri: string, isDirectory: boolean };
 
@@ -90,7 +90,13 @@
   }
 </script>
 
-<dialog class="file-picker" bind:this={dialogRef} aria-label={dialogLabel} closedby="closerequest" onclose={onDialogClose}>
+<dialog
+  bind:this={dialogRef}
+  class="file-picker"
+  aria-label={dialogLabel}
+  closedby="closerequest"
+  onclose={onDialogClose}
+>
   {#await initPromise}
     <div class="picker-loading"><TablerIcon icon="loader-2" spin /> {m.common_text_loading()}</div>
   {:then _}
@@ -194,10 +200,10 @@
   }
 
   .sidebar {
-    display:        flex;
-    flex-direction: column;
-    min-height:     0;
-    border-right:   1px solid var(--fp-border);
+    display:          flex;
+    flex-direction:   column;
+    min-height:       0;
+    border-right:     1px solid var(--fp-border);
     background-color: var(--fp-surface);
   }
 

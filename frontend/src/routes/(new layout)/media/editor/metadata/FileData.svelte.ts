@@ -135,6 +135,61 @@ export default class FileData {
     this._hasUnsavedChanges = true;
   }
 
+  setDisposition(streamIdentifier: StreamData['identifier'], dispositionKey: string, value: boolean): void {
+    const indexInArray = this._streams.findIndex(stream => stream.identifier === streamIdentifier);
+    if (indexInArray === -1) {
+      throw new Error(`Stream with identifier ${streamIdentifier} not found`);
+    }
+
+    const stream = this._streams[indexInArray];
+
+    if (!(dispositionKey in stream.disposition)) {
+      throw new Error(`Disposition key ${dispositionKey} not found`);
+    }
+
+    if (stream.disposition[dispositionKey] !== value) {
+      stream.disposition[dispositionKey] = value;
+      this._hasUnsavedChanges = true;
+    }
+  }
+
+  unsetAllDispositions(streamIdentifier: StreamData['identifier']): void {
+    const indexInArray = this._streams.findIndex(stream => stream.identifier === streamIdentifier);
+    if (indexInArray === -1) {
+      throw new Error(`Stream with identifier ${streamIdentifier} not found`);
+    }
+
+    const stream = this._streams[indexInArray];
+
+    for (const dispositionKey of Object.keys(stream.disposition)) {
+      if (stream.disposition[dispositionKey]) {
+        stream.disposition[dispositionKey] = false;
+        this._hasUnsavedChanges = true;
+      }
+    }
+  }
+
+  /**
+   * Re-assigns the {@link StreamData#order} of all streams to match the given sequence of identifiers.
+   * The given identifiers must be exactly the currently present (non-deleted) stream identifiers.
+   */
+  reorderStreams(orderedIdentifiers: StreamData['identifier'][]): void {
+    if (orderedIdentifiers.length !== this._streams.length) {
+      throw new Error(`Expected ${this._streams.length} stream identifiers, got ${orderedIdentifiers.length}`);
+    }
+
+    orderedIdentifiers.forEach((identifier, index) => {
+      const stream = this._streams.find(stream => stream.identifier === identifier);
+      if (stream == null) {
+        throw new Error(`Stream with identifier ${identifier} not found`);
+      }
+      stream.order = index;
+    });
+
+    this._hasUnsavedChanges = true;
+    this.sortStreamsByOrder();
+  }
+
   private sortStreamsByOrder(): void {
     this._streams.sort((a, b) => a.order - b.order);
   }

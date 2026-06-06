@@ -2,6 +2,7 @@
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "common_btn_label_cancel": "Abbrechen",
   "common_text_loading": "Lädt…",
+  "common_btn_label_apply": "Anwenden",
   "component_apollo_file_picker_breadcrumbs_label": "Aktueller Dateipfad",
   "component_apollo_file_picker_dialog_label_any": "Wähle eine Datei oder einen Ordner",
   "component_apollo_file_picker_dialog_label_directory": "Wähle einen Ordner",

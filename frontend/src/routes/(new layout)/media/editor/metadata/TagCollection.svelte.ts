@@ -78,6 +78,26 @@ export default class TagCollection {
     return found.length === 1 ? found[0] : null;
   }
 
+  /**
+   * Adds or updates a tag, matching existing keys case-insensitively.
+   *
+   * If no matching key exists, a new tag is pushed. If one or more matching keys exist, the first
+   * match's value is set and any further duplicate-key tags are removed (leaving exactly one).
+   */
+  writeTagCaseInsensitive(key: string, value: string): void {
+    const matches = this.findByKeyCaseInsensitive(key);
+
+    if (matches.length === 0) {
+      this.pushTag(key, value);
+      return;
+    }
+
+    this.setValueByUid(matches[0].uid, value);
+    for (const duplicate of matches.slice(1)) {
+      this.deleteByUid(duplicate.uid);
+    }
+  }
+
   pushTag(key: string, value: string): TagData['uid'] {
     const uid = TagCollection.globalUidCounter++;
 

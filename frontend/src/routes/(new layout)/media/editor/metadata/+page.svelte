@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto, refreshAll } from '$app/navigation';
   import ApolloFilePicker from '$lib/components/apollo-file-picker/ApolloFilePicker.svelte';
+  import BulkEditStreamTagsDialog from '$lib/components/media/editor/metadata/BulkEditStreamTagsDialog.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import { ORPCError } from '@orpc/client';
@@ -15,6 +16,7 @@
 
   let saveModalRef: ProgressModal;
   let apolloFilePickerRef: ApolloFilePicker;
+  let bulkEditStreamTagsDialogRef: BulkEditStreamTagsDialog;
   let saveModalBodyText = $state('');
   let saveReFetchingTimeoutId: number | undefined = undefined;
 
@@ -240,6 +242,10 @@
     }
   }
 
+  function openBulkEditStreamTagsDialog(): void {
+    bulkEditStreamTagsDialogRef.show();
+  }
+
   // misc
 
   async function sendSaveRequest(filesToSave: FileData[], onWriteDone: () => void): Promise<void> {
@@ -388,7 +394,6 @@
   });
 
   // "v2" TODOs:
-  // TODO: Editing stream tags in multi-file-select, when only one stream of that type exists across all selected files
   // TODO: Heavy refactoring and re-design: split UI into multiple components, use icons where appropriate, unify text sizes etc., check accessibility, ...
   // TODO: Add support for editing Chapters
   // TODO: Maybe show a still-frame or a couple second clip for every chapter, so it is easier to identify it (or at least a live_transcode link with a startOffset and without watch progress tracking)
@@ -407,7 +412,6 @@
   // TODO: Support fetching info from TheMovieDB/AniList/etc. for easier tagging of such media (maybe even use 'Apollo Media' metadata if available, e.g. to auto-detect IDs)
   // TODO: Having better UI for the disposition flags would be nice... Some flags are mutually exclusive and there are just so many...
   //       Maybe we can show some select view (incl. enabled= and offer some kind of select-search-box, for when you want to actively edit them and add one? Or move them somewhere to take less space or something?
-  // TODO: Can we provide a 'preview' of changes that would/will be written to the user?
   // TODO: Can the backend send a file-hash/stat-hash and the frontend can warn the user (and ask for confirmation) that the file seems to have changed, and whether they want to proceed with saving
 </script>
 
@@ -419,6 +423,11 @@
   bind:this={apolloFilePickerRef}
   startUri={data.requestedOpenUri}
   onResolve={(file) => openApolloFileUri(file.uri)}
+/>
+
+<BulkEditStreamTagsDialog
+  bind:this={bulkEditStreamTagsDialogRef}
+  files={() => selectedFiles}
 />
 
 <ProgressModal
@@ -542,10 +551,19 @@
     <div class="mt-5">
       <div>
         <p class="d-inline h4">Streams</p>
+        {#if selectedFileIds.length > 1}
+          <button class="btn btn-sm btn-primary ms-2" onclick={() => openBulkEditStreamTagsDialog()}>
+            <TablerIcon icon="edit" />
+            Bulk-Edit Stream Tags
+          </button>
+        {/if}
       </div>
 
       {#if selectedFileIds.length > 1}
-        <p class="text-danger fst-italic">Cannot edit streams, when multiple files are selected</p>
+        <p class="text-warning fst-italic">
+          Per-stream editing is single-file only — use <strong>Bulk-Edit Stream Tags</strong> above to
+          edit streams across the {selectedFileIds.length} selected files.
+        </p>
       {:else}
         {#each selectedFiles[0].streams as stream}
           <div class="mt-3">
