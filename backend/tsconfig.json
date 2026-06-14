@@ -2,6 +2,8 @@
   "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist/",
+    "rootDir": "./src",
+    "types": ["node"],
     "sourceMap": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,

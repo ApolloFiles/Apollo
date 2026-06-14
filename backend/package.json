@@ -80,7 +80,7 @@
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.1.8",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.8",
     "vitest-mock-extended": "^4.0.0"
   }
