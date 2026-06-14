@@ -1,4 +1,3 @@
-import Path from 'node:path';
 import InvalidApolloURIError from './errors/InvalidApolloURIError.js';
 
 export default class ApolloURI {
@@ -8,11 +7,19 @@ export default class ApolloURI {
   constructor(
     public readonly pathSegments: ReadonlyArray<string>,
   ) {
-    if (this.pathSegments.some(segment => segment.includes('/'))) {
-      throw InvalidApolloURIError.createForPathSegmentContainsInvalidCharacter();
-    }
-    if (this.pathSegments.some(segment => segment === '')) {
-      throw InvalidApolloURIError.createForPathSegmentCannotBeEmpty();
+    for (const pathSegment of this.pathSegments) {
+      if (pathSegment === '') {
+        throw InvalidApolloURIError.createForPathSegmentCannotBeEmpty();
+      }
+      if (pathSegment === '.' || pathSegment === '..') {
+        throw InvalidApolloURIError.createForPathSegmentCannotBeDots();
+      }
+      if (pathSegment.includes('/')) {
+        throw InvalidApolloURIError.createForPathSegmentContainsSlash();
+      }
+      if (pathSegment.includes('\0')) {
+        throw InvalidApolloURIError.createForPathSegmentContainsNulByte();
+      }
     }
   }
 
@@ -21,10 +28,17 @@ export default class ApolloURI {
   }
 
   /** @throws InvalidApolloURIError */
-  static parse(url: string): ApolloURI {
+  static parse(uri: string): ApolloURI {
     let parsedUrl;
     try {
-      parsedUrl = new URL(url);
+      // TODO: The URL constructor actually already normalizes '..', '.', and '//' which causes
+      //       the explicit checks in the ApolloURI constructor to not work in #parse
+      //       I would prefer being explicit about these cases not being supported,
+      //       because right now a URI might be parsed and result in an unexpected result
+      //       But right now, I also don't feel like parsing a URI manually or using a third party library for that...
+      //       So I am acknowledging the limitation here for a future time, where an actual issue has been observed
+      // FIXME: new lines are normalized by `new URL` but should be preserved
+      parsedUrl = new URL(uri);
     } catch (err) {
       throw InvalidApolloURIError.createForUrlConstructorError(err);
     }
@@ -33,7 +47,13 @@ export default class ApolloURI {
       throw InvalidApolloURIError.createForInvalidProtocol(parsedUrl.protocol);
     }
 
-    let pathToParse = Path.normalize(parsedUrl.pathname);
+    // There are ideas to support a specific host for better cross-instance/decentralized URIs
+    // but for now, we expect them to always be empty
+    if (parsedUrl.host !== '' || parsedUrl.username !== '' || parsedUrl.password !== '' || parsedUrl.hash !== '') {
+      throw InvalidApolloURIError.createForUnsupportedUriComponentsAreNonEmpty();
+    }
+
+    let pathToParse = parsedUrl.pathname;
     if (pathToParse.startsWith('/')) {
       pathToParse = pathToParse.substring(1);
     }
@@ -41,9 +61,19 @@ export default class ApolloURI {
       pathToParse = pathToParse.substring(0, pathToParse.length - 1);
     }
 
+    if (pathToParse === '') {
+      return new ApolloURI([]);
+    }
+
     const pathSegments = pathToParse
       .split('/')
-      .map(decodeURIComponent);
+      .map((segment) => {
+        try {
+          return decodeURIComponent(segment);
+        } catch (err) {
+          throw InvalidApolloURIError.createForMalformedPathSegmentEncoding(err);
+        }
+      });
 
     return new ApolloURI(pathSegments);
   }

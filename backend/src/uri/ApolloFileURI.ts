@@ -1,10 +1,10 @@
-import ApolloUrl from './ApolloURI.js';
+import ApolloURI from './ApolloURI.js';
 import InvalidApolloFileURIError from './errors/InvalidApolloFileURIError.js';
 
 export default class ApolloFileURI {
   /** @throws InvalidApolloFileURIError */
   constructor(
-    public readonly apolloUrl: ApolloUrl,
+    public readonly apolloUrl: ApolloURI,
   ) {
     if (this.apolloUrl.pathSegments[0] !== 'f') {
       throw InvalidApolloFileURIError.createForMissingFileUriPrefix();
@@ -34,15 +34,14 @@ export default class ApolloFileURI {
    * @throws InvalidApolloURIError
    * @throws InvalidApolloFileURIError
    * */
-  static parse(url: string): ApolloFileURI {
-    return new ApolloFileURI(ApolloUrl.parse(url));
+  static parse(uri: string): ApolloFileURI {
+    return new ApolloFileURI(ApolloURI.parse(uri));
   }
 
   static create(userId: string, fileSystemId: string, filePath: string): ApolloFileURI {
     let filePathSegments: string[] = [];
 
     if (filePath !== '/') {
-      // TODO: Have ApolloURI and ApolloFileURI handle path normalization the same way
       if (filePath.startsWith('/')) {
         filePath = filePath.substring(1);
       }
@@ -53,6 +52,6 @@ export default class ApolloFileURI {
       filePathSegments = filePath.split('/');
     }
 
-    return new ApolloFileURI(new ApolloUrl(['f', userId, fileSystemId, ...filePathSegments]));
+    return new ApolloFileURI(new ApolloURI(['f', userId, fileSystemId, ...filePathSegments]));
   }
 }
