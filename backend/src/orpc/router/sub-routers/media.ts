@@ -126,6 +126,33 @@ export default class MediaORpcRouterFactory {
           };
         }),
 
+      searchMedia: os.searchMedia
+        .handler(async ({ input, context }) => {
+          const accessibleLibraryIds = await this.mediaLibraryByUserFinder.findAccessibleLibraryIds(context.authSession.user.id);
+          const matches = await this.mediaLibraryMediaFinder.searchByTitle(accessibleLibraryIds, input.query);
+
+          return {
+            loggedInUser: {
+              id: context.authSession.user.id,
+              csrfToken: context.authSession.csrfToken,
+              displayName: context.authSession.user.displayName,
+              isSuperUser: context.authSession.user.isSuperUser,
+            },
+
+            page: {
+              libraries: await this.collectLibrariesData(context.authSession.user),
+              query: input.query,
+              results: matches.map(match => ({
+                title: match.title,
+                libraryId: match.libraryId.toString(),
+                libraryName: match.libraryName,
+                mediaId: match.id.toString(),
+                year: match.year,
+              })),
+            },
+          };
+        }),
+
       getMedia: os.getMedia
         .handler(async ({ input, context }) => {
           const mediaLibrary = await this.permissionAwareLibraryProvider.provideForReadContents(input.libraryId, context.authSession.user);

@@ -6,10 +6,6 @@ import type { RenderingLayoutData } from '../../types';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, cookies, params, url }) => {
-  if (params.libraryId === 'search') {
-    error(404, 'There is no search yet');
-  }
-
   const allowedOrders = ['recentlyAdded', 'alphabetical'];
   const orderParam = url?.searchParams.get('order') || undefined;
   const order = allowedOrders.includes(orderParam as string) ? (orderParam as 'recentlyAdded' | 'alphabetical') : undefined;

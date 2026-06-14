@@ -3,6 +3,14 @@ import DatabaseClient from '../../../../../../database/DatabaseClient.js';
 import FullLibraryMedia from './FullLibraryMedia.js';
 import ReadContentsLibraryMedia from './ReadContentsLibraryMedia.js';
 
+export interface MediaLibraryMediaTitleSearchResult {
+  id: bigint;
+  title: string;
+  year: number | null;
+  libraryId: bigint;
+  libraryName: string;
+}
+
 @singleton()
 export default class MediaLibraryMediaFinder {
   constructor(
@@ -61,6 +69,40 @@ export default class MediaLibraryMediaFinder {
       return null;
     }
     return FullLibraryMedia.fromData(mediaData);
+  }
+
+  async searchByTitle(libraryIds: bigint[], query: string, take = 50): Promise<MediaLibraryMediaTitleSearchResult[]> {
+    if (libraryIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.databaseClient.mediaLibraryMedia.findMany({
+      where: {
+        libraryId: { in: libraryIds },
+        title: { contains: query, mode: 'insensitive' },
+      },
+      select: {
+        id: true,
+        title: true,
+        year: true,
+        library: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { title: 'asc' },
+      take,
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      year: row.year,
+      libraryId: row.library.id,
+      libraryName: row.library.name,
+    }));
   }
 
   async findFullByLibraryId(libraryId: bigint): Promise<FullLibraryMedia[]> {

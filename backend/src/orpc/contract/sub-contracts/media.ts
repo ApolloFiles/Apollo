@@ -64,6 +64,23 @@ const getMediaLibraryOverview = baseOc
     }),
   }));
 
+const searchMedia = baseOc
+  .input(z.object({ query: z.string().trim().nonempty().max(150) }))
+  .output(z.strictObject({
+    loggedInUser: ORPC_LOGGED_IN_USER_SCHEMA,
+    page: z.strictObject({
+      libraries: ORPC_LIBRARIES_SCHEMA,
+      query: z.string(),
+      results: z.array(z.strictObject({
+        title: z.string(),
+        libraryId: z.string(),
+        libraryName: z.string(),
+        mediaId: z.string(),
+        year: z.number().nullable(),
+      })),
+    }),
+  }));
+
 const getMedia = baseOc
   .input(z.object({ libraryId: z.coerce.bigint(), mediaId: z.coerce.bigint() }))
   .output(z.strictObject({
@@ -248,6 +265,7 @@ const startFullReIndex = baseOc
 export const mediaContract = {
   getMediaLibraryOverview: getMediaLibraryOverview,
   getMedia: getMedia,
+  searchMedia: searchMedia,
 
   management: {
     get: getLibraryManagementInfo,
