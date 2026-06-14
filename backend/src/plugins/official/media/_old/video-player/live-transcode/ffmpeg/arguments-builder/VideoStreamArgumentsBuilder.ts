@@ -59,7 +59,7 @@ export default class VideoStreamArgumentsBuilder {
       '-bufsize:v', '240M',
     ];
     if (complexFilter.args.length > 0) {
-      args.push(`-filter_complex`, complexFilter.args.join(','));
+      args.push(`-filter_complex`, complexFilter.args.join(';'));
     }
 
     return args;
@@ -83,7 +83,7 @@ export default class VideoStreamArgumentsBuilder {
       '-bufsize:v', '240M',
     ];
     if (complexFilter.args.length > 0) {
-      args.push(`-filter_complex`, complexFilter.args.join(','));
+      args.push(`-filter_complex`, complexFilter.args.join(';'));
     }
 
     return args;
@@ -111,21 +111,24 @@ export default class VideoStreamArgumentsBuilder {
       '-bufsize:v', '240M',
     ];
     if (complexFilter.args.length > 0) {
-      args.push(`-filter_complex`, complexFilter.args.join(','));
+      args.push(`-filter_complex`, complexFilter.args.join(';'));
     }
 
     return args;
   }
 
   private prepareComplexFilter(videoStream: VideoStream, streamsToTranscode: Stream[], targetWidth: number): PreparedComplexFilter {
-    const videoFilters: string[] = [];
-    let currentVideoStream = `0:${videoStream.index}`;
+    const filterChainSegments: string[] = [];
+    // Label of the most recent filtergraph output; starts as the raw input stream.
+    let currentLabel = `[0:${videoStream.index}]`;
 
     // Needed for hard subs of text-based subtitles:
-    // videoFilters.push(`subtitles=filename='${inputFilePath}'` + ':stream_index=' + subtitleStreamIndex);
+    // filterChainSegments.push(`${currentLabel}subtitles=filename='${inputFilePath}':stream_index=${subtitleStreamIndex}[v${filterChainSegments.length}]`);
 
     if (videoStream.width != targetWidth) {
-      videoFilters.push(`scale=${targetWidth}:-1`);
+      const outLabel = `[v${filterChainSegments.length}]`;
+      filterChainSegments.push(`${currentLabel}scale=${targetWidth}:-1${outLabel}`);
+      currentLabel = outLabel;
     }
 
     for (const stream of streamsToTranscode) {
@@ -133,19 +136,23 @@ export default class VideoStreamArgumentsBuilder {
         continue;
       }
 
-      if (currentVideoStream.indexOf('[') === -1) {
-        currentVideoStream = `[${currentVideoStream}]`;
-      }
-
       // TODO: Add support for hw accelerated filters like 'overlay_cuda'
-      const filterPrefix = `${currentVideoStream}[0:${stream.index}]overlay`;
-      currentVideoStream = `[v${videoFilters.length + 1}]`;
-      videoFilters.push(filterPrefix + currentVideoStream);
+      const outLabel = `[v${filterChainSegments.length}]`;
+      filterChainSegments.push(`${currentLabel}[0:${stream.index}]overlay${outLabel}`);
+      currentLabel = outLabel;
+    }
+
+    if (filterChainSegments.length === 0) {
+      // No filtering required: map the raw input stream directly.
+      return {
+        args: [],
+        videoStreamIdentifier: `0:${videoStream.index}`,
+      };
     }
 
     return {
-      args: videoFilters,
-      videoStreamIdentifier: currentVideoStream,
+      args: filterChainSegments,
+      videoStreamIdentifier: currentLabel,
     };
   }
 }
