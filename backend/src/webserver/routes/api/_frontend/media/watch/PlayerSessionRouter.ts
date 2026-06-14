@@ -622,8 +622,7 @@ export default class PlayerSessionRouter implements Router {
   private findPlayerSessionByQueryParamOrSessionCookie(request: FastifyRequest, reply: FastifyReply, loggedInUser: ApolloUser): PlayerSession | null {
     const inputSessionId = (request.query as any).session;
     if (inputSessionId == null || inputSessionId === '') {
-      return this.playerSessionStorage.findOrCreateBySessionCookie(loggedInUser, request.headers.cookie?.split(';')
-        ?.find(s => s.includes('apollo.session_token')) ?? '');
+      return this.playerSessionStorage.findOrCreateForAuthSession(loggedInUser, request.getSessionUser().session.id.toString());
     }
 
     if (typeof inputSessionId !== 'string') {

@@ -21,8 +21,8 @@ export default class PlayerSessionStorage {
     return null;
   }
 
-  findOrCreateBySessionCookie(user: ApolloUser, sessionCookieValue: string): PlayerSession {
-    const sessionId = this.generatePlayerSessionIdBySessionCookie(sessionCookieValue);
+  findOrCreateForAuthSession(user: ApolloUser, authSessionId: string): PlayerSession {
+    const sessionId = this.generatePlayerSessionIdForAuthSession(authSessionId);
 
     if (!this.sessions.has(sessionId)) {
       this.sessions.set(sessionId, new PlayerSession(sessionId, user));
@@ -30,11 +30,11 @@ export default class PlayerSessionStorage {
     return this.sessions.get(sessionId)!;
   }
 
-  private generatePlayerSessionIdBySessionCookie(sessionCookieValue: string): string {
+  private generatePlayerSessionIdForAuthSession(authSessionId: string): string {
     return Crypto
       .createHash('sha1')
       .update(this.sessionIdSalt)
-      .update(sessionCookieValue)
+      .update(authSessionId)
       .digest('hex');
   }
 }
