@@ -48,6 +48,24 @@ export default class MediaLibraryByUserFinder {
     return fetchedLibraries.map((data) => ReadContentsLibrary.fromData(data));
   }
 
+  async findAccessibleLibraryIds(userId: ApolloUser['id']): Promise<bigint[]> {
+    const fetchedLibraries = await this.databaseClient.mediaLibrary.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          {
+            MediaLibrarySharedWith: {
+              some: { userId: userId },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    });
+
+    return fetchedLibraries.map((library) => library.id);
+  }
+
   async gotLibraryShared(userId: ApolloUser['id'], libraryId: bigint): Promise<boolean> {
     const librarySharedWith = await this.databaseClient.mediaLibrarySharedWith.findUnique({
       where: {

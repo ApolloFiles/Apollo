@@ -4,6 +4,7 @@ import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import PermissionAwareFileProvider from '../../../files/provider/PermissionAwareFileProvider.js';
 import AccessForbiddenError from '../../../permission/error/AccessForbiddenError.js';
 import LibraryManager from '../../../plugins/official/media/_old/libraries/LibraryManager.js';
+import ContinueWatchingProvider from '../../../plugins/official/media/library/ContinueWatchingProvider.js';
 import HiddenFromOverviewMediaLibraryFinder
   from '../../../plugins/official/media/library/database/library/HiddenFromOverviewMediaLibraryFinder.js';
 import HiddenFromSidebarMediaLibraryFinder
@@ -44,6 +45,7 @@ export default class MediaORpcRouterFactory {
     private readonly mediaLibraryUserPreferencesWriter: MediaLibraryUserPreferencesWriter,
     private readonly hiddenFromOverviewMediaLibraryFinder: HiddenFromOverviewMediaLibraryFinder,
     private readonly hiddenFromSidebarMediaLibraryFinder: HiddenFromSidebarMediaLibraryFinder,
+    private readonly continueWatchingProvider: ContinueWatchingProvider,
   ) {
   }
 
@@ -105,15 +107,15 @@ export default class MediaORpcRouterFactory {
 
             page: {
               libraries: await this.collectLibrariesData(context.authSession.user),
-              continueWatching: ((await libraryManager.fetchContinueWatchingItems(mediaLibrary?.library.id)).map(i => ({
-                title: i.media.title,
-                watchProgressPercentage: Math.max(0, Math.min(1, 1 - ((i.item.durationInSec - i.watchProgressInSec) / i.item.durationInSec))),
-                libraryId: i.media.libraryId.toString(),
-                mediaId: i.media.id.toString(),
+              continueWatching: ((await this.continueWatchingProvider.listForOverview(context.authSession.user, mediaLibrary?.library.id ?? null)).map(i => ({
+                title: i.mediaTitle,
+                watchProgressPercentage: this.watchProgressPercentage(i.watchProgressInSec, i.item.durationInSec),
+                libraryId: i.libraryId.toString(),
+                mediaId: i.mediaId.toString(),
                 mediaItemId: i.item.id.toString(),
                 seasonNumber: i.item.seasonNumber ?? undefined,
                 episodeNumber: i.item.episodeNumber ?? undefined,
-                year: i.media.year,
+                year: i.mediaYear,
               }))) satisfies ContinueWatchingElement[],
 
               result: {
@@ -166,7 +168,7 @@ export default class MediaORpcRouterFactory {
               durationInSeconds: item.durationInSec,
               watchProgress: watchProgressInSec != null ? {
                 inSeconds: watchProgressInSec,
-                asPercentage: Math.max(0, Math.min(1, 1 - ((item.durationInSec - watchProgressInSec) / item.durationInSec))),
+                asPercentage: this.watchProgressPercentage(watchProgressInSec, item.durationInSec),
               } : null,
             });
           }
@@ -207,17 +209,16 @@ export default class MediaORpcRouterFactory {
               episodes: season.episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
             })) : undefined;
 
-          // TODO: nextMediaItemToWatch should be similar to continue watching logic and fall back to the first episode
-          const continueWatchingResultItem = await new LibraryManager(context.authSession.user).determineContinueOrNextWatchItemForMedia(libraryMedia.media.id);
+          const continueWatchingResultItem = await this.continueWatchingProvider.resolveNextForMedia(context.authSession.user, libraryMedia.media.id);
           let nextMediaItemToWatch: MediaDetail['nextMediaItemToWatch'] = continueWatchingResultItem != null ? {
             id: continueWatchingResultItem.item.id.toString(),
-            title: '',
-            synopsis: '',
+            title: continueWatchingResultItem.item.title,
+            synopsis: continueWatchingResultItem.item.synopsis,
             episodeNumber: continueWatchingResultItem.item.episodeNumber ?? 0,
             durationInSeconds: continueWatchingResultItem.item.durationInSec,
             watchProgress: {
               inSeconds: continueWatchingResultItem.watchProgressInSec,
-              asPercentage: Math.max(0, Math.min(1, 1 - ((continueWatchingResultItem.item.durationInSec - continueWatchingResultItem.watchProgressInSec) / continueWatchingResultItem.item.durationInSec))),
+              asPercentage: this.watchProgressPercentage(continueWatchingResultItem.watchProgressInSec, continueWatchingResultItem.item.durationInSec),
             },
           } : null;
 
@@ -527,5 +528,16 @@ export default class MediaORpcRouterFactory {
         hideFromSidebar: hiddenFromSidebarSet.has(lib.id),
       })),
     };
+  }
+
+  /**
+   * Watch-progress ratio in the range [0, 1] (`watchedSec / durationSec`), guarded against a
+   * zero/negative duration.
+   */
+  private watchProgressPercentage(watchedSec: number, durationSec: number): number {
+    if (durationSec <= 0) {
+      return 0;
+    }
+    return Math.max(0, Math.min(1, watchedSec / durationSec));
   }
 }

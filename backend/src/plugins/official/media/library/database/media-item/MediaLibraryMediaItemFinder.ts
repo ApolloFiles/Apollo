@@ -77,6 +77,50 @@ export default class MediaLibraryMediaItemFinder {
     return FullLibraryMediaItem.fromData(mediaData);
   }
 
+  async findByMediaIdOrderedByEpisodeNumber(mediaId: bigint): Promise<ReadContentsLibraryMediaItem[]> {
+    const allMediaData = await this.databaseClient.mediaLibraryMediaItem.findMany({
+      where: { mediaId },
+      select: {
+        id: true,
+        title: true,
+        synopsis: true,
+        addedAt: true,
+        durationInSec: true,
+        episodeNumber: true,
+        seasonNumber: true,
+
+        media: {
+          select: {
+            id: true,
+            library: {
+              select: {
+                id: true,
+                ownerId: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { seasonNumber: 'asc' },
+        { episodeNumber: 'asc' },
+      ],
+    });
+
+    return allMediaData.map(data => ReadContentsLibraryMediaItem.fromData(data));
+  }
+
+  async findNextInMedia(mediaId: bigint, afterItemId: bigint): Promise<ReadContentsLibraryMediaItem | null> {
+    const orderedItems = await this.findByMediaIdOrderedByEpisodeNumber(mediaId);
+
+    const currentIndex = orderedItems.findIndex(item => item.id === afterItemId);
+    if (currentIndex === -1) {
+      return null;
+    }
+
+    return orderedItems[currentIndex + 1] ?? null;
+  }
+
   async findFullByMediaId(mediaId: bigint): Promise<FullLibraryMediaItem[]> {
     const allMediaData = await this.databaseClient.mediaLibraryMediaItem.findMany({
       where: { mediaId },
