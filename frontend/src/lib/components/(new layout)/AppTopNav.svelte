@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import type AppSideBar from '$lib/components/(new layout)/AppSideBar.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
@@ -10,6 +11,7 @@
   } = $props();
 
   const userProfile = getUserProfile();
+  const searchQuery = $derived(page.url.searchParams.get('q') ?? '');
 </script>
 
 <header class="top-navbar" class:overlay={renderAsOverlay} class:has-search={searchFormAction != null}>
@@ -25,7 +27,7 @@
     <form role="search" action={searchFormAction} method="GET">
       <div class="search-bar">
         <span class="icon-search"><TablerIcon icon="search" /></span>
-        <input type="search" name="q" placeholder="Search" />
+        <input type="search" name="q" placeholder="Search" value={searchQuery} />
       </div>
     </form>
   {/if}
