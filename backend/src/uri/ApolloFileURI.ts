@@ -1,14 +1,16 @@
 import ApolloUrl from './ApolloURI.js';
+import InvalidApolloFileURIError from './errors/InvalidApolloFileURIError.js';
 
 export default class ApolloFileURI {
+  /** @throws InvalidApolloFileURIError */
   constructor(
     public readonly apolloUrl: ApolloUrl,
   ) {
     if (this.apolloUrl.pathSegments[0] !== 'f') {
-      throw new Error('The provided URL is not a ApolloFileUrl (does not start with /f/)');
+      throw InvalidApolloFileURIError.createForMissingFileUriPrefix();
     }
     if (this.apolloUrl.pathSegments.length < 3) {
-      throw new Error('The provided URL is not a ApolloFileUrl (missing userId and/or fileSystemId)');
+      throw InvalidApolloFileURIError.createForMissingUserOrFileSystemId();
     }
   }
 
@@ -28,6 +30,10 @@ export default class ApolloFileURI {
     return this.apolloUrl.toString();
   }
 
+  /**
+   * @throws InvalidApolloURIError
+   * @throws InvalidApolloFileURIError
+   * */
   static parse(url: string): ApolloFileURI {
     return new ApolloFileURI(ApolloUrl.parse(url));
   }

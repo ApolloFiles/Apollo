@@ -1,16 +1,18 @@
 import Path from 'node:path';
+import InvalidApolloURIError from './errors/InvalidApolloURIError.js';
 
 export default class ApolloURI {
   public static readonly SCHEME = 'apollo';
 
+  /** @throws InvalidApolloURIError */
   constructor(
     public readonly pathSegments: ReadonlyArray<string>,
   ) {
     if (this.pathSegments.some(segment => segment.includes('/'))) {
-      throw new Error('Path segments cannot contain "/" characters: ' + JSON.stringify(this.pathSegments));
+      throw InvalidApolloURIError.createForPathSegmentContainsInvalidCharacter();
     }
     if (this.pathSegments.some(segment => segment === '')) {
-      throw new Error('Path segments cannot be empty: ' + JSON.stringify(this.pathSegments));
+      throw InvalidApolloURIError.createForPathSegmentCannotBeEmpty();
     }
   }
 
@@ -18,10 +20,17 @@ export default class ApolloURI {
     return new URL(ApolloURI.SCHEME + ':///' + this.pathSegments.map(encodeURIComponent).join('/')).toString();
   }
 
+  /** @throws InvalidApolloURIError */
   static parse(url: string): ApolloURI {
-    const parsedUrl = new URL(url);
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(url);
+    } catch (err) {
+      throw InvalidApolloURIError.createForUrlConstructorError(err);
+    }
+
     if (parsedUrl.protocol !== 'apollo:') {
-      throw new Error(`Expected protocol to be 'apollo:' but got ${JSON.stringify(parsedUrl.protocol)}`);
+      throw InvalidApolloURIError.createForInvalidProtocol(parsedUrl.protocol);
     }
 
     let pathToParse = Path.normalize(parsedUrl.pathname);

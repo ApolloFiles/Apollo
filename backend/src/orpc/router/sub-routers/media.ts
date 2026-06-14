@@ -24,6 +24,8 @@ import MediaClearLogoImageProvider from '../../../plugins/official/media/library
 import PermissionAwareLibraryProvider
   from '../../../plugins/official/media/library/permission-aware/PermissionAwareLibraryProvider.js';
 import ApolloFileURI from '../../../uri/ApolloFileURI.js';
+import InvalidApolloFileURIError from '../../../uri/errors/InvalidApolloFileURIError.js';
+import InvalidApolloURIError from '../../../uri/errors/InvalidApolloURIError.js';
 import type ApolloUser from '../../../user/ApolloUser.js';
 import type { ORpcContractOutputs } from '../../contract/oRpcContract.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
@@ -358,23 +360,12 @@ export default class MediaORpcRouterFactory {
                 fileURI = ApolloFileURI.parse(rawDirectoryUri);
                 const file = await this.fileProvider.provideForRead(fileURI, context.authSession.user);
                 if (file.fileSystem.owner?.id !== fileURI.userId) {
-                  throw new Error('User does not own the requested file');
+                  throw errors.INVALID_INPUT({ message: 'You are not the owner of the requested file' });
                 }
               } catch (err) {
-                // TODO: Don't hardcode error message
-                if (err instanceof Error &&
-                  (
-                    [
-                      'User does not have access to the requested file, or it does not exist',
-                      'The provided URL is not a ApolloFileUrl (does not start with /f/)',
-                      'The provided URL is not a ApolloFileUrl (missing userId and/or fileSystemId)',
-                    ].includes(err.message)
-                    || err.message.startsWith('Path segments cannot be empty: [')
-                  )
-                ) {
-                  throw errors.INVALID_INPUT({ message: `The provided directory URI is invalid or does not exist: ${rawDirectoryUri}` });
+                if (err instanceof InvalidApolloURIError || err instanceof InvalidApolloFileURIError) {
+                  throw errors.INVALID_INPUT({ message: `The provided ApolloFileURI is invalid: ` + err.message });
                 }
-
                 throw err;
               }
 
@@ -406,23 +397,12 @@ export default class MediaORpcRouterFactory {
                 fileURI = ApolloFileURI.parse(rawDirectoryUri);
                 const file = await this.fileProvider.provideForRead(fileURI, context.authSession.user);
                 if (file.fileSystem.owner?.id !== fileURI.userId) {
-                  throw new Error('User does not own the requested file');
+                  throw errors.INVALID_INPUT({ message: 'You are not the owner of the requested file' });
                 }
               } catch (err) {
-                // TODO: Don't hardcode error message
-                if (err instanceof Error &&
-                  (
-                    [
-                      'User does not have access to the requested file, or it does not exist',
-                      'The provided URL is not a ApolloFileUrl (does not start with /f/)',
-                      'The provided URL is not a ApolloFileUrl (missing userId and/or fileSystemId)',
-                    ].includes(err.message)
-                    || err.message.startsWith('Path segments cannot be empty: [')
-                  )
-                ) {
-                  throw errors.INVALID_INPUT({ message: `The provided directory URI is invalid or does not exist: ${rawDirectoryUri}` });
+                if (err instanceof InvalidApolloURIError || err instanceof InvalidApolloFileURIError) {
+                  throw errors.INVALID_INPUT({ message: `The provided ApolloFileURI is invalid: ` + err.message });
                 }
-
                 throw err;
               }
 
