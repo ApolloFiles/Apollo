@@ -38,7 +38,7 @@ export default class StreamArgumentsBuilder {
       }
 
       if (stream.codecType === 'audio') {
-        result.push(...this.audioStreamArgumentsBuilder.build(stream as AudioStream));
+        result.push(...this.audioStreamArgumentsBuilder.build(stream as AudioStream, outputStreamCounter.audio));
 
         // ISO 639-2 language code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)
         // FIXME: audio stream names do not work
