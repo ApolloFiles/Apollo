@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Common
 
 const OPTIONAL_TAGS = z
-  .record(z.string().nonempty(), z.string())
+  .record(z.string(), z.string())
   .optional()
   .default({});
 
