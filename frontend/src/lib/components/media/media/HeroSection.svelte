@@ -2,12 +2,13 @@
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { onMount } from 'svelte';
 
-  let { mediaId, title, synopsis, year, hasClearLogo, nextMediaItem }: {
+  let { mediaId, title, synopsis, year, hasClearLogo, mediaType, nextMediaItem }: {
     mediaId: string,
     title: string,
     synopsis: string | null,
     year: number | null,
     hasClearLogo: boolean,
+    mediaType: 'movie' | 'tv_show',
     nextMediaItem: {
                      id: string,
                      episodeNumber: number,
@@ -20,6 +21,12 @@
                                     } | null,
                    } | null
   } = $props();
+
+  let isMovie = $derived(mediaType === 'movie');
+  let episodeLabel = $derived(isMovie ? '' : ` Episode ${nextMediaItem?.episodeNumber}`);
+  let watchedSeconds = $derived(nextMediaItem?.watchProgress?.inSeconds ?? 0);
+  let isInProgress = $derived(watchedSeconds > 0);
+  let remainingSeconds = $derived((nextMediaItem?.durationInSeconds ?? 0) - watchedSeconds);
 
   let synopsisContainerRef: HTMLElement | null = $state(null);
 
@@ -103,36 +110,55 @@
       {/if}
 
       {#if nextMediaItem != null}
-        <div class="mb-4" style="max-width: 400px">
-          <div class="d-flex justify-content-between text-secondary small mb-1">
-            <span>Resume Episode {nextMediaItem.episodeNumber} ({formatDuration(nextMediaItem.durationInSeconds - (nextMediaItem.watchProgress?.inSeconds ?? 0))} remaining)</span>
-            <span>{formatDuration(nextMediaItem.watchProgress?.inSeconds ?? 0)} watched</span>
+        {#if isInProgress}
+          <div class="mb-4" style="max-width: 400px">
+            <div class="d-flex justify-content-between text-secondary small mb-1">
+              <span>Resume{episodeLabel} · {formatDuration(remainingSeconds)} left</span>
+              <span>{formatDuration(watchedSeconds)} watched</span>
+            </div>
+            <div class="progress progress-container">
+              <div class="progress-bar bg-danger"
+                   role="progressbar"
+                   style:width="{Math.floor((nextMediaItem.watchProgress?.asPercentage ?? 0) * 100)}%"
+                   aria-valuenow={Math.floor((nextMediaItem.watchProgress?.asPercentage ?? 0) * 100)}
+                   aria-valuemin="0"
+                   aria-valuemax="100"></div>
+            </div>
           </div>
-          <div class="progress progress-container">
-            <div class="progress-bar bg-danger"
-                 role="progressbar"
-                 style:width="{nextMediaItem.watchProgress != null ? Math.floor(nextMediaItem.watchProgress.asPercentage * 100) : 0}%"
-                 aria-valuenow={nextMediaItem.watchProgress != null ? Math.floor(nextMediaItem.watchProgress.asPercentage * 100) : 0}
-                 aria-valuemin="0"
-                 aria-valuemax="100"></div>
+
+          <div class="action-buttons">
+            <a
+              href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=auto"
+              class="btn-action">
+              <TablerIcon icon="player-play-filled" />
+              Resume
+            </a>
+
+            <a
+              href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=0"
+              class="btn-action btn-action-secondary">
+              <TablerIcon icon="rotate" />
+              Start Over
+            </a>
           </div>
-        </div>
+        {:else}
+          <div class="mb-4 text-secondary small">
+            {#if isMovie}
+              {formatDuration(nextMediaItem.durationInSeconds)}
+            {:else}
+              Up next ·{episodeLabel} · {formatDuration(nextMediaItem.durationInSeconds)}
+            {/if}
+          </div>
 
-        <div class="action-buttons">
-          <a
-            href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=auto"
-            class="btn-action">
-            <TablerIcon icon="player-play-filled" />
-            Resume
-          </a>
-
-          <a
-            href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=0"
-            class="btn-action btn-action-secondary">
-            <TablerIcon icon="rotate" />
-            Start Over
-          </a>
-        </div>
+          <div class="action-buttons">
+            <a
+              href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=auto"
+              class="btn-action">
+              <TablerIcon icon="player-play-filled" />
+              Play{episodeLabel}
+            </a>
+          </div>
+        {/if}
       {/if}
     </div>
   </div>

@@ -32,6 +32,7 @@
   synopsis={data.page.media.synopsis}
   year={data.page.media.year}
   hasClearLogo={data.page.media.hasClearLogo}
+  mediaType={data.page.media.type}
   nextMediaItem={data.page.media.nextMediaItemToWatch}
 />
 
