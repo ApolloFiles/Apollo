@@ -1,6 +1,10 @@
 import { dev } from '$app/environment';
 import { paraglideMiddleware } from '$lib/paraglide/server';
-import type { Handle, HandleFetch } from '@sveltejs/kit';
+import type { Handle, HandleFetch, HandleServerError } from '@sveltejs/kit';
+
+export const handleError: HandleServerError = ({ error, event, status, message }) => {
+  console.error(`[${status}] ${event.request.method} ${event.url.pathname}: ${message}`, error);
+};
 
 export const handleFetch: HandleFetch = async ({ request, fetch }) => {
   if (dev) {
