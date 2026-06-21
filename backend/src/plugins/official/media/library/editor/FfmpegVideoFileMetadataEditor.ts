@@ -104,23 +104,7 @@ export default class FfmpegVideoFileMetadataEditor {
     }
 
     ffmpegArgs.push(tempOutputFilePath);
-
-    try {
-      await this.runFfmpeg(ffmpegArgs, tmpDirPath);
-    } catch (err) {
-      if (err instanceof FfmpegProcessError &&
-        err.exitCode === 234 &&
-        err.stderr.includes(`Can't write packet with unknown timestamp`) &&
-        err.stderr.includes('Error submitting a packet to the muxer: Invalid argument')) {
-        console.warn(`ffmpeg was unable to write video metadata changes, because of missing/unknown timestamps in the input file. Retrying with '-fflags +genpts', which will try to generate them`);
-
-        ffmpegArgs.unshift('-fflags', '+genpts');
-        await this.runFfmpeg(ffmpegArgs, tmpDirPath);
-        return tempOutputFilePath;
-      }
-
-      throw err;
-    }
+    await this.runFfmpeg(ffmpegArgs, tmpDirPath);
 
     return tempOutputFilePath;
   }
