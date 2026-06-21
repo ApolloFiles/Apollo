@@ -8,9 +8,11 @@ import { type Cookies, redirect } from '@sveltejs/kit';
 
 type ClientContext = { cookies: Cookies, fetch: typeof fetch };
 
+const backendBaseUrl = env.APOLLO_INTERNAL_BACKEND_URL || 'http://127.0.0.1:8081';
+const oRpcUrl = backendBaseUrl + '/api/_frontend/oRPC/';
+
 export const rpcClient: ContractRouterClient<typeof ORpcContract, ClientContext> = createORPCClient(new RPCLink<ClientContext>({
-  // TODO: Normalize APOLLO_BASE_URL trailing slash; Maybe even use another env-var that is set @runtime for prod by the backend process
-  url: (env.APOLLO_BASE_URL ? env.APOLLO_BASE_URL : 'http://localhost:8081') + '/api/_frontend/oRPC/',
+  url: oRpcUrl,
   plugins: [
     new oRpcPlugins.SimpleCsrfProtectionLinkPlugin(),
   ],

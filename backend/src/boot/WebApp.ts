@@ -17,11 +17,31 @@ export default class WebApp implements App {
     await container.resolve(StartupCleaner).cleanUp();
 
     const appConfig = container.resolve(AppConfiguration);
+    this.exposeInternalBackendUrlForFrontendSsr(appConfig);
     this.webServer = container.resolve(FastifyWebServer);
 
     await this.webServer.listen(appConfig.config.serverInterface, appConfig.config.serverPort);
 
     this.printReadyMessage(appConfig);
+  }
+
+  private exposeInternalBackendUrlForFrontendSsr(appConfig: AppConfiguration): void {
+    if (process.env.APOLLO_INTERNAL_BACKEND_URL != null && process.env.APOLLO_INTERNAL_BACKEND_URL !== '') {
+      return;
+    }
+
+    const backendInterface = appConfig.config.serverInterface;
+    let loopbackHost: string;
+    if (backendInterface === '' || backendInterface === '0.0.0.0') {
+      loopbackHost = '127.0.0.1';
+    } else if (backendInterface === '::' || backendInterface === '::0') {
+      loopbackHost = '[::1]';
+    } else {
+      // A specific bind address – reach it directly (wrap IPv6 literals in brackets for the URL)
+      loopbackHost = backendInterface.includes(':') ? `[${backendInterface}]` : backendInterface;
+    }
+
+    process.env.APOLLO_INTERNAL_BACKEND_URL = `http://${loopbackHost}:${appConfig.config.serverPort}`;
   }
 
   async shutdown(): Promise<void> {
