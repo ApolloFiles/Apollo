@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/node';
 import Os from 'node:os';
 import { getAppInfo, IS_PRODUCTION } from './constants.js';
+import { HttpError } from './webserver/errors/HttpErrors.js';
 
 (() => {
   const dsn = process.env.SENTRY_DSN ?? '';
@@ -18,6 +19,16 @@ import { getAppInfo, IS_PRODUCTION } from './constants.js';
     release: `${appInfo.name}@${appInfo.version}`,
 
     maxBreadcrumbs: 50,
+    integrations: [
+      Sentry.fastifyIntegration({
+        shouldHandleError(err): boolean {
+          if (err instanceof HttpError) {
+            return err.httpStatusCode >= 500;
+          }
+          return (err as { code?: string }).code !== 'FST_ERR_VALIDATION';
+        },
+      }),
+    ],
     initialScope: {
       contexts: {
         Machine: {

@@ -1,7 +1,6 @@
 import FastifyCookiePlugin from '@fastify/cookie';
 import FastifyFormBodyPlugin from '@fastify/formbody';
 import FastifyWebSocketPlugin from '@fastify/websocket';
-import * as Sentry from '@sentry/node';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import * as FastifyTypeProviderZod from 'fastify-type-provider-zod';
 import Http from 'node:http';
@@ -111,8 +110,6 @@ export default class FastifyWebServer {
   }
 
   private registerErrorHandler(): void {
-    Sentry.setupFastifyErrorHandler(this.fastify);
-
     this.fastify.setErrorHandler((err: Error, _req: FastifyRequest, reply: FastifyReply): FastifyReply => {
       if (err instanceof HttpError) {
         return reply
