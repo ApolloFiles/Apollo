@@ -15,6 +15,7 @@
   import IconCurrentLocation from 'virtual:icons/tabler/current-location';
   import IconDeviceDesktop from 'virtual:icons/tabler/device-desktop';
   import IconDeviceFloppy from 'virtual:icons/tabler/device-floppy';
+  import IconDotsVertical from 'virtual:icons/tabler/dots-vertical';
   import IconEdit from 'virtual:icons/tabler/edit';
   import IconEraser from 'virtual:icons/tabler/eraser';
   import IconFile from 'virtual:icons/tabler/file';
@@ -70,6 +71,7 @@
     | 'current-location'
     | 'device-desktop'
     | 'device-floppy'
+    | 'dots-vertical'
     | 'edit'
     | 'eraser'
     | 'file'
@@ -148,6 +150,8 @@
         return IconDeviceDesktop;
       case 'device-floppy':
         return IconDeviceFloppy;
+      case 'dots-vertical':
+        return IconDotsVertical;
       case 'edit':
         return IconEdit;
       case 'eraser':

@@ -276,6 +276,37 @@ export default class MediaORpcRouterFactory {
           };
         }),
 
+      markWatched: os.markWatched
+        .handler(async ({ input, context, errors }) => {
+          const mediaLibrary = await this.permissionAwareLibraryProvider.provideForReadContents(input.libraryId, context.authSession.user);
+          const libraryMedia = await mediaLibrary.findMedia(input.mediaId);
+          const item = await libraryMedia.findItem(input.mediaItemId);
+          if (item == null) {
+            throw errors.REQUESTED_ENTITY_NOT_FOUND();
+          }
+
+          const userId = context.authSession.user.id;
+          await this.databaseClient.mediaLibraryUserWatchProgress.upsert({
+            where: { userId_mediaItemId: { userId, mediaItemId: item.id } },
+            update: { durationInSec: item.durationInSec },
+            create: { userId, mediaItemId: item.id, durationInSec: item.durationInSec },
+          });
+        }),
+
+      removeWatchProgress: os.removeWatchProgress
+        .handler(async ({ input, context, errors }) => {
+          const mediaLibrary = await this.permissionAwareLibraryProvider.provideForReadContents(input.libraryId, context.authSession.user);
+          const libraryMedia = await mediaLibrary.findMedia(input.mediaId);
+          const item = await libraryMedia.findItem(input.mediaItemId);
+          if (item == null) {
+            throw errors.REQUESTED_ENTITY_NOT_FOUND();
+          }
+
+          await this.databaseClient.mediaLibraryUserWatchProgress.deleteMany({
+            where: { userId: context.authSession.user.id, mediaItemId: item.id },
+          });
+        }),
+
       management: {
         get: os.management.get
           .handler(async ({ input, context }) => {

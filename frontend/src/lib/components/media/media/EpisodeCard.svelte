@@ -1,7 +1,10 @@
 <script lang="ts">
+  import EpisodeActionsMenu from '$lib/components/media/media/EpisodeActionsMenu.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
 
   let {
+    libraryId,
+    mediaId,
     mediaItemId,
     episodeNumber,
     title,
@@ -10,6 +13,8 @@
     durationInSeconds,
     watchProgress,
   }: {
+    libraryId: string,
+    mediaId: string,
     mediaItemId: string,
     episodeNumber: number,
     title: string,
@@ -53,9 +58,12 @@
     </div>
   </a>
   <div class="flex-grow-1">
-    <div class="d-flex justify-content-between">
+    <div class="d-flex justify-content-between align-items-start gap-2">
       <h3 class="h5 mb-1 episode-title">{episodeNumber}. {title}</h3>
-      <span class="text-secondary">{formatDuration(durationInSeconds)}</span>
+      <div class="d-flex align-items-center gap-1 flex-shrink-0">
+        <span class="text-secondary">{formatDuration(durationInSeconds)}</span>
+        <EpisodeActionsMenu {libraryId} {mediaId} {mediaItemId} {durationInSeconds} {watchProgress} />
+      </div>
     </div>
     {#if synopsis != null}
       <p class="text-secondary small mb-0 line-clamp-2">{synopsis}</p>

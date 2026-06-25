@@ -40,6 +40,8 @@
   <div class="row">
     <div class="col-md-8">
       <EpisodeList
+        libraryId={params.libraryId}
+        mediaId={data.page.media.id}
         nextEpisodeIdToWatch={nextEpisodeIdToWatchForEpisodeList}
         seasons={data.page.media.seasons ?? []}
       />

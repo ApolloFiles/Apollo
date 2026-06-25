@@ -124,6 +124,13 @@ const getMedia = baseOc
     }),
   }));
 
+const markMediaItemWatched = baseOc
+  .input(z.object({ libraryId: z.coerce.bigint(), mediaId: z.coerce.bigint(), mediaItemId: z.coerce.bigint() }))
+  .output(z.undefined());
+const removeMediaItemWatchProgress = baseOc
+  .input(z.object({ libraryId: z.coerce.bigint(), mediaId: z.coerce.bigint(), mediaItemId: z.coerce.bigint() }))
+  .output(z.undefined());
+
 const getLibraryManagementInfo = baseOc
   .input(z.object({ libraryId: z.coerce.bigint() }))
   .output(z.strictObject({
@@ -266,6 +273,9 @@ export const mediaContract = {
   getMediaLibraryOverview: getMediaLibraryOverview,
   getMedia: getMedia,
   searchMedia: searchMedia,
+
+  markWatched: markMediaItemWatched,
+  removeWatchProgress: removeMediaItemWatchProgress,
 
   management: {
     get: getLibraryManagementInfo,
