@@ -1,12 +1,11 @@
-import Sharp from 'sharp';
-import sharp from 'sharp';
+import Sharp, { type Color as SharpColor } from 'sharp';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import type ApolloUser from '../ApolloUser.js';
 
 @singleton()
 export default class ProfilePictureProvider {
-  private readonly BACKGROUND_COLORS: Sharp.Color[] = [
+  private readonly BACKGROUND_COLORS: SharpColor[] = [
     { r: 0x1f, g: 0x6a, b: 0x8a }, // Teal
     { r: 0x3f, g: 0x51, b: 0xb5 }, // Indigo
     { r: 0x5e, g: 0x35, b: 0xb1 }, // Purple
@@ -35,7 +34,7 @@ export default class ProfilePictureProvider {
   private generateFallback(user: ApolloUser): Promise<Buffer> {
     const startingLetters = this.determineStartingLetters(user.displayName) || '?';
 
-    return sharp({
+    return Sharp({
       create: {
         width: 512,
         height: 512,
@@ -65,7 +64,7 @@ export default class ProfilePictureProvider {
       .toUpperCase();
   }
 
-  private chooseBackgroundColor(user: ApolloUser): Sharp.Color {
+  private chooseBackgroundColor(user: ApolloUser): SharpColor {
     const userIdSum = Buffer
       .from(user.id)
       .reduce((a, b) => a + b, 0);
