@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
+  import IconBitmapSubtitle from 'virtual:icons/tabler/photo';
   import type SubtitleTrack from '../../client-side/backends/subtitles/SubtitleTrack';
 
   let {
@@ -14,7 +15,7 @@
     children: Snippet,
 
     menuVisible: boolean,
-    menuItems: { id: string, label: string }[],
+    menuItems: { id: string, label: string, isBitmapBased?: boolean }[],
     activeItem?: SubtitleTrack | null,
     activeItemId?: string | null,
 
@@ -77,7 +78,14 @@
           class:active={activeItem ? (menuItem.id === activeItem.id) : (menuItem.id === activeItemId)}
           onclick={() => handleSelect(menuItem.id)}
         >
-          {menuItem.label}
+          <span class="menu-box-item-label">{menuItem.label}</span>
+          {#if menuItem.isBitmapBased}
+            <span
+              class="menu-box-item-badge"
+              title="Burned into the video — selecting or deselecting restarts playback"
+              aria-label="Burned-in subtitle: selecting or deselecting restarts playback"
+            ><IconBitmapSubtitle /></span>
+          {/if}
         </button>
       {/each}
     </div>
@@ -151,6 +159,21 @@
     text-align:           left;
     font-size:            0.9rem;
     font-variant-numeric: tabular-nums;
+  }
+
+  .menu-box-item-label {
+    flex:          1 1 auto;
+    overflow:      hidden;
+    text-overflow: ellipsis;
+    white-space:   nowrap;
+  }
+
+  .menu-box-item-badge {
+    flex:        0 0 auto;
+    display:     inline-flex;
+    align-items: center;
+    opacity:     0.7;
+    font-size:   0.95em;
   }
 
   .menu-box-item:hover {

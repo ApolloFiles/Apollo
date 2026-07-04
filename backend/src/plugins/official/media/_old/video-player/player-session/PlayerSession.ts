@@ -360,11 +360,11 @@ export default class PlayerSession {
   }
 
   // TODO: I don't think this method should be in here
-  async startLiveTranscode(file: LocalFile, startOffsetInSeconds: number = 0, mediaMetadata: StartPlaybackResponse['mediaMetadata']): Promise<VideoLiveTranscodeMedia> {
+  async startLiveTranscode(file: LocalFile, startOffsetInSeconds: number = 0, mediaMetadata: StartPlaybackResponse['mediaMetadata'], burnInSubtitleStreamIndex?: number | null): Promise<VideoLiveTranscodeMedia> {
     // FIXME: do not access the container like that
     const videoLiveTranscodeMediaFactory = container.resolve(VideoLiveTranscodeMediaFactory);
 
-    const newMedia = await videoLiveTranscodeMediaFactory.create(this.tmpDir, file, startOffsetInSeconds, mediaMetadata);
+    const newMedia = await videoLiveTranscodeMediaFactory.create(this.tmpDir, file, startOffsetInSeconds, mediaMetadata, burnInSubtitleStreamIndex);
     this.currentMedia?.destroy().catch(console.error);
     this.currentMedia = newMedia;
     this.currentYouTubeMedia = null;

@@ -9,6 +9,7 @@ import VideoLiveTranscodeMedia from './VideoLiveTranscodeMedia.js';
 import TextBasedSubtitleExtractor from '../../watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';
 import VideoAnalyser from '../../video/analyser/VideoAnalyser.js';
 import FontExtractor, { type ExtractedFont } from '../../watch/live_transcode/extractor/FontExtractor.js';
+import ImageBasedSubtitleHelper from './ffmpeg/ImageBasedSubtitleHelper.js';
 
 @singleton()
 export default class VideoLiveTranscodeMediaFactory {
@@ -17,14 +18,14 @@ export default class VideoLiveTranscodeMediaFactory {
   ) {
   }
 
-  async create(tmpDir: TemporaryDirectory, file: LocalFile, startOffsetInSeconds: number, mediaMetadata: StartPlaybackResponse['mediaMetadata']): Promise<VideoLiveTranscodeMedia> {
+  async create(tmpDir: TemporaryDirectory, file: LocalFile, startOffsetInSeconds: number, mediaMetadata: StartPlaybackResponse['mediaMetadata'], burnInSubtitleStreamIndex?: number | null): Promise<VideoLiveTranscodeMedia> {
     const [targetPublicDir, targetWorkDir, randomDirName] = await this.createTargetDirs(tmpDir);
     const videoFilePath = await this.createAnonymizedFileLink(file, targetWorkDir);
 
     const videoAnalysis = await VideoAnalyser.analyze(videoFilePath, true);
 
     const [transcodeHandle, subtitleResult] = await Promise.all([
-      this.liveTranscodeLauncher.launch(videoFilePath, targetPublicDir, startOffsetInSeconds, videoAnalysis),
+      this.liveTranscodeLauncher.launch(videoFilePath, targetPublicDir, startOffsetInSeconds, videoAnalysis, burnInSubtitleStreamIndex),
       (async () => {
         const textBasedSubtitlesDir = Path.join(targetPublicDir, '_subtitles'); // TODO: maybe in einen anderen Ordner für einfachere reusability zwischen transcode-restarts?
         const textBasedSubtitles = await TextBasedSubtitleExtractor.extract(videoFilePath, videoAnalysis, textBasedSubtitlesDir);
@@ -67,14 +68,28 @@ export default class VideoLiveTranscodeMediaFactory {
       tmpDir,
       randomDirName,
       {
-        subtitles: subtitleResult.textBasedSubtitles.map((subtitle) => {
-          return {
-            title: subtitle.title,
-            language: subtitle.language,
-            codecName: subtitle.codecName,
-            uri: `${randomDirName}/_subtitles/${encodeURIComponent(subtitle.fileName)}`,
-          };
-        }),
+        subtitles: [
+          ...subtitleResult.textBasedSubtitles.map((subtitle) => {
+            return {
+              title: subtitle.title,
+              language: subtitle.language,
+              codecName: subtitle.codecName,
+              uri: `${randomDirName}/_subtitles/${encodeURIComponent(subtitle.fileName)}`,
+              isBitmapBased: false,
+              streamIndex: null,
+            };
+          }),
+          ...ImageBasedSubtitleHelper.listSupportedImageBasedSubtitleStreams(videoAnalysis).map((subtitle) => {
+            return {
+              title: subtitle.title,
+              language: subtitle.language,
+              codecName: subtitle.codecName,
+              uri: null,
+              isBitmapBased: true,
+              streamIndex: subtitle.streamIndex,
+            };
+          }),
+        ],
         fonts: subtitleResult.subtitleFonts.map((font) => {
           return {
             uri: `${randomDirName}/_subtitles/fonts/${encodeURIComponent(font.fileName)}`,

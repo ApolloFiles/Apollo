@@ -29,6 +29,8 @@ export type LiveTranscodeHandle = {
   readonly startOffset: number;
   readonly audioNameMap: Map<string, string>;
   readonly selectedVideoEncoder: string;
+  /** The absolute input stream index of the image-based subtitle actually burned into the video, or `null` if none. */
+  readonly burnedInSubtitleStreamIndex: number | null;
 }
 
 // TODO: Refactor / clean-up class
@@ -40,10 +42,11 @@ export default class LiveTranscodeLauncher {
   ) {
   }
 
-  async launch(videoFile: string, targetDir: string, startOffsetInSeconds: number, videoAnalysis: ExtendedVideoAnalysis): Promise<LiveTranscodeHandle> {
-    const streamsToTranscode = this.autoStreamSelector.selectStreams(videoAnalysis);
+  async launch(videoFile: string, targetDir: string, startOffsetInSeconds: number, videoAnalysis: ExtendedVideoAnalysis, burnInSubtitleStreamIndex?: number | null): Promise<LiveTranscodeHandle> {
+    const streamsToTranscode = this.autoStreamSelector.selectStreams(videoAnalysis, burnInSubtitleStreamIndex);
 
     const videoStream = streamsToTranscode.find(stream => stream.codecType == 'video') as VideoStream;
+    const burnedInSubtitleStream = streamsToTranscode.find(stream => stream.codecType === 'subtitle') ?? null;
 
     const targetOptions = {
       fps: this.determineTargetFps(videoStream),
@@ -98,6 +101,7 @@ export default class LiveTranscodeLauncher {
       startOffset: startOffsetInSeconds,
       selectedVideoEncoder: videoEncoder,
       audioNameMap: streamArgs.audioNameMap,
+      burnedInSubtitleStreamIndex: burnedInSubtitleStream?.index ?? null,
     };
   }
 

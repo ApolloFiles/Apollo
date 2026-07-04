@@ -1,5 +1,6 @@
 import { singleton } from 'tsyringe';
 import type { Stream, VideoStream } from '../../../../video/analyser/VideoAnalyser.Types.js';
+import ImageBasedSubtitleHelper from '../ImageBasedSubtitleHelper.js';
 
 export interface TargetOptions {
   readonly fps: number;
@@ -16,7 +17,6 @@ interface PreparedComplexFilter {
 export default class VideoStreamArgumentsBuilder {
   /** Sorted array; Most favorable encoder at the start */
   public static readonly SUPPORTED_ENCODERS = ['h264_nvenc', /*'h264_vaapi',*/ 'h264_qsv', 'libx264'];
-  private static readonly SUPPORTED_IMAGE_BASED_SUBTITLES = ['hdmv_pgs_subtitle', 'dvb_subtitle', 'dvd_subtitle'];
 
   build(videoStream: VideoStream, streamsToTranscode: Stream[], target: TargetOptions, encoder: string): string[] {
     switch (encoder) {
@@ -132,7 +132,7 @@ export default class VideoStreamArgumentsBuilder {
     }
 
     for (const stream of streamsToTranscode) {
-      if (stream.codecType != 'subtitle' || !VideoStreamArgumentsBuilder.SUPPORTED_IMAGE_BASED_SUBTITLES.includes(stream.codecName)) {
+      if (!ImageBasedSubtitleHelper.isSupportedImageBasedSubtitleStream(stream)) {
         continue;
       }
 

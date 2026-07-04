@@ -114,13 +114,16 @@ export default class PlayerSessionRouter implements Router {
             totalDurationInSeconds: currentMedia.totalDurationInSeconds,
             startOffsetInSeconds: currentMedia.startOffset,
             mediaMetadata: currentMedia.mediaMetadata,
+            activeBurnedInSubtitleStreamIndex: currentMedia.activeBurnedInSubtitleStreamIndex,
 
             additionalStreams: {
               subtitles: currentMedia.subtitleMetadata.subtitles.map(stream => ({
                 title: stream.title,
                 language: stream.language,
                 codecName: stream.codecName,
-                uri: `/api/_frontend/media/player-session/${encodeURIComponent(playerSession.id)}/file/${this.encodeUriProperly(stream.uri)}`,
+                uri: stream.uri != null ? `/api/_frontend/media/player-session/${encodeURIComponent(playerSession.id)}/file/${this.encodeUriProperly(stream.uri)}` : null,
+                isBitmapBased: stream.isBitmapBased,
+                streamIndex: stream.streamIndex,
                 fonts: currentMedia.subtitleMetadata.fonts.map(font => ({
                   uri: `/api/_frontend/media/player-session/${encodeURIComponent(playerSession.id)}/file/${this.encodeUriProperly(font.uri)}`,
                 })),
@@ -414,6 +417,8 @@ export default class PlayerSessionRouter implements Router {
           return reply;
         }
 
+        const burnInSubtitleStreamIndex = this.parseBurnInSubtitleStreamIndex((request.body as any)?.burnInSubtitleStreamIndex);
+
         const mediaItemId = this.parseUserInputBigInt((request.body as any)?.mediaItemId, 0n);
         if (mediaItemId > 0) {
           const mediaItem = await this.findMediaItem(mediaItemId, apolloUser);
@@ -463,7 +468,7 @@ export default class PlayerSessionRouter implements Router {
                 },
               } : undefined,
             } : undefined),
-          });
+          }, burnInSubtitleStreamIndex);
         } else {
           const file = await this.videoSeekThumbnailControllerHelper.parseRequestedFile(request, reply, (request.body as any)?.file, apolloUser);
           if (file == null) {
@@ -473,7 +478,7 @@ export default class PlayerSessionRouter implements Router {
           videoLiveTranscodeMedia = await playerSession.startLiveTranscode(file, startOffset, {
             mediaItemId: '0', // FIXME
             title: file.getFileName(),
-          });
+          }, burnInSubtitleStreamIndex);
         }
       } finally {
         releaseStartPlaybackLock();
@@ -488,13 +493,16 @@ export default class PlayerSessionRouter implements Router {
           totalDurationInSeconds: videoLiveTranscodeMedia.totalDurationInSeconds,
           startOffsetInSeconds: videoLiveTranscodeMedia.startOffset,
           mediaMetadata: videoLiveTranscodeMedia.mediaMetadata,
+          activeBurnedInSubtitleStreamIndex: videoLiveTranscodeMedia.activeBurnedInSubtitleStreamIndex,
 
           additionalStreams: {
             subtitles: videoLiveTranscodeMedia.subtitleMetadata.subtitles.map(stream => ({
               title: stream.title,
               language: stream.language,
               codecName: stream.codecName,
-              uri: `/api/_frontend/media/player-session/${encodeURIComponent(playerSession.id)}/file/${this.encodeUriProperly(stream.uri)}`,
+              uri: stream.uri != null ? `/api/_frontend/media/player-session/${encodeURIComponent(playerSession.id)}/file/${this.encodeUriProperly(stream.uri)}` : null,
+              isBitmapBased: stream.isBitmapBased,
+              streamIndex: stream.streamIndex,
               fonts: videoLiveTranscodeMedia.subtitleMetadata.fonts.map(font => ({
                 uri: `/api/_frontend/media/player-session/${encodeURIComponent(playerSession.id)}/file/${this.encodeUriProperly(font.uri)}`,
               })),
@@ -760,6 +768,27 @@ export default class PlayerSessionRouter implements Router {
       .status(400)
       .type('application/json')
       .send({ error: `Parameter 'startOffset' needs to be a positive integer or 'auto'` });
+    return null;
+  }
+
+  /**
+   * Parses the optional `burnInSubtitleStreamIndex` field of a change-media request.
+   * `undefined` (field absent) → auto-select, `null` → explicitly none, non-negative integer → that stream index.
+   */
+  private parseBurnInSubtitleStreamIndex(userInput: unknown): number | null | undefined {
+    if (userInput === undefined) {
+      return undefined;
+    }
+    if (userInput === null) {
+      return null;
+    }
+    if (typeof userInput === 'number' && Number.isSafeInteger(userInput) && userInput >= 0) {
+      return userInput;
+    }
+    if (typeof userInput === 'string' && /^[0-9]+$/.test(userInput)) {
+      return parseInt(userInput, 10);
+    }
+    // Anything malformed is treated as "no burn" rather than failing the request
     return null;
   }
 

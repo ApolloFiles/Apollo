@@ -80,13 +80,16 @@ export default class WebSocketMessageBuilder {
           totalDurationInSeconds: media.totalDurationInSeconds,
           startOffsetInSeconds: media.startOffset,
           mediaMetadata: media.mediaMetadata,
+          activeBurnedInSubtitleStreamIndex: media.activeBurnedInSubtitleStreamIndex,
 
           additionalStreams: {
             subtitles: media.subtitleMetadata.subtitles.map(stream => ({
               title: stream.title,
               language: stream.language,
               codecName: stream.codecName,
-              uri: `/api/_frontend/media/player-session/${encodeURIComponent(sessionId)}/file/${this.encodeUriProperly(stream.uri)}`,
+              uri: stream.uri != null ? `/api/_frontend/media/player-session/${encodeURIComponent(sessionId)}/file/${this.encodeUriProperly(stream.uri)}` : null,
+              isBitmapBased: stream.isBitmapBased,
+              streamIndex: stream.streamIndex,
               fonts: media.subtitleMetadata.fonts.map(font => ({
                 uri: `/api/_frontend/media/player-session/${encodeURIComponent(sessionId)}/file/${this.encodeUriProperly(font.uri)}`,
               })),

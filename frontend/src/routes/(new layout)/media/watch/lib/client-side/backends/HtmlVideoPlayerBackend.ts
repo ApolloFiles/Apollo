@@ -1,5 +1,6 @@
 import type { StartPlaybackResponse } from '../../../legacy-types';
 import AssSubtitleTrack from './subtitles/AssSubtitleTrack';
+import BurnedInSubtitleTrack from './subtitles/BurnedInSubtitleTrack';
 import NativeSubtitleTrack from './subtitles/NativeSubtitleTrack';
 import type SubtitleTrack from './subtitles/SubtitleTrack';
 import VideoPlayerBackend, { type BackendOptions, type PlayerEvent } from './VideoPlayerBackend';
@@ -33,11 +34,16 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
         const subtitleId = i.toString();
         const subtitle = options.backend.subtitles[i];
 
-        if (subtitle.codecName === 'webvtt') {
+        if (subtitle.isBitmapBased && subtitle.streamIndex != null) {
+          // Image-based (Blu-ray PGS / VOBSUB / DVB) subtitles are burned into the video server-side.
+          this.addSubtitleTrack(new BurnedInSubtitleTrack(`bitmap_${subtitle.streamIndex}`, subtitle.title, subtitle.language, subtitle.streamIndex));
+          continue;
+        }
+        if (subtitle.uri != null && subtitle.codecName === 'webvtt') {
           this.addSubtitleTrack(new NativeSubtitleTrack(subtitleId, subtitle.title, subtitle.language, subtitle.uri, this.videoElement));
           continue;
         }
-        if (subtitle.codecName === 'ass' || subtitle.codecName === 'ssa') {
+        if (subtitle.uri != null && (subtitle.codecName === 'ass' || subtitle.codecName === 'ssa')) {
           this.addSubtitleTrack(new AssSubtitleTrack(subtitleId, subtitle.title, subtitle.language, subtitle.uri, subtitle.fonts, this.videoElement));
           continue;
         }

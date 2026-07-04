@@ -233,6 +233,7 @@
 
         totalDurationInSeconds: playbackStatus.totalDurationInSeconds,
         startOffset: playbackStatus.startOffsetInSeconds,
+        activeBurnedInSubtitleStreamIndex: playbackStatus.activeBurnedInSubtitleStreamIndex,
         restartTranscode: (startOffset, activeAudioTrack, activeSubtitleTrack) => {
           if (transcodeRestartInProgress) {
             return;
@@ -245,7 +246,30 @@
           transcodeRestartInProgress = true;
 
           videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
-          videoPlayerPromise = restartVideoLiveTranscode(playbackStatus.mediaMetadata.mediaItemId, startOffset, activeAudioTrack, activeSubtitleTrack)
+          // Preserve the currently burned-in subtitle across an out-of-window seek restart.
+          videoPlayerPromise = restartVideoLiveTranscode(playbackStatus.mediaMetadata.mediaItemId, startOffset, activeAudioTrack, activeSubtitleTrack, playbackStatus.activeBurnedInSubtitleStreamIndex)
+            .finally(() => {
+              transcodeRestartInProgress = false;
+            });
+          videoPlayerPromise.then((videoPlayer) => webSocketClient?.setVideoPlayer(videoPlayer));
+        },
+        changeBurnedInSubtitle: (streamIndex, startOffset, activeAudioTrack, desiredSoftSubtitleIdAfterReload) => {
+          if (transcodeRestartInProgress) {
+            return;
+          }
+          // Unlike an out-of-window seek, toggling hard subs is an explicit action any participant may take;
+          // the backend restarts the shared transcode and broadcasts MEDIA_CHANGED so every client reloads.
+
+          transcodeRestartInProgress = true;
+
+          videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
+          videoPlayerPromise = restartVideoLiveTranscode(playbackStatus.mediaMetadata.mediaItemId, startOffset, activeAudioTrack, -1, streamIndex)
+            .then((videoPlayer) => {
+              if (desiredSoftSubtitleIdAfterReload != null) {
+                videoPlayer.$activeSubtitleTrackId = desiredSoftSubtitleIdAfterReload;
+              }
+              return videoPlayer;
+            })
             .finally(() => {
               transcodeRestartInProgress = false;
             });
@@ -298,7 +322,7 @@
     );
   }
 
-  async function restartVideoLiveTranscode(mediaItemId: string, startOffset: number, initialAudioTrack: number, initialSubtitleTrack: number): Promise<VideoPlayer> {
+  async function restartVideoLiveTranscode(mediaItemId: string, startOffset: number, initialAudioTrack: number, initialSubtitleTrack: number, burnInSubtitleStreamIndex: number | null): Promise<VideoPlayer> {
     if (sessionId == null) {
       throw new Error('Session ID is not set, cannot restart video live transcode');
     }
@@ -313,6 +337,7 @@
         csrfToken: userProfile.csrfToken,
         mediaItemId,
         startOffset,
+        burnInSubtitleStreamIndex,
       }),
     });
 

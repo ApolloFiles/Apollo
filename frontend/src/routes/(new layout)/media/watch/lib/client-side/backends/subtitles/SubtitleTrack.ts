@@ -9,6 +9,11 @@ export default abstract class SubtitleTrack {
   abstract get language(): string;
   protected abstract get isActive(): boolean;
 
+  /** `true` for image-based subtitles that are burned into the video server-side; (de-)selecting them restarts the live transcode. */
+  get isBitmapBased(): boolean {
+    return false;
+  }
+
   abstract activate(): void;
   abstract deactivate(): void;
 

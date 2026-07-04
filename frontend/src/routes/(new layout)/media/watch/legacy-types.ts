@@ -35,13 +35,20 @@ export type StartPlaybackResponse = {
       },
     }
   },
+  /** The absolute input stream index of the image-based subtitle currently burned into the video, or `null` if none. */
+  activeBurnedInSubtitleStreamIndex: number | null,
   // TODO: Make additionalStreams optional (or all its keys)
   additionalStreams: {
     subtitles: {
       title: string,
       language: string,
       codecName: string,
-      uri: string,
+      /** Sidecar URI for text-based (soft) subtitles; `null` for image-based subtitles that are burned into the video. */
+      uri: string | null,
+      /** `true` for image-based subtitles that are burned into the video stream ("hard subs") and require a transcode restart to (de-)select. */
+      isBitmapBased: boolean,
+      /** For image-based subtitles: the absolute ffmpeg input stream index used to (de-)select burning; `null` otherwise. */
+      streamIndex: number | null,
       fonts: { uri: string }[]
     }[]
   }
