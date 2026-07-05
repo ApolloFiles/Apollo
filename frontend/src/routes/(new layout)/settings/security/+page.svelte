@@ -4,12 +4,23 @@
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import { m } from '$lib/paraglide/messages.js';
+  import { getLocale } from '$lib/paraglide/runtime';
   import type { PageProps } from './$types';
 
   // TODO: This page needs CSRF protection
   // TODO: Hide provider user ids by default (show on click)
 
   let { data }: PageProps = $props();
+
+  function formatDate(date: Date): string {
+    return date.toLocaleDateString(getLocale(), {
+      year:   'numeric',
+      month:  'short',
+      day:    'numeric',
+      hour:   '2-digit',
+      minute: '2-digit',
+    });
+  }
 
   const authProviders = $derived.by(() => {
     const authProviders: ({
@@ -157,9 +168,9 @@
                 {/if}
               </div>
               <div class="session-meta">
-                <span>createdAt={session.createdAt.toLocaleString()}</span>
-                <span>expiresAt={session.expiresAt.toLocaleString()}</span>
-                <span>roughLastActivity={session.roughLastActivity.toLocaleString()}</span>
+                <span>{m.page_settings_security_session_created()}: {formatDate(session.createdAt)}</span>
+                <span>{m.page_settings_security_session_expires()}: {formatDate(session.expiresAt)}</span>
+                <span>{m.page_settings_security_session_last_activity()}: {formatDate(session.roughLastActivity)}</span>
               </div>
             </div>
             <div class="session-action">
