@@ -1,13 +1,14 @@
 <script lang="ts">
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
+  import { m } from '$lib/paraglide/messages.js';
 
   let { data } = $props();
 
   const users = $derived(data.users);
 
   async function createInviteLink(): Promise<void> {
-    if (!confirm('Are you sure you want to create a new invite link?')) {
+    if (!confirm(m.page_admin_users_create_invite_confirm())) {
       return;
     }
 
@@ -20,19 +21,19 @@
 </script>
 
 <svelte:head>
-  <title>Users · Admin | Apollo</title>
+  <title>{m.nav_admin_users()} · {m.nav_app_admin()} | Apollo</title>
 </svelte:head>
 
 <div class="page-container">
   <header class="page-header">
     <div class="header-content">
-      <h1>Users</h1>
-      <p class="subtitle">Manage users and permissions</p>
+      <h1>{m.nav_admin_users()}</h1>
+      <p class="subtitle">{m.page_admin_users_subtitle()}</p>
     </div>
     <div class="header-actions">
       <button class="btn-primary" onclick={createInviteLink}>
         <TablerIcon icon="user-plus" />
-        Create invite link
+        {m.page_admin_users_btn_create_invite()}
       </button>
     </div>
   </header>
@@ -59,13 +60,13 @@
               {#if user.isSuperUser}
                 <span class="badge badge-superuser">
                   <TablerIcon icon="shield-check-filled" />
-                  Super User
+                  {m.page_admin_badge_super_user()}
                 </span>
               {/if}
               {#if user.blocked}
                 <span class="badge badge-blocked">
                   <TablerIcon icon="ban" />
-                  Blocked
+                  {m.page_admin_badge_blocked()}
                 </span>
               {/if}
             </div>

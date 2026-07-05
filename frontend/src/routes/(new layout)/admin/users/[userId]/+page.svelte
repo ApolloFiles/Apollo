@@ -2,6 +2,8 @@
   import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
+  import { m } from '$lib/paraglide/messages.js';
+  import { getLocale } from '$lib/paraglide/runtime';
 
   let { data } = $props();
 
@@ -10,7 +12,7 @@
 
   function formatDate(date: Date | null, removeTime = false): string {
     if (date == null) {
-      return 'Never';
+      return m.page_admin_user_details_date_never();
     }
 
     const options: Intl.DateTimeFormatOptions = {
@@ -24,12 +26,14 @@
       options.minute = '2-digit';
     }
 
-    return date.toLocaleDateString(undefined, options);
+    return date.toLocaleDateString(getLocale(), options);
   }
 
   function updateUserBlockStatus(block: boolean): void {
-    const action = block ? 'block' : 'unblock';
-    if (!confirm(`Are you sure you want to ${action} this user?`)) {
+    const confirmMessage = block
+      ? m.page_admin_user_details_block_confirm()
+      : m.page_admin_user_details_unblock_confirm();
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -47,7 +51,7 @@
   }
 
   function unlinkAuthProvider(providerId: string): void {
-    if (!confirm('Are you sure you want to unlink this authentication provider from the user?')) {
+    if (!confirm(m.page_admin_user_details_provider_unlink_confirm())) {
       return;
     }
 
@@ -66,7 +70,7 @@
 </script>
 
 <svelte:head>
-  <title>{user.displayName} · User Details | Apollo</title>
+  <title>{user.displayName} · {m.page_admin_user_details_subtitle()} | Apollo</title>
 </svelte:head>
 
 <div class="page-container">
@@ -74,19 +78,19 @@
   <header class="page-header">
     <div class="header-content">
       <div class="d-flex align-items-center gap-3">
-        <a href="/admin/users" class="back-link" aria-label="Back to users">
+        <a href="/admin/users" class="back-link" aria-label={m.page_admin_user_details_back_label()}>
           <TablerIcon icon="arrow-left" />
         </a>
         <div>
           <h1>{user.displayName}</h1>
-          <p class="subtitle">User Details</p>
+          <p class="subtitle">{m.page_admin_user_details_subtitle()}</p>
         </div>
       </div>
     </div>
     <div class="header-actions">
       <button class="btn btn-outline-danger" onclick={() => updateUserBlockStatus(!user.blocked)}>
         <TablerIcon icon="ban" />
-        {user.blocked ? "Unblock User" : "Block User"}
+        {user.blocked ? m.page_admin_user_details_btn_unblock() : m.page_admin_user_details_btn_block()}
       </button>
     </div>
   </header>
@@ -95,7 +99,7 @@
     <!-- User Info Card -->
     <section class="card">
       <div class="card-header">
-        <h2>User Information</h2>
+        <h2>{m.page_admin_user_details_info_heading()}</h2>
       </div>
       <div class="card-body">
         <div class="user-profile-header">
@@ -109,13 +113,13 @@
             {#if user.isSuperUser}
               <span class="badge badge-superuser">
                 <TablerIcon icon="shield-check-filled" />
-                Super User
+                {m.page_admin_badge_super_user()}
               </span>
             {/if}
             {#if user.blocked}
               <span class="badge badge-blocked">
                 <TablerIcon icon="ban" />
-                Blocked
+                {m.page_admin_badge_blocked()}
               </span>
             {/if}
           </div>
@@ -123,23 +127,23 @@
 
         <div class="info-grid">
           <div class="info-item">
-            <span class="label">Display Name</span>
+            <span class="label">{m.page_settings_profile_field_display_name_label()}</span>
             <div class="value">{user.displayName}</div>
           </div>
           <div class="info-item">
-            <span class="label">User ID</span>
+            <span class="label">{m.page_admin_user_details_field_user_id()} (UAI)</span>
             <div class="value monospace">{user.id}</div>
           </div>
           <div class="info-item">
-            <span class="label">Created At</span>
+            <span class="label">{m.page_admin_user_details_field_created_at()}</span>
             <div class="value">{formatDate(user.createdAt)}</div>
           </div>
           <div class="info-item">
-            <span class="label">Last Login</span>
+            <span class="label">{m.page_admin_user_details_field_last_login()}</span>
             <div class="value">{formatDate(user.lastLoginDate, true)}</div>
           </div>
           <div class="info-item">
-            <span class="label">Last Activity</span>
+            <span class="label">{m.page_admin_user_details_field_last_activity()}</span>
             <div class="value">{formatDate(user.lastActivityDate, true)}</div>
           </div>
         </div>
@@ -149,7 +153,7 @@
     <!-- Connected Accounts Card -->
     <section class="card">
       <div class="card-header">
-        <h2>Connected Accounts</h2>
+        <h2>{m.page_settings_security_connected_accounts_heading()}</h2>
       </div>
       <div class="card-body p-0">
         {#if linkedAuthProviders.length > 0}
@@ -164,18 +168,18 @@
                   </div>
                   <div class="provider-details">
                     <span class="detail-text">
-                      Name:
+                      {m.page_admin_user_details_provider_field_name()}:
                       {#if provider.providerUserDisplayName}
                         <strong>{provider.providerUserDisplayName}</strong>
                       {:else}
-                        <em>None</em>
+                        <em>{m.page_admin_user_details_provider_name_none()}</em>
                       {/if}
                     </span>
                     <span class="detail-text">
-                      Identifier: <strong>{provider.providerUserId}</strong>
+                      {m.page_admin_user_details_provider_field_identifier()}: <strong>{provider.providerUserId}</strong>
                     </span>
                     <span class="detail-text">
-                      Linked: {formatDate(provider.linkedAt)}
+                      {m.page_admin_user_details_provider_field_linked()}: {formatDate(provider.linkedAt)}
                     </span>
                   </div>
                 </div>
@@ -184,10 +188,10 @@
                   <button
                     class="btn btn-sm btn-outline-danger"
                     onclick={() => unlinkAuthProvider(provider.identifier)}
-                    title="Force Unlink"
+                    title={m.page_admin_user_details_provider_unlink_title()}
                   >
                     <TablerIcon icon="link-off" />
-                    Unlink
+                    {m.page_admin_user_details_provider_btn_unlink()}
                   </button>
                 </div>
               </div>
@@ -196,7 +200,7 @@
         {:else}
           <div class="empty-state">
             <TablerIcon icon="link-off" />
-            <p>No connected accounts found</p>
+            <p>{m.page_admin_user_details_no_connected_accounts()}</p>
           </div>
         {/if}
       </div>
