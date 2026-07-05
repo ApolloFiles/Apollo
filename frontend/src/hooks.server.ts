@@ -3,7 +3,15 @@ import { paraglideMiddleware } from '$lib/paraglide/server';
 import type { Handle, HandleFetch, HandleServerError } from '@sveltejs/kit';
 
 export const handleError: HandleServerError = ({ error, event, status, message }) => {
-  console.error(`[${status}] ${event.request.method} ${event.url.pathname}: ${message}`, error);
+  const logLine = `[${status}] ${event.request.method} ${event.url.pathname}: ${message}`;
+
+  // Expected client errors (404, etc.) don't carry a useful stack trace – log just the line.
+  if (status >= 400 && status < 500) {
+    console.warn(logLine);
+    return;
+  }
+
+  console.error(logLine, error);
 };
 
 export const handleFetch: HandleFetch = async ({ request, fetch }) => {
