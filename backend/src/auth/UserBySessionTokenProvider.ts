@@ -42,7 +42,6 @@ export default class UserBySessionTokenProvider {
       const expectedRoughLastActivity = this.normalizeToHour(now);
 
       if (session.roughLastActivity.getTime() !== expectedRoughLastActivity.getTime()) {
-        console.log(`Updating last activity for session ${session.id} and user ${session.user.id}`);
         await this.databaseClient.$transaction([
           this.databaseClient.authSession.update({
             where: { id: session.id },
