@@ -1,6 +1,18 @@
 import { dev } from '$app/environment';
+import { defineCustomServerStrategy } from '$lib/paraglide/runtime';
 import { paraglideMiddleware } from '$lib/paraglide/server';
+import { readUiLanguageCookie, UI_LANGUAGE_AUTO_VALUE } from '$lib/uiLanguageCookie';
 import type { Handle, HandleFetch, HandleServerError } from '@sveltejs/kit';
+
+defineCustomServerStrategy('custom-userPreference', {
+  getLocale: (request) => {
+    const value = readUiLanguageCookie(request?.headers.get('cookie'));
+    if (value == null || value === UI_LANGUAGE_AUTO_VALUE) {
+      return undefined;
+    }
+    return value;
+  },
+});
 
 export const handleError: HandleServerError = ({ error, event, status, message }) => {
   const logLine = `[${status}] ${event.request.method} ${event.url.pathname}: ${message}`;

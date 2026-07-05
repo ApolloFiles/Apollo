@@ -19,6 +19,7 @@ export default class SessionORpcRouterFactory {
               id: context.authSession.user.id,
               name: context.authSession.user.displayName,
               isSuperUser: context.authSession.user.isSuperUser,
+              uiLanguage: context.authSession.user.uiLanguage,
             },
           };
         }),

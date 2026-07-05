@@ -29,6 +29,7 @@ export default class AdminORpcRouterFactory {
               csrfToken: context.authSession.csrfToken,
               displayName: context.authSession.user.displayName,
               isSuperUser: context.authSession.user.isSuperUser,
+              uiLanguage: context.authSession.user.uiLanguage,
             },
 
             users: allUsers.map((user) => ({
@@ -75,6 +76,7 @@ export default class AdminORpcRouterFactory {
               csrfToken: context.authSession.csrfToken,
               displayName: context.authSession.user.displayName,
               isSuperUser: context.authSession.user.isSuperUser,
+              uiLanguage: context.authSession.user.uiLanguage,
             },
 
             user: {

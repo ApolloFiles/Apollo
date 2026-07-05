@@ -24,12 +24,13 @@ export default class UserByOAuthProvider {
         displayName: true,
         isSuperUser: true,
         blocked: true,
+        uiLanguage: true,
       },
     });
 
     if (user == null) {
       return null;
     }
-    return new ApolloUser(user.id, user.displayName, user.blocked, user.isSuperUser);
+    return new ApolloUser(user.id, user.displayName, user.blocked, user.isSuperUser, user.uiLanguage);
   }
 }

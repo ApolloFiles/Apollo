@@ -7,6 +7,7 @@ export const load: LayoutServerLoad = (): RenderingLayoutData => {
       layout: {
         sideBarMenuItems: [
           { label: 'Profile', href: '/settings/profile', icon: 'user-filled' },
+          { label: 'Language', href: '/settings/language', icon: 'language' },
           { label: 'Security', href: '/settings/security', icon: 'shield-lock' },
         ],
       },

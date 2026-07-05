@@ -7,6 +7,7 @@ model AuthUser {
   lastLoginDate    DateTime? @map("last_login_date") @db.Timestamptz()
   lastActivityDate DateTime? @map("last_activity_date") @db.Timestamptz()
   profilePicture   Bytes?    @map("profile_picture")
+  uiLanguage       String?   @map("ui_language")
 
   linkedAuthProviders             AuthUserLinkedProvider[]
   sessions                        AuthSession[]

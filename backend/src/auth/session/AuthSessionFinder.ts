@@ -18,6 +18,7 @@ export type SessionDataWithUser = SessionData & {
     isSuperUser: boolean,
     blocked: boolean,
     lastActivityDate: Date | null,
+    uiLanguage: string | null,
   },
 }
 
@@ -52,6 +53,7 @@ export default class AuthSessionFinder {
             isSuperUser: true,
             blocked: true,
             lastActivityDate: true,
+            uiLanguage: true,
           },
         },
       },

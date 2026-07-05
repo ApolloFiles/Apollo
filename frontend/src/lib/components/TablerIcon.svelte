@@ -24,6 +24,7 @@
   import IconFolderOpen from 'virtual:icons/tabler/folder-open';
   import IconHeadphones from 'virtual:icons/tabler/headphones';
   import IconInfoCircle from 'virtual:icons/tabler/info-circle';
+  import IconLanguage from 'virtual:icons/tabler/language';
   import IconLink from 'virtual:icons/tabler/link';
   import IconLinkOff from 'virtual:icons/tabler/link-off';
   import IconLoader2 from 'virtual:icons/tabler/loader-2';
@@ -80,6 +81,7 @@
     | 'folder-open'
     | 'headphones'
     | 'info-circle'
+    | 'language'
     | 'link'
     | 'link-off'
     | 'loader-2'
@@ -168,6 +170,8 @@
         return IconHeadphones;
       case 'info-circle':
         return IconInfoCircle;
+      case 'language':
+        return IconLanguage;
       case 'link':
         return IconLink;
       case 'link-off':

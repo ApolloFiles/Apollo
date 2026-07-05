@@ -19,6 +19,7 @@ export default class UserProvider {
         displayName: true,
         isSuperUser: true,
         blocked: true,
+        uiLanguage: true,
       },
     });
 
@@ -26,7 +27,7 @@ export default class UserProvider {
       return null;
     }
 
-    return new ApolloUser(userData.id, userData.displayName, userData.blocked, userData.isSuperUser);
+    return new ApolloUser(userData.id, userData.displayName, userData.blocked, userData.isSuperUser, userData.uiLanguage);
   }
 
   async findAll(includeBlockedUsers = true): Promise<ApolloUser[]> {
@@ -39,6 +40,7 @@ export default class UserProvider {
         displayName: true,
         isSuperUser: true,
         blocked: true,
+        uiLanguage: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -47,7 +49,7 @@ export default class UserProvider {
 
     const users: ApolloUser[] = [];
     for (const userData of allUsers) {
-      users.push(new ApolloUser(userData.id, userData.displayName, userData.blocked, userData.isSuperUser));
+      users.push(new ApolloUser(userData.id, userData.displayName, userData.blocked, userData.isSuperUser, userData.uiLanguage));
     }
     return users;
   }

@@ -15,7 +15,7 @@ function registerPlugin(instance: FastifyInstance, _opts: FastifyPluginOptions, 
   instance.decorateReply('serverTiming');
 
   instance.addHook('onRequest', (request, reply, done): void => {
-    if (!IS_PRODUCTION || request.getSessionUserOptional()?.user.isSuperUser) {
+    if (!IS_PRODUCTION || request.getSessionUserOptional()?.user.hasSuperUserPrivileges) {
       reply.serverTiming = new ServerTiming();
     }
     done();

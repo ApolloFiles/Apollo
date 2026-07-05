@@ -25,6 +25,7 @@ export default class UserORpcRouterFactory {
           csrfToken: context.authSession.csrfToken,
           displayName: context.authSession.user.displayName,
           isSuperUser: context.authSession.user.isSuperUser,
+          uiLanguage: context.authSession.user.uiLanguage,
         };
       }),
 
@@ -60,6 +61,18 @@ export default class UserORpcRouterFactory {
             }),
         },
 
+        language: {
+          updateUiLanguage: os.settings.language.updateUiLanguage
+            .handler(async ({ input, context }) => {
+              await this.databaseClient.authUser.update({
+                where: { id: context.authSession.user.id },
+                data: {
+                  uiLanguage: input.uiLanguage,
+                },
+              });
+            }),
+        },
+
         security: {
           get: os.settings.security.get
             .handler(async ({ context }) => {
@@ -85,6 +98,7 @@ export default class UserORpcRouterFactory {
                   csrfToken: context.authSession.csrfToken,
                   displayName: context.authSession.user.displayName,
                   isSuperUser: context.authSession.user.isSuperUser,
+                  uiLanguage: context.authSession.user.uiLanguage,
                 },
 
                 sessions: {

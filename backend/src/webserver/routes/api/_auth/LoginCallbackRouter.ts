@@ -11,6 +11,7 @@ import SessionCookieHelper from '../../../../auth/session/SessionCookieHelper.js
 import AppConfiguration from '../../../../config/AppConfiguration.js';
 import { ContainerTokens } from '../../../../constants.js';
 import type ApolloUser from '../../../../user/ApolloUser.js';
+import UiLanguageCookieHelper from '../../../../user/UiLanguageCookieHelper.js';
 import { BadRequestError } from '../../../errors/HttpErrors.js';
 import type { FastifyInstanceWithZod } from '../../../server/FastifyWebServer.js';
 import type { RouteReturn } from '../../Router.js';
@@ -30,6 +31,7 @@ export default class LoginRouter extends AbstractLoginRouter {
     private readonly userByOAuthProvider: UserByOAuthProvider,
     private readonly oAuthLinkPersister: OAuthLinkPersister,
     private readonly userCreatorByInvite: UserCreatorByInvite,
+    private readonly uiLanguageCookieHelper: UiLanguageCookieHelper,
   ) {
     super(oAuthConfigurationProvider);
   }
@@ -114,6 +116,7 @@ export default class LoginRouter extends AbstractLoginRouter {
   private async createSession(request: FastifyRequest, reply: FastifyReply, user: ApolloUser): Promise<void> {
     const session = await this.sessionCreator.create(user.id, request.headers['user-agent'] ?? '');
     this.sessionCookieHelper.setSessionCookie(reply, false, session.token, session.remainingLifetimeInSeconds);
+    this.uiLanguageCookieHelper.setUiLanguageCookie(reply, user.uiLanguage);
   }
 
   private acquireAccessToken(request: FastifyRequest, oAuthConfig: OAuthConfig, loginState: LoginStateData): Promise<OpenIdTokenResponse> {

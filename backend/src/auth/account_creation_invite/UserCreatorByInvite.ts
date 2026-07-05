@@ -56,11 +56,12 @@ export default class UserCreatorByInvite {
           displayName: true,
           isSuperUser: true,
           blocked: true,
+          uiLanguage: true,
         },
       });
     });
 
-    return new ApolloUser(createdUser.id, createdUser.displayName, createdUser.blocked, createdUser.isSuperUser);
+    return new ApolloUser(createdUser.id, createdUser.displayName, createdUser.blocked, createdUser.isSuperUser, createdUser.uiLanguage);
   }
 
   private async preProcessProfilePicture(rawProfilePictureBytes: Buffer | null): Promise<ProcessedProfilePicture | null> {

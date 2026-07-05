@@ -105,6 +105,7 @@ export default class MediaORpcRouterFactory {
               csrfToken: context.authSession.csrfToken,
               displayName: context.authSession.user.displayName,
               isSuperUser: context.authSession.user.isSuperUser,
+              uiLanguage: context.authSession.user.uiLanguage,
             },
 
             page: {
@@ -139,6 +140,7 @@ export default class MediaORpcRouterFactory {
               csrfToken: context.authSession.csrfToken,
               displayName: context.authSession.user.displayName,
               isSuperUser: context.authSession.user.isSuperUser,
+              uiLanguage: context.authSession.user.uiLanguage,
             },
 
             page: {
@@ -257,6 +259,7 @@ export default class MediaORpcRouterFactory {
               csrfToken: context.authSession.csrfToken,
               displayName: context.authSession.user.displayName,
               isSuperUser: context.authSession.user.isSuperUser,
+              uiLanguage: context.authSession.user.uiLanguage,
             },
 
             page: {
@@ -344,6 +347,7 @@ export default class MediaORpcRouterFactory {
                 csrfToken: context.authSession.csrfToken,
                 displayName: context.authSession.user.displayName,
                 isSuperUser: context.authSession.user.isSuperUser,
+                uiLanguage: context.authSession.user.uiLanguage,
               },
 
               library,
@@ -360,6 +364,7 @@ export default class MediaORpcRouterFactory {
                 csrfToken: context.authSession.csrfToken,
                 displayName: context.authSession.user.displayName,
                 isSuperUser: context.authSession.user.isSuperUser,
+                uiLanguage: context.authSession.user.uiLanguage,
               },
 
               libraries: await this.collectLibrariesData(context.authSession.user),
