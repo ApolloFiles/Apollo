@@ -20,7 +20,7 @@
 </script>
 
 <svelte:head>
-  <title>Users - Admin - Apollo</title>
+  <title>Users · Admin | Apollo</title>
 </svelte:head>
 
 <div class="page-container">

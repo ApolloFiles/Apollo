@@ -66,7 +66,7 @@
 </script>
 
 <svelte:head>
-  <title>{user.displayName} - User Details - Apollo</title>
+  <title>{user.displayName} · User Details | Apollo</title>
 </svelte:head>
 
 <div class="page-container">

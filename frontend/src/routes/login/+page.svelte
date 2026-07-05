@@ -9,7 +9,7 @@
 </script>
 
 <svelte:head>
-  <title>Login</title>
+  <title>Login | Apollo</title>
 </svelte:head>
 
 <div class="row g-0">

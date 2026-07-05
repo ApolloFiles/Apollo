@@ -61,7 +61,7 @@
 </script>
 
 <svelte:head>
-  <title>Profile Settings - Apollo</title>
+  <title>Profile Settings | Apollo</title>
 </svelte:head>
 
 <div class="profile-settings-page">

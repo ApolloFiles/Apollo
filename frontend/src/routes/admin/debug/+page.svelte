@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-  <title>Debug Info | Admin</title>
+  <title>Debug Info · Admin | Apollo</title>
 </svelte:head>
 
 <h1>Debug Info</h1>

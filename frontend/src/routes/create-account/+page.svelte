@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-  <title>Create Account</title>
+  <title>Create Account | Apollo</title>
 </svelte:head>
 
 <div class="container">

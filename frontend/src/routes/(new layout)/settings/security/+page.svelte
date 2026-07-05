@@ -66,7 +66,7 @@
 </script>
 
 <svelte:head>
-  <title>Security Settings - Apollo</title>
+  <title>Security Settings | Apollo</title>
 </svelte:head>
 
 <div class="security-settings-page">

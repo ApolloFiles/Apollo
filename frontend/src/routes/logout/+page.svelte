@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-  <title>Log out</title>
+  <title>Log out | Apollo</title>
 </svelte:head>
 
 <div class="container logout-container">

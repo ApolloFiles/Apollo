@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-  <title>Search · Apollo Media</title>
+  <title>Search | Apollo Media</title>
 </svelte:head>
 
 {#if data.page.query.length === 0}
