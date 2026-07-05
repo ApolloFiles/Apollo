@@ -26,6 +26,5 @@
   "component_apollo_file_picker_toolbar_refresh": "Aktualisieren",
   "component_apollo_file_picker_tree_collapse_all": "Alle einklappen",
   "component_apollo_file_picker_tree_label": "Ordner",
-  "component_apollo_file_picker_tree_locate": "Zeige den aktuellen Ordner in der Baumansicht",
-  "hello_world": "Hallo, {name} aus DE!"
+  "component_apollo_file_picker_tree_locate": "Zeige den aktuellen Ordner in der Baumansicht"
 }
