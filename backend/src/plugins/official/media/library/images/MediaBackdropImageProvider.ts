@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import Sharp from 'sharp';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
@@ -36,7 +36,7 @@ export default class MediaBackdropImageProvider extends AbstractMediaImageProvid
   }
 
   protected processImageBytes(imageBytes: Buffer, format: MediaBackdropImageProvider['supportedFormats'][number]): Promise<Buffer> {
-    let backdrop = sharp(imageBytes)
+    let backdrop = Sharp(imageBytes)
       .resize({
         width: MediaBackdropImageProvider.MAX_BACKDROP_WIDTH,
         height: MediaBackdropImageProvider.MAX_BACKDROP_HEIGHT,

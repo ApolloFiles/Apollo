@@ -1,6 +1,6 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
-import sharp from 'sharp';
+import Sharp from 'sharp';
 import FileNameCollator from '../../../../../files/util/FileNameCollator.js';
 import FfmpegProcess from './live_transcode/FfmpegProcess.js';
 
@@ -122,7 +122,7 @@ export default class WebVttKeyframeGenerator {
   }
 
   private async determineFrameDimensions(gridFile: string): Promise<{ width: number, height: number }> {
-    const imageMetadata = await sharp(gridFile).metadata();
+    const imageMetadata = await Sharp(gridFile).metadata();
     if (imageMetadata.width == null || imageMetadata.height == null) {
       throw new Error('Failed to get frame dimensions');
     }

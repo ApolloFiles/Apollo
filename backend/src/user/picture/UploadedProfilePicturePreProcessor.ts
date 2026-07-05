@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import Sharp from 'sharp';
 
 export default class UploadedProfilePicturePreProcessor {
   processForUserProfile(pictureBytes: Buffer): Promise<Buffer> {
@@ -10,7 +10,7 @@ export default class UploadedProfilePicturePreProcessor {
   }
 
   private processImage(pictureBytes: Buffer, maxSize: number): Promise<Buffer> {
-    return sharp(pictureBytes, { limitInputPixels: 24_000_000, failOn: 'error' })
+    return Sharp(pictureBytes, { limitInputPixels: 24_000_000, failOn: 'error' })
       .removeAlpha()
       .resize({ width: maxSize, height: maxSize, fit: 'cover', withoutEnlargement: true })
       .rotate()

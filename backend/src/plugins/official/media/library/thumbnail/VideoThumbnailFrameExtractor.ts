@@ -1,5 +1,5 @@
 import Fs from 'node:fs';
-import type { Sharp as SharpInstance } from 'sharp';
+import type { Sharp } from 'sharp';
 import { singleton } from 'tsyringe';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
 import ApolloTemporaryDirectory from '../../../../../files/temporary/ApolloTemporaryDirectory.js';
@@ -20,7 +20,7 @@ export default class VideoThumbnailFrameExtractor {
   ) {
   }
 
-  async extractThumbnailFrame(file: LocalFile): Promise<SharpInstance> {
+  async extractThumbnailFrame(file: LocalFile): Promise<Sharp> {
     const videoDurationInSecondsPromise = this.determineVideoDurationInSeconds(file);
 
     return this.apolloTemporaryDirectory.createScoped(async (tmpDir) => {

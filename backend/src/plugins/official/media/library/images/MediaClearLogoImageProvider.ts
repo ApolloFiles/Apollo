@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import Sharp from 'sharp';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
@@ -35,7 +35,7 @@ export default class MediaClearLogoImageProvider extends AbstractMediaImageProvi
   }
 
   protected processImageBytes(imageBytes: Buffer, format: MediaClearLogoImageProvider['supportedFormats'][number]): Promise<Buffer> {
-    let logo = sharp(imageBytes)
+    let logo = Sharp(imageBytes)
       .resize({
         height: MediaClearLogoImageProvider.MAX_LOGO_HEIGHT,
         fit: 'inside',

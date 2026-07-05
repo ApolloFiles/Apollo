@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import Sharp from 'sharp';
 import { singleton } from 'tsyringe';
 import ImageFileConstants from './ImageFileConstants.js';
 
@@ -12,7 +12,7 @@ export default class FallbackMediaPosterGenerator {
   async generatePoster(mediaTitle: string, format: 'jpeg' | 'avif'): Promise<Buffer> {
     const posterText = this.determineStartingLetters(mediaTitle) || 'No Title';
 
-    const poster = sharp({
+    const poster = Sharp({
       create: {
         width: FallbackMediaPosterGenerator.POSTER_WIDTH,
         height: FallbackMediaPosterGenerator.POSTER_HEIGHT,
