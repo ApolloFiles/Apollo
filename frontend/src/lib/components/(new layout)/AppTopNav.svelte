@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import type AppSideBar from '$lib/components/(new layout)/AppSideBar.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
 
   let { appSideBarRef, renderAsOverlay = false, searchFormAction }: {
@@ -17,7 +18,7 @@
 <header class="top-navbar" class:overlay={renderAsOverlay} class:has-search={searchFormAction != null}>
   <button
     class="btn btn-dark d-md-none"
-    aria-label="Toggle sidebar menu"
+    aria-label={m.component_app_top_nav_toggle_sidebar_label()}
     onclick={appSideBarRef.toggleSidebar}
   >
     <TablerIcon icon="menu-2" />
@@ -27,7 +28,7 @@
     <form role="search" action={searchFormAction} method="GET">
       <div class="search-bar">
         <span class="icon-search"><TablerIcon icon="search" /></span>
-        <input type="search" name="q" placeholder="Search" value={searchQuery} />
+        <input type="search" name="q" placeholder={m.component_app_top_nav_search_placeholder()} value={searchQuery} />
       </div>
     </form>
   {/if}
@@ -38,7 +39,7 @@
       id="profileDropdown"
       data-bs-toggle="dropdown"
       aria-expanded="false"
-      aria-label="User Profile Menu"
+      aria-label={m.component_app_top_nav_profile_menu_label()}
       type="button"
     >
       <img
@@ -55,7 +56,7 @@
       <li>
         <a class="dropdown-item" href="/settings/profile">
           <TablerIcon icon="settings" class="me-2" />
-          Settings
+          {m.component_app_top_nav_menu_settings()}
         </a>
       </li>
       <!-- <li><a class="dropdown-item" href="/profile"><i class="fas fa-cog me-2"></i> Settings</a></li> -->
@@ -78,7 +79,7 @@
           <input type="hidden" name="csrfToken" value={userProfile.csrfToken} />
           <button type="submit" class="dropdown-item text-danger">
             <TablerIcon icon="logout" class="me-2" />
-            Logout
+            {m.common_btn_label_logout()}
           </button>
         </form>
       </li>

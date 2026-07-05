@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import SideBarMenuGroup from '$lib/components/(new layout)/SideBarMenuGroup.svelte';
   import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import { getAppSideBarExtras } from '$lib/stores/AppSideBarExtrasStore.svelte';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
 
@@ -20,19 +21,6 @@
 
   type SimpleSideBarMenuItems = (SideBarMenuItem | 'divider')[];
 
-  const baseApolloSubApps: SimpleSideBarMenuItems = [
-    {
-      label: 'File Browser',
-      href: '/browse/',
-      icon: 'folder-filled',
-    },
-    {
-      label: 'Media',
-      href: '/media/',
-      icon: 'circle-caret-right',
-    },
-  ];
-
   let { menuItems }: { menuItems: SideBarMenuItems } = $props();
   const appSideBarExtras = getAppSideBarExtras();
 
@@ -40,6 +28,19 @@
 
   const bottomButton = $derived(appSideBarExtras.bottomButton);
   const apolloSubApps: SimpleSideBarMenuItems = $derived.by(() => {
+    const baseApolloSubApps: SimpleSideBarMenuItems = [
+      {
+        label: m.nav_app_file_browser(),
+        href: '/browse/',
+        icon: 'folder-filled',
+      },
+      {
+        label: m.nav_app_media(),
+        href: '/media/',
+        icon: 'circle-caret-right',
+      },
+    ];
+
     if (!getUserProfile().isSuperUser) {
       return baseApolloSubApps;
     }
@@ -48,7 +49,7 @@
       ...baseApolloSubApps,
       'divider',
       {
-        label: 'Admin',
+        label: m.nav_app_admin(),
         href: '/admin/',
         icon: 'shield-check-filled',
       },
@@ -145,7 +146,7 @@
   type="button"
   class="sidebar-backdrop"
   class:active={sidebarActive}
-  aria-label="Close sidebar menu"
+  aria-label={m.component_app_sidebar_close_label()}
   onclick={closeSidebar}
 ></button>
 
@@ -153,7 +154,7 @@
   <button
     type="button"
     class="sidebar-close-button d-md-none"
-    aria-label="Close sidebar menu"
+    aria-label={m.component_app_sidebar_close_label()}
     onclick={closeSidebar}
   >
     <TablerIcon icon="x" />
@@ -166,7 +167,7 @@
       id="appDropdown"
       data-bs-toggle="dropdown"
       aria-expanded="false"
-      aria-label="Switch App Section"
+      aria-label={m.component_app_sidebar_switch_app_label()}
     >
       <img
         src="/logo.svg"
@@ -181,7 +182,7 @@
         <span class="fw-bold d-block">Apollo</span>
         <small
           class="text-secondary d-block"
-          style="font-size: 0.8rem">{activeSubApp?.label ?? 'Select App'}&nbsp;<TablerIcon icon="chevron-down"
+          style="font-size: 0.8rem">{activeSubApp?.label ?? m.component_app_sidebar_select_app()}&nbsp;<TablerIcon icon="chevron-down"
                                                                                            class="ms-1 w-25 h-25" /></small>
       </span>
     </button>

@@ -1,4 +1,5 @@
 import type { SideBarMenuItem, SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
+import { m } from '$lib/paraglide/messages.js';
 
 type LibraryEntry = { id: string, name: string, hideFromSidebar: boolean };
 type Libraries = {
@@ -22,7 +23,7 @@ export function buildMediaSideBarMenuItems(libraries: Libraries): SideBarMenuIte
   ];
 
   const sideBarMenuItems: SideBarMenuItems = [
-    { label: 'Overview', href: '/media/', icon: 'device-desktop' },
+    { label: m.nav_media_overview(), href: '/media/', icon: 'device-desktop' },
   ];
 
   for (const library of ownedVisible) {
@@ -40,7 +41,7 @@ export function buildMediaSideBarMenuItems(libraries: Libraries): SideBarMenuIte
   if (hidden.length > 0) {
     sideBarMenuItems.push({
       kind: 'group',
-      label: 'Weitere',
+      label: m.nav_media_more(),
       items: hidden.map(toMenuItem),
     });
   }
