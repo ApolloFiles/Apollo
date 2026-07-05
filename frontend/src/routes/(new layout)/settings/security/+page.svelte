@@ -1,7 +1,9 @@
 <script lang="ts">
   import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
+  import InterpolatedMessage, { MESSAGE_SLOT } from '$lib/components/InterpolatedMessage.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
+  import { m } from '$lib/paraglide/messages.js';
   import type { PageProps } from './$types';
 
   // TODO: This page needs CSRF protection
@@ -66,18 +68,18 @@
 </script>
 
 <svelte:head>
-  <title>Security Settings | Apollo</title>
+  <title>{m.page_settings_security_title()} | Apollo</title>
 </svelte:head>
 
 <div class="security-settings-page">
   <header class="settings-header">
-    <h1>Security Settings</h1>
-    <p class="subtitle">Manage your account security and connections</p>
+    <h1>{m.page_settings_security_title()}</h1>
+    <p class="subtitle">{m.page_settings_security_subtitle()}</p>
   </header>
 
   <!-- OAuth Section -->
   <section class="settings-section">
-    <h2>Connected Accounts</h2>
+    <h2>{m.page_settings_security_connected_accounts_heading()}</h2>
     <div class="settings-card">
       <div class="provider-list">
         {#each authProviders as authProvider (authProvider.identifier)}
@@ -88,15 +90,15 @@
               <div class="d-flex align-items-center gap-2">
                 <span class="provider-name">{authProvider.displayName}</span>
                 {#if authProvider.linked}
-                  <span class="badge bg-success-subtle text-success">Connected</span>
+                  <span class="badge bg-success-subtle text-success">{m.page_settings_security_badge_connected()}</span>
                 {/if}
               </div>
               {#if authProvider.linked}
                 <div class="provider-details">
-                  <span class="text-secondary small">Linked as <strong>{authProvider.providerUserNameToRender}</strong></span>
+                  <span class="text-secondary small"><InterpolatedMessage text={m.page_settings_security_linked_as({ name: MESSAGE_SLOT })}><strong>{authProvider.providerUserNameToRender}</strong></InterpolatedMessage></span>
                 </div>
               {:else}
-                <span class="text-secondary small">Not connected</span>
+                <span class="text-secondary small">{m.page_settings_security_not_connected()}</span>
               {/if}
             </div>
             <div class="provider-action">
@@ -115,10 +117,10 @@
                 >
                   {#if authProvider.linked}
                     <TablerIcon icon="link-off" />
-                    Disconnect
+                    {m.page_settings_security_btn_disconnect()}
                   {:else}
                     <TablerIcon icon="link" />
-                    Connect
+                    {m.page_settings_security_btn_connect()}
                   {/if}
                 </button>
               </form>
@@ -132,9 +134,9 @@
   <!-- Sessions Section -->
   <section class="settings-section mt-5">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2 class="mb-0">Active Sessions</h2>
+      <h2 class="mb-0">{m.page_settings_security_active_sessions_heading()}</h2>
       <button class="btn btn-outline-danger btn-sm" onclick={revokeAllOther}>
-        Log out on all other devices
+        {m.page_settings_security_btn_logout_all_other()}
       </button>
     </div>
 
@@ -151,7 +153,7 @@
                 {#if session.id === data.sessions.currentId}
                   <span
                     class="badge bg-primary-subtle text-primary border border-primary-subtle"
-                  >Current Session</span>
+                  >{m.page_settings_security_badge_current_session()}</span>
                 {/if}
               </div>
               <div class="session-meta">
@@ -164,7 +166,7 @@
               <button
                 class="btn-icon-action danger"
                 onclick={() => revokeSession(session.id)}
-                aria-label="Revoke session"
+                aria-label={m.page_settings_security_revoke_session_label()}
               >
                 <TablerIcon icon="trash" />
               </button>

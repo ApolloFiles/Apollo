@@ -1,6 +1,8 @@
 <script lang="ts">
+  import InterpolatedMessage, { MESSAGE_SLOT } from '$lib/components/InterpolatedMessage.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
+  import { m } from '$lib/paraglide/messages.js';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
 
   const userProfile = getUserProfile();
@@ -61,15 +63,13 @@
 </script>
 
 <svelte:head>
-  <title>Profile Settings | Apollo</title>
+  <title>{m.page_settings_profile_title()} | Apollo</title>
 </svelte:head>
 
 <div class="profile-settings-page">
   <header class="settings-header">
-    <h1>Profile Settings</h1>
-    <p class="subtitle">
-      Manage your <span class="text-decoration-underline"><strong>public</strong></span> profile information
-    </p>
+    <h1>{m.page_settings_profile_title()}</h1>
+    <p class="subtitle"><InterpolatedMessage text={m.page_settings_profile_subtitle({ highlight: MESSAGE_SLOT })}><span class="text-decoration-underline"><strong>{m.page_settings_profile_subtitle_highlight()}</strong></span></InterpolatedMessage></p>
   </header>
 
   <div class="settings-card">
@@ -83,8 +83,8 @@
         />
       </div>
       <div class="avatar-info">
-        <h3>Profile Picture</h3>
-        <p>A picture helps people recognize you.</p>
+        <h3>{m.page_settings_profile_picture_heading()}</h3>
+        <p>{m.page_settings_profile_picture_description()}</p>
         <div class="d-flex gap-2 mt-3">
           <input
             type="file"
@@ -100,9 +100,9 @@
           >
             {#if isUploadingAvatar}
               <TablerIcon icon="loader-2" spin={true} />
-              Uploading...
+              {m.page_settings_profile_btn_uploading()}
             {:else}
-              Upload new image
+              {m.page_settings_profile_btn_upload()}
             {/if}
           </button>
           <button
@@ -112,10 +112,10 @@
           >
             {#if isDeletingAvatar}
               <TablerIcon icon="loader-2" spin={true} />
-              Deleting...
+              {m.page_settings_profile_btn_deleting()}
             {:else}
               <TablerIcon icon="trash" />
-              Delete
+              {m.common_btn_label_delete()}
             {/if}
           </button>
         </div>
@@ -128,9 +128,9 @@
     <div class="fields-section">
       <div class="field-item">
         <div class="field-label-group">
-          <label for="displayName">Display Name</label>
+          <label for="displayName">{m.page_settings_profile_field_display_name_label()}</label>
           <span class="field-description"
-          >Visible to other users on this server.</span
+          >{m.page_settings_profile_field_display_name_description()}</span
           >
         </div>
 
@@ -154,7 +154,7 @@
           <button
             class="btn-icon-action"
             onclick={toggleEdit}
-            aria-label={isEditing ? "Save" : "Edit"}
+            aria-label={isEditing ? m.common_btn_label_save() : m.common_btn_label_edit()}
             disabled={isSavingDisplayName}
           >
             {#if isSavingDisplayName}
@@ -172,7 +172,7 @@
 
   <div class="account-lookup-info">
     <p>
-      Unique Account Identifier: <code class="user-id">{userProfile.id}</code>
+      {m.page_settings_profile_account_identifier_label_prefix()} (UAI): <code class="user-id">{userProfile.id}</code>
     </p>
   </div>
 </div>
