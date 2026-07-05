@@ -167,7 +167,7 @@
                     <span class="provider-name">{provider.displayName}</span>
                   </div>
                   <div class="provider-details">
-                    <span class="detail-text">
+                    <span class="detail-text" title={provider.providerUserDisplayName ?? undefined}>
                       {m.page_admin_user_details_provider_field_name()}:
                       {#if provider.providerUserDisplayName}
                         <strong>{provider.providerUserDisplayName}</strong>
@@ -175,7 +175,7 @@
                         <em>{m.page_admin_user_details_provider_name_none()}</em>
                       {/if}
                     </span>
-                    <span class="detail-text">
+                    <span class="detail-text" title={provider.providerUserId}>
                       {m.page_admin_user_details_provider_field_identifier()}: <strong>{provider.providerUserId}</strong>
                     </span>
                     <span class="detail-text">
