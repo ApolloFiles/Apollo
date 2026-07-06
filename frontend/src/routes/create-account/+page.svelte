@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages.js';
   import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
   import type { PageProps } from './$types';
 
@@ -8,19 +9,19 @@
 </script>
 
 <svelte:head>
-  <title>Create Account | Apollo</title>
+  <title>{m.page_create_account_title()} | Apollo</title>
 </svelte:head>
 
 <div class="container">
   <div class="text-center">
     <img src="/logo.svg" alt="Apollo-Logo" width="764" height="764" style="height: 6rem; width: auto">
-    <h1>Create an Apollo account</h1>
+    <h1>{m.page_create_account_heading()}</h1>
 
-    <p>You have been invited to this Apollo instance!</p>
+    <p>{m.page_create_account_invited()}</p>
   </div>
 
   <div class="third-party-login-container">
-      <h2 class="h6 text-muted">Create account using</h2>
+      <h2 class="h6 text-muted">{m.page_create_account_third_party_heading()}</h2>
 
       <div class="d-flex flex-wrap">
         {#each data.availableLoginProviders as provider}

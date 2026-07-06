@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages.js';
   import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
   import HrSectionBreak from '$lib/components/login/HrSectionBreak.svelte';
   import type { PageProps } from './$types';
@@ -9,7 +10,7 @@
 </script>
 
 <svelte:head>
-  <title>Login | Apollo</title>
+  <title>{m.page_login_title()} | Apollo</title>
 </svelte:head>
 
 <div class="row g-0">
@@ -17,12 +18,12 @@
     <div class="col-left" style="">
       <div class="col-left-head">
         <img src="/logo.svg" alt="Apollo-Logo" width="764" height="764" style="height: 6rem; width: auto">
-        <h1>Login to Apollo</h1>
+        <h1>{m.page_login_heading()}</h1>
       </div>
 
       {#if data.availableLoginProviders.length > 0}
         <div class="third-party-login-container">
-          <h2 class="h6 text-muted">Sign in with</h2>
+          <h2 class="h6 text-muted">{m.page_login_third_party_heading()}</h2>
 
           <div class="d-flex flex-wrap">
             {#each data.availableLoginProviders as provider}
@@ -38,7 +39,7 @@
           </div>
         </div>
 
-        <HrSectionBreak>or continue with</HrSectionBreak>
+        <HrSectionBreak>{m.page_login_divider_continue()}</HrSectionBreak>
       {/if}
 
       <div class="first-party-login-container">
@@ -46,23 +47,23 @@
           <div class="form-floating mb-2">
             <input type="email" class="form-control" id="input_email" name="email" placeholder=""
                    required autocomplete="username">
-            <label for="input_email">Email address</label>
+            <label for="input_email">{m.page_login_field_email()}</label>
           </div>
 
           <div class="form-floating mb-3">
             <input type="password" class="form-control" id="input_password" name="password" placeholder=""
                    required autocomplete="current-password">
-            <label for="input_password">Password</label>
+            <label for="input_password">{m.page_login_field_password()}</label>
           </div>
 
           <div class="form-check mb-2">
             <input type="checkbox" class="form-check-input" id="input_remember_login" name="remember_login"
                    value="checked" checked>
-            <label class="form-check-label" for="input_remember_login">Remember me</label>
+            <label class="form-check-label" for="input_remember_login">{m.page_login_remember_me()}</label>
           </div>
 
           <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary">Log in</button>
+            <button type="submit" class="btn btn-primary">{m.page_login_btn_submit()}</button>
           </div>
         </form>
       </div>

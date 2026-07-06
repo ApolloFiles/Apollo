@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages.js';
+  import InterpolatedMessage, { MESSAGE_SLOT } from '$lib/components/InterpolatedMessage.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import type { PageProps } from './$types';
 
@@ -6,15 +8,15 @@
 </script>
 
 <svelte:head>
-  <title>Log out | Apollo</title>
+  <title>{m.page_logout_title()} | Apollo</title>
 </svelte:head>
 
 <div class="container logout-container">
   <div class="text-center">
     <img src="/logo.svg" alt="Apollo-Logo" width="764" height="764" style="height: 6rem; width: auto">
-    <h1>Log out of Apollo</h1>
+    <h1>{m.page_logout_heading()}</h1>
 
-    <p>Are you sure you want to log out, <strong>{data.loggedInUser.displayName}</strong>?</p>
+    <p><InterpolatedMessage text={m.page_logout_confirm({ name: MESSAGE_SLOT })}><strong>{data.loggedInUser.displayName}</strong></InterpolatedMessage></p>
   </div>
 
   <div class="actions d-flex flex-column gap-2">
@@ -25,11 +27,11 @@
         class="btn btn-danger w-100 d-inline-flex align-items-center justify-content-center gap-2"
       >
         <TablerIcon icon="logout" />
-        Yes, log me out
+        {m.page_logout_btn_confirm()}
       </button>
     </form>
 
-    <a class="btn btn-outline-secondary w-100" href="/">Cancel</a>
+    <a class="btn btn-outline-secondary w-100" href="/">{m.common_btn_label_cancel()}</a>
   </div>
 </div>
 

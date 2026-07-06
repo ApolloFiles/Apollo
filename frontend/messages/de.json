@@ -155,5 +155,21 @@
   "component_apollo_file_picker_toolbar_refresh": "Aktualisieren",
   "component_apollo_file_picker_tree_collapse_all": "Alle einklappen",
   "component_apollo_file_picker_tree_label": "Ordner",
-  "component_apollo_file_picker_tree_locate": "Zeige den aktuellen Ordner in der Baumansicht"
+  "component_apollo_file_picker_tree_locate": "Zeige den aktuellen Ordner in der Baumansicht",
+  "page_login_title": "Anmelden",
+  "page_login_heading": "Bei Apollo anmelden",
+  "page_login_third_party_heading": "Anmelden mit",
+  "page_login_divider_continue": "oder weiter mit",
+  "page_login_field_email": "E-Mail-Adresse",
+  "page_login_field_password": "Passwort",
+  "page_login_remember_me": "Angemeldet bleiben",
+  "page_login_btn_submit": "Anmelden",
+  "page_create_account_title": "Konto erstellen",
+  "page_create_account_heading": "Apollo-Konto erstellen",
+  "page_create_account_invited": "Du wurdest zu dieser Apollo-Instanz eingeladen!",
+  "page_create_account_third_party_heading": "Konto erstellen mit",
+  "page_logout_title": "Abmelden",
+  "page_logout_heading": "Von Apollo abmelden",
+  "page_logout_confirm": "Möchtest du dich wirklich abmelden, {name}?",
+  "page_logout_btn_confirm": "Ja, abmelden"
 }

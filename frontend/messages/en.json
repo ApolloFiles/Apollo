@@ -155,5 +155,21 @@
   "component_apollo_file_picker_toolbar_refresh": "Refresh",
   "component_apollo_file_picker_tree_collapse_all": "Collapse all",
   "component_apollo_file_picker_tree_label": "Directories",
-  "component_apollo_file_picker_tree_locate": "Locate current folder in tree"
+  "component_apollo_file_picker_tree_locate": "Locate current folder in tree",
+  "page_login_title": "Login",
+  "page_login_heading": "Login to Apollo",
+  "page_login_third_party_heading": "Sign in with",
+  "page_login_divider_continue": "or continue with",
+  "page_login_field_email": "Email address",
+  "page_login_field_password": "Password",
+  "page_login_remember_me": "Remember me",
+  "page_login_btn_submit": "Log in",
+  "page_create_account_title": "Create Account",
+  "page_create_account_heading": "Create an Apollo account",
+  "page_create_account_invited": "You have been invited to this Apollo instance!",
+  "page_create_account_third_party_heading": "Create account using",
+  "page_logout_title": "Log out",
+  "page_logout_heading": "Log out of Apollo",
+  "page_logout_confirm": "Are you sure you want to log out, {name}?",
+  "page_logout_btn_confirm": "Yes, log me out"
 }
