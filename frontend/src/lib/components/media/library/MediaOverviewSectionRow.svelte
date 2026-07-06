@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages.js';
+
   let { title, items, loadAllImagesLazy = true }: {
     title: string,
     items: {
@@ -39,7 +41,7 @@
                  aria-valuemax="100"
                  aria-valuenow={Math.floor(item.watchProgressPercentage * 100)}
                  style:width="{Math.floor(item.watchProgressPercentage * 100)}%"
-                 aria-label="{Math.floor(item.watchProgressPercentage * 100)}% watched"
+                 aria-label={m.component_media_library_progress_watched({ percentage: Math.floor(item.watchProgressPercentage * 100) })}
             ></div>
           </div>
         {/if}

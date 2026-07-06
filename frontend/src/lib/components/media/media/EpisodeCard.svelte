@@ -1,6 +1,7 @@
 <script lang="ts">
   import EpisodeActionsMenu from '$lib/components/media/media/EpisodeActionsMenu.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
 
   let {
     libraryId,
@@ -38,7 +39,7 @@
 <div class="episode-card d-flex gap-3 p-3 rounded-3" class:active={isNextToWatch}>
   <a
     href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(mediaItemId)}&startOffset=auto"
-    aria-label="Play Episode {episodeNumber}: {title}"
+    aria-label={m.component_media_episode_card_play_label({ number: episodeNumber, title })}
   >
     <div class="episode-thumbnail">
       {#key mediaItemId}

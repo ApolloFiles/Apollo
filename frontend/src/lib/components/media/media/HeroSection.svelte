@@ -1,5 +1,6 @@
 <script lang="ts">
   import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import { onMount } from 'svelte';
 
   let { mediaId, title, synopsis, year, hasClearLogo, mediaType, nextMediaItem }: {
@@ -23,7 +24,12 @@
   } = $props();
 
   let isMovie = $derived(mediaType === 'movie');
-  let episodeLabel = $derived(isMovie ? '' : ` Episode ${nextMediaItem?.episodeNumber}`);
+  let episodeNumber = $derived(nextMediaItem?.episodeNumber ?? 0);
+  // Standalone episode label for the middot-separated "Up next" line.
+  let episodeLabel = $derived(isMovie ? '' : ` ${m.component_media_hero_episode({ number: episodeNumber })}`);
+  // Full-phrase labels so translations keep correct word order (e.g. German "Folge 3 abspielen").
+  let playLabel = $derived(isMovie ? m.component_media_hero_btn_play() : m.component_media_hero_btn_play_episode({ number: episodeNumber }));
+  let resumeStatusLabel = $derived(isMovie ? m.component_media_hero_btn_resume() : m.component_media_hero_resume_episode({ number: episodeNumber }));
   let watchedSeconds = $derived(nextMediaItem?.watchProgress?.inSeconds ?? 0);
   let isInProgress = $derived(watchedSeconds > 0);
   let remainingSeconds = $derived((nextMediaItem?.durationInSeconds ?? 0) - watchedSeconds);
@@ -101,9 +107,9 @@
             class="read-more-btn"
           >
             {#if isSynopsisExpanded}
-              Show Less <TablerIcon icon="chevron-up" />
+              {m.component_media_hero_btn_show_less()} <TablerIcon icon="chevron-up" />
             {:else}
-              Read More <TablerIcon icon="chevron-down" />
+              {m.component_media_hero_btn_read_more()} <TablerIcon icon="chevron-down" />
             {/if}
           </button>
         {/if}
@@ -113,8 +119,8 @@
         {#if isInProgress}
           <div class="mb-4" style="max-width: 400px">
             <div class="d-flex justify-content-between text-secondary small mb-1">
-              <span>Resume{episodeLabel} · {formatDuration(remainingSeconds)} left</span>
-              <span>{formatDuration(watchedSeconds)} watched</span>
+              <span>{resumeStatusLabel} · {m.component_media_hero_time_left({ duration: formatDuration(remainingSeconds) })}</span>
+              <span>{m.component_media_hero_time_watched({ duration: formatDuration(watchedSeconds) })}</span>
             </div>
             <div class="progress progress-container">
               <div class="progress-bar bg-danger"
@@ -131,14 +137,14 @@
               href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=auto"
               class="btn-action">
               <TablerIcon icon="player-play-filled" />
-              Resume
+              {m.component_media_hero_btn_resume()}
             </a>
 
             <a
               href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=0"
               class="btn-action btn-action-secondary">
               <TablerIcon icon="rotate" />
-              Start Over
+              {m.component_media_hero_btn_start_over()}
             </a>
           </div>
         {:else}
@@ -146,7 +152,7 @@
             {#if isMovie}
               {formatDuration(nextMediaItem.durationInSeconds)}
             {:else}
-              Up next ·{episodeLabel} · {formatDuration(nextMediaItem.durationInSeconds)}
+              {m.component_media_hero_up_next()} ·{episodeLabel} · {formatDuration(nextMediaItem.durationInSeconds)}
             {/if}
           </div>
 
@@ -155,7 +161,7 @@
               href="/api/_frontend/media/player-session/start-watching?mediaItem={encodeURIComponent(nextMediaItem.id)}&startOffset=auto"
               class="btn-action">
               <TablerIcon icon="player-play-filled" />
-              Play{episodeLabel}
+              {playLabel}
             </a>
           </div>
         {/if}

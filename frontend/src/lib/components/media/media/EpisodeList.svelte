@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import EpisodeCard from '$lib/components/media/media/EpisodeCard.svelte';
+  import { m } from '$lib/paraglide/messages.js';
 
   let { libraryId, mediaId, nextEpisodeIdToWatch, seasons }: {
     libraryId: string,
@@ -64,14 +65,14 @@
 </script>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="h3 m-0">Episodes</h2>
+  <h2 class="h3 m-0">{m.component_media_episode_list_heading()}</h2>
   <select class="form-select bg-dark text-white border-secondary"
           style="width: auto"
-          aria-label="Select Season"
+          aria-label={m.component_media_episode_list_select_season_label()}
           onchange={(event) => setSelectedSeasonIndex(Math.max(event.currentTarget.selectedIndex, 0))}
   >
     {#each seasons as season, index}
-      <option selected={index === selectedSeasonIndex}>Season {season.seasonNumber}</option>
+      <option selected={index === selectedSeasonIndex}>{m.component_media_episode_list_season_option({ number: season.seasonNumber })}</option>
     {/each}
   </select>
 </div>

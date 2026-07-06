@@ -1,5 +1,6 @@
 <script lang="ts">
   import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
 
   let { title, items, loadAllImagesLazy = true, sortOrders }: {
     title: string,
@@ -16,8 +17,8 @@
   } = $props();
 
   const sortOrderIcons: { [key: string]: { icon: TablerIconId, label: string } } = {
-    'recentlyAdded': { icon: 'stopwatch', label: 'sort recently added first' },
-    'alphabetical': { icon: 'sort-ascending-letters', label: 'sort alphabetical' },
+    'recentlyAdded': { icon: 'stopwatch', label: m.component_media_library_sort_recently_added_label() },
+    'alphabetical': { icon: 'sort-ascending-letters', label: m.component_media_library_sort_alphabetical_label() },
   };
 </script>
 
@@ -59,7 +60,7 @@
                  aria-valuemax="100"
                  aria-valuenow={Math.floor(item.watchProgressPercentage * 100)}
                  style:width="{Math.floor(item.watchProgressPercentage * 100)}%"
-                 aria-label="{Math.floor(item.watchProgressPercentage * 100)}% watched"
+                 aria-label={m.component_media_library_progress_watched({ percentage: Math.floor(item.watchProgressPercentage * 100) })}
             ></div>
           </div>
         {/if}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
 
@@ -91,7 +92,7 @@
       return redirectToManagePage();
     } catch (err) {
       console.error(err);
-      alert('Error saving changes: ' + (err as any).message);
+      alert(m.page_media_manage_library_save_error({ message: (err as any).message }));
     }
   }
 
@@ -101,18 +102,18 @@
 </script>
 
 <svelte:head>
-  <title>Manage Library | Apollo Media</title>
+  <title>{m.page_media_manage_library_title()} | Apollo Media</title>
 </svelte:head>
 
 <div class="page-container">
   <header>
-    <h1>{isCreateMode ? 'Create' : canManage ? 'Edit' : 'View'} Media Library</h1>
+    <h1>{isCreateMode ? m.page_media_manage_library_heading_create() : canManage ? m.page_media_manage_library_heading_edit() : m.page_media_manage_library_heading_view()}</h1>
   </header>
 
   <main>
     <form class="library-form" onsubmit={(event) => event.preventDefault()}>
       <div class="form-group">
-        <label for="lib-name">Name</label>
+        <label for="lib-name">{m.page_media_manage_library_field_name()}</label>
         <input
           id="lib-name"
           type="text"
@@ -120,7 +121,7 @@
           maxlength="256"
           required
           readonly={!canManage}
-          placeholder="e.g. My Movies"
+          placeholder={m.page_media_manage_library_name_placeholder()}
           class="form-control"
           class:readonly={!canManage}
         />
@@ -128,7 +129,7 @@
 
       {#if canManage}
         <div class="form-group">
-          <p class="p-label">Directory Paths</p>
+          <p class="p-label">{m.page_media_manage_library_directory_paths()}</p>
           {#if editValueDirectoryUris.length > 0}
             <ul class="directory-list">
               {#each editValueDirectoryUris as _uri, index}
@@ -138,7 +139,7 @@
                     bind:value={editValueDirectoryUris[index]}
                     maxlength="500"
                     required
-                    placeholder="Full ApolloURL needed right now (e.g. apollo:///f/{getUserProfile().id}/default/my-media/)"
+                    placeholder={m.page_media_manage_library_directory_placeholder({ userId: getUserProfile().id })}
                     class="form-control"
                   />
                   <button type="button" onclick={() => editValueDirectoryUris.splice(index, 1)} class="icon-btn danger">
@@ -150,12 +151,12 @@
           {/if}
           <button type="button" onclick={() => editValueDirectoryUris.push('')} class="add-btn text-sm">
             <TablerIcon icon="plus" />
-            Add Path
+            {m.page_media_manage_library_add_path()}
           </button>
         </div>
 
         <div class="form-group">
-          <p class="p-label">Shared With</p>
+          <p class="p-label">{m.page_media_manage_library_shared_with()}</p>
           {#if editValueSharedWithUserIds.length > 0}
             <ul class="user-list">
               {#each editValueSharedWithUserIds as _uri, index}
@@ -191,7 +192,7 @@
               bind:value={searchQuery}
               maxlength="75"
               oninput={handleSearchInput}
-              placeholder="Search User ID or Name..."
+              placeholder={m.page_media_manage_library_search_placeholder()}
               class="form-control"
             />
 
@@ -222,26 +223,26 @@
         <header class="personal-prefs-header">
           <span class="personal-prefs-badge">
             <TablerIcon icon="user-filled" />
-            Just for you
+            {m.page_media_manage_library_personal_badge()}
           </span>
           <p class="personal-prefs-subtitle">
-            Personal preferences for this library — they only affect your view.
+            {m.page_media_manage_library_personal_subtitle()}
           </p>
         </header>
 
         <label class="checkbox-row">
           <input type="checkbox" bind:checked={editValueHideFromOverview} />
-          <span>Hide from overview</span>
+          <span>{m.page_media_manage_library_hide_from_overview()}</span>
         </label>
         <label class="checkbox-row">
           <input type="checkbox" bind:checked={editValueHideFromSidebar} />
-          <span>Hide from sidebar</span>
+          <span>{m.page_media_manage_library_hide_from_sidebar()}</span>
         </label>
       </section>
 
       <div class="form-actions right">
-        <button type="button" onclick={redirectToManagePage} class="btn btn-secondary">Cancel</button>
-        <button type="submit" onclick={saveChanges} class="btn btn-primary">Save</button>
+        <button type="button" onclick={redirectToManagePage} class="btn btn-secondary">{m.common_btn_label_cancel()}</button>
+        <button type="submit" onclick={saveChanges} class="btn btn-primary">{m.common_btn_label_save()}</button>
       </div>
     </form>
   </main>

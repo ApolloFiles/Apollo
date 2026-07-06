@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
 
   let { libraryId, mediaId, mediaItemId, durationInSeconds, watchProgress }: {
@@ -57,7 +58,7 @@
     class="btn btn-sm episode-actions-toggle dropdown-toggle no-caret"
     data-bs-toggle="dropdown"
     aria-expanded="false"
-    aria-label="Episode actions"
+    aria-label={m.component_media_episode_actions_label()}
     type="button"
     disabled={isBusy}
   >
@@ -67,13 +68,13 @@
     <li>
       <button type="button" class="dropdown-item" disabled={!canMarkWatched} onclick={markWatched}>
         <TablerIcon icon="check" class="me-2" />
-        Mark as watched
+        {m.component_media_episode_actions_mark_watched()}
       </button>
     </li>
     <li>
       <button type="button" class="dropdown-item" disabled={!canRemoveProgress} onclick={removeWatchProgress}>
         <TablerIcon icon="eraser" class="me-2" />
-        Remove watch progress
+        {m.component_media_episode_actions_remove_progress()}
       </button>
     </li>
   </ul>

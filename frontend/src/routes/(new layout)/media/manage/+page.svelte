@@ -1,6 +1,7 @@
 <script lang="ts">
   import { refreshAll } from '$app/navigation';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
 
   let { data } = $props();
@@ -9,7 +10,7 @@
   const sharedWithLibraries = $derived(data.libraries.sharedWith);
 
   async function deleteLibrary(id: string, name: string): Promise<void> {
-    if (!confirm(`Are you sure you want to delete '${name}'? This cannot be undone.`)) {
+    if (!confirm(m.page_media_manage_delete_confirm({ name }))) {
       return;
     }
 
@@ -18,12 +19,12 @@
       await refreshAll();
     } catch (err) {
       console.error(err);
-      alert(`Failed to delete library: ${(err as any).message}`);
+      alert(m.page_media_manage_delete_error({ message: (err as any).message }));
     }
   }
 
   async function leaveLibrary(id: string, name: string): Promise<void> {
-    if (!confirm(`Are you sure you want to unlink '${name}'? You will no longer have access, unless the owner shares it again.`)) {
+    if (!confirm(m.page_media_manage_unlink_confirm({ name }))) {
       return;
     }
 
@@ -32,7 +33,7 @@
       await refreshAll();
     } catch (err) {
       console.error(err);
-      alert(`Failed to unlink library: ${(err as any).message}`);
+      alert(m.page_media_manage_unlink_error({ message: (err as any).message }));
     }
 
     await refreshAll();
@@ -54,13 +55,13 @@
 </script>
 
 <svelte:head>
-  <title>Manage Libraries | Apollo Media</title>
+  <title>{m.page_media_manage_title()} | Apollo Media</title>
 </svelte:head>
 
 <div class="page-container">
   <header>
     <div class="header-top">
-      <h1>Manage Media Libraries</h1>
+      <h1>{m.page_media_manage_heading()}</h1>
       <button
         class="debug-btn"
         onclick={debugStartFullReIndex}
@@ -77,49 +78,49 @@
     <div class="list-view">
       <a href="/media/manage/create" class="create-btn">
         <TablerIcon icon="plus" />
-        Create New Library
+        {m.page_media_manage_create_library()}
       </a>
 
       <section>
-        <h3>My Libraries</h3>
+        <h3>{m.page_media_manage_your_libraries()}</h3>
         <ul class="library-list">
           {#each ownedLibraries as lib}
             <li>
               <span class="lib-name">{lib.name}</span>
               <div class="actions">
-                <a href="/media/manage/{lib.id}" title="Edit" class="icon-btn">
+                <a href="/media/manage/{lib.id}" title={m.common_btn_label_edit()} class="icon-btn">
                   <TablerIcon icon="edit" />
                 </a>
-                <button onclick={() => deleteLibrary(lib.id, lib.name)} title="Delete" class="danger-hover">
+                <button onclick={() => deleteLibrary(lib.id, lib.name)} title={m.common_btn_label_delete()} class="danger-hover">
                   <TablerIcon icon="trash" />
                 </button>
               </div>
             </li>
           {/each}
           {#if ownedLibraries.length === 0}
-            <li class="empty-state">No media libraries found</li>
+            <li class="empty-state">{m.page_media_manage_empty_owned()}</li>
           {/if}
         </ul>
       </section>
 
       <section>
-        <h3>Shared With Me</h3>
+        <h3>{m.page_media_manage_shared_with_you()}</h3>
         <ul class="library-list">
           {#each sharedWithLibraries as lib}
             <li>
               <span class="lib-name">{lib.name}</span>
               <div class="actions">
-                <a href="/media/manage/{lib.id}" title="Edit" class="icon-btn">
+                <a href="/media/manage/{lib.id}" title={m.common_btn_label_edit()} class="icon-btn">
                   <TablerIcon icon="edit" />
                 </a>
-                <button onclick={() => leaveLibrary(lib.id, lib.name)} title="Unlink" class="danger-hover">
+                <button onclick={() => leaveLibrary(lib.id, lib.name)} title={m.page_media_manage_action_unlink()} class="danger-hover">
                   <TablerIcon icon="link-off" />
                 </button>
               </div>
             </li>
           {/each}
           {#if sharedWithLibraries.length === 0}
-            <li class="empty-state">No shared media libraries</li>
+            <li class="empty-state">{m.page_media_manage_empty_shared()}</li>
           {/if}
         </ul>
       </section>

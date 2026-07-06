@@ -1,6 +1,7 @@
 <script lang="ts">
   import MediaOverviewSectionGrid from '$lib/components/media/library/MediaOverviewSectionGrid.svelte';
   import MediaOverviewSectionRow from '$lib/components/media/library/MediaOverviewSectionRow.svelte';
+  import { m } from '$lib/paraglide/messages.js';
 
   let { continueWatchingItems, mediaItems, mediaItemsOrder, mediaItemsDisplayAsRow }: {
     continueWatchingItems: {
@@ -22,12 +23,12 @@
     mediaItemsDisplayAsRow: boolean,
   } = $props();
 
-  let mediaItemSectionTitle = $derived(mediaItemsOrder === 'recentlyAdded' ? 'Recently Added' : 'Alphabetical');
+  let mediaItemSectionTitle = $derived(mediaItemsOrder === 'recentlyAdded' ? m.component_media_library_section_recently_added() : m.component_media_library_section_alphabetical());
 </script>
 
 {#if continueWatchingItems.length > 0}
   <MediaOverviewSectionRow
-    title="Continue Watching"
+    title={m.component_media_library_section_continue_watching()}
     items={continueWatchingItems}
     loadAllImagesLazy={false}
   />
@@ -55,6 +56,6 @@
 
 {#if continueWatchingItems.length === 0 && mediaItems.length === 0}
   <p class="text-center text-muted mt-5">
-    No media found to display
+    {m.component_media_library_empty()}
   </p>
 {/if}
