@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import IconVolumeFull from 'virtual:icons/tabler/volume';
   import IconVolume50 from 'virtual:icons/tabler/volume-2';
   import IconVolume0 from 'virtual:icons/tabler/volume-3';
@@ -102,7 +103,7 @@
 
 <button class="control-button"
         onclick={toggleMute}
-        aria-label={muted ? "Unmute" : "Mute"}>
+        aria-label={muted ? m.component_video_player_volume_unmute() : m.component_video_player_volume_mute()}>
   {#if muted}
     <IconVolumeOff />
   {:else if volume > 0.5}
@@ -117,7 +118,7 @@
      bind:this={sliderContainerRef}
      onmousedown={handleMouseDown}
      role="slider"
-     aria-label="Volume"
+     aria-label={m.component_video_player_volume_label()}
      aria-valuemin="0"
      aria-valuemax="100"
      aria-valuenow={muted ? 0 : Math.round(volume * 100)}

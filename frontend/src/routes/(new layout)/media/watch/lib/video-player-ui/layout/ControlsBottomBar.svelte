@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from '$lib/paraglide/messages.js';
   import IconSubtitles from 'virtual:icons/tabler/badge-cc';
   import IconHeadphones from 'virtual:icons/tabler/headphones';
   import IconPause from 'virtual:icons/tabler/player-pause';
@@ -60,7 +61,7 @@
       <BottomMenuBox
         bind:menuVisible={showSubtitleTrackMenu}
         bind:activeItem={activeSubtitleTrack}
-        menuItems={[{id: '', label: 'None' }, ...videoPlayer.$subtitleTracks]}
+        menuItems={[{id: '', label: m.component_video_player_subtitle_none() }, ...videoPlayer.$subtitleTracks]}
         onSelect={(id) => id === '' ? (videoPlayer.$activeSubtitleTrackId = null) : (videoPlayer.$activeSubtitleTrackId = id)}
         onMenuOpen={() => closeAllMenus()}
       ><IconSubtitles /></BottomMenuBox>

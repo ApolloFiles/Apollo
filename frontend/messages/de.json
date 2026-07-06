@@ -175,5 +175,17 @@
   "page_logout_title": "Abmelden",
   "page_logout_heading": "Von Apollo abmelden",
   "page_logout_confirm": "Möchtest du dich wirklich abmelden, {name}?",
-  "page_logout_btn_confirm": "Ja, abmelden"
+  "page_logout_btn_confirm": "Ja, abmelden",
+  "component_video_player_controls_label": "Videoplayer-Steuerung",
+  "component_video_player_progress_label": "Videofortschritt",
+  "component_video_player_volume_mute": "Stummschalten",
+  "component_video_player_volume_unmute": "Stummschaltung aufheben",
+  "component_video_player_volume_label": "Lautstärke",
+  "component_video_player_subtitle_none": "Keine",
+  "component_video_player_subtitle_burned_in_title": "In das Video eingebrannt – Aus- oder Abwählen startet die Wiedergabe neu",
+  "component_video_player_subtitle_burned_in_label": "Eingebrannter Untertitel: Aus- oder Abwählen startet die Wiedergabe neu",
+  "component_video_player_autoplay_label": "Autoplay",
+  "component_video_player_autoplay_title": "Wenn aktiviert, wird die nächste Folge automatisch abgespielt, sobald die aktuelle endet",
+  "component_video_player_no_previous_episode": "Keine vorherige Folge gefunden",
+  "component_video_player_no_next_episode": "Keine nächste Folge gefunden"
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import IconBitmapSubtitle from 'virtual:icons/tabler/photo';
   import type SubtitleTrack from '../../client-side/backends/subtitles/SubtitleTrack';
 
@@ -82,8 +83,8 @@
           {#if menuItem.isBitmapBased}
             <span
               class="menu-box-item-badge"
-              title="Burned into the video — selecting or deselecting restarts playback"
-              aria-label="Burned-in subtitle: selecting or deselecting restarts playback"
+              title={m.component_video_player_subtitle_burned_in_title()}
+              aria-label={m.component_video_player_subtitle_burned_in_label()}
             ><IconBitmapSubtitle /></span>
           {/if}
         </button>

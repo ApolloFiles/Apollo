@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import type VideoPlayer from '../client-side/VideoPlayer.svelte.js';
   import VideoContextMenu from './components/VideoContextMenu.svelte';
   import ControlsBottomBar from './layout/ControlsBottomBar.svelte';
@@ -311,7 +312,7 @@
       class:fade-out={!controlsVisible}
       onmouseenter={showControls}
       role="region"
-      aria-label="Video player controls"
+      aria-label={m.component_video_player_controls_label()}
     >
       <ControlsTopBar
         bind:autoPlayEnabled={autoPlayEnabled}

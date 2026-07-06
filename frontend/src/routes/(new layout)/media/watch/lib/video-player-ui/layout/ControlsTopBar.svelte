@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import IconArrowBack from 'virtual:icons/tabler/arrow-back-up';
   import IconPlayerSkipForward from 'virtual:icons/tabler/player-skip-forward';
   import IconPlayerSkipBack from 'virtual:icons/tabler/player-skip-back';
@@ -39,7 +40,7 @@
     </div>
   </div>
   <div class="right-section">
-    <div class="form-check form-switch" title="When enabled, the next episode will automatically start playing after the current one finishes">
+    <div class="form-check form-switch" title={m.component_video_player_autoplay_title()}>
       <input type="checkbox"
              bind:checked={autoPlayEnabled}
              class="form-check-input"
@@ -47,18 +48,18 @@
              id="auto-play-switch"
              onchange={storeStateInLocalStorage}
       >
-      <label class="form-check-label" for="auto-play-switch">Autoplay</label>
+      <label class="form-check-label" for="auto-play-switch">{m.component_video_player_autoplay_label()}</label>
     </div>
 
     <button class="control-button"
-            title={previousMediaItem ? `S${previousMediaItem.episode.season.toString().padStart(2, '0')}E${previousMediaItem.episode.episode.toString().padStart(2, '0')} • ${previousMediaItem.title}` : 'No previous episode found'}
+            title={previousMediaItem ? `S${previousMediaItem.episode.season.toString().padStart(2, '0')}E${previousMediaItem.episode.episode.toString().padStart(2, '0')} • ${previousMediaItem.title}` : m.component_video_player_no_previous_episode()}
             disabled={previousMediaItem == null}
             onclick={() => previousMediaItem != null ? initiateMediaChange(previousMediaItem.mediaItemId, 0) : undefined}
     >
       <IconPlayerSkipBack />
     </button>
     <button class="control-button"
-            title={nextMediaItem ? `S${nextMediaItem.episode.season.toString().padStart(2, '0')}E${nextMediaItem.episode.episode.toString().padStart(2, '0')} • ${nextMediaItem.title}` : 'No next episode found'}
+            title={nextMediaItem ? `S${nextMediaItem.episode.season.toString().padStart(2, '0')}E${nextMediaItem.episode.episode.toString().padStart(2, '0')} • ${nextMediaItem.title}` : m.component_video_player_no_next_episode()}
             disabled={nextMediaItem == null}
             onclick={() => nextMediaItem != null ? initiateMediaChange(nextMediaItem.mediaItemId, 0) : undefined}
     ><IconPlayerSkipForward /></button>

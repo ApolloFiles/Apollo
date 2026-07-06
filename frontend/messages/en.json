@@ -175,5 +175,17 @@
   "page_logout_title": "Log out",
   "page_logout_heading": "Log out of Apollo",
   "page_logout_confirm": "Are you sure you want to log out, {name}?",
-  "page_logout_btn_confirm": "Yes, log me out"
+  "page_logout_btn_confirm": "Yes, log me out",
+  "component_video_player_controls_label": "Video player controls",
+  "component_video_player_progress_label": "Video progress",
+  "component_video_player_volume_mute": "Mute",
+  "component_video_player_volume_unmute": "Unmute",
+  "component_video_player_volume_label": "Volume",
+  "component_video_player_subtitle_none": "None",
+  "component_video_player_subtitle_burned_in_title": "Burned into the video — selecting or deselecting restarts playback",
+  "component_video_player_subtitle_burned_in_label": "Burned-in subtitle: selecting or deselecting restarts playback",
+  "component_video_player_autoplay_label": "Autoplay",
+  "component_video_player_autoplay_title": "When enabled, the next episode will automatically start playing after the current one finishes",
+  "component_video_player_no_previous_episode": "No previous episode found",
+  "component_video_player_no_next_episode": "No next episode found"
 }

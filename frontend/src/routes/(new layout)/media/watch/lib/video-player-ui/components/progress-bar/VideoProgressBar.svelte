@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import type VideoPlayer from '../../../client-side/VideoPlayer.svelte.js';
   import ProgressBars from './ProgressBars.svelte';
   import { initializeSeekHandler } from './seekHandler';
@@ -85,7 +86,7 @@
     bind:this={progressBarContainerRef}
     class="progress-bar-container"
     role="slider"
-    aria-label="Video progress"
+    aria-label={m.component_video_player_progress_label()}
     aria-valuemin="0"
     aria-valuemax="100"
     aria-valuenow={watchProgressPercentage}
