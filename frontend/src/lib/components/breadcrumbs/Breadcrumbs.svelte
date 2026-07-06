@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import { m } from '$lib/paraglide/messages.js';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import type { BreadcrumbSegment } from './Breadcrumbs.types.js';
 
@@ -7,8 +8,8 @@
     segments,
     rootUri,
     onNavigate,
-    label = 'Path',
-    rootLabel = 'Root',
+    label = m.component_breadcrumbs_label(),
+    rootLabel = m.component_breadcrumbs_root_label(),
   }: {
     /** Path segments, root excluded (the root renders as the Apollo logo). */
     segments: BreadcrumbSegment[],
