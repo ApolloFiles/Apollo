@@ -10,7 +10,6 @@ import { ContainerTokens } from '../../../../../../constants.js';
 import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
 import LocalFileSystem from '../../../../../../files/local/LocalFileSystem.js';
 import FileTypeUtils from '../../../../../../plugins/official/media/_old/FileTypeUtils.js';
-import LibraryManager from '../../../../../../plugins/official/media/_old/libraries/LibraryManager.js';
 import {
   default as MediaLibraryMediaItemFinderOld,
 } from '../../../../../../plugins/official/media/_old/library/MediaLibraryMediaItem/MediaLibraryMediaItemFinder.js';
@@ -40,6 +39,8 @@ import PermissionAwareLibraryMediaProvider
   from '../../../../../../plugins/official/media/library/permission-aware/PermissionAwareLibraryMediaProvider.js';
 import ReadContentsAwareLibraryMediaItem
   from '../../../../../../plugins/official/media/library/permission-aware/ReadContentsAwareLibraryMediaItem.js';
+import WatchProgressFinder
+  from '../../../../../../plugins/official/media/library/database/watch-progress/WatchProgressFinder.js';
 import ApolloFileURI from '../../../../../../uri/ApolloFileURI.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import UserProvider from '../../../../../../user/UserProvider.js';
@@ -61,6 +62,7 @@ export default class PlayerSessionRouter implements Router {
     private readonly fileSystemProvider: FileSystemProvider,
     private readonly fileTypeUtils: FileTypeUtils,
     private readonly seekThumbnailProvider: SeekThumbnailProvider,
+    private readonly watchProgressFinder: WatchProgressFinder,
   ) {
   }
 
@@ -196,8 +198,7 @@ export default class PlayerSessionRouter implements Router {
         let startOffset: number | null = null;
 
         if (request.query.startOffset === 'auto') {
-          const watchProgress = await (await new LibraryManager(apolloUser).getLibrary(mediaItem.mediaItem.libraryId.toString()))!.fetchMediaWatchProgressInSeconds(mediaItemId);
-          startOffset = watchProgress ?? 0;
+          startOffset = await this.watchProgressFinder.findProgressInSecForItem(apolloUser.id, mediaItemId) ?? 0;
         }
 
         if (startOffset == null) {
