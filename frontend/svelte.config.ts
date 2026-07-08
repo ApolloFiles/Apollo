@@ -1,11 +1,12 @@
 import adapter from '@sveltejs/adapter-node';
 import type { Config } from '@sveltejs/kit';
-import type { Csp } from '@sveltejs/kit/src/types/private';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+type CspDirectives = NonNullable<NonNullable<NonNullable<Config['kit']>['csp']>['directives']>;
+type CspSources = NonNullable<CspDirectives['connect-src']>;
 
 const isDevMode = process.env.NODE_ENV === 'development';
 
-//@ts-ignore
 const config: Config = {
   // Consult https://svelte.dev/docs/kit/integrations
   // for more information about preprocessors
@@ -26,7 +27,7 @@ const config: Config = {
         'media-src': ['self', 'blob:'],
         'frame-src': ['https://www.youtube.com/embed/', 'https://player.twitch.tv/'],
         'manifest-src': ['self'],
-        'connect-src': ['self', ...(isDevMode ? ['ws://localhost:8081'] satisfies Csp.Sources : [])],
+        'connect-src': ['self', ...(isDevMode ? ['ws://localhost:8081'] satisfies CspSources : [])],
         'worker-src': isDevMode ? ['self', 'blob:'] : undefined,
         'base-uri': ['none'],
         'form-action': ['self'],
