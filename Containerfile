@@ -22,7 +22,7 @@ COPY --chown=node:node \
 COPY --chown=node:node ./backend/prisma/ ./backend/prisma/
 
 RUN cd backend/ && \
-    npm clean-install && \
+    npm clean-install --allow-git=root && \
     npm cache clean --force
 
 COPY --chown=node:node ./backend/src/ ./backend/src/
@@ -90,7 +90,7 @@ COPY --from=builder --chown=node:node /app/backend/dist/ ./backend/dist/
 
 # build-essential is needed to install xxhash dependency (TODO: check if this can be avoided)
 RUN cd backend/ && \
-    npm clean-install --omit dev && \
+    npm clean-install --allow-git=root --omit dev && \
     npm cache clean --force
 
 USER root
