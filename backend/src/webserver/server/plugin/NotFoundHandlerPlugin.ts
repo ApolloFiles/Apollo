@@ -5,28 +5,17 @@ import type { RouteReturn } from '../../routes/Router.js';
 
 export default fastifyPlugin(registerPlugin);
 
+const CANDIDATE_METHODS = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'] as const;
+
 function registerPlugin(instance: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void): void {
-  const knownRoutes = new Map<string, string[]>();
-
-  instance.addHook('onRoute', (routeOptions): void => {
-    const knownMethods = knownRoutes.get(routeOptions.path) ?? [];
-    const methodsToRegister = Array.isArray(routeOptions.method) ? routeOptions.method : [routeOptions.method];
-
-    for (const method of methodsToRegister) {
-      if (!knownMethods.includes(method)) {
-        knownMethods.push(method);
-        instance.log.debug(`[NotFoundHandlerPlugin] Found ${method} ${routeOptions.path}`);
-      }
-    }
-    knownRoutes.set(routeOptions.path, knownMethods);
-  });
-
   instance.setNotFoundHandler((request, reply): RouteReturn => {
-    const knownMethods = knownRoutes.get(request.url.split('?')[0]);
-    if (knownMethods != null) {
+    const requestPath = request.url.split('?')[0];
+    const allowedMethods = CANDIDATE_METHODS.filter((method) => instance.findRoute({ method, url: requestPath }) != null);
+
+    if (allowedMethods.length > 0) {
       return reply
         .status(405)
-        .header('Allow', knownMethods.join(', ').toUpperCase())
+        .header('Allow', allowedMethods.join(', '))
         .send('Method Not Allowed');
     }
 
