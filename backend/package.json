@@ -83,5 +83,12 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.9",
     "vitest-mock-extended": "^4.0.0"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.8.0": true,
+    "@swc/core@1.15.43": true,
+    "prisma@7.8.0": true,
+    "xxhash-addon@2.1.0": true,
+    "bufferutil@4.1.0": true
   }
 }
