@@ -175,6 +175,11 @@
 
   {#each tagKeysThatAreDuplicateInAtLeastOneFile as tagKey}
     <div>
+       <span
+         style:color={hasMkvTagInfo(tagKey) ? '' : 'gray'}
+         title={getMkvTagInfo(tagKey)?.info ?? '–'}
+       ><TablerIcon icon="info-circle" /></span>
+
       <input
         class="input-tag-key cursor-not-allowed"
         value={tagKey}
