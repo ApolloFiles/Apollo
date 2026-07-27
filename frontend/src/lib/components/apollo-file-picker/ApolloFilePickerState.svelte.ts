@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { getClientSideRpcClient } from '$lib/oRPCClientSide';
 import type { ORpcContractOutputs } from '$lib/ORpcHelper';
 
@@ -24,7 +25,9 @@ const SORT_DIRS: readonly SortDir[] = ['asc', 'desc'];
 /** Load the persisted sort preference, falling back to name/ascending (SSR, missing, or invalid). */
 function readStoredSort(): { key: SortKey, dir: SortDir } {
   const fallback = { key: 'name' as SortKey, dir: 'asc' as SortDir };
-  if (typeof localStorage === 'undefined') {
+  // Never touch `localStorage` while server-side rendering – even a `typeof` check hits Node's
+  // lazy global and makes it log an ExperimentalWarning about the missing --localstorage-file
+  if (!browser) {
     return fallback;
   }
   try {
@@ -48,7 +51,7 @@ function readStoredSort(): { key: SortKey, dir: SortDir } {
 }
 
 function writeStoredSort(key: SortKey, dir: SortDir): void {
-  if (typeof localStorage === 'undefined') {
+  if (!browser) {
     return;
   }
   try {
