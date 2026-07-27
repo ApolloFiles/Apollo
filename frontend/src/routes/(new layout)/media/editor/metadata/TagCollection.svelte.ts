@@ -73,6 +73,16 @@ export default class TagCollection {
     return this._tags.filter(tag => tag.key.toLowerCase() === key.toLowerCase());
   }
 
+  /**
+   * Returns all tags that do not have a key yet, in the order they appear in this collection.
+   *
+   * Such tags cannot be identified by their key, so their index in the returned array is the only
+   * thing identifying them across multiple {@link TagCollection}s.
+   */
+  findByEmptyKey(): TagData[] {
+    return this._tags.filter(tag => tag.key === '');
+  }
+
   findByKeyIfUniqueOrNull(key: string): TagData | null {
     const found = this._tags.filter(tag => tag.key === key);
     return found.length === 1 ? found[0] : null;
