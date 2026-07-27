@@ -24,17 +24,45 @@
   let files: FileData[] = $state(FileData.createMultipleFromBackendData(data.files));
   let selectedFileIds: FileData['identifier'][] = $state([]);
   let selectedFiles = $derived(files.filter((file) => selectedFileIds.includes(file.identifier)));
+  /** The file a shift-click selects a range from – updated by every click that is not a range selection. */
+  let selectionAnchorFileId: FileData['identifier'] | undefined = undefined;
 
   $effect(() => {
     // update files, when page data changes (e.g. when user opens a new path)
     files = FileData.createMultipleFromBackendData(data.files);
     selectedFileIds = [];
+    selectionAnchorFileId = undefined;
   });
 
   // file selection helper functions
 
   function handleFileSelection(fileId: string, event: MouseEvent): void {
     const isCtrl = event.ctrlKey || event.metaKey;
+
+    if (event.shiftKey) {
+      if (selectionAnchorFileId === fileId) {
+        // Leave the selection alone when shift-clicking inside the anchored file itself,
+        // so the browser can still do whatever it wants to (e.g. extending a text selection)
+        return;
+      }
+
+      const rangeFileIds = findFileIdsBetween(selectionAnchorFileId, fileId);
+      if (rangeFileIds != null) {
+        if (isCtrl) {
+          selectedFileIds = [...selectedFileIds, ...rangeFileIds.filter(rangeFileId => !selectedFileIds.includes(rangeFileId))];
+        } else {
+          selectedFileIds = rangeFileIds;
+        }
+
+        // The browser extended the text selection across the clicked files – discard it as we handled the click
+        window.getSelection()?.removeAllRanges();
+
+        // Keep the anchor, so a following shift-click selects the range from the same file again
+        sortTagsOfSelectedFiles();
+        return;
+      }
+    }
+
     if (isCtrl) {
       if (selectedFileIds.includes(fileId)) {
         // Unselect if already selected
@@ -45,7 +73,29 @@
     } else {
       selectedFileIds = [fileId];
     }
+    selectionAnchorFileId = fileId;
 
+    sortTagsOfSelectedFiles();
+  }
+
+  /** Returns the ids of all files between the two given ones (inclusive) or `undefined` if either one is unknown. */
+  function findFileIdsBetween(fromFileId: FileData['identifier'] | undefined, toFileId: FileData['identifier']): FileData['identifier'][] | undefined {
+    if (fromFileId == null) {
+      return undefined;
+    }
+
+    const fromIndex = files.findIndex(file => file.identifier === fromFileId);
+    const toIndex = files.findIndex(file => file.identifier === toFileId);
+    if (fromIndex === -1 || toIndex === -1) {
+      return undefined;
+    }
+
+    return files
+      .slice(Math.min(fromIndex, toIndex), Math.max(fromIndex, toIndex) + 1)
+      .map(file => file.identifier);
+  }
+
+  function sortTagsOfSelectedFiles(): void {
     // re-sort tags when selection changes
     for (const file of selectedFiles) {
       file.sortTagsByKey();
@@ -80,6 +130,7 @@
 
     files = [];
     selectedFileIds = [];
+    selectionAnchorFileId = undefined;
 
     if (uri === data.requestedOpenUri) {
       refreshAll();
@@ -94,6 +145,7 @@
     } else {
       selectedFileIds = files.map((file) => file.identifier);
     }
+    selectionAnchorFileId = undefined;
   }
 
   function saveAllFiles(): void {
