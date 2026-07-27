@@ -41,6 +41,11 @@ export default class TagCollection {
       .forEach(tag => this.deleteByUid(tag.uid));
   }
 
+  deleteAllByKey(key: string): void {
+    this.findByKey(key)
+      .forEach(tag => this.deleteByUid(tag.uid));
+  }
+
   setValueByUid(uid: number, newValue: string): void {
     const tag = this.findByUid(uid);
 
@@ -73,6 +78,10 @@ export default class TagCollection {
     return this._tags.filter(tag => tag.key.toLowerCase() === key.toLowerCase());
   }
 
+  findByKey(key: string): TagData[] {
+    return this._tags.filter(tag => tag.key === key);
+  }
+
   /**
    * Returns all tags that do not have a key yet, in the order they appear in this collection.
    *
@@ -80,11 +89,11 @@ export default class TagCollection {
    * thing identifying them across multiple {@link TagCollection}s.
    */
   findByEmptyKey(): TagData[] {
-    return this._tags.filter(tag => tag.key === '');
+    return this.findByKey('');
   }
 
   findByKeyIfUniqueOrNull(key: string): TagData | null {
-    const found = this._tags.filter(tag => tag.key === key);
+    const found = this.findByKey(key);
     return found.length === 1 ? found[0] : null;
   }
 

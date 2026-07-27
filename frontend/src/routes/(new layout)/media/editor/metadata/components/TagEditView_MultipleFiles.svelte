@@ -150,6 +150,22 @@
     }
   }
 
+  /**
+   * Deletes every tag with that key from every selected file.
+   *
+   * This is what the delete button of a row for a key that is not unique does: such a row stands for
+   * all the tags with that key, so all of them have to go. It also is the only way to get rid of
+   * them, given that the row itself cannot be edited.
+   *
+   * Matches the key exactly (not case-insensitively) because that is how the rows are grouped – a
+   * differently cased key is a row of its own and must not be deleted along with this one.
+   */
+  function deleteTagsByKey(key: string): void {
+    for (const tagCollection of tagCollections) {
+      tagCollection.deleteAllByKey(key);
+    }
+  }
+
   function _isCollectedTagInTagCollection(collectedTag: CollectedTag, tagCollection: TagCollection): boolean {
     return collectedTag.tagPairs.some(([tagCollectionInPair, _]) => tagCollectionInPair === tagCollection);
   }
@@ -257,7 +273,17 @@
         readonly
       />
 
-      <button class="btn btn-sm btn-danger ms-2 cursor-not-allowed">
+      <!--
+        Not a dropdown – it just takes up the same space as the value dropdown of the editable rows,
+        so this row's delete button lines up with theirs
+      -->
+      <span class="btn btn-sm btn-secondary dropdown-toggle invisible" aria-hidden="true"></span>
+
+      <button
+        class="btn btn-sm btn-danger ms-2"
+        title="Delete this tag from all selected files, no matter how often they contain it"
+        onclick={() => deleteTagsByKey(tagKey)}
+      >
         <TablerIcon icon="trash" />
       </button>
     </div>
