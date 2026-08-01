@@ -448,7 +448,7 @@
   // "v2" TODOs:
   // TODO: Heavy refactoring and re-design: split UI into multiple components, use icons where appropriate, unify text sizes etc., check accessibility, ...
   // TODO: Add support for editing Chapters
-  // TODO: Maybe show a still-frame or a couple second clip for every chapter, so it is easier to identify it (or at least a live_transcode link with a startOffset and without watch progress tracking)
+  // TODO:   Maybe show a still-frame or a couple second clip for every chapter, so it is easier to identify it (or at least a live_transcode link with a startOffset and without watch progress tracking)
   // TODO: Maybe we can offer format-specific suggestions/features, when supported and a warning for not explicitly supported ones
   //       e.g. normalization of tag keys (e.g. MKV mostly/mainly uses upper-case), (common)tag key name suggestions as one is typing, language code suggestion/search/completion for LANGUAGE tags, ...
   // TODO: Warn the user (or come up with something) regarding changes that should be saved but could be lost (e.g. ffmpeg dropped a tag, because the file format only allows specific tags and not any user-supplied tag)
