@@ -54,6 +54,9 @@ export default class VideoThumbnailFrameExtractor {
     const ffmpegProcess = await BufferedChildProcess.spawn('ffmpeg', [
         '-loglevel', 'warning',
 
+        // FIXME: `-hwaccel auto` can pick a hardware decoder that fails at runtime (e.g. on a machine with more than
+        //        one GPU), making FFmpeg exit without producing any output. Fall back to software decoding like
+        //        VideoLiveTranscodeMediaFactory#awaitTranscodeStartup does.
         '-hwaccel', 'auto',
 
         ...(favorGettingSomeResultOverPerformance ? [] : [
