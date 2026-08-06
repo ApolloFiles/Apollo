@@ -149,6 +149,92 @@ export default class AdminORpcRouterFactory {
         }),
       },
 
+      feedback: {
+        list: os.feedback.list.handler(async ({ context }) => {
+          const reports = await this.databaseClient.feedbackReport.findMany({
+            select: {
+              id: true,
+              category: true,
+              status: true,
+              message: true,
+              appVersion: true,
+              createdAt: true,
+              user: {
+                select: { id: true, displayName: true },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          return {
+            loggedInUser: {
+              id: context.authSession.user.id,
+              csrfToken: context.authSession.csrfToken,
+              displayName: context.authSession.user.displayName,
+              isSuperUser: context.authSession.user.isSuperUser,
+              uiLanguage: context.authSession.user.uiLanguage,
+            },
+
+            reports,
+          };
+        }),
+
+        get: os.feedback.get.handler(async ({ input, context, errors }) => {
+          const report = await this.databaseClient.feedbackReport.findUnique({
+            where: { id: input.id },
+            select: {
+              id: true,
+              category: true,
+              status: true,
+              message: true,
+              context: true,
+              adminNote: true,
+              appVersion: true,
+              createdAt: true,
+              updatedAt: true,
+              user: {
+                select: { id: true, displayName: true },
+              },
+            },
+          });
+          if (report == null) {
+            throw errors.REQUESTED_ENTITY_NOT_FOUND();
+          }
+
+          return {
+            loggedInUser: {
+              id: context.authSession.user.id,
+              csrfToken: context.authSession.csrfToken,
+              displayName: context.authSession.user.displayName,
+              isSuperUser: context.authSession.user.isSuperUser,
+              uiLanguage: context.authSession.user.uiLanguage,
+            },
+
+            report,
+          };
+        }),
+
+        update: os.feedback.update.handler(async ({ input }) => {
+          const adminNote = input.adminNote != null && input.adminNote.length > 0 ? input.adminNote : null;
+
+          await this.databaseClient.feedbackReport.update({
+            where: { id: input.id },
+            data: {
+              status: input.status,
+              adminNote,
+            },
+            select: { id: true },
+          });
+        }),
+
+        delete: os.feedback.delete.handler(async ({ input }) => {
+          await this.databaseClient.feedbackReport.delete({
+            where: { id: input.id },
+            select: { id: true },
+          });
+        }),
+      },
+
       debug: {
         collectDebugInfo: os.debug.collectDebugInfo.handler(async () => {
           const childProcess = await new ProcessBuilder('pgrep', ['--parent', process.pid.toString()])

@@ -1,0 +1,34 @@
+model FeedbackReport {
+  id         String                 @id @default(dbgenerated("apollo_nanoid(19)"))
+  userId     String                 @map("user_id")
+  category   FeedbackReportCategory
+  message    String                 @db.VarChar(4000)
+  context    Json?                  @db.JsonB
+  appVersion String                 @map("app_version")
+  status     FeedbackReportStatus   @default(OPEN)
+  adminNote  String?                @map("admin_note") @db.VarChar(4000)
+  createdAt  DateTime               @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime               @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("feedback_reports")
+}
+
+enum FeedbackReportCategory {
+  BUG
+  FEEDBACK
+
+  @@map("feedback_report_category")
+}
+
+enum FeedbackReportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  WONT_FIX
+
+  @@map("feedback_report_status")
+}

@@ -18,6 +18,10 @@ export type AppConfig = {
     }
   }
 
+  feedback: {
+    enabled: boolean;
+  }
+
   media: {
     externalProviders: {
       myAnimeList: {
@@ -53,6 +57,10 @@ export default class AppConfiguration {
       login: {
         // TODO: Rename env variable
         oAuth: JSON.parse(process.env.BETTER_AUTH_OAUTH_CONFIG_JSON ?? '{}'), // TODO: Move from JSON in env to something better
+      },
+
+      feedback: {
+        enabled: process.env.APOLLO_FEEDBACK_ENABLED === 'true',
       },
 
       media: {

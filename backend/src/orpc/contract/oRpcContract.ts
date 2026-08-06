@@ -1,6 +1,7 @@
 import type { InferContractRouterOutputs } from '@orpc/contract';
 import { adminContract } from './sub-contracts/admin.js';
 import { authContract } from './sub-contracts/auth.js';
+import { feedbackContract } from './sub-contracts/feedback.js';
 import { filesContract } from './sub-contracts/files.js';
 import { mediaContract } from './sub-contracts/media.js';
 import { sessionContract } from './sub-contracts/session.js';
@@ -19,6 +20,8 @@ export const oRpcContract = {
 
   files: filesContract,
   media: mediaContract,
+
+  feedback: feedbackContract,
 
   admin: adminContract,
 };

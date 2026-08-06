@@ -4,6 +4,9 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import FeedbackDialog from '$lib/components/feedback/FeedbackDialog.svelte';
+  import { registerFeedbackPageContextProvider, type FeedbackPageContext } from '$lib/feedback/feedbackContext';
+  import { m } from '$lib/paraglide/messages.js';
   import { setUserProfileContext } from '$lib/stores/UserProfileStore.svelte';
   import type { PageProps } from './$types';
   import type { StartPlaybackResponse, TwitchMediaInfo, YouTubeMediaInfo } from './legacy-types';
@@ -28,6 +31,7 @@
   let searchInputValue = $state('');
 
   let videoContainerRef: HTMLDivElement;
+  let feedbackDialogRef: FeedbackDialog | undefined = $state(undefined);
 
   let transcodeRestartInProgress = false;
 
@@ -388,6 +392,43 @@
 
   let videoPlayerPromise: Promise<VideoPlayer | null> | undefined = $state(undefined);
 
+  async function collectPlayerFeedbackContext(): Promise<FeedbackPageContext> {
+    const playerLoadTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000));
+    const videoPlayer = videoPlayerPromise != null ? await Promise.race([videoPlayerPromise, playerLoadTimeout]) : null;
+
+    return {
+      sessionId,
+      mediaTitle,
+      autoPlayEnabled,
+      player: videoPlayer == null ? null : {
+        mediaItemId: videoPlayer.mediaMetadata.mediaItemId,
+        title: videoPlayer.mediaMetadata.title,
+        episode: videoPlayer.mediaMetadata.episode == null ? null : {
+          season: videoPlayer.mediaMetadata.episode.season,
+          episode: videoPlayer.mediaMetadata.episode.episode,
+          title: videoPlayer.mediaMetadata.episode.title,
+        },
+        currentTime: videoPlayer.$currentTime,
+        duration: videoPlayer.$duration,
+        isPlaying: videoPlayer.$isPlaying,
+        playbackRate: videoPlayer.$playbackRate,
+        volume: videoPlayer.$volume,
+        muted: videoPlayer.$muted,
+        activeAudioTrackId: videoPlayer.$activeAudioTrackId,
+        audioTracks: videoPlayer.$audioTracks,
+        activeSubtitleTrack: videoPlayer.$activeSubtitleTrack == null ? null : {
+          id: videoPlayer.$activeSubtitleTrack.id,
+          label: videoPlayer.$activeSubtitleTrack.label,
+          language: videoPlayer.$activeSubtitleTrack.language,
+          isBitmapBased: videoPlayer.$activeSubtitleTrack.isBitmapBased,
+        },
+        localBufferedRanges: videoPlayer.$localBufferedRanges,
+        remoteBufferedRange: videoPlayer.$remoteBufferedRange,
+        showsCustomControls: videoPlayer.$shouldShowCustomControls,
+      },
+    };
+  }
+
   function initWebSocket(videoPlayer: VideoPlayer | null): void {
     if (sessionId == null) {
       throw new Error('Session ID is not set, cannot initialize WebSocket');
@@ -418,10 +459,13 @@
   }
 
   onMount(() => {
+    const unregisterFeedbackContextProvider = registerFeedbackPageContextProvider(collectPlayerFeedbackContext);
+
     videoPlayerPromise = initVideoPlayer();
     videoPlayerPromise.then((videoPlayer) => initWebSocket(videoPlayer));
 
     return () => {
+      unregisterFeedbackContextProvider();
       videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
     };
   });
@@ -437,6 +481,15 @@
           <button class="btn btn-outline-light" type="submit">Search</button>
         </form>
       </div>
+      {#if data.config.feedback.enabled}
+        <button
+          type="button"
+          class="feedback-nav-button me-3"
+          onclick={() => feedbackDialogRef?.show()}
+        >
+          {m.component_feedback_link_label()}
+        </button>
+      {/if}
       <div class="navbar-nav">
         <PlaybackSessionButton
           bind:sessionId={sessionId}
@@ -475,9 +528,28 @@
   {/await}
 </main>
 
+{#if data.config.feedback.enabled}
+  <FeedbackDialog bind:this={feedbackDialogRef} />
+{/if}
+
 <style>
   header {
     height: 56px;
+  }
+
+  .feedback-nav-button {
+    background:  none;
+    border:      none;
+    padding:     0;
+    font-size:   0.85rem;
+    color:       var(--text-secondary, #aaa);
+    cursor:      pointer;
+    white-space: nowrap;
+  }
+
+  .feedback-nav-button:hover {
+    color:           var(--text-primary, #fff);
+    text-decoration: underline;
   }
 
   main {
