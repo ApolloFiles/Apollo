@@ -7,8 +7,13 @@ type Libraries = {
   sharedWith: LibraryEntry[],
 };
 
+type MediaSideBarConfig = {
+  sideBarMenuItems: SideBarMenuItems,
+  bottomButton: SideBarMenuItem,
+};
+
 // TODO: Drop support for array of Library once all usages are migrated
-export function buildMediaSideBarMenuItems(libraries: Libraries): SideBarMenuItems {
+export function buildMediaSideBarConfig(libraries: Libraries): MediaSideBarConfig {
   const toMenuItem = (library: LibraryEntry): SideBarMenuItem => ({
     label: library.name,
     href: `/media/${library.id}`,
@@ -46,5 +51,12 @@ export function buildMediaSideBarMenuItems(libraries: Libraries): SideBarMenuIte
     });
   }
 
-  return sideBarMenuItems;
+  return {
+    sideBarMenuItems,
+    bottomButton: {
+      label: m.nav_media_manage(),
+      href: '/media/manage',
+      icon: 'settings',
+    },
+  };
 }

@@ -1,12 +1,9 @@
 <script lang="ts">
   import { page } from '$app/state';
   import AppLayout from '$lib/components/(new layout)/AppLayout.svelte';
-  import { initAppSideBarExtras } from '$lib/stores/AppSideBarExtrasStore.svelte';
   import type { RenderingLayoutData } from './types';
 
   const { children } = $props();
-
-  initAppSideBarExtras();
 
   const renderingConfig: RenderingLayoutData['rendering'] | null = $derived.by(() => {
     const sideBarMenuitems = page.data.rendering?.layout?.sideBarMenuItems;
@@ -21,6 +18,7 @@
 
 <AppLayout
   sideBarMenuItems={renderingConfig?.layout.sideBarMenuItems ?? []}
+  sideBarBottomButton={renderingConfig?.layout.bottomButton}
   topBarRenderAsOverlay={renderingConfig?.layout.topNavAsOverlay}
   topBarSearchFormAction={renderingConfig?.layout.searchFormAction}
   mainContentType={renderingConfig?.layout.mainContentType}

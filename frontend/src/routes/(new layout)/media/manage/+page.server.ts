@@ -1,4 +1,4 @@
-import { buildMediaSideBarMenuItems } from '$lib/components/media/MediaSideBarMenuItemsBuilder';
+import { buildMediaSideBarConfig } from '$lib/components/media/MediaSideBarConfigBuilder';
 import { rpcClient } from '$lib/oRPC';
 import type { RenderingLayoutData } from '../../types';
 import type { PageServerLoad } from './$types';
@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 
     rendering: {
       layout: {
-        sideBarMenuItems: buildMediaSideBarMenuItems(pageData.libraries),
+        ...buildMediaSideBarConfig(pageData.libraries),
       },
     },
   } satisfies { [key: string]: unknown } & RenderingLayoutData;

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import AppSideBar, { type SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
+  import AppSideBar, { type SideBarMenuItem, type SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
   import AppTopNav from '$lib/components/(new layout)/AppTopNav.svelte';
   import { setUserProfileContext } from '$lib/stores/UserProfileStore.svelte';
   import type { Snippet } from 'svelte';
@@ -8,12 +8,14 @@
   const {
     children,
     sideBarMenuItems,
+    sideBarBottomButton,
     topBarRenderAsOverlay = false,
     topBarSearchFormAction,
     mainContentType,
   }: {
     children: Snippet,
     sideBarMenuItems: SideBarMenuItems,
+    sideBarBottomButton?: SideBarMenuItem,
     topBarRenderAsOverlay?: boolean,
     topBarSearchFormAction?: string,
     mainContentType?: 'media-detail',
@@ -26,6 +28,7 @@
 <AppSideBar
   bind:this={appSideBarRef}
   menuItems={sideBarMenuItems}
+  bottomButton={sideBarBottomButton}
 />
 
 <main
