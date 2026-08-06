@@ -5,7 +5,6 @@
   import FeedbackDialog from '$lib/components/feedback/FeedbackDialog.svelte';
   import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
   import { m } from '$lib/paraglide/messages.js';
-  import { getAppSideBarExtras } from '$lib/stores/AppSideBarExtrasStore.svelte';
   import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
 
   export type SideBarMenuItem = {
@@ -22,15 +21,16 @@
 
   type SimpleSideBarMenuItems = (SideBarMenuItem | 'divider')[];
 
-  let { menuItems }: { menuItems: SideBarMenuItems } = $props();
-  const appSideBarExtras = getAppSideBarExtras();
+  let { menuItems, bottomButton }: {
+    menuItems: SideBarMenuItems,
+    bottomButton?: SideBarMenuItem,
+  } = $props();
 
   let sidebarActive = $state(false);
   let feedbackDialogRef: FeedbackDialog | undefined = $state(undefined);
 
   const feedbackEnabled = $derived(page.data.feedback?.enabled === true);
 
-  const bottomButton = $derived(appSideBarExtras.bottomButton);
   const apolloSubApps: SimpleSideBarMenuItems = $derived.by(() => {
     const baseApolloSubApps: SimpleSideBarMenuItems = [
       {

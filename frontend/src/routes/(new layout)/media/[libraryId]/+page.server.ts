@@ -1,4 +1,4 @@
-import { buildMediaSideBarMenuItems } from '$lib/components/media/MediaSideBarMenuItemsBuilder';
+import { buildMediaSideBarConfig } from '$lib/components/media/MediaSideBarConfigBuilder';
 import { rpcClient } from '$lib/oRPC';
 import { isDefinedError, safe } from '@orpc/client';
 import { error } from '@sveltejs/kit';
@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ fetch, cookies, params, url }) => {
     ...pageData,
     rendering: {
       layout: {
-        sideBarMenuItems: buildMediaSideBarMenuItems(pageData.page.libraries),
+        ...buildMediaSideBarConfig(pageData.page.libraries),
         searchFormAction: '/media/search',
       },
     },
