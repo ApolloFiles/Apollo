@@ -2,6 +2,7 @@
   import { browser } from '$app/environment';
   import { page } from '$app/state';
   import SideBarMenuGroup from '$lib/components/(new layout)/SideBarMenuGroup.svelte';
+  import FeedbackDialog from '$lib/components/feedback/FeedbackDialog.svelte';
   import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
   import { m } from '$lib/paraglide/messages.js';
   import { getAppSideBarExtras } from '$lib/stores/AppSideBarExtrasStore.svelte';
@@ -25,6 +26,9 @@
   const appSideBarExtras = getAppSideBarExtras();
 
   let sidebarActive = $state(false);
+  let feedbackDialogRef: FeedbackDialog | undefined = $state(undefined);
+
+  const feedbackEnabled = $derived(page.data.feedback?.enabled === true);
 
   const bottomButton = $derived(appSideBarExtras.bottomButton);
   const apolloSubApps: SimpleSideBarMenuItems = $derived.by(() => {
@@ -246,7 +250,24 @@
       {bottomButton.label}
     </a>
   {/if}
+
+  {#if feedbackEnabled}
+    <!-- Footer-like area for small meta links (e.g. a privacy policy link later) -->
+    <div class="sidebar-footer">
+      <button
+        type="button"
+        class="sidebar-footer-link"
+        onclick={() => feedbackDialogRef?.show()}
+      >
+        {m.component_feedback_link_label()}
+      </button>
+    </div>
+  {/if}
 </nav>
+
+{#if feedbackEnabled}
+  <FeedbackDialog bind:this={feedbackDialogRef} />
+{/if}
 
 <style>
   /* Sidebar */
@@ -353,6 +374,29 @@
 
   .sidebar-nav {
     flex: 1 1 auto;
+  }
+
+  .sidebar-footer {
+    display:     flex;
+    flex-wrap:   wrap;
+    gap:         4px 12px;
+    margin-top:  12px;
+    padding-top: 12px;
+    border-top:  1px solid var(--border-color);
+  }
+
+  .sidebar-footer-link {
+    background: none;
+    border:     none;
+    padding:    0;
+    font-size:  0.8rem;
+    color:      var(--text-secondary);
+    cursor:     pointer;
+  }
+
+  .sidebar-footer-link:hover {
+    color:           var(--text-primary);
+    text-decoration: underline;
   }
 
   @media (max-width: 768px) {

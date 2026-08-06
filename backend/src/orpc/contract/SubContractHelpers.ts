@@ -9,6 +9,7 @@ export const baseOc = oc
     NO_PERMISSIONS: {},
     INVALID_INPUT: {},
     NOT_AVAILABLE_FOR_LOGGED_IN_USER: {},
+    FEATURE_DISABLED: {},
     [ERROR_CODE_REQUESTED_ENTITY_NOT_FOUND]: {},
     UNSUPPORTED_FILE: {},
   });

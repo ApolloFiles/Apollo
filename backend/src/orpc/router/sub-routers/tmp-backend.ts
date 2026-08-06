@@ -26,6 +26,9 @@ export default class TmpBackendORpcRouterFactory {
                 return a.displayName.localeCompare(b.displayName);
               }),
             },
+            feedback: {
+              enabled: this.appConfig.config.feedback.enabled,
+            },
           };
         }),
     };

@@ -3,6 +3,7 @@
   import 'inter-ui/inter.css';
 
   import { onMount } from 'svelte';
+  import { installClientErrorLog } from '$lib/feedback/clientErrorLog';
 
   let { children } = $props();
 
@@ -11,6 +12,8 @@
   // TODO: Mal https://smashing-freiburg-2024.netlify.app/27-dialog/ und https://smashing-freiburg-2024.netlify.app/28-popover/ anschauen
   // TODO: Für Video-Player-Styles anschauen: https://smashing-freiburg-2024.netlify.app/29-anchor/
   onMount(() => {
+    installClientErrorLog();
+
     // @ts-ignore
     import('bootstrap/dist/js/bootstrap.bundle.js');
   });

@@ -7,6 +7,7 @@ import UserBySessionTokenProvider from '../../auth/UserBySessionTokenProvider.js
 import { oRpcContract } from '../contract/oRpcContract.js';
 import AdminORpcRouterFactory from './sub-routers/admin.js';
 import AuthORpcRouterFactory from './sub-routers/auth.js';
+import FeedbackORpcRouterFactory from './sub-routers/feedback.js';
 import FilesORpcRouterFactory from './sub-routers/files.js';
 import MediaORpcRouterFactory from './sub-routers/media.js';
 import SessionORpcRouterFactory from './sub-routers/session.js';
@@ -76,6 +77,8 @@ export const ORPC_ROUTER = plainImplementer.router({
 
   files: container.resolve(FilesORpcRouterFactory).create(authenticatedImplementer.files),
   media: container.resolve(MediaORpcRouterFactory).create(authenticatedImplementer.media),
+
+  feedback: container.resolve(FeedbackORpcRouterFactory).create(authenticatedImplementer.feedback),
 
   admin: container.resolve(AdminORpcRouterFactory).create(authenticatedSuperUserImplementer.admin),
 });

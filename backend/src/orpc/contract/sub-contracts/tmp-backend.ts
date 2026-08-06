@@ -12,6 +12,9 @@ const getBackendConfig = baseOc
         displayName: z.string(),
       })),
     }),
+    feedback: z.strictObject({
+      enabled: z.boolean(),
+    }),
   }));
 
 export const tmpBackendContract = {

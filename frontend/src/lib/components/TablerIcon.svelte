@@ -12,6 +12,7 @@
   import IconChevronRight from 'virtual:icons/tabler/chevron-right';
   import IconChevronUp from 'virtual:icons/tabler/chevron-up';
   import IconCircleCaretRight from 'virtual:icons/tabler/circle-caret-right';
+  import IconCircleCheck from 'virtual:icons/tabler/circle-check';
   import IconCurrentLocation from 'virtual:icons/tabler/current-location';
   import IconDeviceDesktop from 'virtual:icons/tabler/device-desktop';
   import IconDeviceFloppy from 'virtual:icons/tabler/device-floppy';
@@ -30,6 +31,9 @@
   import IconLoader2 from 'virtual:icons/tabler/loader-2';
   import IconLogout from 'virtual:icons/tabler/logout';
   import IconMenu2 from 'virtual:icons/tabler/menu-2';
+  import IconMessage from 'virtual:icons/tabler/message';
+  import IconMessageOff from 'virtual:icons/tabler/message-off';
+  import IconMessageReport from 'virtual:icons/tabler/message-report';
   import IconMinus from 'virtual:icons/tabler/minus';
   import IconPencil from 'virtual:icons/tabler/pencil';
   import IconPlayerPlayFilled from 'virtual:icons/tabler/player-play-filled';
@@ -38,6 +42,7 @@
   import IconRotate from 'virtual:icons/tabler/rotate';
   import IconSearch from 'virtual:icons/tabler/search';
   import IconSelectAll from 'virtual:icons/tabler/select-all';
+  import IconSend from 'virtual:icons/tabler/send';
   import IconSettings from 'virtual:icons/tabler/settings';
   import IconShieldCheckFilled from 'virtual:icons/tabler/shield-check-filled';
   import IconShieldLock from 'virtual:icons/tabler/shield-lock';
@@ -69,6 +74,7 @@
     | 'chevron-right'
     | 'chevron-up'
     | 'circle-caret-right'
+    | 'circle-check'
     | 'current-location'
     | 'device-desktop'
     | 'device-floppy'
@@ -87,6 +93,9 @@
     | 'loader-2'
     | 'logout'
     | 'menu-2'
+    | 'message'
+    | 'message-off'
+    | 'message-report'
     | 'minus'
     | 'pencil'
     | 'player-play-filled'
@@ -95,6 +104,7 @@
     | 'rotate'
     | 'search'
     | 'select-all'
+    | 'send'
     | 'settings'
     | 'shield-check-filled'
     | 'shield-lock'
@@ -146,6 +156,8 @@
         return IconChevronUp;
       case 'circle-caret-right':
         return IconCircleCaretRight;
+      case 'circle-check':
+        return IconCircleCheck;
       case 'current-location':
         return IconCurrentLocation;
       case 'device-desktop':
@@ -182,6 +194,12 @@
         return IconLogout;
       case 'menu-2':
         return IconMenu2;
+      case 'message':
+        return IconMessage;
+      case 'message-off':
+        return IconMessageOff;
+      case 'message-report':
+        return IconMessageReport;
       case 'minus':
         return IconMinus;
       case 'pencil':
@@ -198,6 +216,8 @@
         return IconSearch;
       case 'select-all':
         return IconSelectAll;
+      case 'send':
+        return IconSend;
       case 'settings':
         return IconSettings;
       case 'shield-check-filled':

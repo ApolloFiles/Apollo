@@ -15,6 +15,7 @@ model AuthUser {
   mediaLibrarySharedWiths         MediaLibrarySharedWith[]
   mediaLibraryUserPreferences     MediaLibraryUserPreferences[]
   mediaLibraryUserWatchProgresses MediaLibraryUserWatchProgress[]
+  feedbackReports                 FeedbackReport[]
 
   @@index([createdAt])
   @@map("auth_users")
