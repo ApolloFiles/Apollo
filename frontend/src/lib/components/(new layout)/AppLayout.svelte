@@ -82,7 +82,7 @@
     --card-hover-scale:       1.05;
   }
 
-  :global(body) {
+  :global(html body) {
     background-color:       var(--primary-bg);
     color:                  var(--text-primary);
     font-family:            InterVariable, Inter, sans-serif;
