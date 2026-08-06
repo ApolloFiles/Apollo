@@ -1,6 +1,6 @@
 <script lang="ts">
   import 'bootstrap/dist/css/bootstrap.css';
-  import 'inter-ui/inter.css';
+  import '$lib/styles/fonts.css';
 
   import { onMount } from 'svelte';
   import { installClientErrorLog } from '$lib/feedback/clientErrorLog';
