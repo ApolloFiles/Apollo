@@ -43,6 +43,16 @@ const handleParaglide: Handle = ({ event, resolve }) => paraglideMiddleware(even
 
   return resolve(event, {
     transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', locale),
+    preload: ({ type, path }) => {
+      if (type === 'js' || type === 'css') {
+        return true;
+      }
+
+      // The @font-face rules sit inside a large stylesheet, so the browser only discovers the font
+      // files late and paints everything in the fallback font first. Preloading the upright face
+      // avoids that. The italic face is barely used – it may load on demand.
+      return type === 'font' && !path.includes('Italic');
+    },
   });
 });
 export const handle: Handle = async (input) => {

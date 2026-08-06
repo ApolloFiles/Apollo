@@ -82,7 +82,7 @@
   :global(body) {
     background-color:       var(--primary-bg);
     color:                  var(--text-primary);
-    font-family:            'Inter', sans-serif;
+    font-family:            InterVariable, Inter, sans-serif;
     font-variant-ligatures: none;
     overflow-x:             hidden;
     margin:                 0;
