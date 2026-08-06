@@ -42,6 +42,9 @@ export default class LiveTranscode {
       '-stats_period', '1',
       '-n',
 
+      // FIXME: `-hwaccel auto` can pick a hardware decoder that fails at runtime (e.g. on a machine with more than one
+      //        GPU), making FFmpeg exit without producing any output. Fall back to software decoding like
+      //        VideoLiveTranscodeMediaFactory#awaitTranscodeStartup does.
       '-hwaccel', 'auto',
       '-i', videoFile,
 

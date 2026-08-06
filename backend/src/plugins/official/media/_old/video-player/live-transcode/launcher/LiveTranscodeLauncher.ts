@@ -31,6 +31,18 @@ export type LiveTranscodeHandle = {
   readonly selectedVideoEncoder: string;
   /** The absolute input stream index of the image-based subtitle actually burned into the video, or `null` if none. */
   readonly burnedInSubtitleStreamIndex: number | null;
+  /** Whether FFmpeg was asked to pick a hardware decoder (`-hwaccel auto`) for the input file. */
+  readonly usedHardwareDecoding: boolean;
+}
+
+export type LiveTranscodeOptions = {
+  /**
+   * Whether FFmpeg may pick a hardware decoder for the input file (`-hwaccel auto`). Defaults to `true`.
+   *
+   * `-hwaccel auto` picks whatever the system advertises, which can fail at runtime (e.g. on a machine with more than
+   * one GPU, or with a driver that cannot read the decoded surfaces back). Disable it to decode in software instead.
+   */
+  readonly useHardwareDecoding?: boolean;
 }
 
 // TODO: Refactor / clean-up class
@@ -42,7 +54,8 @@ export default class LiveTranscodeLauncher {
   ) {
   }
 
-  async launch(videoFile: string, targetDir: string, startOffsetInSeconds: number, videoAnalysis: ExtendedVideoAnalysis, burnInSubtitleStreamIndex?: number | null): Promise<LiveTranscodeHandle> {
+  async launch(videoFile: string, targetDir: string, startOffsetInSeconds: number, videoAnalysis: ExtendedVideoAnalysis, burnInSubtitleStreamIndex?: number | null, options: LiveTranscodeOptions = {}): Promise<LiveTranscodeHandle> {
+    const useHardwareDecoding = options.useHardwareDecoding ?? true;
     const streamsToTranscode = this.autoStreamSelector.selectStreams(videoAnalysis, burnInSubtitleStreamIndex);
 
     const videoStream = streamsToTranscode.find(stream => stream.codecType == 'video') as VideoStream;
@@ -65,7 +78,7 @@ export default class LiveTranscodeLauncher {
 
       ...(startOffsetInSeconds > 0 ? ['-ss', startOffsetInSeconds.toString()] : []),
 
-      '-hwaccel', 'auto',
+      ...(useHardwareDecoding ? ['-hwaccel', 'auto'] : []),
       '-i', videoFile,
 
       '-map_chapters', '-1',
@@ -89,7 +102,7 @@ export default class LiveTranscodeLauncher {
       `stream_%v/manifest.m3u8`,
     ];
 
-    console.debug(`Started LiveTranscode for ${videoFile} with startOffset=${startOffsetInSeconds}`);
+    console.debug(`Started LiveTranscode for ${videoFile} with startOffset=${startOffsetInSeconds} (encoder=${videoEncoder}, hardwareDecoding=${useHardwareDecoding})`);
 
     return {
       process: new FfmpegProcess(ffmpegArgs, {
@@ -102,6 +115,7 @@ export default class LiveTranscodeLauncher {
       selectedVideoEncoder: videoEncoder,
       audioNameMap: streamArgs.audioNameMap,
       burnedInSubtitleStreamIndex: burnedInSubtitleStream?.index ?? null,
+      usedHardwareDecoding: useHardwareDecoding,
     };
   }
 

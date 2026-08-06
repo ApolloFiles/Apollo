@@ -13,8 +13,12 @@ export type FfmpegMetrics = { [key: string]: string | number } & {
  */
 export default class FfmpegProcess extends EventEmitter {
   private static readonly EXECUTABLE = 'ffmpeg';  // TODO: Make this configurable
+  private static readonly MAX_STDERR_TAIL_LINES = 20;
+  private static readonly MAX_BUFFERED_STDERR_LENGTH = 16384;
 
   private readonly childProcess: ChildProcess.ChildProcess;
+  /** The most recent stderr output, excluding the periodic progress/metrics lines. */
+  private stderrTail = '';
 
   constructor(args: string[], options: ChildProcess.SpawnOptions = { stdio: 'ignore' }) {
     super();
@@ -35,7 +39,35 @@ export default class FfmpegProcess extends EventEmitter {
       if (dataAsString.startsWith('Using auto hwaccel type ')) {
         hwDecoding = dataAsString.split(' ')[4];
       }
+
+      // Kept raw (only length-capped) – trimming to whole lines here would drop the newline a chunk ends on
+      this.stderrTail = (this.stderrTail + dataAsString).slice(-FfmpegProcess.MAX_BUFFERED_STDERR_LENGTH);
     });
+  }
+
+  /**
+   * The last few stderr lines of the process (progress lines excluded), or an empty string if stderr is not piped.
+   *
+   * Without this, a failing FFmpeg process is invisible to the caller: its exit code has no listener and everything
+   * it printed is discarded, so the only symptom is a missing output file. Only the tail is kept, because the reason
+   * a process failed is always at the end – the start is the version banner and a dump of the input file's metadata.
+   */
+  getStderrTail(): string {
+    return this.stderrTail
+      .split(/[\r\n]+/)
+      .filter((line) => line.trim() !== '' && !line.startsWith('frame=') && !line.startsWith('size='))
+      .slice(-FfmpegProcess.MAX_STDERR_TAIL_LINES)
+      .join('\n');
+  }
+
+  /** Whether the process already exited (or was killed). */
+  hasExited(): boolean {
+    return this.childProcess.exitCode != null || this.childProcess.signalCode != null;
+  }
+
+  /** The exit code of the process, or `null` if it is still running or was terminated by a signal. */
+  getExitCode(): number | null {
+    return this.childProcess.exitCode;
   }
 
   on(event: 'metrics', listener: (metrics: FfmpegMetrics) => void): this;

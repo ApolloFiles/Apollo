@@ -29,6 +29,9 @@ export default class SeekThumbnailGenerator {
 
     const ffmpegProcess = new FfmpegProcess([
       '-skip_frame', 'nokey',
+      // FIXME: `-hwaccel auto` can pick a hardware decoder that fails at runtime (e.g. on a machine with more than one
+      //        GPU), making FFmpeg exit without producing any output. Fall back to software decoding like
+      //        VideoLiveTranscodeMediaFactory#awaitTranscodeStartup does.
       '-hwaccel', 'auto',
 
       '-i', inputFile,
