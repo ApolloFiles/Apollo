@@ -95,18 +95,6 @@ const deleteFeedbackReport = baseOc
   .input(z.object({ id: z.string() }))
   .output(z.undefined());
 
-const getAdminDebugInfo = baseOc
-  .input(z.undefined())
-  .output(z.strictObject({
-    ownProcessId: z.number(),
-    nvidiaGpuInUse: z.boolean(),
-    openFileDescriptors: z.array(z.strictObject({
-      fd: z.number(),
-      linkTarget: z.string(),
-      childProcessPid: z.number().nullable(),
-    })),
-  }));
-
 export const adminContract = {
   users: {
     list: getUserList,
@@ -124,9 +112,5 @@ export const adminContract = {
     get: getFeedbackReportDetails,
     update: updateFeedbackReport,
     delete: deleteFeedbackReport,
-  },
-
-  debug: {
-    collectDebugInfo: getAdminDebugInfo,
   },
 };

@@ -9,8 +9,6 @@ export const load: LayoutServerLoad = (): RenderingLayoutData => {
         sideBarMenuItems: [
           { label: m.nav_admin_users(), href: '/admin/users', icon: 'users' },
           { label: m.nav_admin_feedback(), href: '/admin/feedback', icon: 'message-report' },
-          'divider',
-          { label: 'Debug (legacy)', href: '/admin/debug', icon: 'bug' },
         ],
       },
     },
