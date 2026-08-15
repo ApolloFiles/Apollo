@@ -64,6 +64,7 @@ export default class MovieDirectoryScanner extends AbstractScanner {
       synopsis,
       durationInSec,
       externalIds,
+      streams,
     } = await this.extractCommonVideoMetadata(file, mediaInfo.title);
 
     await writer.updateExternalIds(mediaId, {
@@ -79,6 +80,7 @@ export default class MovieDirectoryScanner extends AbstractScanner {
       synopsis,
       null,
       null,
+      streams,
     );
   }
 }

@@ -1,8 +1,14 @@
-import type { MediaLibraryMediaExternalIdSource } from '../../../../../database/prisma-client/enums.js';
+import {
+  type MediaLibraryMediaExternalIdSource,
+  MediaLibraryMediaStreamType,
+} from '../../../../../database/prisma-client/enums.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
 import { type ExtendedProbeResult } from '../../../ffmpeg/FfprobeExecutor.js';
+import ForcedSubtitleDetector, { type SubtitleStreamCandidate } from './ForcedSubtitleDetector.js';
+import LanguageTagUtil from './LanguageTagUtil.js';
+import ProbeTagUtil from './ProbeTagUtil.js';
 
 type ExternalIds = Partial<Record<MediaLibraryMediaExternalIdSource, string>>;
 
@@ -17,6 +23,15 @@ export type CommonVideoMetadata = {
   synopsis: string | null,
   durationInSec: number,
   externalIds: ExternalIds,
+  streams: {
+    index: number,
+    type: MediaLibraryMediaStreamType,
+    normalizedLanguage: string,
+    flagDefault: boolean,
+    flagCommentary: boolean,
+    forHearingImpaired: boolean,
+    treatAsForced: boolean,
+  }[],
 }
 
 export default abstract class AbstractScanner {
@@ -72,12 +87,13 @@ export default abstract class AbstractScanner {
     let synopsis: string | null = null;
     let durationInSec = 0;
     const externalIds: CommonVideoMetadata['externalIds'] = {};
+    const streams: CommonVideoMetadata['streams'] = [];
 
     if (file instanceof LocalFile) {
       const fileProbe = await this.ffprobeExecutor.probeFull(file);
       durationInSec = Math.ceil(parseInt(fileProbe.format.duration ?? '0', 10));
 
-      const extractedTitle = this.extractMetadataFromProbe(fileProbe, 'title');
+      const extractedTitle = this.extractMetadataFromProbe(fileProbe, 'title') ?? this.extractMetadataFromProbe(fileProbe, 'name');
       if (extractedTitle != null && extractedTitle.trim().length > 0) {
         title = extractedTitle.trim();
       }
@@ -101,6 +117,58 @@ export default abstract class AbstractScanner {
       if (theTvDbId != null) {
         externalIds['THE_TV_DB'] = theTvDbId;
       }
+
+      const subtitleStreamCandidates: SubtitleStreamCandidate[] = [];
+
+      for (const stream of fileProbe.streams) {
+        let streamType: MediaLibraryMediaStreamType;
+        switch (stream.codec_type) {
+          case 'video':
+            streamType = MediaLibraryMediaStreamType.VIDEO;
+            break;
+          case 'audio':
+            streamType = MediaLibraryMediaStreamType.AUDIO;
+            break;
+          case 'subtitle':
+            streamType = MediaLibraryMediaStreamType.SUBTITLE;
+            break;
+
+          default:
+            continue;
+        }
+
+        const rawLanguageTag = ProbeTagUtil.getValue(stream.tags, 'language');
+        const parsedLanguageTag = LanguageTagUtil.canonicalize(rawLanguageTag);
+
+        if (streamType === MediaLibraryMediaStreamType.SUBTITLE) {
+          subtitleStreamCandidates.push({
+            index: stream.index,
+            normalizedLanguage: parsedLanguageTag.language,
+            title: this.extractStreamTitle(stream.tags),
+            forcedDisposition: stream.disposition['forced'] ?? false,
+            eventCount: ProbeTagUtil.getPositiveIntValue(stream.tags, 'NUMBER_OF_FRAMES'),
+            spanInSec: this.extractStreamSpanInSec(stream),
+          });
+        }
+
+        streams.push({
+          index: stream.index,
+          type: streamType,
+
+          normalizedLanguage: parsedLanguageTag.language,
+
+          flagDefault: stream.disposition['default'] ?? false,
+          flagCommentary: stream.disposition['comment'] ?? false,
+
+          forHearingImpaired: stream.disposition['hearing_impaired'] ?? false,
+          treatAsForced: false,
+        });
+      }
+
+      const forcedStreamIndices = ForcedSubtitleDetector.detect(subtitleStreamCandidates, durationInSec);
+      for (const stream of streams) {
+        stream.treatAsForced = forcedStreamIndices.has(stream.index);
+      }
     } else {
       console.error(
         '[ERROR] Cannot probe file duration for non-local files during media library scan:',
@@ -113,56 +181,29 @@ export default abstract class AbstractScanner {
       synopsis,
       durationInSec,
       externalIds,
+      streams,
     };
   }
 
   protected extractMetadataFromProbe(probeResult: ExtendedProbeResult, tag: string): string | null {
-    const exactMatchValue = this.getValueFromObjectByKeyIgnoreCase(probeResult.format.tags, tag);
-    if (exactMatchValue !== null && exactMatchValue.trim().length > 0) {
-      return exactMatchValue.trim();
-    }
-
-    const tagKeys = Object.keys(probeResult.format.tags).map(tag => tag.toLowerCase());
-    const translatedTags = tagKeys.filter(key => {
-      return key.startsWith(tag + '-') && /^[a-z]{3}$/.test(key.substring(tag.length + 1));
-    });
-
-    const languagePreferences = ['eng', 'und' /* undefined */];
-    translatedTags.sort((a, b) => {
-      const langA = a.substring(tag.length + 1);
-      const langB = b.substring(tag.length + 1);
-      const indexA = languagePreferences.indexOf(langA);
-      const indexB = languagePreferences.indexOf(langB);
-      if (indexA === -1 && indexB === -1) {
-        return langA.localeCompare(langB);
-      }
-      if (indexA === -1) {
-        return 1;
-      }
-      if (indexB === -1) {
-        return -1;
-      }
-      return indexA - indexB;
-    });
-
-    for (const translatedTagKey of translatedTags) {
-      const value = this.getValueFromObjectByKeyIgnoreCase(probeResult.format.tags, translatedTagKey);
-      if (value != null && value.trim().length > 0) {
-        return value.trim();
-      }
-    }
-
-    return null;
+    return ProbeTagUtil.getValueIncludingLanguageSuffixed(probeResult.format.tags, tag);
   }
 
-  private getValueFromObjectByKeyIgnoreCase(obj: Record<string, any>, key: string): string | null {
-    const lowerCaseKey = key.toLowerCase();
-    for (const objKey of Object.keys(obj)) {
-      if (objKey.toLowerCase() === lowerCaseKey) {
-        return obj[objKey];
-      }
+  private extractStreamTitle(tags: Record<string, string>): string {
+    return ProbeTagUtil.getValueIncludingLanguageSuffixed(tags, 'title')
+      ?? ProbeTagUtil.getValueIncludingLanguageSuffixed(tags, 'name')
+      ?? '';
+  }
+
+  /** Seconds between the first and the last packet of a stream – *not* the accumulated on-screen time. */
+  private extractStreamSpanInSec(stream: { duration?: string, tags: Record<string, string> }): number | null {
+    const spanFromTag = ProbeTagUtil.parseDurationTag(ProbeTagUtil.getValueIncludingLanguageSuffixed(stream.tags, 'DURATION'));
+    if (spanFromTag != null) {
+      return spanFromTag;
     }
-    return null;
+
+    const spanFromStream = parseFloat(stream.duration ?? '');
+    return (Number.isFinite(spanFromStream) && spanFromStream >= 0) ? spanFromStream : null;
   }
 
   private parseExternalIdFromFileNameSnippet(metadataTagsRaw: string): ExternalIds {

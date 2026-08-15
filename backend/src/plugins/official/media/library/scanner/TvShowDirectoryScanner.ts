@@ -111,7 +111,7 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
     }
 
     let fallbackTitle = `Episode ${episodeInfo.episodeNumber.toString().padStart(2, '0')}`;
-    const { title, synopsis, durationInSec } = await this.extractCommonVideoMetadata(file, fallbackTitle);
+    const { title, synopsis, durationInSec, streams } = await this.extractCommonVideoMetadata(file, fallbackTitle);
 
     await writer.createMediaItemIfNotExist(
       mediaId,
@@ -121,6 +121,7 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
       synopsis,
       episodeInfo.seasonNumber ?? null,
       episodeInfo.episodeNumber ?? null,
+      streams,
     );
     return true;
   }

@@ -104,6 +104,11 @@ const SUBTITLE_STREAM = STREAM_BASE.extend({
   // bitmap based subtitles
   width: z.number().nonnegative().optional(),
   height: z.number().nonnegative().optional(),
+
+  // MP4 specific
+  id: z.string().optional(),
+  bit_rate: z.string().optional(),
+  nb_frames: z.string().optional(),
 });
 const ATTACHMENT_STREAM = STREAM_BASE.extend({
   codec_type: z.literal('attachment'),

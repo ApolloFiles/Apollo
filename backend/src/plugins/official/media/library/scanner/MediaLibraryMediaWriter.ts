@@ -1,5 +1,8 @@
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
-import type { MediaLibraryMediaExternalIdSource } from '../../../../../database/prisma-client/enums.js';
+import type {
+  MediaLibraryMediaExternalIdSource,
+  MediaLibraryMediaStreamType,
+} from '../../../../../database/prisma-client/enums.js';
 import type { PrismaPromise } from '../../../../../database/prisma-client/internal/prismaNamespace.js';
 
 type PendingMediaItem = {
@@ -10,6 +13,15 @@ type PendingMediaItem = {
   synopsis: string | null,
   seasonNumber: number | null,
   episodeNumber: number | null,
+  streams: {
+    index: number,
+    type: MediaLibraryMediaStreamType,
+    normalizedLanguage: string,
+    flagDefault: boolean,
+    flagCommentary: boolean,
+    forHearingImpaired: boolean,
+    treatAsForced: boolean,
+  }[],
 }
 
 export default class MediaLibraryMediaWriter {
@@ -55,6 +67,7 @@ export default class MediaLibraryMediaWriter {
     synopsis: string | null,
     seasonNumber: number | null,
     episodeNumber: number | null,
+    streams: PendingMediaItem['streams'],
   ): Promise<void> {
     this.pendingMediaItems.push({
       mediaId,
@@ -64,6 +77,7 @@ export default class MediaLibraryMediaWriter {
       synopsis,
       seasonNumber,
       episodeNumber,
+      streams,
     });
   }
 
@@ -78,7 +92,7 @@ export default class MediaLibraryMediaWriter {
     const seen = new Set<string>();
     const items: PendingMediaItem[] = [];
     for (const item of buffered) {
-      const key = `${item.mediaId}|${item.relativeFilePath}`;
+      const key = this.determineKey(item.mediaId, item.relativeFilePath);
       if (seen.has(key)) {
         continue;
       }
@@ -96,8 +110,8 @@ export default class MediaLibraryMediaWriter {
       arr.push(item.relativeFilePath);
     }
 
-    const operations: PrismaPromise<unknown>[] = [
-      this.databaseClient.mediaLibraryMediaItem.createMany({
+    await this.databaseClient.$transaction(async (transaction) => {
+      await transaction.mediaLibraryMediaItem.createMany({
         data: items.map(i => ({
           mediaId: i.mediaId,
           relativeFilePath: i.relativeFilePath,
@@ -109,16 +123,47 @@ export default class MediaLibraryMediaWriter {
           episodeNumber: i.episodeNumber,
         })),
         skipDuplicates: true,
-      }),
-    ];
-    for (const [mediaId, paths] of pathsByMediaId) {
-      operations.push(this.databaseClient.mediaLibraryMediaItem.updateMany({
-        where: { mediaId, relativeFilePath: { in: paths } },
-        data: { lastScannedAt: scanStart },
-      }));
-    }
+      });
 
-    await this.databaseClient.$transaction(operations);
+      for (const [mediaId, paths] of pathsByMediaId) {
+        await transaction.mediaLibraryMediaItem.updateMany({
+          where: { mediaId, relativeFilePath: { in: paths } },
+          data: { lastScannedAt: scanStart },
+        });
+      }
+
+      const persistedItems = await transaction.mediaLibraryMediaItem.findMany({
+        where: {
+          OR: Array.from(pathsByMediaId, ([mediaId, paths]) => ({ mediaId, relativeFilePath: { in: paths } })),
+        },
+        select: { id: true, mediaId: true, relativeFilePath: true },
+      });
+      const idByKey = new Map(persistedItems.map(i => [this.determineKey(i.mediaId, i.relativeFilePath), i.id]));
+
+      const streamRows = items.flatMap(item => {
+        const mediaItemId = idByKey.get(this.determineKey(item.mediaId, item.relativeFilePath));
+        if (mediaItemId == null) {
+          return [];
+        }
+        return item.streams.map(stream => ({
+          mediaItemId,
+          index: stream.index,
+          type: stream.type,
+          language: stream.normalizedLanguage,
+          flagDefault: stream.flagDefault,
+          flagCommentary: stream.flagCommentary,
+          forHearingImpaired: stream.forHearingImpaired,
+          treatAsForced: stream.treatAsForced,
+        }));
+      });
+
+      await transaction.mediaLibraryMediaItemStreams.deleteMany({
+        where: { mediaItemId: { in: Array.from(idByKey.values()) } },
+      });
+      if (streamRows.length > 0) {
+        await transaction.mediaLibraryMediaItemStreams.createMany({ data: streamRows });
+      }
+    });
   }
 
   async updateExternalIds(mediaId: bigint, externalIds: Partial<Record<MediaLibraryMediaExternalIdSource, string>>): Promise<void> {
@@ -179,5 +224,9 @@ export default class MediaLibraryMediaWriter {
         },
       }),
     ]);
+  }
+
+  private determineKey(mediaId: bigint, relativeFilePath: string): string {
+    return `${mediaId}|${relativeFilePath}`;
   }
 }
