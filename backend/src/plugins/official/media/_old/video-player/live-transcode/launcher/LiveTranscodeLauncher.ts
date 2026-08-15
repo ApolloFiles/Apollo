@@ -1,6 +1,7 @@
 import { StringUtils } from '@spraxdev/node-commons';
 import Os from 'node:os';
 import { singleton } from 'tsyringe';
+import PlayableDurationUtil, { type DurationRelevantStream } from '../../../../../ffmpeg/PlayableDurationUtil.js';
 import type { ExtendedVideoAnalysis, Stream, VideoStream } from '../../../video/analyser/VideoAnalyser.Types.js';
 import FfmpegProcess from '../../../watch/live_transcode/FfmpegProcess.js';
 import StreamArgumentsBuilder from '../ffmpeg/arguments-builder/StreamArgumentsBuilder.js';
@@ -110,7 +111,7 @@ export default class LiveTranscodeLauncher {
         cwd: targetDir,
       }),
       masterHlsFileName: 'master.m3u8',
-      mediaDuration: this.determineOutputTotalDuration(streamsToTranscode, videoAnalysis),
+      mediaDuration: this.determineOutputTotalDuration(videoFile, streamsToTranscode, videoAnalysis),
       startOffset: startOffsetInSeconds,
       selectedVideoEncoder: videoEncoder,
       audioNameMap: streamArgs.audioNameMap,
@@ -119,21 +120,71 @@ export default class LiveTranscodeLauncher {
     };
   }
 
-  private determineOutputTotalDuration(streamsToTranscode: Stream[], videoAnalysis: ExtendedVideoAnalysis): number {
-    let duration = parseFloat(videoAnalysis.file.duration);
-    for (const stream of streamsToTranscode) {
+  /**
+   * The container may claim a longer runtime than it plays (e.g. a subtitle track outliving video and
+   * audio), so the duration we announce to the player follows what actually plays – the same rule the
+   * library scanner stores in the database.
+   */
+  private determineOutputTotalDuration(videoFile: string, streamsToTranscode: Stream[], videoAnalysis: ExtendedVideoAnalysis): number {
+    const containerDuration = PlayableDurationUtil.parseFiniteFloat(videoAnalysis.file.duration);
+    const playableDuration = PlayableDurationUtil.determinePlayableDurationInSec(
+      this.toDurationRelevantStreams(videoAnalysis.streams),
+      containerDuration,
+    );
+
+    this.warnAboutOutputCutShort(videoFile, streamsToTranscode, playableDuration);
+    return playableDuration ?? containerDuration ?? 0;
+  }
+
+  /**
+   * FFmpeg is launched with `-shortest`, so a selected audio stream that ends before the video does
+   * cuts the whole output short and the announced duration is too long for those files. The player
+   * corrects itself once the transcode wrote its complete playlist, but the file is worth knowing about.
+   *
+   * TODO: I do not really want to log this but just handle it gracefully. For now, it might be valuable information.
+   *       Maybe move it into debug log level in the future
+   */
+  private warnAboutOutputCutShort(videoFile: string, streamsToTranscode: Stream[], playableDuration: number | null): void {
+    const TOLERANCE_IN_SEC = 5;
+    if (playableDuration == null) {
+      return;
+    }
+
+    let shortestAudioSpanInSec: number | null = null;
+    for (const stream of this.toDurationRelevantStreams(streamsToTranscode)) {
+      if (stream.type !== 'audio') {
+        continue;
+      }
+
+      const spanInSec = PlayableDurationUtil.determineStreamSpanInSec(stream);
+      if (spanInSec != null && (shortestAudioSpanInSec == null || spanInSec < shortestAudioSpanInSec)) {
+        shortestAudioSpanInSec = spanInSec;
+      }
+    }
+
+    if (shortestAudioSpanInSec != null && shortestAudioSpanInSec < (playableDuration - TOLERANCE_IN_SEC)) {
+      console.warn(`Shortest selected audio stream of ${videoFile} ends ${Math.round(playableDuration - shortestAudioSpanInSec)}s before the video does – '-shortest' cuts the live-transcode short`);
+    }
+  }
+
+  private toDurationRelevantStreams(streams: Stream[]): DurationRelevantStream[] {
+    const durationRelevantStreams: DurationRelevantStream[] = [];
+
+    for (const stream of streams) {
       if (stream.codecType !== 'video' && stream.codecType !== 'audio') {
         continue;
       }
 
-      if (stream.duration != null) {
-        const streamDuration = parseFloat(stream.duration);
-        if (streamDuration > 0 && streamDuration < duration) {
-          duration = streamDuration;
-        }
-      }
+      durationRelevantStreams.push({
+        type: stream.codecType,
+        duration: stream.duration,
+        durationTs: stream.durationTs,
+        timeBase: stream.timeBase,
+        tags: stream.tags,
+      });
     }
-    return duration;
+
+    return durationRelevantStreams;
   }
 
   private determineTargetFps(videoStream: VideoStream): number {

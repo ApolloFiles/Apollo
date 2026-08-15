@@ -29,7 +29,8 @@ export function initializeSeekHandler(context: SeekHandlerContext): () => void {
 function createSeekHandlers(context: SeekHandlerContext, state: SeekState) {
   const handleSeekMove = (clientX: number) => {
     const { position, percentage } = calculateSeekPosition(clientX, context.progressBarContainer);
-    const time = context.videoPlayer.$duration * percentage;
+    const durationInSeconds = context.videoPlayer.$duration > 0 ? context.videoPlayer.$duration : 0;
+    const time = durationInSeconds * percentage;
 
     state.lastSeekTime = time;
     context.onSeekMove(position, percentage * 100, time);

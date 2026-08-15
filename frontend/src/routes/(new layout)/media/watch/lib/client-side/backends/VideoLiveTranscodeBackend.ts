@@ -1,3 +1,4 @@
+import Hls, { type LevelLoadedData } from 'hls.js';
 import BurnedInSubtitleTrack from './subtitles/BurnedInSubtitleTrack';
 import HlsVideoBackend, { type HlsVideoBackendOptions } from './HlsVideoBackend';
 
@@ -22,8 +23,13 @@ export interface VideoLiveTranscodeBackendOptions extends HlsVideoBackendOptions
 // TODO: Maybe inheritance is annoying and we should 'decorate' instead?
 //       Less unexpected side-effects from underlying implementation, more explicit using it when it makes sense
 export default class VideoLiveTranscodeBackend<T extends VideoLiveTranscodeBackendOptions = VideoLiveTranscodeBackendOptions> extends HlsVideoBackend<T> {
+  /** How much media the transcode actually produced – only known once its playlist is complete. */
+  private measuredDurationInSeconds: number | null = null;
+
   protected constructor(container: HTMLDivElement, options: T) {
     super(container, options);
+
+    this.hls.on(Hls.Events.LEVEL_LOADED, (_event, data) => this.onLevelLoaded(data));
 
     for (const subtitleTrack of this.subtitleTracks) {
       subtitleTrack.setVideoStatOffset(options.backend.startOffset);
@@ -64,7 +70,11 @@ export default class VideoLiveTranscodeBackend<T extends VideoLiveTranscodeBacke
   }
 
   get duration(): number {
-    return this.backendOptions.backend.totalDurationInSeconds;
+    const announcedDuration = this.backendOptions.backend.totalDurationInSeconds;
+    if (this.measuredDurationInSeconds == null) {
+      return announcedDuration;
+    }
+    return Math.min(announcedDuration, this.measuredDurationInSeconds);
   }
 
   get currentTime(): number {
@@ -76,7 +86,7 @@ export default class VideoLiveTranscodeBackend<T extends VideoLiveTranscodeBacke
     const SEEK_INTO_FUTURE_TOLERANCE = 5;
     const maxPossibleTime = this.backendOptions.backend.startOffset + super.duration + SEEK_INTO_FUTURE_TOLERANCE;
 
-    time = Math.max(0, Math.min(time, this.backendOptions.backend.totalDurationInSeconds));
+    time = Math.max(0, Math.min(time, this.duration));
 
     if (!stillSeeking && (time < this.backendOptions.backend.startOffset || time > maxPossibleTime)) {
       this.backendOptions.backend.restartTranscode(Math.floor(time), this.hls.audioTrack, this.hls.subtitleTrack);
@@ -104,6 +114,30 @@ export default class VideoLiveTranscodeBackend<T extends VideoLiveTranscodeBacke
       start: this.backendOptions.backend.startOffset,
       end: super.duration + this.backendOptions.backend.startOffset,
     };
+  }
+
+  /**
+   * The announced duration is derived from the source file's metadata, which can claim more than
+   * FFmpeg ends up producing (e.g. a container whose runtime is defined by a subtitle track that
+   * outlives video and audio). Once the transcode has written its complete playlist
+   * (`#EXT-X-ENDLIST`), we know exactly how much media there is and stop trusting the announcement.
+   */
+  private onLevelLoaded(data: LevelLoadedData): void {
+    if (data.details.live) {
+      return;
+    }
+
+    const measuredDuration = this.backendOptions.backend.startOffset + data.details.totalduration;
+    if (!Number.isFinite(measuredDuration) || measuredDuration <= 0 || measuredDuration === this.measuredDurationInSeconds) {
+      return;
+    }
+
+    const previousDuration = this.duration;
+    this.measuredDurationInSeconds = measuredDuration;
+
+    if (this.duration !== previousDuration) {
+      this.videoElement.dispatchEvent(new Event('durationchange'));
+    }
   }
 
   static async create(container: HTMLDivElement, options: VideoLiveTranscodeBackendOptions): Promise<VideoLiveTranscodeBackend> {

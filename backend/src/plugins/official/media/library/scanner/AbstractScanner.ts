@@ -6,11 +6,16 @@ import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
 import { type ExtendedProbeResult } from '../../../ffmpeg/FfprobeExecutor.js';
+import PlayableDurationUtil, {
+  type DurationRelevantStream,
+  type StreamSpanSource,
+} from '../../../ffmpeg/PlayableDurationUtil.js';
+import ProbeTagUtil from '../../../ffmpeg/ProbeTagUtil.js';
 import ForcedSubtitleDetector, { type SubtitleStreamCandidate } from './ForcedSubtitleDetector.js';
 import LanguageTagUtil from './LanguageTagUtil.js';
-import ProbeTagUtil from './ProbeTagUtil.js';
 
 type ExternalIds = Partial<Record<MediaLibraryMediaExternalIdSource, string>>;
+type ProbeStream = ExtendedProbeResult['streams'][number];
 
 export type MediaDirectoryInfo = {
   title: string,
@@ -91,7 +96,7 @@ export default abstract class AbstractScanner {
 
     if (file instanceof LocalFile) {
       const fileProbe = await this.ffprobeExecutor.probeFull(file);
-      durationInSec = Math.ceil(parseInt(fileProbe.format.duration ?? '0', 10));
+      durationInSec = Math.ceil(this.determinePlayableDurationInSec(fileProbe) ?? 0);
 
       const extractedTitle = this.extractMetadataFromProbe(fileProbe, 'title') ?? this.extractMetadataFromProbe(fileProbe, 'name');
       if (extractedTitle != null && extractedTitle.trim().length > 0) {
@@ -196,14 +201,38 @@ export default abstract class AbstractScanner {
   }
 
   /** Seconds between the first and the last packet of a stream – *not* the accumulated on-screen time. */
-  private extractStreamSpanInSec(stream: { duration?: string, tags: Record<string, string> }): number | null {
-    const spanFromTag = ProbeTagUtil.parseDurationTag(ProbeTagUtil.getValueIncludingLanguageSuffixed(stream.tags, 'DURATION'));
-    if (spanFromTag != null) {
-      return spanFromTag;
+  private extractStreamSpanInSec(stream: ProbeStream): number | null {
+    return PlayableDurationUtil.determineStreamSpanInSec(this.toStreamSpanSource(stream));
+  }
+
+  /**
+   * The container's duration is the end of its *longest* track, which may well be a subtitle stream
+   * that outlives video and audio – what actually plays is what {@link PlayableDurationUtil} determines.
+   */
+  private determinePlayableDurationInSec(fileProbe: ExtendedProbeResult): number | null {
+    const relevantStreams: DurationRelevantStream[] = [];
+    for (const stream of fileProbe.streams) {
+      if (stream.codec_type === 'video' || stream.codec_type === 'audio') {
+        relevantStreams.push({
+          ...this.toStreamSpanSource(stream),
+          type: stream.codec_type,
+        });
+      }
     }
 
-    const spanFromStream = parseFloat(stream.duration ?? '');
-    return (Number.isFinite(spanFromStream) && spanFromStream >= 0) ? spanFromStream : null;
+    return PlayableDurationUtil.determinePlayableDurationInSec(
+      relevantStreams,
+      PlayableDurationUtil.parseFiniteFloat(fileProbe.format.duration),
+    );
+  }
+
+  private toStreamSpanSource(stream: ProbeStream): StreamSpanSource {
+    return {
+      duration: stream.duration,
+      durationTs: stream.duration_ts,
+      timeBase: stream.time_base,
+      tags: stream.tags,
+    };
   }
 
   private parseExternalIdFromFileNameSnippet(metadataTagsRaw: string): ExternalIds {

@@ -1,4 +1,5 @@
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
+import type { Prisma } from '../../../../../database/prisma-client/client.js';
 import type {
   MediaLibraryMediaExternalIdSource,
   MediaLibraryMediaStreamType,
@@ -136,9 +137,12 @@ export default class MediaLibraryMediaWriter {
         where: {
           OR: Array.from(pathsByMediaId, ([mediaId, paths]) => ({ mediaId, relativeFilePath: { in: paths } })),
         },
-        select: { id: true, mediaId: true, relativeFilePath: true },
+        select: { id: true, mediaId: true, relativeFilePath: true, durationInSec: true },
       });
       const idByKey = new Map(persistedItems.map(i => [this.determineKey(i.mediaId, i.relativeFilePath), i.id]));
+      const durationByKey = new Map(persistedItems.map(i => [this.determineKey(i.mediaId, i.relativeFilePath), i.durationInSec]));
+
+      await this.updateChangedDurations(transaction, items, idByKey, durationByKey);
 
       const streamRows = items.flatMap(item => {
         const mediaItemId = idByKey.get(this.determineKey(item.mediaId, item.relativeFilePath));
@@ -164,6 +168,46 @@ export default class MediaLibraryMediaWriter {
         await transaction.mediaLibraryMediaItemStreams.createMany({ data: streamRows });
       }
     });
+  }
+
+  /**
+   * The createMany above skips rows that already exist, so their duration would stay whatever the very
+   * first scan wrote – stale after the file was remuxed, or simply wrong for everything scanned before
+   * the duration was derived from the streams instead of the container.
+   *
+   * A single `updateMany` cannot do this: every item needs its *own* duration. Rescans barely change
+   * anything though, so only the items whose duration actually differs are written, grouped by their
+   * new value.
+   */
+  private async updateChangedDurations(
+    transaction: Prisma.TransactionClient,
+    items: PendingMediaItem[],
+    idByKey: Map<string, bigint>,
+    durationByKey: Map<string, number>,
+  ): Promise<void> {
+    const itemIdsByDuration = new Map<number, bigint[]>();
+
+    for (const item of items) {
+      const key = this.determineKey(item.mediaId, item.relativeFilePath);
+      const itemId = idByKey.get(key);
+      if (itemId == null || durationByKey.get(key) === item.durationInSec) {
+        continue;
+      }
+
+      let itemIds = itemIdsByDuration.get(item.durationInSec);
+      if (itemIds == null) {
+        itemIds = [];
+        itemIdsByDuration.set(item.durationInSec, itemIds);
+      }
+      itemIds.push(itemId);
+    }
+
+    for (const [durationInSec, itemIds] of itemIdsByDuration) {
+      await transaction.mediaLibraryMediaItem.updateMany({
+        where: { id: { in: itemIds } },
+        data: { durationInSec },
+      });
+    }
   }
 
   async updateExternalIds(mediaId: bigint, externalIds: Partial<Record<MediaLibraryMediaExternalIdSource, string>>): Promise<void> {

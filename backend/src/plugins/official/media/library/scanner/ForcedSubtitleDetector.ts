@@ -49,7 +49,7 @@ export default class ForcedSubtitleDetector {
 
   /**
    * @param candidates every subtitle stream of a single file
-   * @param runtimeInSec duration of the file itself, not of any of its streams
+   * @param runtimeInSec how long the file actually plays (video/audio), not the span of any subtitle stream
    * @returns the indices of the streams to flag
    */
   static detect(candidates: SubtitleStreamCandidate[], runtimeInSec: number): Set<number> {

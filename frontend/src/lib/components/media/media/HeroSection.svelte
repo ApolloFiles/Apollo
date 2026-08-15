@@ -32,7 +32,8 @@
   let resumeStatusLabel = $derived(isMovie ? m.component_media_hero_btn_resume() : m.component_media_hero_resume_episode({ number: episodeNumber }));
   let watchedSeconds = $derived(nextMediaItem?.watchProgress?.inSeconds ?? 0);
   let isInProgress = $derived(watchedSeconds > 0);
-  let remainingSeconds = $derived((nextMediaItem?.durationInSeconds ?? 0) - watchedSeconds);
+  // Progress recorded against an outdated (too long) duration can exceed the item's runtime
+  let remainingSeconds = $derived(Math.max(0, (nextMediaItem?.durationInSeconds ?? 0) - watchedSeconds));
 
   let synopsisContainerRef: HTMLElement | null = $state(null);
 

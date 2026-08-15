@@ -18,10 +18,19 @@
   let usingSeekHandle = $state(false);
 
   const showSeekPreview = $derived(activateSeekPreview || usingSeekHandle);
-  const watchProgressPercentage = $derived(toFixedPrecision((videoPlayer.$currentTime / videoPlayer.$duration) * 100));
-  const localBufferedPercentage = $derived(toFixedPrecision(((videoPlayer.$localBufferedRangeToDisplay?.end ?? 0) / videoPlayer.$duration) * 100));
-  const remoteBufferedPercentage = $derived(toFixedPrecision(((videoPlayer.$remoteBufferedRange?.end ?? 0) / videoPlayer.$duration) * 100));
+  /** Zero until the player knows how long the media is – the backends report `NaN`/`0` until then. */
+  const durationInSeconds = $derived(videoPlayer.$duration > 0 ? videoPlayer.$duration : 0);
+  const watchProgressPercentage = $derived(toPercentageOfDuration(videoPlayer.$currentTime));
+  const localBufferedPercentage = $derived(toPercentageOfDuration(videoPlayer.$localBufferedRangeToDisplay?.end ?? 0));
+  const remoteBufferedPercentage = $derived(toPercentageOfDuration(videoPlayer.$remoteBufferedRange?.end ?? 0));
   const displayedPercentage = $derived(usingSeekHandle ? currentSeekPercentage : watchProgressPercentage);
+
+  function toPercentageOfDuration(timeInSeconds: number): number {
+    if (durationInSeconds <= 0) {
+      return 0;
+    }
+    return toFixedPrecision((timeInSeconds / durationInSeconds) * 100);
+  }
 
   function toFixedPrecision(value: number): number {
     return (value * 1e2) / 1e2;
@@ -40,7 +49,7 @@
 
     activateSeekPreview = true;
     seekPreviewLeftPosition = position;
-    seekTimePosition = videoPlayer.$duration * percentage;
+    seekTimePosition = durationInSeconds * percentage;
   }
 
   onMount(() => {
@@ -111,7 +120,7 @@
     />
   </div>
 
-  <span class="timestamp">{formatTime(videoPlayer.$duration)}</span>
+  <span class="timestamp">{formatTime(durationInSeconds)}</span>
 </div>
 
 <style>
