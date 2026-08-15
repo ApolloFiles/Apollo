@@ -39,6 +39,7 @@ export default class PlayerSession {
   private _joinToken: Token | null = null;
   private readonly clientConnections: ApolloWebSocket[] = [];
   private referencePlayerClient: ApolloWebSocket | null = null;
+  private clientsThatStartedPlayback = new WeakSet<ApolloWebSocket>();
   private lastConnectionId = 0;
 
   private currentMedia: VideoLiveTranscodeMedia | null = null;
@@ -212,7 +213,12 @@ export default class PlayerSession {
               return;
             }
 
-            if (client.apollo.user != null && this.currentMedia != null) {
+            if (!message.data.state.paused) {
+              this.clientsThatStartedPlayback.add(client);
+            }
+            const reportsTrustworthyPosition = this.clientsThatStartedPlayback.has(client) || message.data.state.seeked;
+
+            if (client.apollo.user != null && this.currentMedia != null && reportsTrustworthyPosition) {
               const userId = client.apollo.user.id;
               const mediaItemId = BigInt(this.currentMedia.mediaMetadata.mediaItemId);
               const durationInSec = message.data.state.currentTime;
@@ -369,6 +375,7 @@ export default class PlayerSession {
     this.currentMedia = newMedia;
     this.currentYouTubeMedia = null;
     this.currentTwitchMedia = null;
+    this.clientsThatStartedPlayback = new WeakSet();
 
     this.broadcastMediaChanged();
     return this.currentMedia;

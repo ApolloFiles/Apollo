@@ -64,10 +64,13 @@ export default class VideoPlayer {
     this._playerExtras = new VideoPlayerExtras(sessionId);
 
     this.shouldShowCustomControls = this.backend.shouldShowCustomControls;
+    this.currentTime = this.backend.currentTime;
 
     this.setupEventListeners();
 
     this.referencePlayerSyncIntervalId = window.setInterval(() => {
+      this.currentTime = this.backend.currentTime;
+
       this.updatePlayerStateForBroadcast(this, false, false);
       this.tickSynchronizationWithReferencePlayer();
     }, 1000);
@@ -283,6 +286,7 @@ export default class VideoPlayer {
 
   private setupEventListeners(): void {
     this.backend.addPassiveEventListener('loadedmetadata', () => {
+      this.currentTime = this.backend.currentTime;
       this.duration = this.backend.duration;
       this.localBufferedRanges = this.backend.getBufferedRanges();
       this.remoteBufferedRange = this.backend.getRemotelyBufferedRange();
