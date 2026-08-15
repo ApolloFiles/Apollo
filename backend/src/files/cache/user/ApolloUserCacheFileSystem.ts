@@ -21,6 +21,7 @@ export default class ApolloUserCacheFileSystem {
     if (!(await this.isCacheStillUpToDate(file))) {
       await this.deleteForFile(file);
     }
+    await this.writeCacheStatForFileIfMissing(file);
 
     return this.cacheFileSystem.getFile(`${this.createCachePathForFile(file)}/${identifier}`);
   }
@@ -72,7 +73,9 @@ export default class ApolloUserCacheFileSystem {
 
     const cacheStatFile = this.cacheFileSystem.getFile(`${this.createCachePathForFile(file)}.stat`);
     if (!(await cacheStatFile.exists())) {
-      return true;
+      // without a recorded state there is nothing to compare against, so the cached data cannot be
+      // proven to still belong to the file (this also discards caches written before this was tracked)
+      return false;
     }
 
     const [cacheStatValue, fileStat] = await Promise.all([
@@ -81,6 +84,26 @@ export default class ApolloUserCacheFileSystem {
     ]);
 
     return Buffer.from(`${fileStat.size};${fileStat.mtimeMs}`).equals(cacheStatValue);
+  }
+
+  /**
+   * Records the file state that any data cached from now on belongs to.
+   *
+   * This happens *before* the caller produces its data on purpose: should the file change while that
+   * data is being computed, the recorded state is the older one and the cache is discarded on the
+   * next access. Computing something twice is harmless – serving data for content that no longer
+   * exists is not.
+   */
+  private async writeCacheStatForFileIfMissing(file: VirtualFile): Promise<void> {
+    const cacheStatFile = this.cacheFileSystem.getFile(`${this.createCachePathForFile(file)}.stat`);
+    if ((await cacheStatFile.exists()) || !(await file.exists())) {
+      return;
+    }
+
+    const fileStat = await file.stat();
+    await this.cacheFileSystem
+      .getWriteableFile(cacheStatFile)
+      .write(Buffer.from(`${fileStat.size};${fileStat.mtimeMs}`));
   }
 
   private createCachePathForFile(file: VirtualFile): string {
