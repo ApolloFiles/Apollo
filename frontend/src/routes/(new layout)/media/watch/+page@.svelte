@@ -227,7 +227,7 @@
     );
   }
 
-  async function createVideoPlayer(playbackStatus: StartPlaybackResponse, initialAudioTrack?: number, initialSubtitleTrack?: number): Promise<VideoPlayer> {
+  async function createVideoPlayer(playbackStatus: StartPlaybackResponse, initialAudioTrack?: number, initialSubtitleTrack?: number, resumeAtInSeconds?: number | null): Promise<VideoPlayer> {
     const backend = await VideoLiveTranscodeBackend.create(videoContainerRef, {
       backend: {
         src: playbackStatus.hlsManifest,
@@ -237,6 +237,7 @@
 
         totalDurationInSeconds: playbackStatus.totalDurationInSeconds,
         startOffset: playbackStatus.startOffsetInSeconds,
+        resumeAtInSeconds,
         activeBurnedInSubtitleStreamIndex: playbackStatus.activeBurnedInSubtitleStreamIndex,
         restartTranscode: (startOffset, activeAudioTrack, activeSubtitleTrack) => {
           if (transcodeRestartInProgress) {
@@ -385,7 +386,7 @@
       if (playbackStatusResponse.playbackStatus.type === 'twitch') {
         return createTwitchVideoPlayer(playbackStatusResponse.playbackStatus);
       }
-      return createVideoPlayer(playbackStatusResponse.playbackStatus);
+      return createVideoPlayer(playbackStatusResponse.playbackStatus, undefined, undefined, playbackStatusResponse.resumeAtInSeconds);
     }
     return null;
   }

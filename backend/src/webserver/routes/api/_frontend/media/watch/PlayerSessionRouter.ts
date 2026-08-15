@@ -132,6 +132,7 @@ export default class PlayerSessionRouter implements Router {
               })),
             },
           } satisfies StartPlaybackResponse) : null,
+          resumeAtInSeconds: playerSession.playbackPositionInSeconds,
         } satisfies PlayerSessionInfoResponse);
     });
 

@@ -79,7 +79,9 @@ export type PlayerSessionInfoResponse = {
       otherParticipants: { id: string, displayName: string, connected: boolean }[],
     }
   },
-  playbackStatus: MediaInfo
+  playbackStatus: MediaInfo,
+  /** Where the session was last playing, so a (re-)connecting client can pick up there instead of at the transcode's start offset. */
+  resumeAtInSeconds: number | null
 }
 
 export type RegenerateJoinTokenResponse = {

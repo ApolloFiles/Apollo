@@ -30,7 +30,7 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
         this.hls.subtitleTrack = options.backend.initialSubtitleTrack;
       }
 
-      this.hls.startLoad(0);
+      this.hls.startLoad(this.initialStreamPosition);
     });
     this.hls.once(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
       for (const track of this.hls.subtitleTracks) {
@@ -40,6 +40,11 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
     });
 
     this.hls.loadSource(options.backend.src);
+  }
+
+  /** Position within the HLS stream to start loading at, in stream-local seconds. */
+  protected get initialStreamPosition(): number {
+    return 0;
   }
 
   getActiveAudioTrackId(): string | null {

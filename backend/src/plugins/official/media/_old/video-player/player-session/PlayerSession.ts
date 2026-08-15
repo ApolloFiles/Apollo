@@ -45,7 +45,7 @@ export default class PlayerSession {
   private currentMedia: VideoLiveTranscodeMedia | null = null;
   private currentYouTubeMedia: { videoId: string; startSeconds?: number; title: string } | null = null;
   private currentTwitchMedia: { channelName: string; title: string } | null = null;
-  private playerState: { lastUpdated: Date, data: { currentTime: number } } | null = null;  // TODO
+  private playerState: { lastUpdated: Date, currentTime: number, paused: boolean } | null = null;
   public readonly tmpDir: TemporaryDirectory;
 
   public readonly watchProgressToUpdate: Prisma.MediaLibraryUserWatchProgressUpsertArgs[] = [];
@@ -78,6 +78,19 @@ export default class PlayerSession {
         await prismaClient.$transaction(tasks);
       }
     }, 6_000);
+  }
+
+  /** Where a (re-)connecting client should pick up playback, or `null` if the session never played anything. */
+  get playbackPositionInSeconds(): number | null {
+    if (this.playerState == null) {
+      return null;
+    }
+    if (this.playerState.paused) {
+      return this.playerState.currentTime;
+    }
+
+    const secondsSinceLastUpdate = (Date.now() - this.playerState.lastUpdated.getTime()) / 1000;
+    return this.playerState.currentTime + secondsSinceLastUpdate;
   }
 
   get ownerConnected(): boolean {
@@ -172,6 +185,7 @@ export default class PlayerSession {
       }
 
       if (client === this.referencePlayerClient) {
+        this.freezePlaybackPosition();
         this.referencePlayerClient = null;
         this.determineReferencePlayerIfNeeded();
       }
@@ -217,6 +231,14 @@ export default class PlayerSession {
               this.clientsThatStartedPlayback.add(client);
             }
             const reportsTrustworthyPosition = this.clientsThatStartedPlayback.has(client) || message.data.state.seeked;
+
+            if (reportsTrustworthyPosition && client === this.referencePlayerClient) {
+              this.playerState = {
+                lastUpdated: new Date(),
+                currentTime: message.data.state.currentTime,
+                paused: message.data.state.paused,
+              };
+            }
 
             if (client.apollo.user != null && this.currentMedia != null && reportsTrustworthyPosition) {
               const userId = client.apollo.user.id;
@@ -300,6 +322,19 @@ export default class PlayerSession {
     });
   }
 
+  private freezePlaybackPosition(): void {
+    const positionInSeconds = this.playbackPositionInSeconds;
+    if (positionInSeconds == null) {
+      return;
+    }
+
+    this.playerState = {
+      lastUpdated: new Date(),
+      currentTime: positionInSeconds,
+      paused: true,
+    };
+  }
+
   private determineReferencePlayerIfNeeded(): boolean {
     if (this.referencePlayerClient != null) {
       return false;
@@ -376,6 +411,7 @@ export default class PlayerSession {
     this.currentYouTubeMedia = null;
     this.currentTwitchMedia = null;
     this.clientsThatStartedPlayback = new WeakSet();
+    this.playerState = null;
 
     this.broadcastMediaChanged();
     return this.currentMedia;
@@ -386,6 +422,8 @@ export default class PlayerSession {
     this.currentMedia = null;
     this.currentYouTubeMedia = { videoId, startSeconds, title: title ?? videoId };
     this.currentTwitchMedia = null;
+    this.clientsThatStartedPlayback = new WeakSet();
+    this.playerState = null;
 
     this.broadcastMediaChanged();
   }
@@ -395,6 +433,8 @@ export default class PlayerSession {
     this.currentMedia = null;
     this.currentYouTubeMedia = null;
     this.currentTwitchMedia = { channelName, title: title ?? channelName };
+    this.clientsThatStartedPlayback = new WeakSet();
+    this.playerState = null;
 
     this.broadcastMediaChanged();
   }

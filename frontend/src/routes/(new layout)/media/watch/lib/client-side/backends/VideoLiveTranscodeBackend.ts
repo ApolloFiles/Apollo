@@ -6,6 +6,8 @@ export interface VideoLiveTranscodeBackendOptions extends HlsVideoBackendOptions
   backend: HlsVideoBackendOptions['backend'] & {
     totalDurationInSeconds: number,
     startOffset: number,
+    /** Absolute media position to start playback at, or `null` to start at `startOffset`. */
+    resumeAtInSeconds?: number | null,
     /** The stream index of the image-based subtitle currently burned into the video, or `null` if none. */
     activeBurnedInSubtitleStreamIndex: number | null,
     restartTranscode: (startOffset: number, activeAudioTrack: number, activeSubtitleTrack: number) => void,
@@ -67,6 +69,14 @@ export default class VideoLiveTranscodeBackend<T extends VideoLiveTranscodeBacke
       this.hls.audioTrack,
       desiredSoftSubtitleIdAfterReload,
     );
+  }
+
+  protected override get initialStreamPosition(): number {
+    const { resumeAtInSeconds, startOffset } = this.backendOptions.backend;
+    if (resumeAtInSeconds == null) {
+      return 0;
+    }
+    return Math.max(0, resumeAtInSeconds - startOffset);
   }
 
   get duration(): number {
