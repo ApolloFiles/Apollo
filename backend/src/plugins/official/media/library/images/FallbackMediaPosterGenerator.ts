@@ -23,7 +23,7 @@ export default class FallbackMediaPosterGenerator {
       .composite([{
         input: {
           text: {
-            text: `<span foreground="white">${posterText}</span>`,
+            text: `<span foreground="white">${this.escapeMarkup(posterText)}</span>`,
             rgba: true,
             width: FallbackMediaPosterGenerator.TEXT_WIDTH,
             height: FallbackMediaPosterGenerator.TEXT_HEIGHT,
@@ -42,6 +42,13 @@ export default class FallbackMediaPosterGenerator {
     }
 
     throw new Error('Cannot generate poster for unsupported format: ' + JSON.stringify(format));
+  }
+
+  private escapeMarkup(text: string): string {
+    return text
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;');
   }
 
   private determineStartingLetters(title: string): string {
