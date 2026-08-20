@@ -10,6 +10,7 @@ export type AppConfig = {
 
   paths: {
     dataDirectory: string;
+    tmpDirectory: string;
   },
 
   login: {
@@ -45,13 +46,15 @@ export default class AppConfiguration {
     const serverInterface = process.env.APOLLO_SERVER_INTERFACE || '0.0.0.0';
     const serverPort = parseInt(process.env.APOLLO_SERVER_PORT ?? '', 10) || 8081;
 
+    const pathDataDirectory = this.determineApolloDataDirectory();
     this.config = this.deepFreeze({
       serverInterface,
       serverPort,
       baseUrl: process.env.APOLLO_BASE_URL || `http://localhost:5177`,
 
       paths: {
-        dataDirectory: this.determineApolloDataDirectory(),
+        dataDirectory: pathDataDirectory,
+        tmpDirectory: this.determineApolloTmpDirectory(pathDataDirectory),
       },
 
       login: {
@@ -100,5 +103,14 @@ export default class AppConfiguration {
     }
 
     return dataDir;
+  }
+
+  private determineApolloTmpDirectory(dataDir: string): string {
+    let tmpDir = process.env.APOLLO_TMP_DIRECTORY;
+    if (tmpDir == null) {
+      return Path.join(dataDir, 'tmp');
+    }
+
+    return tmpDir;
   }
 }
