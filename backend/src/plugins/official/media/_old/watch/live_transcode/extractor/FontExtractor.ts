@@ -1,16 +1,23 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
+import { singleton } from 'tsyringe';
+import FfmpegJobRunner from '../../../../../ffmpeg/job/FfmpegJobRunner.js';
 import type { ExtendedVideoAnalysis } from '../../../video/analyser/VideoAnalyser.Types.js';
-import FfmpegProcess from '../FfmpegProcess.js';
 
 export interface ExtractedFont {
   readonly fileName: string;
 }
 
+@singleton()
 export default class FontExtractor {
   private static readonly SUPPORTED_FONTS = ['ttf', 'otf', 'woff'];
 
-  static async extract(videoFile: string, videoAnalysis: ExtendedVideoAnalysis, targetDir: string): Promise<ExtractedFont[]> {
+  constructor(
+    private readonly ffmpegJobRunner: FfmpegJobRunner,
+  ) {
+  }
+
+  async extract(videoFile: string, videoAnalysis: ExtendedVideoAnalysis, targetDir: string): Promise<ExtractedFont[]> {
     const extractedFontFiles: ExtractedFont[] = [];
 
     for (const stream of videoAnalysis.streams) {
@@ -18,32 +25,42 @@ export default class FontExtractor {
         continue;
       }
 
-      if (!this.SUPPORTED_FONTS.includes(stream.codecName)) {
+      if (!FontExtractor.SUPPORTED_FONTS.includes(stream.codecName)) {
         continue;
       }
 
-      const fileName = this.createSafeFilename(stream.tags.filename);
-      const fontTargetPath = Path.join(targetDir, fileName);
-      const ffmpegArgs = [
-        '-bitexact',
-        '-loglevel', 'warning',
-        '-n',
-
-        `-dump_attachment:${stream.index}`,
-        fontTargetPath,
-
-        '-i', videoFile,
-      ];
-
+      const fileName = FontExtractor.createSafeFilename(stream.tags.filename);
       await Fs.promises.mkdir(targetDir, { recursive: true });
-
-      const ffmpegProcess = new FfmpegProcess(ffmpegArgs, { cwd: targetDir, stdio: 'ignore' });
-      await ffmpegProcess.waitForExit();
+      await this.dumpAttachment(videoFile, stream.index, Path.join(targetDir, fileName), targetDir);
 
       extractedFontFiles.push({ fileName });
     }
 
     return extractedFontFiles;
+  }
+
+  private async dumpAttachment(videoFile: string, streamIndex: number, fontTargetPath: string, targetDir: string): Promise<void> {
+    await this.ffmpegJobRunner.run({
+      name: 'subtitle-font-extraction',
+      // Attachments are copied out as they are, so there is nothing here that hardware could accelerate
+      acceleration: { mayUseHardwareDecoding: false },
+      spawnOptions: { cwd: targetDir, logVerbosity: 'warning' },
+
+      buildArgs: () => [
+        '-bitexact',
+        '-n',
+
+        `-dump_attachment:${streamIndex}`,
+        fontTargetPath,
+
+        '-i', videoFile,
+      ],
+
+      // FFmpeg has nothing left to write once the attachment is dumped, so it always ends up 'failing'
+      awaitOutcome: async (handle) => {
+        await handle.waitForExit();
+      },
+    });
   }
 
   private static createSafeFilename(filename: string): string {

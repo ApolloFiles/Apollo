@@ -18,6 +18,8 @@ export default class VideoLiveTranscodeMediaFactory {
 
   constructor(
     private readonly liveTranscodeLauncher: LiveTranscodeLauncher,
+    private readonly textBasedSubtitleExtractor: TextBasedSubtitleExtractor,
+    private readonly fontExtractor: FontExtractor,
   ) {
   }
 
@@ -31,14 +33,14 @@ export default class VideoLiveTranscodeMediaFactory {
       this.liveTranscodeLauncher.launch(videoFilePath, targetPublicDir, startOffsetInSeconds, videoAnalysis, burnInSubtitleStreamIndex),
       (async () => {
         const textBasedSubtitlesDir = Path.join(targetPublicDir, '_subtitles'); // TODO: maybe in einen anderen Ordner für einfachere reusability zwischen transcode-restarts?
-        const textBasedSubtitles = await TextBasedSubtitleExtractor.extract(videoFilePath, videoAnalysis, textBasedSubtitlesDir);
+        const textBasedSubtitles = await this.textBasedSubtitleExtractor.extract(videoFilePath, videoAnalysis, textBasedSubtitlesDir);
 
         let subtitleFonts: ExtractedFont[] = [];
         if (textBasedSubtitles.length > 0) {
           const fontsDir = Path.join(textBasedSubtitlesDir, 'fonts');
 
           try {
-            subtitleFonts = await FontExtractor.extract(videoFilePath, videoAnalysis, fontsDir);
+            subtitleFonts = await this.fontExtractor.extract(videoFilePath, videoAnalysis, fontsDir);
           } catch (err) {
             console.error('Failed to extract fonts from video', err);
           }
