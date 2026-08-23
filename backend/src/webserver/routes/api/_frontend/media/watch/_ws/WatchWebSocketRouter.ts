@@ -6,7 +6,7 @@ import PlayerSessionStorage
 import type { ApolloWebSocket } from '../../../../../../../plugins/official/media/_old/watch/ApolloWebSocket.js';
 import {
   WS_CLOSE_PROTOCOL_ERROR,
-} from '../../../../../../../plugins/official/media/_old/watch/sessions/WatchSessionClient.js';
+} from '../../../../../../../plugins/official/media/_old/video-player/player-session/WebSocketCloseCodes.js';
 import type Router from '../../../../../Router.js';
 
 // TODO: Refactor this

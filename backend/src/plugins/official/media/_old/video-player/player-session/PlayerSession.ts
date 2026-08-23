@@ -10,7 +10,7 @@ import type VideoLiveTranscodeMedia from '../live-transcode/VideoLiveTranscodeMe
 import VideoLiveTranscodeMediaFactory from '../live-transcode/VideoLiveTranscodeMediaFactory.js';
 import WebSocketMessageBuilder from '../WebSocketMessageBuilder.js';
 import TemporaryDirectory from './TemporaryDirectory.js';
-import { WS_CLOSE_NORMAL, WS_CLOSE_PROTOCOL_ERROR } from '../../watch/sessions/WatchSessionClient.js';
+import { WS_CLOSE_NORMAL, WS_CLOSE_PROTOCOL_ERROR } from './WebSocketCloseCodes.js';
 import type VirtualFile from '../../../../../../files/VirtualFile.js';
 import {
   MESSAGE_TYPE,
