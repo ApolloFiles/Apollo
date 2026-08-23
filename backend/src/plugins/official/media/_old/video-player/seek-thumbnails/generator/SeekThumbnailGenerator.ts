@@ -2,7 +2,8 @@ import Fs from 'node:fs';
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import FileNameCollator from '../../../../../../../files/util/FileNameCollator.js';
-import FfmpegProcess from '../../../watch/live_transcode/FfmpegProcess.js';
+import FfmpegJobRunner from '../../../../../ffmpeg/job/FfmpegJobRunner.js';
+import type { FfmpegLogLine } from '../../../../../ffmpeg/process/FfmpegLogLineParser.js';
 
 export type GeneratedSeekThumbnails = {
   thumbnailFiles: string[],
@@ -12,6 +13,11 @@ export type GeneratedSeekThumbnails = {
 @singleton()
 export default class SeekThumbnailGenerator {
   public static readonly GRID_SIZE = 9;
+
+  constructor(
+    private readonly ffmpegJobRunner: FfmpegJobRunner,
+  ) {
+  }
 
   async generate(inputFile: string, targetDir: string): Promise<GeneratedSeekThumbnails> {
     const frameTimes = await this.runFrameExtraction(inputFile, targetDir);
@@ -25,66 +31,71 @@ export default class SeekThumbnailGenerator {
   }
 
   private async runFrameExtraction(inputFile: string, targetDir: string): Promise<number[]> {
-    const frameTimes: number[] = [];
+    return this.ffmpegJobRunner.run({
+      name: 'seek-thumbnail-generation',
+      acceleration: { mayUseHardwareDecoding: true },
+      // The time of each selected frame is only available from the debug output of the 'select' filter
+      spawnOptions: { cwd: targetDir, logVerbosity: 'debug' },
 
-    const ffmpegProcess = new FfmpegProcess([
-      '-skip_frame', 'nokey',
-      // FIXME: `-hwaccel auto` can pick a hardware decoder that fails at runtime (e.g. on a machine with more than one
-      //        GPU), making FFmpeg exit without producing any output. Fall back to software decoding like
-      //        VideoLiveTranscodeMediaFactory#awaitTranscodeStartup does.
-      '-hwaccel', 'auto',
+      buildArgs: (profile) => [
+        '-skip_frame', 'nokey',
+        ...(profile.decodeAcceleration != null ? ['-hwaccel', profile.decodeAcceleration] : []),
 
-      '-i', inputFile,
-      '-vf', `select=key,scale=240:-2,tile=${SeekThumbnailGenerator.GRID_SIZE}x${SeekThumbnailGenerator.GRID_SIZE}`,
-      '-an',  // blocks all audio streams
-      '-fps_mode', 'passthrough',  // prevent ffmpeg from duplicating each output frame to accommodate the originally detected frame rate
-      'keyframes_%03d.jpg',
+        '-i', inputFile,
+        '-vf', `select=key,scale=240:-2,tile=${SeekThumbnailGenerator.GRID_SIZE}x${SeekThumbnailGenerator.GRID_SIZE}`,
+        '-an',  // blocks all audio streams
+        '-fps_mode', 'passthrough',  // prevent ffmpeg from duplicating each output frame to accommodate the originally detected frame rate
+        'keyframes_%03d.jpg',
+      ],
 
-      '-loglevel', 'debug',
-    ], {
-      cwd: targetDir,
-      stdio: ['ignore', 'ignore', 'pipe'],
-    });
-
-    const bufferedChunks: Buffer[] = [];
-    ffmpegProcess.getProcess().stderr!.on('data', (chunk) => {
-      if (!Buffer.isBuffer(chunk)) {
-        throw new Error('Expected chunk to be a Buffer');
-      }
-
-      while (true) {
-        const indexOfNewline = chunk.indexOf('\n');
-        if (indexOfNewline === -1) {
-          break;
-        }
-
-        const line = Buffer.concat([...bufferedChunks, chunk.subarray(0, indexOfNewline)]).toString('utf-8').trim();
-        bufferedChunks.length = 0;
-        chunk = chunk.subarray(indexOfNewline + 1);
-
-        if (line.startsWith('[Parsed_select_0 @ ') && line.includes(' -> select:1.0')) {
-          const timeIndex = line.indexOf('t:');
-          const timeValue = line.substring(timeIndex + 2, line.indexOf(' ', timeIndex + 2));
-
-          const parseFrameTime = parseFloat(timeValue);
-          if (!Number.isFinite(parseFrameTime)) {
-            console.warn('Failed to parse frame time as float:', timeValue);
-            continue;
+      awaitOutcome: async (handle) => {
+        const frameTimes: number[] = [];
+        handle.on('log', (logLine) => {
+          const frameTime = SeekThumbnailGenerator.parseSelectedFrameTime(logLine);
+          if (frameTime != null) {
+            frameTimes.push(frameTime);
           }
-          frameTimes.push(parseFrameTime);
+        });
+
+        const exitResult = await handle.waitForExit();
+        if (exitResult.exitCode !== 0) {
+          throw new Error(`Seek thumbnail generation failed because ffmpeg exited with code ${exitResult.exitCode} (signal=${exitResult.signal}):\n${handle.getLogProblems()}`);
         }
-      }
 
-      bufferedChunks.push(chunk);
+        return frameTimes;
+      },
+
+      discardOutput: () => this.discardGeneratedImages(targetDir),
     });
+  }
 
-    await ffmpegProcess.waitForSuccessExit();
-    return frameTimes;
+  private async discardGeneratedImages(targetDir: string): Promise<void> {
+    const filePaths = await this.collectImageFiles(targetDir);
+    await Promise.all(filePaths.map((filePath) => Fs.promises.rm(filePath, { force: true })));
   }
 
   private async collectImageFiles(directoryPath: string): Promise<string[]> {
     return (await Fs.promises.readdir(directoryPath))
       .filter((fileName) => fileName.startsWith('keyframes_'))
       .map((fileName) => Path.join(directoryPath, fileName));
+  }
+
+  private static parseSelectedFrameTime(logLine: FfmpegLogLine): number | null {
+    if (logLine.component !== 'Parsed_select_0' || !logLine.message.includes(' -> select:1.0')) {
+      return null;
+    }
+
+    const frameTimeMatch = / t:(\S+)/.exec(logLine.message);
+    if (frameTimeMatch == null) {
+      console.warn('Failed to find the frame time in:', logLine.raw);
+      return null;
+    }
+
+    const frameTime = parseFloat(frameTimeMatch[1]);
+    if (!Number.isFinite(frameTime)) {
+      console.warn('Failed to parse the frame time as a float:', frameTimeMatch[1]);
+      return null;
+    }
+    return frameTime;
   }
 }

@@ -1,9 +1,10 @@
 import Fs from 'node:fs';
+import Path from 'node:path';
 import type { Sharp } from 'sharp';
 import { singleton } from 'tsyringe';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
 import ApolloTemporaryDirectory from '../../../../../files/temporary/ApolloTemporaryDirectory.js';
-import BufferedChildProcess from '../../../../builtin/child_process/BufferedChildProcess.js';
+import FfmpegJobRunner from '../../../ffmpeg/job/FfmpegJobRunner.js';
 import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
 import BestVideoThumbnailFrameSelector from './BestVideoThumbnailFrameSelector.js';
 
@@ -17,6 +18,7 @@ export default class VideoThumbnailFrameExtractor {
     private readonly apolloTemporaryDirectory: ApolloTemporaryDirectory,
     private readonly bestVideoThumbnailFrameDetector: BestVideoThumbnailFrameSelector,
     private readonly ffprobeExecutor: CachedFfprobeExecutor,
+    private readonly ffmpegJobRunner: FfmpegJobRunner,
   ) {
   }
 
@@ -51,13 +53,13 @@ export default class VideoThumbnailFrameExtractor {
       videoFilter += ',select=gt(scene\\,0.5)';
     }
 
-    const ffmpegProcess = await BufferedChildProcess.spawn('ffmpeg', [
-        '-loglevel', 'warning',
+    await this.ffmpegJobRunner.run({
+      name: 'video-thumbnail-frame-extraction',
+      acceleration: { mayUseHardwareDecoding: true },
+      spawnOptions: { cwd, logVerbosity: 'warning' },
 
-        // FIXME: `-hwaccel auto` can pick a hardware decoder that fails at runtime (e.g. on a machine with more than
-        //        one GPU), making FFmpeg exit without producing any output. Fall back to software decoding like
-        //        VideoLiveTranscodeMediaFactory#awaitTranscodeStartup does.
-        '-hwaccel', 'auto',
+      buildArgs: (profile) => [
+        ...(profile.decodeAcceleration != null ? ['-hwaccel', profile.decodeAcceleration] : []),
 
         ...(favorGettingSomeResultOverPerformance ? [] : [
           '-skip_frame', 'nokey',
@@ -79,17 +81,25 @@ export default class VideoThumbnailFrameExtractor {
         '-compression_level', '0',
         'frame_%03d.png',
       ],
-      { cwd },
-    );
 
-    if (ffmpegProcess.exitCode !== 0) {
-      throw new Error(`Thumbnail extraction failed because ffmpeg exited with code ${ffmpegProcess.exitCode}: ${JSON.stringify({
-        exitCode: ffmpegProcess.exitCode,
-        signal: ffmpegProcess.signal,
-        stdout: ffmpegProcess.stdout.toString(),
-        stderr: ffmpegProcess.stderr.toString(),
-      })}`);
-    }
+      // An empty output directory is a legitimate result here – the scene filter may simply not have matched
+      awaitOutcome: async (handle) => {
+        const exitResult = await handle.waitForExit();
+        if (exitResult.exitCode !== 0) {
+          throw new Error(`Thumbnail extraction failed because ffmpeg exited with code ${exitResult.exitCode} (signal=${exitResult.signal}):\n${handle.getLogProblems()}`);
+        }
+      },
+
+      discardOutput: () => this.discardExtractedFrames(cwd),
+    });
+  }
+
+  private async discardExtractedFrames(cwd: string): Promise<void> {
+    const fileNames = await Fs.promises.readdir(cwd);
+
+    await Promise.all(fileNames
+      .filter((fileName) => fileName.startsWith('frame_'))
+      .map((fileName) => Fs.promises.rm(Path.join(cwd, fileName), { force: true })));
   }
 
   private async determineVideoDurationInSeconds(file: LocalFile): Promise<number> {
