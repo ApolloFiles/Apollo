@@ -1,10 +1,14 @@
 import { StringUtils } from '@spraxdev/node-commons';
-import Os from 'node:os';
+import Fs from 'node:fs';
+import Path from 'node:path';
 import { singleton } from 'tsyringe';
+import type { FfmpegAccelerationProfile } from '../../../../../ffmpeg/accel/FfmpegAccelerationPlanner.js';
+import FfmpegJobRunner from '../../../../../ffmpeg/job/FfmpegJobRunner.js';
+import UnretryableFfmpegJobError from '../../../../../ffmpeg/job/UnretryableFfmpegJobError.js';
+import type FfmpegHandle from '../../../../../ffmpeg/process/FfmpegHandle.js';
 import PlayableDurationUtil, { type DurationRelevantStream } from '../../../../../ffmpeg/probe/PlayableDurationUtil.js';
 import type { ExtendedVideoAnalysis, Stream, VideoStream } from '../../../video/analyser/VideoAnalyser.Types.js';
-import FfmpegProcess from '../../../watch/live_transcode/FfmpegProcess.js';
-import StreamArgumentsBuilder from '../ffmpeg/arguments-builder/StreamArgumentsBuilder.js';
+import StreamArgumentsBuilder, { type StreamArgumentsResult } from '../ffmpeg/arguments-builder/StreamArgumentsBuilder.js';
 import VideoStreamArgumentsBuilder from '../ffmpeg/arguments-builder/VideoStreamArgumentsBuilder.js';
 import AutoTranscodeStreamSelector from './AutoTranscodeStreamSelector.js';
 
@@ -24,7 +28,8 @@ import AutoTranscodeStreamSelector from './AutoTranscodeStreamSelector.js';
 //   D.S... vplayer              VPlayer subtitle
 
 export type LiveTranscodeHandle = {
-  readonly process: FfmpegProcess;
+  /** Still running when this handle is handed over – it only got as far as serving its first segment. */
+  readonly process: FfmpegHandle;
   readonly masterHlsFileName: string;
   readonly mediaDuration: number;
   readonly startOffset: number;
@@ -32,31 +37,25 @@ export type LiveTranscodeHandle = {
   readonly selectedVideoEncoder: string;
   /** The absolute input stream index of the image-based subtitle actually burned into the video, or `null` if none. */
   readonly burnedInSubtitleStreamIndex: number | null;
-  /** Whether FFmpeg was asked to pick a hardware decoder (`-hwaccel auto`) for the input file. */
-  readonly usedHardwareDecoding: boolean;
-}
-
-export type LiveTranscodeOptions = {
-  /**
-   * Whether FFmpeg may pick a hardware decoder for the input file (`-hwaccel auto`). Defaults to `true`.
-   *
-   * `-hwaccel auto` picks whatever the system advertises, which can fail at runtime (e.g. on a machine with more than
-   * one GPU, or with a driver that cannot read the decoded surfaces back). Disable it to decode in software instead.
-   */
-  readonly useHardwareDecoding?: boolean;
+  /** The decode acceleration FFmpeg was told to use, or `null` if it decodes in software. */
+  readonly usedDecodeAcceleration: string | null;
 }
 
 // TODO: Refactor / clean-up class
 @singleton()
 export default class LiveTranscodeLauncher {
+  private static readonly MASTER_HLS_FILE_NAME = 'master.m3u8';
+  private static readonly STARTUP_TIMEOUT_IN_MILLIS = 10_000;
+
   constructor(
     private readonly autoStreamSelector: AutoTranscodeStreamSelector,
     private readonly streamArgumentsBuilder: StreamArgumentsBuilder,
+    private readonly ffmpegJobRunner: FfmpegJobRunner,
   ) {
   }
 
-  async launch(videoFile: string, targetDir: string, startOffsetInSeconds: number, videoAnalysis: ExtendedVideoAnalysis, burnInSubtitleStreamIndex?: number | null, options: LiveTranscodeOptions = {}): Promise<LiveTranscodeHandle> {
-    const useHardwareDecoding = options.useHardwareDecoding ?? true;
+  /** Resolves once FFmpeg wrote its HLS manifest, leaving the transcode running for the returned handle to own. */
+  async launch(videoFile: string, targetDir: string, startOffsetInSeconds: number, videoAnalysis: ExtendedVideoAnalysis, burnInSubtitleStreamIndex?: number | null): Promise<LiveTranscodeHandle> {
     const streamsToTranscode = this.autoStreamSelector.selectStreams(videoAnalysis, burnInSubtitleStreamIndex);
 
     const videoStream = streamsToTranscode.find(stream => stream.codecType == 'video') as VideoStream;
@@ -68,56 +67,116 @@ export default class LiveTranscodeLauncher {
       segmentDuration: 2,
     };
 
-    const videoEncoder = await this.determineEncoderToUse();
+    // Written while building the arguments and read once the attempt they belong to worked out
+    let streamArgs: StreamArgumentsResult | null = null;
 
-    const streamArgs = await this.streamArgumentsBuilder.build(streamsToTranscode, videoEncoder, targetOptions);
-    const ffmpegArgs = [
-      '-bitexact',
-      '-stats',
-      '-stats_period', '1',
-      '-n',
+    return this.ffmpegJobRunner.run({
+      name: 'live-transcode',
+      acceleration: {
+        mayUseHardwareDecoding: true,
+        videoEncoderCandidates: VideoStreamArgumentsBuilder.SUPPORTED_ENCODERS,
+      },
+      spawnOptions: { cwd: targetDir },
 
-      ...(startOffsetInSeconds > 0 ? ['-ss', startOffsetInSeconds.toString()] : []),
+      buildArgs: async (profile) => {
+        streamArgs = await this.streamArgumentsBuilder.build(streamsToTranscode, LiveTranscodeLauncher.requireVideoEncoder(profile), targetOptions);
 
-      ...(useHardwareDecoding ? ['-hwaccel', 'auto'] : []),
-      '-i', videoFile,
+        return [
+          '-bitexact',
+          '-n',
 
-      '-map_chapters', '-1',
+          ...(startOffsetInSeconds > 0 ? ['-ss', startOffsetInSeconds.toString()] : []),
 
-      ...streamArgs.args,
+          ...(profile.decodeAcceleration != null ? ['-hwaccel', profile.decodeAcceleration] : []),
+          '-i', videoFile,
 
-      '-hls_list_size', '0',
-      '-hls_time', targetOptions.segmentDuration.toString(),
-      '-hls_init_time', targetOptions.segmentDuration.toString(),
-      '-hls_allow_cache', '1',
-      '-hls_segment_filename', 'stream_%v/chunk_%d.ts',
-      '-hls_enc', '0',
-      '-hls_segment_type', 'mpegts',
-      '-hls_playlist_type', 'event',
-      '-master_pl_name', 'master.m3u8',
-      '-hls_flags', 'independent_segments',
-      '-var_stream_map', streamArgs.varStreamMap.join(' '),
+          '-map_chapters', '-1',
 
-      '-f', 'hls',
-      '-shortest',
-      `stream_%v/manifest.m3u8`,
-    ];
+          ...streamArgs.args,
 
-    console.debug(`Started LiveTranscode for ${videoFile} with startOffset=${startOffsetInSeconds} (encoder=${videoEncoder}, hardwareDecoding=${useHardwareDecoding})`);
+          '-hls_list_size', '0',
+          '-hls_time', targetOptions.segmentDuration.toString(),
+          '-hls_init_time', targetOptions.segmentDuration.toString(),
+          '-hls_allow_cache', '1',
+          '-hls_segment_filename', 'stream_%v/chunk_%d.ts',
+          '-hls_enc', '0',
+          '-hls_segment_type', 'mpegts',
+          '-hls_playlist_type', 'event',
+          '-master_pl_name', LiveTranscodeLauncher.MASTER_HLS_FILE_NAME,
+          '-hls_flags', 'independent_segments',
+          '-var_stream_map', streamArgs.varStreamMap.join(' '),
 
-    return {
-      process: new FfmpegProcess(ffmpegArgs, {
-        stdio: ['ignore', 'ignore', 'pipe'],
-        cwd: targetDir,
-      }),
-      masterHlsFileName: 'master.m3u8',
-      mediaDuration: this.determineOutputTotalDuration(videoFile, streamsToTranscode, videoAnalysis),
-      startOffset: startOffsetInSeconds,
-      selectedVideoEncoder: videoEncoder,
-      audioNameMap: streamArgs.audioNameMap,
-      burnedInSubtitleStreamIndex: burnedInSubtitleStream?.index ?? null,
-      usedHardwareDecoding: useHardwareDecoding,
-    };
+          '-f', 'hls',
+          '-shortest',
+          `stream_%v/manifest.m3u8`,
+        ];
+      },
+
+      awaitOutcome: async (handle, profile) => {
+        await this.awaitHlsManifest(handle, targetDir);
+
+        console.debug(`Started LiveTranscode for ${videoFile} with startOffset=${startOffsetInSeconds} (profile=${profile.id})`);
+        return {
+          process: handle,
+          masterHlsFileName: LiveTranscodeLauncher.MASTER_HLS_FILE_NAME,
+          mediaDuration: this.determineOutputTotalDuration(videoFile, streamsToTranscode, videoAnalysis),
+          startOffset: startOffsetInSeconds,
+          selectedVideoEncoder: LiveTranscodeLauncher.requireVideoEncoder(profile),
+          audioNameMap: streamArgs!.audioNameMap,
+          burnedInSubtitleStreamIndex: burnedInSubtitleStream?.index ?? null,
+          usedDecodeAcceleration: profile.decodeAcceleration,
+        };
+      },
+
+      // FFmpeg runs with '-n' and refuses to overwrite what a failed attempt left behind
+      discardOutput: () => this.discardTranscodeOutput(targetDir),
+    });
+  }
+
+  /**
+   * FFmpeg keeps running after this resolves, so the manifest is what tells a failed start apart from a slow one.
+   * Without it the only symptom of a failing transcode is a player waiting for a playlist that never appears.
+   */
+  private async awaitHlsManifest(handle: FfmpegHandle, targetDir: string): Promise<void> {
+    const masterHlsFilePath = Path.join(targetDir, LiveTranscodeLauncher.MASTER_HLS_FILE_NAME);
+    const timeoutAt = performance.now() + LiveTranscodeLauncher.STARTUP_TIMEOUT_IN_MILLIS;
+
+    while (!Fs.existsSync(masterHlsFilePath)) {
+      // The manifest might have been written just before the process exited
+      if (handle.hasExited()) {
+        if (Fs.existsSync(masterHlsFilePath)) {
+          return;
+        }
+
+        // Settled already, and it rethrows a process that never started rather than inventing an exit code for it
+        const exitResult = await handle.waitForExit();
+        throw new Error(`FFmpeg exited with code ${exitResult.exitCode} (signal=${exitResult.signal}) without creating ${masterHlsFilePath}:\n${handle.getLogProblems()}`);
+      }
+
+      // Every profile waiting its own timeout out would keep a viewer looking at a spinner for as many times ten
+      // seconds as the machine has hardware. FFmpeg that fails on hardware says so and exits, it does not hang.
+      if (performance.now() >= timeoutAt) {
+        throw new UnretryableFfmpegJobError(`Timeout waiting for FFmpeg to create ${masterHlsFilePath}:\n${handle.getLogTail()}`);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  /** Removes the output of a failed attempt, but keeps the subtitles extracted alongside it. */
+  private async discardTranscodeOutput(targetDir: string): Promise<void> {
+    const entries = await Fs.promises.readdir(targetDir);
+
+    await Promise.all(entries
+      .filter((entry) => entry !== '_subtitles')
+      .map((entry) => Fs.promises.rm(Path.join(targetDir, entry), { recursive: true, force: true })));
+  }
+
+  private static requireVideoEncoder(profile: FfmpegAccelerationProfile): string {
+    if (profile.videoEncoder == null) {
+      throw new Error(`The '${profile.id}' acceleration profile names no video encoder, but a live transcode has to encode video`);
+    }
+    return profile.videoEncoder;
   }
 
   /**
@@ -205,37 +264,5 @@ export default class LiveTranscodeLauncher {
       return videoStream.width;
     }
     return targetWidth;
-  }
-
-  private async determineEncoderToUse(): Promise<string> {
-    for (const encoder of VideoStreamArgumentsBuilder.SUPPORTED_ENCODERS) {
-      if (await this.checkEncoderCanBeUsed(encoder)) {
-        return encoder;
-      }
-    }
-
-    throw new Error(`None of the supported encoders (${VideoStreamArgumentsBuilder.SUPPORTED_ENCODERS.join(', ')}) were detected available on this system`);
-  }
-
-  private async checkEncoderCanBeUsed(encoder: string): Promise<boolean> {
-    const ffmpegProcess = new FfmpegProcess([
-        '-f', 'lavfi',
-        '-i', 'nullsrc',
-        '-c:v', encoder,
-        '-frames:v', '1',
-        '-f', 'null',
-        '-',
-      ],
-      {
-        stdio: 'ignore',
-        cwd: Os.tmpdir(),
-        timeout: 10_000,
-        killSignal: 'SIGKILL', // If we exceed the generous timeout, something is really wrong -> Force kill
-      });
-
-    return new Promise((resolve, reject) => {
-      ffmpegProcess.getProcess().on('exit', (code) => resolve(code === 0));
-      ffmpegProcess.getProcess().on('error', (error) => reject(error));
-    });
   }
 }

@@ -50,7 +50,7 @@ export default class VideoLiveTranscodeMedia {
   }
 
   async destroy(): Promise<void> {
-    await this.handle.process.terminate();
+    await this.handle.process.kill();
 
     await Promise.all([
       Fs.promises.rm(Path.join(this.tmpDir.publicSubDirPath, this.subDirName), { recursive: true, force: true }),

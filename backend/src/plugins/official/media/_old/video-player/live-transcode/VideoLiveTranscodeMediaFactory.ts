@@ -27,7 +27,7 @@ export default class VideoLiveTranscodeMediaFactory {
 
     const videoAnalysis = await VideoAnalyser.analyze(videoFilePath, true);
 
-    const [launchedTranscodeHandle, subtitleResult] = await Promise.all([
+    const [launchOutcome, subtitleOutcome] = await Promise.allSettled([
       this.liveTranscodeLauncher.launch(videoFilePath, targetPublicDir, startOffsetInSeconds, videoAnalysis, burnInSubtitleStreamIndex),
       (async () => {
         const textBasedSubtitlesDir = Path.join(targetPublicDir, '_subtitles'); // TODO: maybe in einen anderen Ordner für einfachere reusability zwischen transcode-restarts?
@@ -48,6 +48,19 @@ export default class VideoLiveTranscodeMediaFactory {
       })(),
     ]);
 
+    // A failed launch cleans up after itself, a started one has to be stopped here – it keeps transcoding into a
+    // directory nobody is going to read, and this handle is the only one there is
+    if (launchOutcome.status === 'rejected') {
+      throw launchOutcome.reason;
+    }
+    if (subtitleOutcome.status === 'rejected') {
+      await launchOutcome.value.process.kill().catch((err) => console.error('Failed to stop the live transcode of a session that never started', err));
+      throw subtitleOutcome.reason;
+    }
+
+    const transcodeHandle = launchOutcome.value;
+    const subtitleResult = subtitleOutcome.value;
+
     // TODO: Check if we want to provide these metrics and how:
     // transcodeHandle.process.on('metrics', (metrics) => {
     //   session._broadcast<BackendDebugInfoMessage>({
@@ -58,8 +71,6 @@ export default class VideoLiveTranscodeMediaFactory {
     //     },
     //   });
     // });
-
-    const transcodeHandle = await this.awaitTranscodeStartup(launchedTranscodeHandle, targetPublicDir, videoFilePath, startOffsetInSeconds, videoAnalysis, burnInSubtitleStreamIndex);
 
     // TODO: Have an API-Endpoint for the player-session that provides the seek-thumbnails (with session permission check essentially)
     // TODO: Maybe an endpoint that provides subtitles too? Could be used by the player for non-live-transcode too
@@ -130,77 +141,5 @@ export default class VideoLiveTranscodeMediaFactory {
       randomName += Path.extname(originalFileName);
     }
     return randomName;
-  }
-
-  /**
-   * Waits for the launched transcode to write its HLS manifest.
-   *
-   * If FFmpeg dies before doing so – e.g. because `-hwaccel auto` picked a hardware decoder that does not work on this
-   * machine – the transcode is retried once while decoding in software. Without this, the only symptom of any FFmpeg
-   * failure is the startup timeout below, which says nothing about what actually went wrong.
-   */
-  private async awaitTranscodeStartup(
-    transcodeHandle: LiveTranscodeHandle,
-    targetPublicDir: string,
-    videoFilePath: string,
-    startOffsetInSeconds: number,
-    videoAnalysis: ExtendedVideoAnalysis,
-    burnInSubtitleStreamIndex?: number | null,
-  ): Promise<LiveTranscodeHandle> {
-    if (await this.waitForTranscodeToStart(transcodeHandle, targetPublicDir)) {
-      return transcodeHandle;
-    }
-
-    const failureMessage = this.buildTranscodeFailureMessage(transcodeHandle, targetPublicDir);
-    if (!transcodeHandle.usedHardwareDecoding) {
-      throw new Error(failureMessage);
-    }
-
-    console.warn(`${failureMessage}\nRetrying the live-transcode with hardware decoding disabled`);
-    await this.removeTranscodeOutput(targetPublicDir);
-
-    const fallbackHandle = await this.liveTranscodeLauncher.launch(videoFilePath, targetPublicDir, startOffsetInSeconds, videoAnalysis, burnInSubtitleStreamIndex, { useHardwareDecoding: false });
-    if (await this.waitForTranscodeToStart(fallbackHandle, targetPublicDir)) {
-      return fallbackHandle;
-    }
-    throw new Error(this.buildTranscodeFailureMessage(fallbackHandle, targetPublicDir));
-  }
-
-  /** Returns `false` if FFmpeg exited before creating its HLS manifest, and throws if it did neither in time. */
-  private async waitForTranscodeToStart(transcodeHandle: LiveTranscodeHandle, targetPublicDir: string): Promise<boolean> {
-    const masterHlsFilePath = Path.join(targetPublicDir, transcodeHandle.masterHlsFileName);
-    const timeoutAt = Date.now() + VideoLiveTranscodeMediaFactory.TRANSCODE_STARTUP_TIMEOUT_IN_MILLIS;
-
-    while (true) {
-      if (Fs.existsSync(masterHlsFilePath)) {
-        return true;
-      }
-      if (transcodeHandle.process.hasExited()) {
-        // The manifest might have been written just before the process exited
-        return Fs.existsSync(masterHlsFilePath);
-      }
-
-      if (Date.now() >= timeoutAt) {
-        // Nobody else holds this handle, so the process would keep running (and writing) forever
-        await transcodeHandle.process.terminate();
-        throw new Error(`Timeout waiting for FFmpeg to create ${masterHlsFilePath}\nFFmpeg output:\n${transcodeHandle.process.getStderrTail().trim()}`);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-
-  private buildTranscodeFailureMessage(transcodeHandle: LiveTranscodeHandle, targetPublicDir: string): string {
-    const masterHlsFilePath = Path.join(targetPublicDir, transcodeHandle.masterHlsFileName);
-    return `FFmpeg exited with code ${transcodeHandle.process.getExitCode()} without creating ${masterHlsFilePath}\nFFmpeg output:\n${transcodeHandle.process.getStderrTail().trim()}`;
-  }
-
-  /** Removes the output of a failed transcode attempt – FFmpeg runs with `-n` and refuses to overwrite leftovers. */
-  private async removeTranscodeOutput(targetPublicDir: string): Promise<void> {
-    const entries = await Fs.promises.readdir(targetPublicDir);
-
-    await Promise.all(entries
-      .filter((entry) => entry !== '_subtitles')
-      .map((entry) => Fs.promises.rm(Path.join(targetPublicDir, entry), { recursive: true, force: true })));
   }
 }
