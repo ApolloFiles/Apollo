@@ -34,15 +34,15 @@ export default class SeekThumbnailGenerator {
     return this.ffmpegJobRunner.run({
       name: 'seek-thumbnail-generation',
       acceleration: { mayUseHardwareDecoding: true },
-      // The time of each selected frame is only available from the debug output of the 'select' filter
-      spawnOptions: { cwd: targetDir, logVerbosity: 'debug' },
+      spawnOptions: { cwd: targetDir },
 
       buildArgs: (profile) => [
         '-skip_frame', 'nokey',
         ...(profile.decodeAcceleration != null ? ['-hwaccel', profile.decodeAcceleration] : []),
 
         '-i', inputFile,
-        '-vf', `select=key,scale=240:-2,tile=${SeekThumbnailGenerator.GRID_SIZE}x${SeekThumbnailGenerator.GRID_SIZE}`,
+        // 'showinfo' reports the time of every frame that made it past 'select' and leaves the frames themselves alone
+        '-vf', `select=key,showinfo,scale=240:-2,tile=${SeekThumbnailGenerator.GRID_SIZE}x${SeekThumbnailGenerator.GRID_SIZE}`,
         '-an',  // blocks all audio streams
         '-fps_mode', 'passthrough',  // prevent ffmpeg from duplicating each output frame to accommodate the originally detected frame rate
         'keyframes_%03d.jpg',
@@ -51,7 +51,7 @@ export default class SeekThumbnailGenerator {
       awaitOutcome: async (handle) => {
         const frameTimes: number[] = [];
         handle.on('log', (logLine) => {
-          const frameTime = SeekThumbnailGenerator.parseSelectedFrameTime(logLine);
+          const frameTime = SeekThumbnailGenerator.parseFrameTime(logLine);
           if (frameTime != null) {
             frameTimes.push(frameTime);
           }
@@ -80,14 +80,14 @@ export default class SeekThumbnailGenerator {
       .map((fileName) => Path.join(directoryPath, fileName));
   }
 
-  private static parseSelectedFrameTime(logLine: FfmpegLogLine): number | null {
-    if (logLine.component !== 'Parsed_select_0' || !logLine.message.includes(' -> select:1.0')) {
+  private static parseFrameTime(logLine: FfmpegLogLine): number | null {
+    if (!logLine.component?.startsWith('Parsed_showinfo_')) {
       return null;
     }
 
-    const frameTimeMatch = / t:(\S+)/.exec(logLine.message);
+    // 'showinfo' also logs its configuration, side data and color properties, none of which name a frame
+    const frameTimeMatch = /\bpts_time:(\S+)/.exec(logLine.message);
     if (frameTimeMatch == null) {
-      console.warn('Failed to find the frame time in:', logLine.raw);
       return null;
     }
 
