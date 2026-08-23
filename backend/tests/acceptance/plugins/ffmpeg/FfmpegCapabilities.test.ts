@@ -7,7 +7,7 @@ import FfmpegCapabilities from '../../../../src/plugins/official/ffmpeg/accel/Ff
 import FfmpegProcessRunner from '../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 import {
   CANDIDATE_VIDEO_ENCODERS,
-  FFMPEG_DECODE_ACCELERATIONS,
+  FFMPEG_HARDWARE_ACCELERATIONS,
   ffmpegEnvironment,
   requireDecodeAcceleration,
   requireFfmpeg,
@@ -100,11 +100,11 @@ describe('FfmpegCapabilities#getUsableDecodeAccelerations', () => {
 
     const usableAccelerations = await container.resolve(FfmpegCapabilities).getUsableDecodeAccelerations();
 
-    expect(FFMPEG_DECODE_ACCELERATIONS).toEqual(expect.arrayContaining(usableAccelerations));
+    expect(FFMPEG_HARDWARE_ACCELERATIONS).toEqual(expect.arrayContaining(usableAccelerations));
   });
 });
 
-describe.each(FFMPEG_DECODE_ACCELERATIONS)('Decode acceleration %s', (acceleration) => {
+describe.each(FFMPEG_HARDWARE_ACCELERATIONS)('Decode acceleration %s', (acceleration) => {
   /**
    * The regression this guards against: an acceleration that the probe accepted but that makes FFmpeg die without
    * writing any output, which used to surface as a missing thumbnail or a live-transcode that never starts.

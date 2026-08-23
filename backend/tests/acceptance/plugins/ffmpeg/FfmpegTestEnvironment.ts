@@ -1,8 +1,10 @@
+import { container } from 'tsyringe';
 import { inject, type TestContext } from 'vitest';
-import FfmpegCapabilities, {
-  FFMPEG_DECODE_ACCELERATIONS,
-  type FfmpegDecodeAcceleration,
-} from '../../../../src/plugins/official/ffmpeg/accel/FfmpegCapabilities.js';
+import FfmpegCapabilities from '../../../../src/plugins/official/ffmpeg/accel/FfmpegCapabilities.js';
+import {
+  FFMPEG_HARDWARE_ACCELERATIONS,
+  type FfmpegHardwareAcceleration,
+} from '../../../../src/plugins/official/ffmpeg/accel/FfmpegHardwareAcceleration.js';
 import FfmpegLogLineParser from '../../../../src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
 import FfmpegProcessRunner from '../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 
@@ -13,7 +15,7 @@ export type FfmpegTestEnvironment = {
   /** `null` if there is no usable ffmpeg executable at all. */
   readonly ffmpegVersion: string | null;
   readonly usableVideoEncoders: readonly string[];
-  readonly usableDecodeAccelerations: readonly FfmpegDecodeAcceleration[];
+  readonly usableDecodeAccelerations: readonly FfmpegHardwareAcceleration[];
   /** One line per candidate the capability probe turned down, saying why. */
   readonly rejections: readonly string[];
 }
@@ -50,7 +52,7 @@ export function requireVideoEncoder(ctx: TestContext, encoder: string): FfmpegTe
   return environment;
 }
 
-export function requireDecodeAcceleration(ctx: TestContext, acceleration: FfmpegDecodeAcceleration): FfmpegTestEnvironment {
+export function requireDecodeAcceleration(ctx: TestContext, acceleration: FfmpegHardwareAcceleration): FfmpegTestEnvironment {
   const environment = requireFfmpeg(ctx);
   if (!environment.usableDecodeAccelerations.includes(acceleration)) {
     ctx.skip(`this machine cannot create a '${acceleration}' hardware device (usable: ${environment.usableDecodeAccelerations.join(', ') || 'none'})`);
@@ -59,14 +61,14 @@ export function requireDecodeAcceleration(ctx: TestContext, acceleration: Ffmpeg
 }
 
 export async function probeFfmpegEnvironment(): Promise<FfmpegTestEnvironment> {
-  const ffmpegProcessRunner = new FfmpegProcessRunner();
+  const ffmpegProcessRunner = container.resolve(FfmpegProcessRunner);
 
   const ffmpegVersion = await determineFfmpegVersion(ffmpegProcessRunner);
   if (ffmpegVersion == null) {
     return { ffmpegVersion: null, usableVideoEncoders: [], usableDecodeAccelerations: [], rejections: [] };
   }
 
-  const ffmpegCapabilities = new FfmpegCapabilities(ffmpegProcessRunner);
+  const ffmpegCapabilities = container.resolve(FfmpegCapabilities);
   const probeMessages: string[] = [];
 
   // A probe turning down hardware this machine does not have is expected here, and its debug output is long enough
@@ -139,4 +141,4 @@ function summarizeRejections(probeMessages: readonly string[]): string[] {
   return rejections;
 }
 
-export { FFMPEG_DECODE_ACCELERATIONS, type FfmpegDecodeAcceleration };
+export { FFMPEG_HARDWARE_ACCELERATIONS, type FfmpegHardwareAcceleration };

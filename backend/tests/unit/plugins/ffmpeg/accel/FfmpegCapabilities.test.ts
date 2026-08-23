@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import FfmpegCapabilities from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegCapabilities.js';
+import type FfmpegHardwareAccelerationConfig
+  from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegHardwareAccelerationConfig.js';
+import type { FfmpegHardwareAcceleration } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegHardwareAcceleration.js';
 import type FfmpegHandle from '../../../../../src/plugins/official/ffmpeg/process/FfmpegHandle.js';
 import type FfmpegProcessRunner from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 
 const ALL_HWACCELS = 'Hardware acceleration methods:\ncuda\nvaapi\nqsv\nvulkan\n';
+const ALLOWS_EVERYTHING = {
+  getAllowedAccelerations: (): readonly FfmpegHardwareAcceleration[] => ['cuda', 'qsv', 'vaapi'],
+  isVideoEncoderAllowed: () => true,
+};
 
 type SpawnOutcome = {
   exitCode: number;
@@ -41,6 +48,10 @@ function valueAfter(args: readonly string[], option: string): string | undefined
   return optionIndex === -1 ? undefined : args[optionIndex + 1];
 }
 
+function createCapabilities(runner: FakeFfmpegProcessRunner, hardwareAccelerationConfig: Partial<FfmpegHardwareAccelerationConfig> = ALLOWS_EVERYTHING): FfmpegCapabilities {
+  return new FfmpegCapabilities(runner.asFfmpegProcessRunner(), hardwareAccelerationConfig as FfmpegHardwareAccelerationConfig);
+}
+
 beforeEach(() => {
   vi.spyOn(console, 'debug').mockImplementation(() => undefined);
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -55,7 +66,7 @@ describe('FfmpegCapabilities#getUsableDecodeAccelerations', () => {
       return { exitCode: valueAfter(args, '-init_hw_device') === 'cuda' ? 255 : 0 };
     });
 
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
     expect(await capabilities.getUsableDecodeAccelerations()).toEqual(['qsv', 'vaapi']);
   });
@@ -68,7 +79,7 @@ describe('FfmpegCapabilities#getUsableDecodeAccelerations', () => {
       return { exitCode: 0 };
     });
 
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
     expect(await capabilities.getUsableDecodeAccelerations()).toEqual(['vaapi']);
     expect(runner.countSpawnsContaining('-init_hw_device')).toBe(1);
@@ -80,14 +91,14 @@ describe('FfmpegCapabilities#getUsableDecodeAccelerations', () => {
       stdout: ALL_HWACCELS,
     }));
 
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
     expect(await capabilities.getUsableDecodeAccelerations()).toEqual([]);
   });
 
   test('Probes only once, no matter how often it is asked', async () => {
     const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 0, stdout: ALL_HWACCELS }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
     await Promise.all([capabilities.getUsableDecodeAccelerations(), capabilities.getUsableDecodeAccelerations()]);
     await capabilities.getUsableDecodeAccelerations();
@@ -98,39 +109,32 @@ describe('FfmpegCapabilities#getUsableDecodeAccelerations', () => {
 
   test('Throws when ffmpeg cannot be asked what it was built with', async () => {
     const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 1 }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
     await expect(capabilities.getUsableDecodeAccelerations()).rejects.toThrow(/hardware accelerations FFmpeg was built with/);
   });
-});
 
-describe('FfmpegCapabilities#markDecodeAccelerationUnusable', () => {
-  test('Stops offering the acceleration without probing again', async () => {
+  test('Asks ffmpeg nothing at all when the configuration allows no acceleration', async () => {
     const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 0, stdout: ALL_HWACCELS }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner, { ...ALLOWS_EVERYTHING, getAllowedAccelerations: () => [] });
 
-    expect(await capabilities.getUsableDecodeAccelerations()).toEqual(['cuda', 'qsv', 'vaapi']);
-    capabilities.markDecodeAccelerationUnusable('cuda', 'failed on a real input file');
-
-    expect(await capabilities.getUsableDecodeAccelerations()).toEqual(['qsv', 'vaapi']);
-    expect(runner.countSpawnsContaining('-hwaccels')).toBe(1);
+    expect(await capabilities.getUsableDecodeAccelerations()).toEqual([]);
+    expect(runner.spawnedArgs).toHaveLength(0);
   });
 
-  test('Warns about an acceleration only the first time it is marked', () => {
+  test('Only probes what the configuration allows', async () => {
     const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 0, stdout: ALL_HWACCELS }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner, { ...ALLOWS_EVERYTHING, getAllowedAccelerations: () => ['vaapi'] });
 
-    capabilities.markDecodeAccelerationUnusable('cuda', 'failed once');
-    capabilities.markDecodeAccelerationUnusable('cuda', 'failed again');
-
-    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(await capabilities.getUsableDecodeAccelerations()).toEqual(['vaapi']);
+    expect(runner.countSpawnsContaining('-init_hw_device')).toBe(1);
   });
 });
 
 describe('FfmpegCapabilities#filterUsableVideoEncoders', () => {
   test('Keeps the order the candidates were given in', async () => {
     const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 0 }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
     const usableEncoders = await capabilities.filterUsableVideoEncoders(['h264_nvenc', 'h264_qsv', 'libx264']);
 
@@ -141,7 +145,7 @@ describe('FfmpegCapabilities#filterUsableVideoEncoders', () => {
     const runner = new FakeFfmpegProcessRunner((args) => ({
       exitCode: valueAfter(args, '-c:v') === 'libx264' ? 0 : 255,
     }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
     const usableEncoders = await capabilities.filterUsableVideoEncoders(['h264_nvenc', 'h264_qsv', 'libx264']);
 
@@ -150,7 +154,7 @@ describe('FfmpegCapabilities#filterUsableVideoEncoders', () => {
 
   test('Probes each encoder only once', async () => {
     const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 0 }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
     await capabilities.filterUsableVideoEncoders(['h264_nvenc', 'libx264']);
     await capabilities.filterUsableVideoEncoders(['h264_nvenc', 'libx264']);
@@ -160,43 +164,63 @@ describe('FfmpegCapabilities#filterUsableVideoEncoders', () => {
 
   test('Probes the encoder against a real frame', async () => {
     const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 0 }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
     await capabilities.isVideoEncoderUsable('libx264');
 
     expect(valueAfter(runner.spawnedArgs[0], '-frames:v')).toBe('1');
     expect(valueAfter(runner.spawnedArgs[0], '-c:v')).toBe('libx264');
   });
-});
 
-describe('FfmpegCapabilities#markVideoEncoderUnusable', () => {
-  test('Stops offering the encoder without probing it', async () => {
+  test('Does not probe an encoder the configuration rules out', async () => {
     const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 0 }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
-
-    capabilities.markVideoEncoderUnusable('h264_nvenc', 'failed on a real input file');
+    const capabilities = createCapabilities(runner, {
+      ...ALLOWS_EVERYTHING,
+      isVideoEncoderAllowed: (encoder: string) => encoder === 'libx264',
+    });
 
     expect(await capabilities.filterUsableVideoEncoders(['h264_nvenc', 'libx264'])).toEqual(['libx264']);
     expect(runner.countSpawnsContaining('h264_nvenc')).toBe(0);
   });
+});
 
-  test('Warns about an encoder only the first time it is marked', async () => {
-    const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 0 }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+describe('FfmpegCapabilities probe caching', () => {
+  test('Retries a video encoder probe that could not run at all', async () => {
+    let spawnAttempts = 0;
+    const runner = new FakeFfmpegProcessRunner(() => {
+      ++spawnAttempts;
+      if (spawnAttempts === 1) {
+        throw new Error('spawn ffmpeg EAGAIN');
+      }
+      return { exitCode: 0 };
+    });
+    const capabilities = createCapabilities(runner);
 
-    capabilities.markVideoEncoderUnusable('h264_nvenc', 'failed once');
-    capabilities.markVideoEncoderUnusable('h264_nvenc', 'failed again');
+    await expect(capabilities.isVideoEncoderUsable('libx264')).rejects.toThrow('EAGAIN');
 
-    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(await capabilities.isVideoEncoderUsable('libx264')).toBe(true);
   });
 
-  test('Stops offering an encoder that was usable before', async () => {
+  test('Retries a decode acceleration probe that could not run at all', async () => {
+    let spawnAttempts = 0;
+    const runner = new FakeFfmpegProcessRunner(() => {
+      ++spawnAttempts;
+      return { exitCode: spawnAttempts === 1 ? 1 : 0, stdout: ALL_HWACCELS };
+    });
+    const capabilities = createCapabilities(runner);
+
+    await expect(capabilities.getUsableDecodeAccelerations()).rejects.toThrow(/hardware accelerations FFmpeg was built with/);
+
+    expect(await capabilities.getUsableDecodeAccelerations()).toEqual(['cuda', 'qsv', 'vaapi']);
+  });
+
+  test('Remembers an encoder that was probed successfully', async () => {
     const runner = new FakeFfmpegProcessRunner(() => ({ exitCode: 0 }));
-    const capabilities = new FfmpegCapabilities(runner.asFfmpegProcessRunner());
+    const capabilities = createCapabilities(runner);
 
-    expect(await capabilities.isVideoEncoderUsable('h264_nvenc')).toBe(true);
-    capabilities.markVideoEncoderUnusable('h264_nvenc', 'failed on a real input file');
+    await capabilities.isVideoEncoderUsable('libx264');
+    await capabilities.isVideoEncoderUsable('libx264');
 
-    expect(await capabilities.isVideoEncoderUsable('h264_nvenc')).toBe(false);
+    expect(runner.countSpawnsContaining('libx264')).toBe(1);
   });
 });

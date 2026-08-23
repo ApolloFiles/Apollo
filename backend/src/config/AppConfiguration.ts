@@ -23,6 +23,14 @@ export type AppConfig = {
     enabled: boolean;
   }
 
+  ffmpeg: {
+    /**
+     * `auto`, `off`, or the name of the single hardware acceleration to allow – `cuda` also covering the `*_nvenc`
+     * encoders. Validated where it is used.
+     */
+    hardwareAcceleration: string;
+  }
+
   media: {
     externalProviders: {
       myAnimeList: {
@@ -64,6 +72,10 @@ export default class AppConfiguration {
 
       feedback: {
         enabled: process.env.APOLLO_FEATURE_FEEDBACK_ENABLED === 'true',
+      },
+
+      ffmpeg: {
+        hardwareAcceleration: process.env.APOLLO_FFMPEG_HARDWARE_ACCELERATION || 'auto',
       },
 
       media: {
