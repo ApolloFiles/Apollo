@@ -7,7 +7,7 @@ import WriteableLocalFile from '../../../../../files/local/WriteableLocalFile.js
 import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import FileNameCollator from '../../../../../files/util/FileNameCollator.js';
 import type WriteableVirtualFile from '../../../../../files/WriteableVirtualFile.js';
-import FfprobeExecutor from '../../../../../plugins/official/ffmpeg/FfprobeExecutor.js';
+import FfprobeExecutor from '../../../../../plugins/official/ffmpeg/probe/FfprobeExecutor.js';
 import FileTypeUtils from '../../../../../plugins/official/media/_old/FileTypeUtils.js';
 import FfmpegVideoFileMetadataEditor
   from '../../../../../plugins/official/media/library/editor/FfmpegVideoFileMetadataEditor.js';

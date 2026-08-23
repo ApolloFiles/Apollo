@@ -1,6 +1,6 @@
 import { singleton } from 'tsyringe';
 import { z } from 'zod';
-import BufferedChildProcess from '../../builtin/child_process/BufferedChildProcess.js';
+import BufferedChildProcess from '../../../builtin/child_process/BufferedChildProcess.js';
 import { PROBE_RESULT_FULL_SCHEMA, PROBE_RESULT_SCHEMA } from './FfprobeValidationSchemas.js';
 
 export type ProbeResult = z.infer<typeof PROBE_RESULT_SCHEMA>;

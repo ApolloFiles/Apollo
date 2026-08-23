@@ -4,13 +4,13 @@ import {
 } from '../../../../../database/prisma-client/enums.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
-import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
-import { type ExtendedProbeResult } from '../../../ffmpeg/FfprobeExecutor.js';
+import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
+import { type ExtendedProbeResult } from '../../../ffmpeg/probe/FfprobeExecutor.js';
 import PlayableDurationUtil, {
   type DurationRelevantStream,
   type StreamSpanSource,
-} from '../../../ffmpeg/PlayableDurationUtil.js';
-import ProbeTagUtil from '../../../ffmpeg/ProbeTagUtil.js';
+} from '../../../ffmpeg/probe/PlayableDurationUtil.js';
+import ProbeTagUtil from '../../../ffmpeg/probe/ProbeTagUtil.js';
 import ForcedSubtitleDetector, { type SubtitleStreamCandidate } from './ForcedSubtitleDetector.js';
 import LanguageTagUtil from './LanguageTagUtil.js';
 

@@ -3,7 +3,7 @@ import Path from 'node:path';
 import { injectable } from 'tsyringe';
 import FsUtils from '../../../../../utils/FsUtils.js';
 import BufferedChildProcess from '../../../../builtin/child_process/BufferedChildProcess.js';
-import FfprobeExecutor, { type ExtendedProbeResult } from '../../../ffmpeg/FfprobeExecutor.js';
+import FfprobeExecutor, { type ExtendedProbeResult } from '../../../ffmpeg/probe/FfprobeExecutor.js';
 import FfmpegProcessError from './FfmpegProcessError.js';
 import UnexpectedDesiredMetadataError from './UnexpectedDesiredMetadataError.js';
 

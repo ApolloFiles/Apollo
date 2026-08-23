@@ -4,7 +4,7 @@ import { singleton } from 'tsyringe';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
 import ApolloTemporaryDirectory from '../../../../../files/temporary/ApolloTemporaryDirectory.js';
 import BufferedChildProcess from '../../../../builtin/child_process/BufferedChildProcess.js';
-import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
+import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
 import BestVideoThumbnailFrameSelector from './BestVideoThumbnailFrameSelector.js';
 
 @singleton()

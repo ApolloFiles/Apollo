@@ -1,8 +1,8 @@
 import { singleton } from 'tsyringe';
 import type { ZodSafeParseResult } from 'zod';
-import type ApolloUserCacheFileSystem from '../../../files/cache/user/ApolloUserCacheFileSystem.js';
-import FileSystemProvider from '../../../files/FileSystemProvider.js';
-import type LocalFile from '../../../files/local/LocalFile.js';
+import type ApolloUserCacheFileSystem from '../../../../files/cache/user/ApolloUserCacheFileSystem.js';
+import FileSystemProvider from '../../../../files/FileSystemProvider.js';
+import type LocalFile from '../../../../files/local/LocalFile.js';
 import FfprobeExecutor, { type ExtendedProbeResult, type ProbeResult } from './FfprobeExecutor.js';
 import { PROBE_RESULT_FULL_SCHEMA, PROBE_RESULT_SCHEMA } from './FfprobeValidationSchemas.js';
 

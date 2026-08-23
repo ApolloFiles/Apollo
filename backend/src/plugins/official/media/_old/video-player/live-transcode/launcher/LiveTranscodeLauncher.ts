@@ -1,7 +1,7 @@
 import { StringUtils } from '@spraxdev/node-commons';
 import Os from 'node:os';
 import { singleton } from 'tsyringe';
-import PlayableDurationUtil, { type DurationRelevantStream } from '../../../../../ffmpeg/PlayableDurationUtil.js';
+import PlayableDurationUtil, { type DurationRelevantStream } from '../../../../../ffmpeg/probe/PlayableDurationUtil.js';
 import type { ExtendedVideoAnalysis, Stream, VideoStream } from '../../../video/analyser/VideoAnalyser.Types.js';
 import FfmpegProcess from '../../../watch/live_transcode/FfmpegProcess.js';
 import StreamArgumentsBuilder from '../ffmpeg/arguments-builder/StreamArgumentsBuilder.js';

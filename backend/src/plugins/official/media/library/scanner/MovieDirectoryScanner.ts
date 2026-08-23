@@ -2,7 +2,7 @@ import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
-import CachedFfprobeExecutor from '../../../ffmpeg/CachedFfprobeExecutor.js';
+import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
 import FileTypeUtils from '../../_old/FileTypeUtils.js';
 import type ReadContentsLibrary from '../database/library/ReadContentsLibrary.js';
 import AbstractScanner, { type MediaDirectoryInfo } from './AbstractScanner.js';

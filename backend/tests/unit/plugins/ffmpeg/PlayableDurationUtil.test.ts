@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import PlayableDurationUtil, {
   type DurationRelevantStream,
-} from '../../../../src/plugins/official/ffmpeg/PlayableDurationUtil.js';
+} from '../../../../src/plugins/official/ffmpeg/probe/PlayableDurationUtil.js';
 
 function stream(partial: Partial<DurationRelevantStream> & { type: DurationRelevantStream['type'] }): DurationRelevantStream {
   return {
