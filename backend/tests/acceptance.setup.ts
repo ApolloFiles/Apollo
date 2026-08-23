@@ -1,4 +1,4 @@
-import '../../src/container-init.js';
+import '../src/container-init.js';
 import { container } from 'tsyringe';
 
 beforeEach(() => {
