@@ -108,21 +108,22 @@ export default class AppConfiguration {
   }
 
   private determineApolloDataDirectory(): string {
-    let dataDir = process.env.APOLLO_DATA_DIRECTORY;
-    if (dataDir == null) {
-      dataDir = Path.join(Os.homedir(), 'Apollo');
-      console.warn(`Environment variable 'APOLLO_DATA_DIRECTORY' not set. Using default: ${dataDir}`);
+    const dataDir = process.env.APOLLO_DATA_DIRECTORY?.trim();
+    if (dataDir == null || dataDir === '') {
+      const defaultDataDir = Path.join(Os.homedir(), 'Apollo');
+      console.warn(`Environment variable 'APOLLO_DATA_DIRECTORY' not set. Using default: ${defaultDataDir}`);
+      return defaultDataDir;
     }
 
-    return dataDir;
+    return Path.resolve(dataDir);
   }
 
   private determineApolloTmpDirectory(dataDir: string): string {
-    let tmpDir = process.env.APOLLO_TMP_DIRECTORY;
-    if (tmpDir == null) {
+    const tmpDir = process.env.APOLLO_TMP_DIRECTORY?.trim();
+    if (tmpDir == null || tmpDir === '') {
       return Path.join(dataDir, 'tmp');
     }
 
-    return tmpDir;
+    return Path.resolve(tmpDir);
   }
 }
