@@ -37,7 +37,7 @@ export default class SeekThumbnailGenerator {
       '-i', inputFile,
       '-vf', `select=key,scale=240:-2,tile=${SeekThumbnailGenerator.GRID_SIZE}x${SeekThumbnailGenerator.GRID_SIZE}`,
       '-an',  // blocks all audio streams
-      '-vsync', '0',  // prevent ffmpeg from duplicating each output frame to accommodate the originally detected frame rate
+      '-fps_mode', 'passthrough',  // prevent ffmpeg from duplicating each output frame to accommodate the originally detected frame rate
       'keyframes_%03d.jpg',
 
       '-loglevel', 'debug',
