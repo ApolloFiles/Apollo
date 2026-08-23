@@ -2,7 +2,7 @@ import Crypto from 'node:crypto';
 import Path from 'node:path';
 import { injectable } from 'tsyringe';
 import FsUtils from '../../../../../utils/FsUtils.js';
-import BufferedChildProcess from '../../../../builtin/child_process/BufferedChildProcess.js';
+import FfmpegJobRunner from '../../../ffmpeg/job/FfmpegJobRunner.js';
 import FfprobeExecutor, { type ExtendedProbeResult } from '../../../ffmpeg/probe/FfprobeExecutor.js';
 import FfmpegProcessError from './FfmpegProcessError.js';
 import UnexpectedDesiredMetadataError from './UnexpectedDesiredMetadataError.js';
@@ -35,6 +35,7 @@ export default class FfmpegVideoFileMetadataEditor {
   constructor(
     // We do not use the cached ffprobe implementation in the editor *just in case*
     private readonly ffprobeExecutor: FfprobeExecutor,
+    private readonly ffmpegJobRunner: FfmpegJobRunner,
   ) {
   }
 
@@ -66,8 +67,6 @@ export default class FfmpegVideoFileMetadataEditor {
     const tempOutputFilePath = Path.join(tmpDirPath, `${Crypto.randomUUID()}${Path.extname(inputPath)}`);
 
     const ffmpegArgs = [
-      '-loglevel', 'level+warning',
-
       '-i', inputPath,
 
       // Copy streams and chapters from input
@@ -232,10 +231,20 @@ export default class FfmpegVideoFileMetadataEditor {
   }
 
   private async runFfmpeg(args: string[], cwd: string): Promise<void> {
-    const ffmpegProcess = await BufferedChildProcess.spawn('ffmpeg', args, { cwd });
+    await this.ffmpegJobRunner.run({
+      name: 'video-file-metadata-edit',
+      // Every stream is copied, so there is nothing here that hardware could accelerate
+      acceleration: { mayUseHardwareDecoding: false },
+      spawnOptions: { cwd, logVerbosity: 'warning' },
 
-    if (ffmpegProcess.exitCode !== 0) {
-      throw FfmpegProcessError.create(ffmpegProcess, args);
-    }
+      buildArgs: () => args,
+
+      awaitOutcome: async (handle) => {
+        const exitResult = await handle.waitForExit();
+        if (exitResult.exitCode !== 0) {
+          throw FfmpegProcessError.create(handle, exitResult);
+        }
+      },
+    });
   }
 }

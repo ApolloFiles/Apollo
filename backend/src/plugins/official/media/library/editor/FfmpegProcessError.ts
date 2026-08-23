@@ -1,19 +1,18 @@
-import type { ProcessResult } from '../../../../builtin/child_process/BufferedChildProcess.js';
+import type FfmpegHandle from '../../../ffmpeg/process/FfmpegHandle.js';
+import type { FfmpegExitResult } from '../../../ffmpeg/process/FfmpegHandle.js';
 
 type ExtraData = {
   exitCode: number | null,
   signal: NodeJS.Signals | null,
-  stdout: string,
-  stderr: string,
-  args: string[],
+  log: string,
+  args: readonly string[],
 }
 
 export default class FfmpegProcessError extends Error {
   public readonly exitCode: number | null;
   public readonly signal: NodeJS.Signals | null;
-  public readonly stdout: string;
-  public readonly stderr: string;
-  public readonly args: string[];
+  public readonly log: string;
+  public readonly args: readonly string[];
 
   constructor(message?: string, options?: ErrorOptions, extraData?: ExtraData) {
     super(message);
@@ -24,22 +23,20 @@ export default class FfmpegProcessError extends Error {
 
     this.exitCode = extraData.exitCode;
     this.signal = extraData.signal;
-    this.stdout = extraData.stdout;
-    this.stderr = extraData.stderr;
+    this.log = extraData.log;
     this.args = extraData.args;
   }
 
-  static create(ffmpegProcess: ProcessResult, args: string[]): FfmpegProcessError {
+  static create(handle: FfmpegHandle, exitResult: FfmpegExitResult): FfmpegProcessError {
     const extraData: ExtraData = {
-      exitCode: ffmpegProcess.exitCode,
-      signal: ffmpegProcess.signal,
-      stdout: ffmpegProcess.stdout.toString(),
-      stderr: ffmpegProcess.stderr.toString(),
-      args,
+      exitCode: exitResult.exitCode,
+      signal: exitResult.signal,
+      log: handle.getLogProblems(),
+      args: handle.getArgs(),
     };
 
     return new FfmpegProcessError(
-      `Editing a video file's metadata failed because ffmpeg exited with code ${ffmpegProcess.exitCode}: ${JSON.stringify(extraData)}`,
+      `Editing a video file's metadata failed because ffmpeg exited with code ${exitResult.exitCode}: ${JSON.stringify(extraData)}`,
       undefined,
       extraData,
     );
