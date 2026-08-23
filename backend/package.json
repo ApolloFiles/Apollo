@@ -30,6 +30,7 @@
     "test:watch": "vitest",
     "test:coverage": "npm run test -- --coverage",
     "test:ci": "npm run test:coverage -- --reporter github-actions",
+    "test:acceptance": "vitest --run --project acceptance --reporter=verbose",
     "type-check": "tsc --noEmit && tsc -p tests/tsconfig.json --noEmit",
 
     "dev": "node --watch --env-file .env --import @swc-node/register/esm-register --enable-source-maps src/main.ts",
