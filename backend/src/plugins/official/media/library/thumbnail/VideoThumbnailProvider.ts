@@ -59,7 +59,6 @@ export default class VideoThumbnailProvider {
     };
   }
 
-
   private async findMediaItemFile(mediaItem: FullLibraryMediaItem): Promise<VirtualFile> {
     const fileSystems = await this.getOwnerFileSystems(mediaItem);
     return fileSystems.user[0].getFile(Path.join(mediaItem.mediaBaseDirectoryUri.filePath, mediaItem.relativeFilePath));
