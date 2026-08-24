@@ -13,6 +13,8 @@ export default class VideoThumbnailFrameExtractor {
   private static readonly THUMBNAIL_WIDTH = 640;
   private static readonly THUMBNAIL_HEIGHT = 360;
   private static readonly SAMPLE_SIZE = 5;
+  private static readonly SEEK_FRACTION = 0.2;
+  private static readonly FRAMES_PER_SAMPLE = 100;
 
   constructor(
     private readonly apolloTemporaryDirectory: ApolloTemporaryDirectory,
@@ -27,13 +29,9 @@ export default class VideoThumbnailFrameExtractor {
 
     return this.apolloTemporaryDirectory.createScoped(async (tmpDir) => {
       const videoDurationInSeconds = await videoDurationInSecondsPromise;
-      const durationToSeekTo = videoDurationInSeconds <= 30 ? 0 : videoDurationInSeconds * 0.1;
+      const durationToSeekTo = videoDurationInSeconds <= 30 ? 0 : videoDurationInSeconds * VideoThumbnailFrameExtractor.SEEK_FRACTION;
 
-      await this.runFrameExtraction(durationToSeekTo, file.getAbsolutePathOnHost(), tmpDir, false);
-
-      if ((await Fs.promises.readdir(tmpDir)).length === 0) {
-        await this.runFrameExtraction(durationToSeekTo, file.getAbsolutePathOnHost(), tmpDir, true);
-      }
+      await this.runFrameExtraction(durationToSeekTo, file.getAbsolutePathOnHost(), tmpDir);
 
       const bestFrame = await this.bestVideoThumbnailFrameDetector.determineBestFrame(tmpDir);
       return bestFrame
@@ -47,12 +45,7 @@ export default class VideoThumbnailFrameExtractor {
     });
   }
 
-  private async runFrameExtraction(durationToSeekTo: number, filePath: string, cwd: string, favorGettingSomeResultOverPerformance: boolean): Promise<void> {
-    let videoFilter = 'scale=' + VideoThumbnailFrameExtractor.THUMBNAIL_WIDTH + ':-2';
-    if (!favorGettingSomeResultOverPerformance) {
-      videoFilter += ',select=gt(scene\\,0.5)';
-    }
-
+  private async runFrameExtraction(durationToSeekTo: number, filePath: string, cwd: string): Promise<void> {
     await this.ffmpegJobRunner.run({
       name: 'video-thumbnail-frame-extraction',
       acceleration: { mayUseHardwareDecoding: true },
@@ -61,19 +54,21 @@ export default class VideoThumbnailFrameExtractor {
       buildArgs: (profile) => [
         ...(profile.decodeAcceleration != null ? ['-hwaccel', profile.decodeAcceleration] : []),
 
-        ...(favorGettingSomeResultOverPerformance ? [] : [
-          '-skip_frame', 'nokey',
-          '-ss', durationToSeekTo.toFixed(2),
-        ]),
+        '-ss', durationToSeekTo.toFixed(2),
 
         '-i', filePath,
         '-map', '0:V:0',  // first 'real' video stream; ignoring all other streams (audio etc.)
 
         '-map_metadata', '-1',
-        '-fps_mode', 'vfr', // do not duplicate frames
+        // Load-bearing next to 'thumbnail': that filter emits one frame per batch, and the image sequence muxer
+        // pads the gaps back to a constant rate, writing five copies of the first frame instead of five candidates
+        '-fps_mode', 'vfr',
         '-t', (5 * 60).toString(),  // Limit analyze to a maximum of 5 minutes of video
 
-        '-vf', videoFilter,
+        // 'thumbnail' hands us the most representative frame out of every batch of consecutive frames, judged by how
+        // close its histogram is to that batch's average. Fades, flashes and cross-dissolves are the outliers of
+        // their batch and lose without us having to guess a threshold for what "too dark" means.
+        '-vf', `scale=${VideoThumbnailFrameExtractor.THUMBNAIL_WIDTH}:-2,thumbnail=n=${VideoThumbnailFrameExtractor.FRAMES_PER_SAMPLE}`,
 
         '-frames:v', VideoThumbnailFrameExtractor.SAMPLE_SIZE.toString(),
 
@@ -82,11 +77,16 @@ export default class VideoThumbnailFrameExtractor {
         'frame_%03d.png',
       ],
 
-      // An empty output directory is a legitimate result here – the scene filter may simply not have matched
       awaitOutcome: async (handle) => {
         const exitResult = await handle.waitForExit();
         if (exitResult.exitCode !== 0) {
           throw new Error(`Thumbnail extraction failed because ffmpeg exited with code ${exitResult.exitCode} (signal=${exitResult.signal}):\n${handle.getLogProblems()}`);
+        }
+
+        // A decoder that exits cleanly without handing us a single frame is worth retrying without its hardware,
+        // so this has to fail the attempt instead of leaving an empty directory behind
+        if ((await Fs.promises.readdir(cwd)).length === 0) {
+          throw new Error(`Thumbnail extraction produced no frames:\n${handle.getLogProblems()}`);
         }
       },
 
