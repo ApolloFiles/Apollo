@@ -7,12 +7,12 @@ import UserProvider from '../../../../../user/UserProvider.js';
 import type FullLibraryMediaItem from '../database/media-item/FullLibraryMediaItem.js';
 import ImageFileConstants from '../images/ImageFileConstants.js';
 import MediaImageCache from '../images/MediaImageCache.js';
-import VideoThumbnailFrameExtractor from './VideoThumbnailFrameExtractor.js';
+import VideoThumbnailGenerator from './VideoThumbnailGenerator.js';
 
 @singleton()
 export default class VideoThumbnailProvider {
   constructor(
-    private readonly videoThumbnailFrameExtractor: VideoThumbnailFrameExtractor,
+    private readonly videoThumbnailGenerator: VideoThumbnailGenerator,
     private readonly mediaImageCache: MediaImageCache,
     private readonly userProvider: UserProvider,
     private readonly fileSystemProvider: FileSystemProvider,
@@ -42,7 +42,7 @@ export default class VideoThumbnailProvider {
   }
 
   private async generateAndCacheThumbnailFrames(file: LocalFile): Promise<{ jpeg: Buffer, avif: Buffer }> {
-    const thumbnail = await this.videoThumbnailFrameExtractor.extractThumbnailFrame(file);
+    const thumbnail = await this.videoThumbnailGenerator.generate(file);
     const [jpegBuffer, avifBuffer] = await Promise.all([
       thumbnail.clone().jpeg(ImageFileConstants.THUMBNAIL_OPTIONS_JPEG).toBuffer(),
       thumbnail.avif(ImageFileConstants.THUMBNAIL_OPTIONS_AVIF).toBuffer(),

@@ -1,6 +1,9 @@
 import type * as Sharp from 'sharp';
 
 export default class ImageFileConstants {
+  public static readonly THUMBNAIL_WIDTH = 640;
+  public static readonly THUMBNAIL_HEIGHT = 360;
+
   public static readonly POSTER_OPTIONS_AVIF: Sharp.AvifOptions = { effort: 3, quality: 60 } as const;
   public static readonly POSTER_OPTIONS_JPEG: Sharp.JpegOptions = { quality: 85, optimiseScans: true } as const;
 
