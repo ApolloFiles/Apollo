@@ -1,3 +1,4 @@
+import { buildMediaSideBarConfig } from '$lib/components/media/MediaSideBarConfigBuilder';
 import { rpcClient } from '$lib/oRPC';
 import type { ORpcContractOutputs } from '$lib/ORpcHelper';
 import { isDefinedError, safe } from '@orpc/client';
@@ -15,15 +16,18 @@ type PageData = AuthenticatedPageData
 export const load: PageServerLoad = async ({ fetch, cookies, url }): Promise<PageData> => {
   const fileUri = url.searchParams.get('file');
 
-  const loggedInUser = await rpcClient.user.get(undefined, { context: { cookies, fetch } });
+  const libraryList = await rpcClient.media.management.list(undefined, { context: { cookies, fetch } });
+  const rendering: RenderingLayoutData['rendering'] = {
+    layout: buildMediaSideBarConfig(libraryList.libraries),
+  };
 
   if (fileUri == null || fileUri.length === 0) {
     return {
-      loggedInUser: loggedInUser,
+      loggedInUser: libraryList.loggedInUser,
       files: [],
       requestedOpenUri: null,
 
-      rendering: { layout: { sideBarMenuItems: [] } },
+      rendering,
     };
   }
 
@@ -36,10 +40,10 @@ export const load: PageServerLoad = async ({ fetch, cookies, url }): Promise<Pag
   }
 
   return {
-    loggedInUser: loggedInUser,
+    loggedInUser: libraryList.loggedInUser,
     requestedOpenUri: fileUri,
     files: openPathResult.data,
 
-    rendering: { layout: { sideBarMenuItems: [] } },
+    rendering,
   };
 };

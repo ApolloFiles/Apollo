@@ -55,6 +55,13 @@ export function buildMediaSideBarConfig(libraries: Libraries): MediaSideBarConfi
     sideBarMenuItems,
     bottomMenuItems: [
       {
+        kind: 'group',
+        label: m.nav_media_tools(),
+        items: [
+          { label: m.nav_media_tools_metadata_editor(), href: '/media/editor/metadata', icon: 'edit' },
+        ],
+      },
+      {
         label: m.nav_media_manage(),
         href: '/media/manage',
         icon: 'settings',
