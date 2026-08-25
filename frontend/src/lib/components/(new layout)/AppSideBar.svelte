@@ -21,9 +21,10 @@
 
   type SimpleSideBarMenuItems = (SideBarMenuItem | 'divider')[];
 
-  let { menuItems, bottomButton }: {
+  let { menuItems, bottomMenuItems = [] }: {
     menuItems: SideBarMenuItems,
-    bottomButton?: SideBarMenuItem,
+    /** Rendered pinned to the bottom of the sidebar, separated from the regular menu items */
+    bottomMenuItems?: SideBarMenuItems,
   } = $props();
 
   let sidebarActive = $state(false);
@@ -97,8 +98,7 @@
       }
     };
 
-    const itemsToCheck: (SideBarMenuItem | 'divider' | SideBarMenuItemGroup)[] = bottomButton ? [...menuItems, bottomButton] : menuItems;
-    for (const item of itemsToCheck) {
+    for (const item of [...menuItems, ...bottomMenuItems]) {
       if (item === 'divider') {
         continue;
       }
@@ -215,8 +215,8 @@
     </ul>
   </div>
 
-  <div class="nav flex-column sidebar-nav">
-    {#each menuItems as menuItem}
+  {#snippet menuItemList(items: SideBarMenuItems)}
+    {#each items as menuItem}
       {#if menuItem === 'divider'}
         <hr class="border-secondary my-3">
       {:else if 'href' in menuItem}
@@ -237,18 +237,16 @@
         />
       {/if}
     {/each}
+  {/snippet}
+
+  <div class="nav flex-column sidebar-nav">
+    {@render menuItemList(menuItems)}
   </div>
 
-  {#if bottomButton}
-    <a
-      href={bottomButton.href}
-      class="nav-link"
-      class:active={bottomButton.href === activeMenuItemHref}
-      onclick={closeSidebarOnMobile}
-    >
-      <TablerIcon icon={bottomButton.icon} class="me-2" />
-      {bottomButton.label}
-    </a>
+  {#if bottomMenuItems.length > 0}
+    <div class="nav flex-column">
+      {@render menuItemList(bottomMenuItems)}
+    </div>
   {/if}
 
   {#if feedbackEnabled}

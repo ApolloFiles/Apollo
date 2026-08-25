@@ -18,7 +18,7 @@
 
 <AppLayout
   sideBarMenuItems={renderingConfig?.layout.sideBarMenuItems ?? []}
-  sideBarBottomButton={renderingConfig?.layout.bottomButton}
+  sideBarBottomMenuItems={renderingConfig?.layout.bottomMenuItems}
   topBarRenderAsOverlay={renderingConfig?.layout.topNavAsOverlay}
   topBarSearchFormAction={renderingConfig?.layout.searchFormAction}
   mainContentType={renderingConfig?.layout.mainContentType}

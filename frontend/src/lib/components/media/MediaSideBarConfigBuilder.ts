@@ -9,7 +9,7 @@ type Libraries = {
 
 type MediaSideBarConfig = {
   sideBarMenuItems: SideBarMenuItems,
-  bottomButton: SideBarMenuItem,
+  bottomMenuItems: SideBarMenuItems,
 };
 
 // TODO: Drop support for array of Library once all usages are migrated
@@ -53,10 +53,12 @@ export function buildMediaSideBarConfig(libraries: Libraries): MediaSideBarConfi
 
   return {
     sideBarMenuItems,
-    bottomButton: {
-      label: m.nav_media_manage(),
-      href: '/media/manage',
-      icon: 'settings',
-    },
+    bottomMenuItems: [
+      {
+        label: m.nav_media_manage(),
+        href: '/media/manage',
+        icon: 'settings',
+      },
+    ],
   };
 }
