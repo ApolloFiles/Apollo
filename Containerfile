@@ -52,7 +52,7 @@ COPY --chown=node:node ./frontend/project.inlang/ ./frontend/project.inlang/
 RUN cd frontend/ && \
     npm run build
 
-FROM docker.io/nvidia/cuda:13.0.2-base-ubuntu24.04 AS ffmpeg-cuda
+FROM docker.io/nvidia/cuda:13.0.3-base-ubuntu24.04 AS ffmpeg-cuda
 
 ENV NODE_ENV=production
 
