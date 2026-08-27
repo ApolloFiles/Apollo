@@ -59,7 +59,7 @@ export default class OAuthConfigurationProvider {
           token_endpoint: 'https://github.com/login/oauth/access_token',
           code_challenge_methods_supported: ['S256'],
 
-          issuer: 'https://github.com/',
+          issuer: 'https://github.com/login/oauth',
         };
 
         fetchUserInfo = async (_openIdConfig, accessToken): Promise<OAuthUserInfo> => {
