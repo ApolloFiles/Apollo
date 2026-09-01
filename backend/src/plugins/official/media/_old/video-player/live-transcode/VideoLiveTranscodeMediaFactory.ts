@@ -23,14 +23,14 @@ export default class VideoLiveTranscodeMediaFactory {
   ) {
   }
 
-  async create(tmpDir: TemporaryDirectory, file: LocalFile, startOffsetInSeconds: number, mediaMetadata: StartPlaybackResponse['mediaMetadata'], burnInSubtitleStreamIndex?: number | null): Promise<VideoLiveTranscodeMedia> {
+  async create(tmpDir: TemporaryDirectory, file: LocalFile, startOffsetInSeconds: number, mediaMetadata: StartPlaybackResponse['mediaMetadata'], burnInSubtitleStreamIndex?: number | null, excludedAccelIds: readonly string[] = []): Promise<VideoLiveTranscodeMedia> {
     const [targetPublicDir, targetWorkDir, randomDirName] = await this.createTargetDirs(tmpDir);
     const videoFilePath = await this.createAnonymizedFileLink(file, targetWorkDir);
 
     const videoAnalysis = await VideoAnalyser.analyze(videoFilePath, true);
 
     const [launchOutcome, subtitleOutcome] = await Promise.allSettled([
-      this.liveTranscodeLauncher.launch(videoFilePath, targetPublicDir, startOffsetInSeconds, videoAnalysis, burnInSubtitleStreamIndex),
+      this.liveTranscodeLauncher.launch(videoFilePath, targetPublicDir, startOffsetInSeconds, videoAnalysis, burnInSubtitleStreamIndex, excludedAccelIds),
       (async () => {
         const textBasedSubtitlesDir = Path.join(targetPublicDir, '_subtitles'); // TODO: maybe in einen anderen Ordner für einfachere reusability zwischen transcode-restarts?
         const textBasedSubtitles = await this.textBasedSubtitleExtractor.extract(videoFilePath, videoAnalysis, textBasedSubtitlesDir);

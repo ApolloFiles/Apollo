@@ -49,6 +49,29 @@ export default class VideoLiveTranscodeMedia {
     return this.handle.burnedInSubtitleStreamIndex;
   }
 
+  get accelId(): string {
+    return this.handle.accelId;
+  }
+
+  /**
+   * Calls back if FFmpeg dies on its own after it started serving – being stopped through {@link destroy} does not count.
+   * The transcode may already be dead by the time anyone gets to watch it (subtitle extraction runs alongside the
+   * launch and can take longer), so an exit that already happened counts too.
+   */
+  watchForCrash(onCrash: () => void): void {
+    const reportCrash = (): void => {
+      if (this.handle.process.crashed()) {
+        onCrash();
+      }
+    };
+
+    if (this.handle.process.hasExited()) {
+      reportCrash();
+      return;
+    }
+    this.handle.process.once('exit', reportCrash);
+  }
+
   async destroy(): Promise<void> {
     await this.handle.process.kill();
 

@@ -3,6 +3,7 @@ import Crypto from 'node:crypto';
 import { container } from 'tsyringe';
 import type { RawData } from 'ws';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
+import { SOFTWARE } from '../../../../ffmpeg/accel/Accel.js';
 import type LocalFile from '../../../../../../files/local/LocalFile.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import type { ApolloWebSocket } from '../../watch/ApolloWebSocket.js';
@@ -43,6 +44,8 @@ export default class PlayerSession {
   private lastConnectionId = 0;
 
   private currentMedia: VideoLiveTranscodeMedia | null = null;
+  /** Ways of running FFmpeg that crashed mid-playback in this session – not worth trying again for the next seek */
+  private readonly crashedTranscodeAccelIds = new Set<string>();
   private currentYouTubeMedia: { videoId: string; startSeconds?: number; title: string } | null = null;
   private currentTwitchMedia: { channelName: string; title: string } | null = null;
   private playerState: { lastUpdated: Date, currentTime: number, paused: boolean } | null = null;
@@ -405,7 +408,16 @@ export default class PlayerSession {
     // FIXME: do not access the container like that
     const videoLiveTranscodeMediaFactory = container.resolve(VideoLiveTranscodeMediaFactory);
 
-    const newMedia = await videoLiveTranscodeMediaFactory.create(this.tmpDir, file, startOffsetInSeconds, mediaMetadata, burnInSubtitleStreamIndex);
+    const newMedia = await videoLiveTranscodeMediaFactory.create(this.tmpDir, file, startOffsetInSeconds, mediaMetadata, burnInSubtitleStreamIndex, [...this.crashedTranscodeAccelIds]);
+    newMedia.watchForCrash(() => {
+      // Software is the last resort and stays available no matter what; excluding it would end playback for good
+      if (newMedia.accelId === SOFTWARE.id) {
+        console.warn('The live transcode crashed while running in software');
+        return;
+      }
+      console.warn(`The live transcode running on '${newMedia.accelId}' crashed – not using it again in this player session`);
+      this.crashedTranscodeAccelIds.add(newMedia.accelId);
+    });
     this.currentMedia?.destroy().catch(console.error);
     this.currentMedia = newMedia;
     this.currentYouTubeMedia = null;
