@@ -3,6 +3,7 @@ import AppConfiguration from '../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../constants.js';
 import DatabaseClient from '../database/DatabaseClient.js';
 import StartupCleaner from '../files/StartupCleaner.js';
+import FfmpegDeviceRegistry from '../plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
 import FastifyWebServer from '../webserver/server/FastifyWebServer.js';
 import type App from './App.js';
 
@@ -15,6 +16,7 @@ export default class WebApp implements App {
     }
 
     await container.resolve(StartupCleaner).cleanUp();
+    container.resolve(FfmpegDeviceRegistry).getDevices().catch((err) => console.error('Failed to discover FFmpeg hardware devices', err));
 
     const appConfig = container.resolve(AppConfiguration);
     this.exposeInternalBackendUrlForFrontendSsr(appConfig);

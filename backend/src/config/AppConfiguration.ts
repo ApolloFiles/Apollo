@@ -29,6 +29,9 @@ export type AppConfig = {
      * encoders. Validated where it is used.
      */
     hardwareAcceleration: string;
+
+    /** `auto`, `off`, or an ordered, comma-separated allowlist of device ids like `vaapi:/dev/dri/renderD129,cuda:0` */
+    devices: string;
   }
 
   media: {
@@ -76,6 +79,7 @@ export default class AppConfiguration {
 
       ffmpeg: {
         hardwareAcceleration: process.env.APOLLO_FFMPEG_HARDWARE_ACCELERATION || 'auto',
+        devices: process.env.APOLLO_FFMPEG_DEVICES || 'auto',
       },
 
       media: {
