@@ -1,11 +1,14 @@
 import { singleton } from 'tsyringe';
 import type { AudioStream, Stream } from '../../../../video/analyser/VideoAnalyser.Types.js';
 import AudioStreamArgumentsBuilder from './AudioStreamArgumentsBuilder.js';
+import { BURN_IN_INPUT } from './BurnInInputs.js';
 
 export type StreamArgumentsResult = {
   args: string[],
   varStreamMap: string[],
   audioNameMap: Map<string, string>,
+  /** How many audio output streams the args map – the same count the per-stream input indices were assigned from */
+  audioStreamCount: number,
 }
 
 @singleton()
@@ -15,7 +18,7 @@ export default class StreamArgumentsBuilder {
   ) {
   }
 
-  build(streamsToTranscode: Stream[], videoArgs: string[]): StreamArgumentsResult {
+  build(streamsToTranscode: Stream[], videoArgs: string[], burnInSubtitle: boolean): StreamArgumentsResult {
     const audioGroupName = 'audio';
     const varStreamMap: string[] = [];
     const audioNameMap = new Map<string, string>();
@@ -30,7 +33,8 @@ export default class StreamArgumentsBuilder {
       }
 
       if (stream.codecType === 'audio') {
-        result.push(...this.audioStreamArgumentsBuilder.build(stream as AudioStream, outputStreamCounter.audio));
+        const inputIndex = burnInSubtitle ? BURN_IN_INPUT.audio(outputStreamCounter.audio) : 0;
+        result.push(...this.audioStreamArgumentsBuilder.build(stream as AudioStream, outputStreamCounter.audio, inputIndex));
 
         // ISO 639-2 language code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)
         // FIXME: audio stream names do not work
@@ -45,6 +49,7 @@ export default class StreamArgumentsBuilder {
       args: result,
       varStreamMap,
       audioNameMap,
+      audioStreamCount: outputStreamCounter.audio,
     };
   }
 

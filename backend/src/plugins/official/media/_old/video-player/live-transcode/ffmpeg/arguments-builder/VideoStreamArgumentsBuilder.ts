@@ -2,6 +2,7 @@ import { singleton } from 'tsyringe';
 import type { Accel } from '../../../../../../ffmpeg/accel/Accel.js';
 import HwContext from '../../../../../../ffmpeg/accel/HwContext.js';
 import type { SubtitleStream, VideoStream } from '../../../../video/analyser/VideoAnalyser.Types.js';
+import { BURN_IN_INPUT } from './BurnInInputs.js';
 
 export interface TargetOptions {
   readonly fps: number;
@@ -22,7 +23,8 @@ export default class VideoStreamArgumentsBuilder {
   private static readonly QUALITY = 26;
 
   build(accel: Accel, videoStream: VideoStream, subtitleStream: SubtitleStream | null, target: TargetOptions): string[] {
-    const graph = new FilterGraphBuilder(`[0:${videoStream.index}]`);
+    const videoInput = subtitleStream != null ? BURN_IN_INPUT.video : 0;
+    const graph = new FilterGraphBuilder(`[${videoInput}:${videoStream.index}]`);
 
     if (videoStream.width !== target.width) {
       graph.append(accel.scale(target.width, -2));
@@ -46,7 +48,7 @@ export default class VideoStreamArgumentsBuilder {
    * whatever falls outside the frame away.
    */
   private static appendOverlay(graph: FilterGraphBuilder, accel: Accel, subtitleStream: SubtitleStream, output: [width: number, height: number]): void {
-    const subtitleInput = `[0:${subtitleStream.index}]`;
+    const subtitleInput = `[${BURN_IN_INPUT.subtitle}:${subtitleStream.index}]`;
     const subtitleChain = [`scale=${output[0]}:${output[1]}`];
 
     const hwOverlay = accel.overlay();

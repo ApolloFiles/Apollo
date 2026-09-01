@@ -15,6 +15,7 @@ import FfmpegJobStats, { type FfmpegAttemptRecord } from '../../../../src/plugin
 import FfmpegProcessRunner from '../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 import type { AudioStream, SubtitleStream, VideoStream } from '../../../../src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
 import AudioStreamArgumentsBuilder from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/AudioStreamArgumentsBuilder.js';
+import { BURN_IN_INPUT } from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/BurnInInputs.js';
 import StreamArgumentsBuilder from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/StreamArgumentsBuilder.js';
 import VideoStreamArgumentsBuilder from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/VideoStreamArgumentsBuilder.js';
 import LiveTranscodeLauncher from '../../../../src/plugins/official/media/_old/video-player/live-transcode/launcher/LiveTranscodeLauncher.js';
@@ -78,8 +79,8 @@ const DOWNSCALED_LIVE_TRANSCODE_TARGET = { ...LIVE_TRANSCODE_TARGET, width: 320 
 function liveTranscodeWithBurnInArgs(accel: Accel, sample: FfmpegTestSample, target = LIVE_TRANSCODE_TARGET): string[] {
   const videoStream = toVideoStream(sample);
   const videoArgs = new VideoStreamArgumentsBuilder().build(accel, videoStream, PGS_STREAM, target);
-  const streamArgs = new StreamArgumentsBuilder(new AudioStreamArgumentsBuilder()).build([videoStream, AUDIO_STREAM], videoArgs);
-  return LiveTranscodeLauncher.buildArgs(accel, sample.path, 0, streamArgs.args, streamArgs.varStreamMap, target);
+  const streamArgs = new StreamArgumentsBuilder(new AudioStreamArgumentsBuilder()).build([videoStream, AUDIO_STREAM], videoArgs, true);
+  return LiveTranscodeLauncher.buildArgs(accel, sample.path, 0, streamArgs.args, streamArgs.varStreamMap, target, { videoStreamIndex: videoStream.index, audioStreamCount: 1 });
 }
 
 /** Mean luma (0–255) of the frame at `seconds` in whatever ffmpeg can open at `input` */

@@ -12,6 +12,7 @@ import type {
   SubtitleStream,
   VideoStream,
 } from '../../../video/analyser/VideoAnalyser.Types.js';
+import { BURN_IN_INPUT } from '../ffmpeg/arguments-builder/BurnInInputs.js';
 import StreamArgumentsBuilder from '../ffmpeg/arguments-builder/StreamArgumentsBuilder.js';
 import VideoStreamArgumentsBuilder, {
   type TargetOptions,
@@ -32,6 +33,13 @@ import AutoTranscodeStreamSelector from './AutoTranscodeStreamSelector.js';
 //   D.S... subviewer            SubViewer subtitle
 //   D.S... subviewer1           SubViewer v1 subtitle
 //   D.S... vplayer              VPlayer subtitle
+
+/** Which stream keeps the subtitle's demuxer going, see {@link LiveTranscodeLauncher.buildArgs} */
+export type BurnedInSubtitleSource = {
+  readonly videoStreamIndex: number;
+  /** How many audio streams are transcoded alongside – each gets its own `-i` */
+  readonly audioStreamCount: number;
+}
 
 export type LiveTranscodeHandle = {
   /** Still running when this handle is handed over – it only got as far as serving its first segment. */
@@ -97,10 +105,13 @@ export default class LiveTranscodeLauncher {
 
       buildArgs: (accel) => {
         const videoArgs = this.videoStreamArgumentsBuilder.build(accel, videoStream, burnedInSubtitleStream, targetOptions);
-        const streamArgs = this.streamArgumentsBuilder.build(streamsToTranscode, videoArgs);
+        const streamArgs = this.streamArgumentsBuilder.build(streamsToTranscode, videoArgs, burnedInSubtitleStream != null);
         audioNameMap = streamArgs.audioNameMap;
 
-        return LiveTranscodeLauncher.buildArgs(accel, videoFile, startOffsetInSeconds, streamArgs.args, streamArgs.varStreamMap, targetOptions);
+        const burnedInSubtitle = burnedInSubtitleStream != null
+          ? { videoStreamIndex: videoStream.index, audioStreamCount: streamArgs.audioStreamCount }
+          : null;
+        return LiveTranscodeLauncher.buildArgs(accel, videoFile, startOffsetInSeconds, streamArgs.args, streamArgs.varStreamMap, targetOptions, burnedInSubtitle);
       },
 
       awaitOutcome: async (handle, accel) => {
@@ -110,7 +121,7 @@ export default class LiveTranscodeLauncher {
         return {
           process: handle,
           masterHlsFileName: LiveTranscodeLauncher.MASTER_HLS_FILE_NAME,
-          mediaDuration: this.determineOutputTotalDuration(videoFile, streamsToTranscode, videoAnalysis),
+          mediaDuration: this.determineOutputTotalDuration(videoFile, streamsToTranscode, videoAnalysis, burnedInSubtitleStream == null),
           startOffset: startOffsetInSeconds,
           audioNameMap: audioNameMap!,
           burnedInSubtitleStreamIndex: burnedInSubtitleStream?.index ?? null,
@@ -123,15 +134,25 @@ export default class LiveTranscodeLauncher {
     });
   }
 
-  static buildArgs(accel: Accel, videoFile: string, startOffsetInSeconds: number, streamArgs: string[], varStreamMap: string[], targetOptions: TargetOptions): string[] {
+  /**
+   * With a burned-in subtitle every decoded stream gets its own demuxer of the same file ({@link BURN_IN_INPUT}):
+   * FFmpeg 7+ lets a demuxer run ahead for whatever stream is wanted right now and parks the packets of its other
+   * streams without limit, which with the overlay alternately waiting for video and subtitle eats all memory.
+   * Any two decoded streams sharing a demuxer bring it back – measured with two audio tracks on one.
+   * `-shortest` goes too, as its sync queue then holds the decoded audio of the whole remaining file.
+   * Reported upstream: https://code.ffmpeg.org/FFmpeg/FFmpeg/issues/23980#issuecomment-59330
+   */
+  static buildArgs(accel: Accel, videoFile: string, startOffsetInSeconds: number, streamArgs: string[], varStreamMap: string[], targetOptions: TargetOptions, burnedInSubtitle: BurnedInSubtitleSource | null): string[] {
     const seekArgs = startOffsetInSeconds > 0 ? ['-ss', startOffsetInSeconds.toString()] : [];
     return [
       '-bitexact',
       '-n',
 
+      ...(burnedInSubtitle != null ? [...seekArgs, '-i', videoFile] : []),
       ...accel.inputArgs(),
       ...seekArgs,
       '-i', videoFile,
+      ...Array.from({ length: burnedInSubtitle?.audioStreamCount ?? 0 }, () => [...seekArgs, '-i', videoFile]).flat(),
 
       '-map_chapters', '-1',
 
@@ -150,9 +171,16 @@ export default class LiveTranscodeLauncher {
       '-var_stream_map', varStreamMap.join(' '),
 
       '-f', 'hls',
-      '-shortest',
+      ...(burnedInSubtitle == null ? ['-shortest'] : []),
       `stream_%v/manifest.m3u8`,
+
+      ...(burnedInSubtitle != null ? LiveTranscodeLauncher.subtitleHeartbeatOutput(burnedInSubtitle) : []),
     ];
+  }
+
+  /** A bitmap subtitle only advances while its demuxer emits video packets; copying them into the void keeps it going */
+  private static subtitleHeartbeatOutput(burnedInSubtitle: BurnedInSubtitleSource): string[] {
+    return ['-map', `${BURN_IN_INPUT.subtitle}:${burnedInSubtitle.videoStreamIndex}`, '-c', 'copy', '-f', 'null', '-'];
   }
 
   /**
@@ -198,19 +226,21 @@ export default class LiveTranscodeLauncher {
    * audio), so the duration we announce to the player follows what actually plays – the same rule the
    * library scanner stores in the database.
    */
-  private determineOutputTotalDuration(videoFile: string, streamsToTranscode: Stream[], videoAnalysis: ExtendedVideoAnalysis): number {
+  private determineOutputTotalDuration(videoFile: string, streamsToTranscode: Stream[], videoAnalysis: ExtendedVideoAnalysis, usesShortest: boolean): number {
     const containerDuration = PlayableDurationUtil.parseFiniteFloat(videoAnalysis.file.duration);
     const playableDuration = PlayableDurationUtil.determinePlayableDurationInSec(
       this.toDurationRelevantStreams(videoAnalysis.streams),
       containerDuration,
     );
 
-    this.warnAboutOutputCutShort(videoFile, streamsToTranscode, playableDuration);
+    if (usesShortest) {
+      this.warnAboutOutputCutShort(videoFile, streamsToTranscode, playableDuration);
+    }
     return playableDuration ?? containerDuration ?? 0;
   }
 
   /**
-   * FFmpeg is launched with `-shortest`, so a selected audio stream that ends before
+   * Without a burned-in subtitle FFmpeg is launched with `-shortest`, so a selected audio stream that ends before
    * the video does cuts the whole output short and the announced duration is too long for those files. The player
    * corrects itself once the transcode wrote its complete playlist, but the file is worth knowing about.
    *

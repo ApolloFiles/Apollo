@@ -5,6 +5,7 @@ import HwContext, { type HwMode } from '../../../../src/plugins/official/ffmpeg/
 import type { VideoBitDepth } from '../../../../src/plugins/official/ffmpeg/accel/PixelFormatUtil.js';
 import type { FfmpegVideoInput } from '../../../../src/plugins/official/ffmpeg/job/FfmpegJob.js';
 import type { SubtitleStream, VideoStream } from '../../../../src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
+import { BURN_IN_INPUT } from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/BurnInInputs.js';
 import VideoStreamArgumentsBuilder from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/VideoStreamArgumentsBuilder.js';
 import LiveTranscodeLauncher from '../../../../src/plugins/official/media/_old/video-player/live-transcode/launcher/LiveTranscodeLauncher.js';
 import SeekThumbnailGenerator from '../../../../src/plugins/official/media/_old/video-player/seek-thumbnails/generator/SeekThumbnailGenerator.js';
@@ -47,7 +48,9 @@ const TARGET = { fps: 23.976, capFrameRate: false, width: 1920, segmentDuration:
 
 function liveTranscode(accel: Accel, bitDepth: VideoBitDepth, subtitle: SubtitleStream | null, sourceWidth = 3840): string[] {
   const videoArgs = new VideoStreamArgumentsBuilder().build(accel, videoStream(bitDepth, sourceWidth), subtitle, TARGET);
-  return LiveTranscodeLauncher.buildArgs(accel, '/media/in.mkv', 30, [...videoArgs, '-map', '0:1', '-c:a:0', 'aac'], ['v:0,agroup:audio,name:video', 'a:0,agroup:audio,name:audio_1'], TARGET);
+  const burnedInSubtitle = subtitle != null ? { videoStreamIndex: 0, audioStreamCount: 1 } : null;
+  const audioMap = `${subtitle != null ? BURN_IN_INPUT.audio(0) : 0}:1`;
+  return LiveTranscodeLauncher.buildArgs(accel, '/media/in.mkv', 30, [...videoArgs, '-map', audioMap, '-c:a:0', 'aac'], ['v:0,agroup:audio,name:video', 'a:0,agroup:audio,name:audio_1'], TARGET, burnedInSubtitle);
 }
 
 const CASES: Case[] = [
