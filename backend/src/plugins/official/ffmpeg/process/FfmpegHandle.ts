@@ -47,6 +47,7 @@ export default class FfmpegHandle extends EventEmitter<FfmpegHandleEvents> {
 
   private capturedStdout: string | null;
   private spawnError: Error | null = null;
+  private stopRequested = false;
   private exitResult: FfmpegExitResult | null = null;
   private lastProgress: FfmpegProgress | null = null;
   private peakFps: number | null = null;
@@ -79,6 +80,14 @@ export default class FfmpegHandle extends EventEmitter<FfmpegHandleEvents> {
 
   getExitResult(): FfmpegExitResult | null {
     return this.exitResult;
+  }
+
+  /**
+   * An exit nobody asked for that did not succeed, whether FFmpeg reported an error or a signal took it down.
+   * Only {@link shutdown} and {@link kill} count as asking – the kernel's OOM killer sends the same signal and does not.
+   */
+  crashed(): boolean {
+    return this.exitResult != null && !this.stopRequested && this.exitResult.exitCode !== 0;
   }
 
   /** Rejects only if the process could not be spawned at all; a non-zero exit code resolves. */
@@ -124,6 +133,7 @@ export default class FfmpegHandle extends EventEmitter<FfmpegHandleEvents> {
     if (this.exitResult != null) {
       return this.exitResult;
     }
+    this.stopRequested = true;
 
     this.childProcess.kill('SIGTERM');
     const forceKillTimeout = setTimeout(() => this.childProcess.kill('SIGKILL'), gracePeriodInMillis);
@@ -139,6 +149,7 @@ export default class FfmpegHandle extends EventEmitter<FfmpegHandleEvents> {
     if (this.exitResult != null) {
       return this.exitResult;
     }
+    this.stopRequested = true;
 
     this.childProcess.kill('SIGKILL');
     return this.waitForExit();

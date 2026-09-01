@@ -2,7 +2,10 @@ import Fs from 'node:fs';
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import type LocalFile from '../../../../../files/local/LocalFile.js';
+import type { Accel } from '../../../ffmpeg/accel/Accel.js';
+import type { FfmpegVideoInput } from '../../../ffmpeg/job/FfmpegJob.js';
 import FfmpegJobRunner from '../../../ffmpeg/job/FfmpegJobRunner.js';
+import FfmpegVideoInputs from '../../../ffmpeg/job/FfmpegVideoInputs.js';
 import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
 import ImageFileConstants from '../images/ImageFileConstants.js';
 
@@ -13,7 +16,6 @@ export default class VideoThumbnailFrameExtractor {
   private static readonly SAMPLE_SIZE = 5;
   private static readonly FRAMES_PER_SAMPLE = 75;
   private static readonly SEEK_FRACTION = 0.2;
-  private static readonly MAX_ANALYZED_SECONDS = 5 * 60;
   private static readonly SHORTEST_VIDEO_WORTH_SEEKING_IN = 30;
 
   constructor(
@@ -23,33 +25,19 @@ export default class VideoThumbnailFrameExtractor {
   }
 
   async extractCandidateFrames(file: LocalFile, targetDirectory: string): Promise<string[]> {
-    const seekPosition = await this.determineSeekPosition(file);
+    const probeResult = await this.ffprobeExecutor.probeFull(file);
+    const input = FfmpegVideoInputs.fromProbeResult(file.getAbsolutePathOnHost(), probeResult);
+    if (input == null) {
+      throw new Error(`${file.getAbsolutePathOnHost()} has no video stream to extract thumbnail frames from`);
+    }
+    const seekPosition = VideoThumbnailFrameExtractor.determineSeekPosition(probeResult.format.duration);
 
     await this.ffmpegJobRunner.run({
       name: 'video-thumbnail-frame-extraction',
-      // 'thumbnail' is a CPU filter, so every hardware-decoded frame has to be copied out of GPU memory,
-      // which is ultimately slower for us here
-      acceleration: { mayUseHardwareDecoding: false },
+      acceleration: { input, gpuFilters: true, videoEncoder: null },
       spawnOptions: { cwd: targetDirectory, logVerbosity: 'warning' },
 
-      buildArgs: () => [
-        '-ss', seekPosition.toFixed(2),
-
-        '-i', file.getAbsolutePathOnHost(),
-        '-map', '0:V:0',  // first 'real' video stream (explicitly excluding attached images etc.)
-
-        '-map_metadata', '-1',
-        '-fps_mode', 'vfr',
-        '-t', VideoThumbnailFrameExtractor.MAX_ANALYZED_SECONDS.toString(),
-
-        '-vf', `scale=${ImageFileConstants.THUMBNAIL_WIDTH}:-2,thumbnail=n=${VideoThumbnailFrameExtractor.FRAMES_PER_SAMPLE}`,
-
-        '-frames:v', VideoThumbnailFrameExtractor.SAMPLE_SIZE.toString(),
-
-        '-c:v', 'png',
-        '-compression_level', '0',
-        `${VideoThumbnailFrameExtractor.FRAME_FILE_PREFIX}%03d.png`,
-      ],
+      buildArgs: (accel) => VideoThumbnailFrameExtractor.buildArgs(accel, input, seekPosition),
 
       awaitOutcome: async (handle) => {
         const exitResult = await handle.waitForExit();
@@ -57,7 +45,7 @@ export default class VideoThumbnailFrameExtractor {
           throw new Error(`Thumbnail extraction failed because ffmpeg exited with code ${exitResult.exitCode} (signal=${exitResult.signal}):\n${handle.getLogProblems()}`);
         }
 
-        if ((await Fs.promises.readdir(targetDirectory)).length === 0) {
+        if ((await this.listExtractedFrames(targetDirectory)).length === 0) {
           throw new Error(`Thumbnail extraction produced no frames:\n${handle.getLogProblems()}`);
         }
       },
@@ -66,6 +54,31 @@ export default class VideoThumbnailFrameExtractor {
     });
 
     return this.listExtractedFrames(targetDirectory);
+  }
+
+  static buildArgs(accel: Accel, input: FfmpegVideoInput, seekPosition: number): string[] {
+    return [
+      ...accel.inputArgs(),
+      '-ss', seekPosition.toFixed(2),
+
+      '-i', input.path,
+      '-map', '0:V:0',  // first 'real' video stream (explicitly excluding attached images etc.)
+
+      '-map_metadata', '-1',
+      '-fps_mode', 'vfr',
+
+      '-vf', [
+        accel.scale(ImageFileConstants.THUMBNAIL_WIDTH, -2),
+        ...accel.download(),
+        `thumbnail=n=${VideoThumbnailFrameExtractor.FRAMES_PER_SAMPLE}`,
+      ].join(','),
+
+      '-frames:v', VideoThumbnailFrameExtractor.SAMPLE_SIZE.toString(),
+
+      '-c:v', 'png',
+      '-compression_level', '0',
+      `${VideoThumbnailFrameExtractor.FRAME_FILE_PREFIX}%03d.png`,
+    ];
   }
 
   private async listExtractedFrames(targetDirectory: string): Promise<string[]> {
@@ -85,9 +98,8 @@ export default class VideoThumbnailFrameExtractor {
       .map((fileName) => Fs.promises.rm(Path.join(targetDirectory, fileName), { force: true })));
   }
 
-  private async determineSeekPosition(file: LocalFile): Promise<number> {
-    const videoAnalysis = await this.ffprobeExecutor.probeFormat(file);
-    const durationInSeconds = parseInt(videoAnalysis.format.duration ?? '0', 10);
+  private static determineSeekPosition(duration: string | undefined): number {
+    const durationInSeconds = parseInt(duration ?? '0', 10);
 
     if (durationInSeconds <= VideoThumbnailFrameExtractor.SHORTEST_VIDEO_WORTH_SEEKING_IN) {
       return 0;

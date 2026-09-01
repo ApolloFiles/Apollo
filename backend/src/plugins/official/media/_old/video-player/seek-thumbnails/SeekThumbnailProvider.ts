@@ -56,7 +56,7 @@ export default class SeekThumbnailProvider {
   }
 
   private async generateThumbnails(videoFile: LocalFile, targetDirPath: string): Promise<void> {
-    const generatedThumbnails = await this.seekThumbnailsGenerator.generate(videoFile.getAbsolutePathOnHost(), targetDirPath);
+    const generatedThumbnails = await this.seekThumbnailsGenerator.generate(videoFile, targetDirPath);
     await this.thumbnailCache.write(videoFile, generatedThumbnails);
   }
 }

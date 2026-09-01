@@ -1,100 +1,182 @@
 import { singleton } from 'tsyringe';
-import FfmpegAccelerationPlanner, { type FfmpegAccelerationProfile } from '../accel/FfmpegAccelerationPlanner.js';
-import type FfmpegHandle from '../process/FfmpegHandle.js';
+import type { Accel } from '../accel/Accel.js';
+import FfmpegCapabilityCache from '../accel/FfmpegCapabilityCache.js';
+import HwContext from '../accel/HwContext.js';
+import type { default as FfmpegHandle, FfmpegExitResult } from '../process/FfmpegHandle.js';
 import FfmpegProcessRunner from '../process/FfmpegProcessRunner.js';
+import FfmpegCandidatePlanner from './FfmpegCandidatePlanner.js';
+import FfmpegFailureClassifier, { type FfmpegFailure } from './FfmpegFailureClassifier.js';
 import type { FfmpegJob } from './FfmpegJob.js';
-import UnretryableFfmpegJobError from './UnretryableFfmpegJobError.js';
+import FfmpegJobStats, { type FfmpegAttemptVerdict } from './FfmpegJobStats.js';
 
-type AttemptResult<T> = {
-  readonly outcome: T;
-} | {
-  readonly failure: unknown;
-  readonly worthRetrying: boolean;
+type AttemptResult<T> =
+  {
+    readonly outcome: T,
+  } | {
+    readonly failure: FfmpegFailure,
+    readonly cause: unknown,
+  };
+
+class FfmpegExitedEarlyError extends Error {
+  constructor(exitResult: FfmpegExitResult) {
+    super(`FFmpeg exited with code ${exitResult.exitCode} (signal=${exitResult.signal}) before the job got what it needed`);
+  }
 }
 
 /**
- * Runs a job, degrading through the acceleration profiles it can use until one of them works.
+ * Runs a job, degrading through the ways it can run until one of them works.
  *
- * This exists because {@link FfmpegCapabilities} can only prove that a hardware device can be created, not that
- * decoding a particular file on it works – so the answer to "can we use this" is only ever known by trying.
+ * A probe only proves one frame decodes and one frame encodes; the file may still change profile halfway or trip a
+ * filter the probe never exercised. So every attempt is watched, classified when it fails, and the next candidate
+ * is tried – unless the failure is one that no device is going to fix.
  */
 @singleton()
 export default class FfmpegJobRunner {
-  /** Failures FFmpeg cannot be talked out of by taking hardware away, so retrying only wastes another process. */
-  private static readonly UNRETRYABLE_LOG_MESSAGES = [
-    'No such file or directory',
-    'already exists. Exiting.',
-  ];
-
   constructor(
     private readonly ffmpegProcessRunner: FfmpegProcessRunner,
-    private readonly ffmpegAccelerationPlanner: FfmpegAccelerationPlanner,
+    private readonly candidatePlanner: FfmpegCandidatePlanner,
+    private readonly capabilityCache: FfmpegCapabilityCache,
+    private readonly stats: FfmpegJobStats,
   ) {
   }
 
   async run<T>(job: FfmpegJob<T>): Promise<T> {
-    const profiles = await this.ffmpegAccelerationPlanner.plan(job.acceleration);
+    const candidates = await this.candidatePlanner.plan(job.acceleration);
 
-    for (let profileIndex = 0; profileIndex < profiles.length; ++profileIndex) {
-      const profile = profiles[profileIndex];
-      if (profileIndex > 0) {
-        await job.discardOutput?.();
+    for (let index = 0; index < candidates.length; ++index) {
+      const accel = candidates[index];
+      if (index > 0) {
+        await FfmpegJobRunner.discardOutputQuietly(job);
       }
 
-      const attemptResult = await this.attempt(job, profile);
+      const attemptResult = await this.attempt(job, accel);
       if (!('failure' in attemptResult)) {
         return attemptResult.outcome;
       }
 
-      const nextProfile = profiles[profileIndex + 1];
-      if (nextProfile == null || !attemptResult.worthRetrying) {
-        throw attemptResult.failure;
+      const nextAccel = candidates[index + 1];
+      if (nextAccel == null || !attemptResult.failure.retryable) {
+        await FfmpegJobRunner.discardOutputQuietly(job);
+        throw attemptResult.cause;
       }
-
-      console.warn(`FFmpeg job '${job.name}' failed using '${profile.id}', retrying with '${nextProfile.id}'`, attemptResult.failure);
+      console.warn(`FFmpeg job '${job.name}' failed using '${accel.id}' [${attemptResult.failure.message}], retrying with '${nextAccel.id}'`);
     }
 
-    throw new Error(`FFmpeg job '${job.name}' had no acceleration profile to run with`);
+    throw new Error(`FFmpeg job '${job.name}' had nothing to run with`);
   }
 
-  private async attempt<T>(job: FfmpegJob<T>, profile: FfmpegAccelerationProfile): Promise<AttemptResult<T>> {
-    const args = await job.buildArgs(profile);
+  private async attempt<T>(job: FfmpegJob<T>, accel: Accel): Promise<AttemptResult<T>> {
+    const args = await this.buildArgs(job, accel);
 
-    // Nothing may be awaited between spawning and handing the handle over: FFmpeg starts writing right away and a
+    // Nothing may be awaited between spawning and attaching the observers: FFmpeg starts writing right away and a
     // listener attached one microtask later would miss the beginning of its output
     const handle = this.ffmpegProcessRunner.spawn(args, job.spawnOptions);
-    const outcomePromise = job.awaitOutcome(handle, profile);
+    const classifier = FfmpegFailureClassifier.observe(handle);
+    const outcomePromise = job.awaitOutcome(handle, accel);
+    outcomePromise.catch(() => undefined);
 
     try {
-      const outcome = await outcomePromise;
-      this.logSucceededAttempt(job, profile, handle);
+      const outcome = await Promise.race([outcomePromise, FfmpegJobRunner.rejectOnFailedExit(handle)]);
+      this.recordSettledOrEventualExit(job, accel, handle, classifier);
       return { outcome };
-    } catch (failure) {
-      // The job gave up, but its process might still be running – and nobody else holds this handle
+    } catch (cause) {
       await handle.kill().catch(() => undefined);
-      return { failure, worthRetrying: FfmpegJobRunner.looksWorthRetrying(handle, failure) };
+      const failure = classifier.classify(handle.getExitResult(), cause);
+      this.record(job, accel, handle, 'failed', failure);
+      this.forgetDeviceOnDeviceFailure(accel, failure);
+      return { failure, cause };
     }
   }
-
-  private logSucceededAttempt<T>(job: FfmpegJob<T>, profile: FfmpegAccelerationProfile, handle: FfmpegHandle): void {
-    const stats = handle.getStats();
-    console.debug(`[DEBUG] FFmpeg job '${job.name}' succeeded using '${profile.id}': {runtime=${stats.runtimeInMillis}ms, peakFps=${stats.peakFps ?? 'n/a'}, speed=${stats.lastProgress?.speed ?? 'n/a'}}`);
+  private static async discardOutputQuietly<T>(job: FfmpegJob<T>): Promise<void> {
+    try {
+      await job.discardOutput?.();
+    } catch (cause) {
+      console.warn(`FFmpeg job '${job.name}' could not discard the output of its failed attempt`, cause);
+    }
   }
 
   /**
-   * Only what FFmpeg itself gave up on counts, because `No such file or directory` is a plain errno it prints for
-   * any file it could not open – a warning naming some missing font must not keep the runner from trying without
-   * the hardware that actually failed. Anything not recognized is retried, which costs a second process at worst.
+   * A job that cannot even say what to run is broken, not unlucky with its hardware: no other candidate is tried,
+   * but the attempt is on record so the failure does not vanish between the stats of the ones that ran.
    */
-  private static looksWorthRetrying(handle: FfmpegHandle, failure: unknown): boolean {
-    if (failure instanceof UnretryableFfmpegJobError) {
-      return false;
+  private async buildArgs<T>(job: FfmpegJob<T>, accel: Accel): Promise<string[]> {
+    try {
+      return await job.buildArgs(accel);
+    } catch (cause) {
+      this.stats.record({
+        job: job.name,
+        accel: accel.id,
+        verdict: 'failed',
+        failureKind: 'aborted',
+        runtimeInMillis: 0,
+        frames: null,
+        peakFps: null,
+        speed: null,
+        recordedAt: new Date(),
+        args: [],
+        logProblems: cause instanceof Error ? cause.message : String(cause),
+      });
+      throw cause;
+    }
+  }
+
+  /** A non-zero exit fails the attempt right away, so a live job does not sit out its startup timeout on a dead process */
+  private static async rejectOnFailedExit(handle: FfmpegHandle): Promise<never> {
+    const exitResult = await handle.waitForExit();
+    if (exitResult.exitCode !== 0) {
+      throw new FfmpegExitedEarlyError(exitResult);
+    }
+    return new Promise<never>(() => undefined);
+  }
+
+  /**
+   * A job that resolved while its process keeps running owns the handle now, but how the process ends is still
+   * worth knowing – a live transcode dying halfway through is exactly the failure a probe cannot predict.
+   */
+  private recordSettledOrEventualExit<T>(job: FfmpegJob<T>, accel: Accel, handle: FfmpegHandle, classifier: FfmpegFailureClassifier): void {
+    const recordSuccess = (): void => {
+      const verdict: FfmpegAttemptVerdict = accel instanceof HwContext && classifier.silentlyFellBackToSoftware ? 'degraded' : 'ok';
+      this.record(job, accel, handle, verdict, null);
+    };
+
+    if (handle.hasExited()) {
+      recordSuccess();
+      return;
     }
 
-    const fatalLogLines = handle.getLogProblems()
-      .split('\n')
-      .filter((logLine) => logLine.includes('[fatal]'));
+    handle.once('exit', (exitResult) => {
+      if (handle.crashed()) {
+        this.record(job, accel, handle, 'ready-then-failed', classifier.classify(exitResult, new FfmpegExitedEarlyError(exitResult)));
+      } else if (exitResult.exitCode === 0) {
+        recordSuccess();
+      } else {
+        this.record(job, accel, handle, 'stopped', null);
+      }
+    });
+  }
 
-    return !fatalLogLines.some((logLine) => FfmpegJobRunner.UNRETRYABLE_LOG_MESSAGES.some((logMessage) => logLine.includes(logMessage)));
+  /** The probes said yes and yes never expires, so a device that broke since has to be asked again */
+  private forgetDeviceOnDeviceFailure(accel: Accel, failure: FfmpegFailure): void {
+    if (accel instanceof HwContext && failure.kind === 'device') {
+      console.warn(`The FFmpeg device '${accel.device.id}' failed although it probed fine – probing it again before the next job: ${failure.message}`);
+      this.capabilityCache.forgetDevice(accel.device);
+    }
+  }
+
+  private record<T>(job: FfmpegJob<T>, accel: Accel, handle: FfmpegHandle, verdict: FfmpegAttemptVerdict, failure: FfmpegFailure | null): void {
+    const runStats = handle.getStats();
+    this.stats.record({
+      job: job.name,
+      accel: accel.id,
+      verdict,
+      failureKind: failure?.kind ?? null,
+      runtimeInMillis: runStats.runtimeInMillis,
+      frames: runStats.lastProgress?.frame ?? null,
+      peakFps: runStats.peakFps,
+      speed: runStats.lastProgress?.speed ?? null,
+      recordedAt: new Date(),
+      args: handle.getArgs(),
+      logProblems: handle.getLogProblems(),
+    });
   }
 }

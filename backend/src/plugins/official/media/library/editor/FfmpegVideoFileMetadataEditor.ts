@@ -233,8 +233,7 @@ export default class FfmpegVideoFileMetadataEditor {
   private async runFfmpeg(args: string[], cwd: string): Promise<void> {
     await this.ffmpegJobRunner.run({
       name: 'video-file-metadata-edit',
-      // Every stream is copied, so there is nothing here that hardware could accelerate
-      acceleration: { mayUseHardwareDecoding: false },
+      acceleration: null,
       spawnOptions: { cwd, logVerbosity: 'warning' },
 
       buildArgs: () => args,

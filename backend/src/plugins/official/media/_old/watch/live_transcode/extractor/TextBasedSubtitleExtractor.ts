@@ -83,8 +83,7 @@ export default class TextBasedSubtitleExtractor {
   private async extractStream(videoFile: string, streamIndex: number, subtitleCodec: string, subtitleTargetPath: string, targetDir: string): Promise<void> {
     await this.ffmpegJobRunner.run({
       name: 'text-based-subtitle-extraction',
-      // Subtitles are decoded on the CPU either way, so there is nothing here that hardware could accelerate
-      acceleration: { mayUseHardwareDecoding: false },
+      acceleration: null,
       spawnOptions: { cwd: targetDir, logVerbosity: 'warning' },
 
       buildArgs: () => [

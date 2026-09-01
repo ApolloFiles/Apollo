@@ -1,9 +1,8 @@
 /**
  * Thrown by a job that knows another acceleration profile is not going to help.
  *
- * The runner cannot tell on its own: it only ever sees that an attempt failed, and reads FFmpeg's own log to spot
- * the handful of failures that are hopeless. Anything a job knows beyond that – a deadline of its own having run
- * out, for instance – it has to say.
+ * This allows a job to communicate to the job runner, that there is no need to retry the job with another
+ * constellation. Either because it knows a specific error case or something like a deadline ran out.
  */
 export default class UnretryableFfmpegJobError extends Error {
 }

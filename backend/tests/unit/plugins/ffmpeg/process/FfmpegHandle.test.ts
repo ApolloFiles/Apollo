@@ -251,6 +251,57 @@ describe('FfmpegHandle#shutdown', () => {
   });
 });
 
+describe('FfmpegHandle#crashed', () => {
+  test('A clean exit is not a crash', async () => {
+    const handle = createHandle();
+
+    childProcess.simulateClose(0);
+    await handle.waitForExit();
+
+    expect(handle.crashed()).toBe(false);
+  });
+
+  test('An error exit nobody asked for is a crash', async () => {
+    const handle = createHandle();
+
+    childProcess.simulateClose(190);
+    await handle.waitForExit();
+
+    expect(handle.crashed()).toBe(true);
+  });
+
+  test('A signal nobody sent – the OOM killer, say – is a crash', async () => {
+    const handle = createHandle();
+
+    childProcess.simulateClose(null, 'SIGKILL');
+    await handle.waitForExit();
+
+    expect(handle.crashed()).toBe(true);
+  });
+
+  test('Dying from the signal we sent is not a crash', async () => {
+    const handle = createHandle();
+    childProcess.on('killed', () => childProcess.simulateClose(null, 'SIGKILL'));
+
+    await handle.kill();
+
+    expect(handle.crashed()).toBe(false);
+  });
+
+  test('Exiting with an error after being asked to shut down is not a crash', async () => {
+    const handle = createHandle();
+    childProcess.on('killed', () => childProcess.simulateClose(255));
+
+    await handle.shutdown();
+
+    expect(handle.crashed()).toBe(false);
+  });
+
+  test('A process that is still running has not crashed', () => {
+    expect(createHandle().crashed()).toBe(false);
+  });
+});
+
 describe('FfmpegHandle#kill', () => {
   test('Force-kills the process right away', async () => {
     const handle = createHandle();

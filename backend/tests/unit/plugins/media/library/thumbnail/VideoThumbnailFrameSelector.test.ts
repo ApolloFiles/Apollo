@@ -2,7 +2,7 @@ import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
 import Sharp from 'sharp';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import ThumbnailFrameRater from '../../../../../../src/plugins/official/media/library/thumbnail/ThumbnailFrameRater.js';
 import VideoThumbnailFrameSelector from '../../../../../../src/plugins/official/media/library/thumbnail/VideoThumbnailFrameSelector.js';
 
@@ -54,11 +54,13 @@ describe('VideoThumbnailFrameSelector#selectBestFrame', () => {
     expect(await selectedFrameSpread()).toBeGreaterThan(20);
   });
 
-  test('Falls back to the least bad frame when every candidate is unusable', async () => {
+  test('Falls back to the least bad frame when every candidate is unusable, and says so', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     await writeSolidFrame('frame_001.png', 0);
     await writeSolidFrame('frame_002.png', 255);
 
     await expect(selector.selectBestFrame(framePaths)).resolves.toBeDefined();
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('picking the least bad one'));
   });
 
   test('Fails when there is no frame at all', async () => {

@@ -42,8 +42,7 @@ export default class FontExtractor {
   private async dumpAttachment(videoFile: string, streamIndex: number, fontTargetPath: string, targetDir: string): Promise<void> {
     await this.ffmpegJobRunner.run({
       name: 'subtitle-font-extraction',
-      // Attachments are copied out as they are, so there is nothing here that hardware could accelerate
-      acceleration: { mayUseHardwareDecoding: false },
+      acceleration: null,
       spawnOptions: { cwd: targetDir, logVerbosity: 'warning' },
 
       buildArgs: () => [

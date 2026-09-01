@@ -24,12 +24,6 @@ export type AppConfig = {
   }
 
   ffmpeg: {
-    /**
-     * `auto`, `off`, or the name of the single hardware acceleration to allow – `cuda` also covering the `*_nvenc`
-     * encoders. Validated where it is used.
-     */
-    hardwareAcceleration: string;
-
     /** `auto`, `off`, or an ordered, comma-separated allowlist of device ids like `vaapi:/dev/dri/renderD129,cuda:0` */
     devices: string;
   }
@@ -78,7 +72,6 @@ export default class AppConfiguration {
       },
 
       ffmpeg: {
-        hardwareAcceleration: process.env.APOLLO_FFMPEG_HARDWARE_ACCELERATION || 'auto',
         devices: process.env.APOLLO_FFMPEG_DEVICES || 'auto',
       },
 

@@ -1,29 +1,21 @@
 import { singleton } from 'tsyringe';
-import type { AudioStream, Stream, VideoStream } from '../../../../video/analyser/VideoAnalyser.Types.js';
+import type { AudioStream, Stream } from '../../../../video/analyser/VideoAnalyser.Types.js';
 import AudioStreamArgumentsBuilder from './AudioStreamArgumentsBuilder.js';
-import VideoStreamArgumentsBuilder from './VideoStreamArgumentsBuilder.js';
-
-export type TargetOptions = {
-  readonly fps: number;
-  readonly width: number;
-  readonly segmentDuration: number;
-}
 
 export type StreamArgumentsResult = {
   args: string[],
   varStreamMap: string[],
-  audioNameMap: Map<string, string>
+  audioNameMap: Map<string, string>,
 }
 
 @singleton()
 export default class StreamArgumentsBuilder {
   constructor(
     private readonly audioStreamArgumentsBuilder: AudioStreamArgumentsBuilder,
-    private readonly videoStreamArgumentsBuilder: VideoStreamArgumentsBuilder,
   ) {
   }
 
-  async build(streamsToTranscode: Stream[], videoEncoder: string, targetOptions: TargetOptions): Promise<StreamArgumentsResult> {
+  build(streamsToTranscode: Stream[], videoArgs: string[]): StreamArgumentsResult {
     const audioGroupName = 'audio';
     const varStreamMap: string[] = [];
     const audioNameMap = new Map<string, string>();
@@ -32,7 +24,7 @@ export default class StreamArgumentsBuilder {
     const result: string[] = [];
     for (const stream of streamsToTranscode) {
       if (stream.codecType === 'video') {
-        result.push(...this.videoStreamArgumentsBuilder.build(stream as VideoStream, streamsToTranscode, targetOptions, videoEncoder));
+        result.push(...videoArgs);
         varStreamMap.push(`v:${outputStreamCounter.video++},agroup:${audioGroupName},name:video`);
         continue;
       }
@@ -58,9 +50,5 @@ export default class StreamArgumentsBuilder {
 
   private stripNonSafeCharacters(str: string): string {
     return str.replace(/[^a-zA-Z0-9_-]/g, '');
-  }
-
-  private stripNonAlphaChars(str: string): string {
-    return str.replace(/[^a-zA-Z]/g, '');
   }
 }
