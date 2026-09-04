@@ -36,28 +36,28 @@
     "npm": ">=11.0.0"
   },
   "dependencies": {
-    "@iconify-json/logos": "^1.2.12",
+    "@iconify-json/logos": "^1.2.13",
     "@iconify-json/tabler": "^1.2.38",
-    "@orpc/client": "^1.14.14",
+    "@orpc/client": "^1.15.0",
     "bootstrap": "^5.3.8",
-    "hls.js": "^1.6.17",
+    "hls.js": "^1.7.2",
     "inter-ui": "^4.1.1",
     "jassub": "1.8.8",
     "patch-package": "^8.0.1"
   },
   "devDependencies": {
-    "@inlang/paraglide-js": "^2.23.1",
-    "@orpc/contract": "^1.14.14",
+    "@inlang/paraglide-js": "^2.25.0",
+    "@orpc/contract": "^1.15.0",
     "@sveltejs/adapter-node": "^5.5.7",
     "@sveltejs/enhanced-img": "^0.11.0",
-    "@sveltejs/kit": "^2.70.2",
-    "@sveltejs/vite-plugin-svelte": "^7.2.0",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@types/node": "^24.13.3",
-    "svelte": "^5.56.8",
-    "svelte-check": "^4.7.4",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.6",
     "typescript": "^6.0.3",
     "unplugin-icons": "^23.0.1",
-    "vite": "^8.2.1"
+    "vite": "^8.2.2"
   },
   "allowScripts": {
     "sharp@0.34.5": true
