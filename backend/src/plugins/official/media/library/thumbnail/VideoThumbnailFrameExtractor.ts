@@ -34,7 +34,7 @@ export default class VideoThumbnailFrameExtractor {
 
     await this.ffmpegJobRunner.run({
       name: 'video-thumbnail-frame-extraction',
-      acceleration: { input, gpuFilters: true, videoEncoder: null },
+      acceleration: { input, gpuFilters: true, videoEncoder: null, excludedApis: ['cuda'] },
       spawnOptions: { cwd: targetDirectory, logVerbosity: 'warning' },
 
       buildArgs: (accel) => VideoThumbnailFrameExtractor.buildArgs(accel, input, seekPosition),
