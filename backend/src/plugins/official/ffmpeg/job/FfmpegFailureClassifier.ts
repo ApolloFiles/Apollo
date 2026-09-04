@@ -46,7 +46,7 @@ export default class FfmpegFailureClassifier {
    * A kind may appear more than once, for a line specific enough to outrank a generic diagnosis above it.
    */
   private static readonly PATTERNS: readonly Pattern[] = [
-    { kind: 'input', regex: /Error opening input/ },
+    { kind: 'input', regex: /Error opening input|Cannot determine format of input stream/ },
     { kind: 'output', regex: /already exists\. Exiting|Error opening output|Could not write header|Error writing trailer/ },
     { kind: 'device', regex: /Device creation failed|Failed to initialise VAAPI connection|Error creating a MFX session|Cannot load libcuda|cu->cu\w+\(.*\) failed -> CUDA_ERROR_|No VA display found|unsupported drm device by media driver|No device available for decoder|Hardware device setup failed|Failed to set value '.*' for option 'init_hw_device'/ },
     // NVDEC rejecting this file's surface count is not the stream changing under a running pipeline, which the

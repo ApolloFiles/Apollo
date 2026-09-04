@@ -114,6 +114,17 @@ describe('FfmpegFailureClassifier#classify', () => {
     expect(failure).toMatchObject({ kind: 'mid-stream', retryable: true });
   });
 
+  test('An input whose format never becomes known is not worth another device', async () => {
+    const { failure } = await classify([
+      '[matroska,webm @ 0x1] [warning] Could not find codec parameters for stream 0 (Video: mpeg4 (Advanced Simple Profile), none, 640x480): unspecified pixel format',
+      '[error] Cannot determine format of input stream 0:0 after EOF',
+      '[fatal] Error marking filters as finished',
+      '[error] Error while filtering: Invalid data found when processing input',
+    ], 183);
+
+    expect(failure).toMatchObject({ kind: 'input', retryable: false });
+  });
+
   test('Notices a decoder silently continuing in software', async () => {
     const { classifier } = await classify(['[h264 @ 0x1] [error] Failed setup for format vaapi: hwaccel initialisation returned error.'], 0);
 
