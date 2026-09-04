@@ -41,6 +41,12 @@ type PendingProbe = {
 export default class FfmpegCapabilityCache {
   private static readonly PROBE_TIMEOUT_IN_MILLIS = 15_000;
   private static readonly NEGATIVE_ANSWER_TTL_IN_MILLIS = 10 * 60_000;
+  /**
+   * How far into the input a probe may read before giving up on finding its one frame. A file whose packets all fail
+   * to decode otherwise keeps FFmpeg busy until {@link PROBE_TIMEOUT_IN_MILLIS}, and every stream starts on a
+   * keyframe, so a device that needs longer than this is of no use for the file anyway.
+   */
+  private static readonly PROBE_READ_LIMIT_IN_SECONDS = 30;
 
   private readonly answers = new Map<string, CachedAnswer>();
   private readonly pendingProbes = new Map<string, PendingProbe>();
@@ -112,6 +118,7 @@ export default class FfmpegCapabilityCache {
     const hwContext = new HwContext(device, 'fullChain', input.bitDepth);
     return this.runProbe(`decode ${input.codecName} (${input.bitDepth}-bit, ${input.width}x${input.height}) on '${device.id}'`, [
       ...hwContext.inputArgs(),
+      '-t', FfmpegCapabilityCache.PROBE_READ_LIMIT_IN_SECONDS.toString(),
       '-i', input.path,
       '-map', '0:V:0',
       '-vf', hwContext.download().join(','),

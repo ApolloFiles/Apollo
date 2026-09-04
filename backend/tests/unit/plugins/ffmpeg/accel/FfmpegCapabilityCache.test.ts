@@ -39,6 +39,16 @@ describe('FfmpegCapabilityCache#canDecode', () => {
     expect(processRunner.spawnCalls[0].options?.timeoutInMillis).toBeGreaterThan(0);
   });
 
+  test('Caps how far it reads, so a file whose every packet fails does not sit out the whole timeout', async () => {
+    const { cache, processRunner } = createCache([{ exitCode: 0 }]);
+
+    await cache.canDecode(INTEL_VAAPI, H264_INPUT);
+
+    const args = processRunner.spawnCalls[0].args;
+    expect(args).toContain('-t');
+    expect(args.indexOf('-t')).toBeLessThan(args.indexOf('-i'));
+  });
+
   test('A failing probe means no', async () => {
     const { cache } = createCache([{ exitCode: 218, logLines: ['[error] Impossible to convert between the formats supported by the filter \'graph -1 input from stream 0:0\' and the filter \'auto_scale_0\''] }]);
 
