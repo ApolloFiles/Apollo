@@ -83,6 +83,37 @@ describe('FfmpegFailureClassifier#classify', () => {
     expect(failure).toMatchObject({ kind: 'aborted', retryable: false, message: 'waited long enough' });
   });
 
+  test('NVDEC rejecting one file is the decoder, not a broken device', async () => {
+    const { failure } = await classify([
+      '[h264 @ 0x1] [error] decoder->cvdl->cuvidCreateDecoder(&decoder->decoder, params) failed -> CUDA_ERROR_INVALID_VALUE: invalid argument',
+      '[h264 @ 0x1] [warning] Using more than 32 (36) decode surfaces might cause nvdec to fail.',
+      '[h264 @ 0x1] [warning] Try lowering the amount of threads. Using 13 right now.',
+      '[h264 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.',
+      `[error] Impossible to convert between the formats supported by the filter 'graph 0 input from stream 0:0' and the filter 'auto_scale_1'`,
+      '[vf#0:0 @ 0x1] [error] Error reinitializing filters!',
+      '[error] Error while filtering: Function not implemented',
+    ], 218);
+
+    expect(failure).toMatchObject({ kind: 'decoder', retryable: true });
+  });
+
+  test('A CUDA error while creating the device is still a device failure', async () => {
+    const { failure } = await classify([
+      '[AVHWDeviceContext @ 0x1] [error] cu->cuInit(0) failed -> CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected',
+    ], 255);
+
+    expect(failure).toMatchObject({ kind: 'device', retryable: true });
+  });
+
+  test('A stream changing under a running pipeline outranks the decoder error it drags behind it', async () => {
+    const { failure } = await classify([
+      '[error] Reconfiguring filter graph because video parameters changed to yuv420p10le, hwaccel changed',
+      '[h264 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.',
+    ], 218);
+
+    expect(failure).toMatchObject({ kind: 'mid-stream', retryable: true });
+  });
+
   test('Notices a decoder silently continuing in software', async () => {
     const { classifier } = await classify(['[h264 @ 0x1] [error] Failed setup for format vaapi: hwaccel initialisation returned error.'], 0);
 

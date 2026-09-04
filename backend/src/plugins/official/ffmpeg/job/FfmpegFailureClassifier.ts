@@ -41,11 +41,17 @@ type Pattern = {
 export default class FfmpegFailureClassifier {
   private static readonly SILENT_SOFTWARE_FALLBACK = /Failed setup for format/;
 
-  /** Earlier patterns win: a missing input also drags a decoder error behind it, and it is the input that matters */
+  /**
+   * Earlier entries win: a missing input also drags a decoder error behind it, and it is the input that matters.
+   * A kind may appear more than once, for a line specific enough to outrank a generic diagnosis above it.
+   */
   private static readonly PATTERNS: readonly Pattern[] = [
     { kind: 'input', regex: /Error opening input/ },
     { kind: 'output', regex: /already exists\. Exiting|Error opening output|Could not write header|Error writing trailer/ },
-    { kind: 'device', regex: /Device creation failed|Failed to initialise VAAPI connection|Error creating a MFX session|Cannot load libcuda|CUDA_ERROR_|No VA display found|unsupported drm device by media driver|No device available for decoder|Hardware device setup failed|Failed to set value '.*' for option 'init_hw_device'/ },
+    { kind: 'device', regex: /Device creation failed|Failed to initialise VAAPI connection|Error creating a MFX session|Cannot load libcuda|cu->cu\w+\(.*\) failed -> CUDA_ERROR_|No VA display found|unsupported drm device by media driver|No device available for decoder|Hardware device setup failed|Failed to set value '.*' for option 'init_hw_device'/ },
+    // NVDEC rejecting this file's surface count is not the stream changing under a running pipeline, which the
+    // `Error while filtering` it drags behind it would otherwise make of it
+    { kind: 'decoder', regex: /cuvidCreateDecoder\(.*\) failed/ },
     { kind: 'mid-stream', regex: /hwaccel changed|Reconfiguring filter graph|Error submitting the frame|Error while filtering|Failed to transfer data to output frame/ },
     { kind: 'decoder', regex: /Failed setup for format|Error initializing the MFX video decoder|Error querying IO surface|Failed to get pixel format|No support for codec|Failed to allocate decoder|Error while processing the decoded data/ },
     { kind: 'encoder', regex: /No usable encoding profile|Hardware does not support encoding|Current pixel format is unsupported|Current resolution is unsupported|bit encode not supported|Error while opening encoder|Failed to end picture encode|OpenEncodeSessionEx failed/ },
@@ -54,7 +60,8 @@ export default class FfmpegFailureClassifier {
 
   private static readonly UNRETRYABLE_KINDS: readonly FfmpegFailureKind[] = ['input', 'output', 'aborted'];
 
-  private readonly matches = new Map<FfmpegFailureKind, string>();
+  /** Keyed by the index in {@link PATTERNS}, so a kind listed twice keeps each entry's own precedence */
+  private readonly matches = new Map<number, string>();
   private sawSoftwareFallback = false;
 
   /** Starts watching the handle; do it before anything is awaited or the first lines are missed */
@@ -74,11 +81,12 @@ export default class FfmpegFailureClassifier {
       return { kind: 'aborted', retryable: false, message: error.message };
     }
 
-    const kind = this.determineKind();
+    const match = this.determineMatch();
+    const kind = match?.kind ?? 'unknown';
     return {
       kind,
       retryable: !FfmpegFailureClassifier.UNRETRYABLE_KINDS.includes(kind),
-      message: this.describe(kind, exitResult, error),
+      message: this.describe(kind, match?.line ?? null, exitResult, error),
     };
   }
 
@@ -91,25 +99,25 @@ export default class FfmpegFailureClassifier {
       this.sawSoftwareFallback = true;
     }
 
-    for (const pattern of FfmpegFailureClassifier.PATTERNS) {
-      if (!this.matches.has(pattern.kind) && pattern.regex.test(logLine.message)) {
-        this.matches.set(pattern.kind, logLine.message);
+    for (const [index, pattern] of FfmpegFailureClassifier.PATTERNS.entries()) {
+      if (!this.matches.has(index) && pattern.regex.test(logLine.message)) {
+        this.matches.set(index, logLine.message);
       }
     }
   }
 
-  private determineKind(): FfmpegFailureKind {
-    for (const pattern of FfmpegFailureClassifier.PATTERNS) {
-      if (this.matches.has(pattern.kind)) {
-        return pattern.kind;
+  private determineMatch(): { kind: FfmpegFailureKind, line: string } | null {
+    for (const [index, pattern] of FfmpegFailureClassifier.PATTERNS.entries()) {
+      const line = this.matches.get(index);
+      if (line != null) {
+        return { kind: pattern.kind, line };
       }
     }
-    return 'unknown';
+    return null;
   }
 
-  private describe(kind: FfmpegFailureKind, exitResult: FfmpegExitResult | null, error: unknown): string {
+  private describe(kind: FfmpegFailureKind, matchedLine: string | null, exitResult: FfmpegExitResult | null, error: unknown): string {
     const exitDescription = exitResult == null ? 'did not exit yet' : `exitCode=${exitResult.exitCode}, signal=${exitResult.signal}`;
-    const matchedLine = this.matches.get(kind);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return `${kind} (${exitDescription})${matchedLine != null ? `: ${matchedLine}` : ''} – ${errorMessage}`;
   }

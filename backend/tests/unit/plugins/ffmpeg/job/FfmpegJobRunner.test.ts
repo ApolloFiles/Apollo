@@ -151,6 +151,27 @@ describe('FfmpegJobRunner#run', () => {
     expect(forgetDevice).not.toHaveBeenCalled();
   });
 
+  test('Keeps what it knows about a device when NVDEC rejects one file\'s surface count', async () => {
+    const processRunner = new FakeProcessRunner([
+      {
+        exitCode: 218,
+        logLines: [
+          '[h264 @ 0x1] [error] decoder->cvdl->cuvidCreateDecoder(&decoder->decoder, params) failed -> CUDA_ERROR_INVALID_VALUE: invalid argument',
+          '[h264 @ 0x1] [warning] Using more than 32 (36) decode surfaces might cause nvdec to fail.',
+          '[h264 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.',
+          '[error] Error while filtering: Function not implemented',
+        ],
+      },
+      { exitCode: 0 },
+    ]);
+    const { runner, forgetDevice, records } = createRunner(processRunner, [CUDA, SOFTWARE]);
+
+    await runner.run(createJob());
+
+    expect(forgetDevice).not.toHaveBeenCalled();
+    expect(records[0]).toMatchObject({ verdict: 'failed', failureKind: 'decoder' });
+  });
+
   test('Gives up right away when ffmpeg refuses to overwrite its output', async () => {
     const processRunner = new FakeProcessRunner([
       { exitCode: 1, logLines: [`[fatal] File 'out.mp4' already exists. Exiting.`] },
