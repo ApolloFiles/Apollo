@@ -1,4 +1,5 @@
 import { singleton } from 'tsyringe';
+import FfmpegArgsUtil from '../process/FfmpegArgsUtil.js';
 import FfmpegProcessRunner from '../process/FfmpegProcessRunner.js';
 import type { FfmpegDevice } from './FfmpegDevice.js';
 import HwContext, { type HwVideoCodec } from './HwContext.js';
@@ -149,7 +150,7 @@ export default class FfmpegCapabilityCache {
     const exitResult = await handle.waitForExit();
     const usable = exitResult.exitCode === 0;
     if (!usable) {
-      console.debug(`[DEBUG] FFmpeg cannot ${description} (exitCode=${exitResult.exitCode}, signal=${exitResult.signal}):\n${handle.getLogProblems()}`);
+      console.debug(`[DEBUG] FFmpeg cannot ${description} for ${FfmpegArgsUtil.describeInputs(args)} (exitCode=${exitResult.exitCode}, signal=${exitResult.signal}):\n${handle.getLogProblems()}`);
     }
     return usable;
   }

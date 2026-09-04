@@ -29,4 +29,20 @@ describe('FfmpegJobStats#record', () => {
 
     expect(console.debug).toHaveBeenCalledWith(expect.stringMatching(/'live-transcode' failed using 'cuda:0\/fullChain' \(device\)/));
   });
+
+  test('A failed attempt names the file it was pointed at', () => {
+    const stats = new FfmpegJobStats();
+
+    stats.record({ ...record('poster-candidates'), verdict: 'failed', args: ['-i', '/media/broken.mkv', '-f', 'null', '-'] });
+
+    expect(console.debug).toHaveBeenCalledWith(expect.stringContaining(`input='/media/broken.mkv'`));
+  });
+
+  test('A successful attempt stays short', () => {
+    const stats = new FfmpegJobStats();
+
+    stats.record({ ...record('poster-candidates'), args: ['-i', '/media/fine.mkv', '-f', 'null', '-'] });
+
+    expect(console.debug).toHaveBeenCalledWith(expect.not.stringContaining('/media/fine.mkv'));
+  });
 });

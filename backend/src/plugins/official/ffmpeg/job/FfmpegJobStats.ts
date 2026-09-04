@@ -1,4 +1,5 @@
 import { singleton } from 'tsyringe';
+import FfmpegArgsUtil from '../process/FfmpegArgsUtil.js';
 import type { FfmpegFailureKind } from './FfmpegFailureClassifier.js';
 
 export type FfmpegAttemptVerdict =
@@ -35,7 +36,17 @@ export type FfmpegAttemptRecord = {
  */
 @singleton()
 export default class FfmpegJobStats {
+  private static readonly FAILED_VERDICTS: readonly FfmpegAttemptVerdict[] = ['failed', 'ready-then-failed'];
+
   record(record: FfmpegAttemptRecord): void {
-    console.debug(`[DEBUG] FFmpeg job '${record.job}' ${record.verdict} using '${record.accel}'${record.failureKind != null ? ` (${record.failureKind})` : ''}: {runtime=${record.runtimeInMillis}ms, frames=${record.frames ?? 'n/a'}, peakFps=${record.peakFps ?? 'n/a'}, speed=${record.speed ?? 'n/a'}}`);
+    console.debug(`[DEBUG] FFmpeg job '${record.job}' ${record.verdict} using '${record.accel}'${record.failureKind != null ? ` (${record.failureKind})` : ''}: {runtime=${record.runtimeInMillis}ms, frames=${record.frames ?? 'n/a'}, peakFps=${record.peakFps ?? 'n/a'}, speed=${record.speed ?? 'n/a'}${FfmpegJobStats.describeInputOfFailure(record)}}`);
+  }
+
+  /** Only failures name their input: a run that worked says nothing a caller could not already tell, and there are thousands of them */
+  private static describeInputOfFailure(record: FfmpegAttemptRecord): string {
+    if (!FfmpegJobStats.FAILED_VERDICTS.includes(record.verdict)) {
+      return '';
+    }
+    return `, input=${FfmpegArgsUtil.describeInputs(record.args)}`;
   }
 }

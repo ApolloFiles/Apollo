@@ -2,6 +2,7 @@ import { singleton } from 'tsyringe';
 import type { Accel } from '../accel/Accel.js';
 import FfmpegCapabilityCache from '../accel/FfmpegCapabilityCache.js';
 import HwContext from '../accel/HwContext.js';
+import FfmpegArgsUtil from '../process/FfmpegArgsUtil.js';
 import type { default as FfmpegHandle, FfmpegExitResult } from '../process/FfmpegHandle.js';
 import FfmpegProcessRunner from '../process/FfmpegProcessRunner.js';
 import FfmpegCandidatePlanner from './FfmpegCandidatePlanner.js';
@@ -15,6 +16,8 @@ type AttemptResult<T> =
   } | {
     readonly failure: FfmpegFailure,
     readonly cause: unknown,
+    /** What this attempt was pointed at, so the log line about it can name the file */
+    readonly inputs: string,
   };
 
 class FfmpegExitedEarlyError extends Error {
@@ -59,7 +62,7 @@ export default class FfmpegJobRunner {
         await FfmpegJobRunner.discardOutputQuietly(job);
         throw attemptResult.cause;
       }
-      console.warn(`FFmpeg job '${job.name}' failed using '${accel.id}' [${attemptResult.failure.message}], retrying with '${nextAccel.id}'`);
+      console.warn(`FFmpeg job '${job.name}' failed using '${accel.id}' on ${attemptResult.inputs} [${attemptResult.failure.message}], retrying with '${nextAccel.id}'`);
     }
 
     throw new Error(`FFmpeg job '${job.name}' had nothing to run with`);
@@ -82,9 +85,10 @@ export default class FfmpegJobRunner {
     } catch (cause) {
       await handle.kill().catch(() => undefined);
       const failure = classifier.classify(handle.getExitResult(), cause);
+      const inputs = FfmpegArgsUtil.describeInputs(handle.getArgs());
       this.record(job, accel, handle, 'failed', failure);
-      this.forgetDeviceOnDeviceFailure(accel, failure);
-      return { failure, cause };
+      this.forgetDeviceOnDeviceFailure(accel, failure, inputs);
+      return { failure, cause, inputs };
     }
   }
   private static async discardOutputQuietly<T>(job: FfmpegJob<T>): Promise<void> {
@@ -156,9 +160,9 @@ export default class FfmpegJobRunner {
   }
 
   /** The probes said yes and yes never expires, so a device that broke since has to be asked again */
-  private forgetDeviceOnDeviceFailure(accel: Accel, failure: FfmpegFailure): void {
+  private forgetDeviceOnDeviceFailure(accel: Accel, failure: FfmpegFailure, inputs: string): void {
     if (accel instanceof HwContext && failure.kind === 'device') {
-      console.warn(`The FFmpeg device '${accel.device.id}' failed although it probed fine – probing it again before the next job: ${failure.message}`);
+      console.warn(`The FFmpeg device '${accel.device.id}' failed on ${inputs} although it probed fine – probing it again before the next job: ${failure.message}`);
       this.capabilityCache.forgetDevice(accel.device);
     }
   }
