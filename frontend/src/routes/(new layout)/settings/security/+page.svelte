@@ -7,7 +7,6 @@
   import { m } from '$lib/paraglide/messages.js';
   import type { PageProps } from './$types';
 
-  // TODO: This page needs CSRF protection
   // TODO: Hide provider user ids by default (show on click)
 
   let { data }: PageProps = $props();
