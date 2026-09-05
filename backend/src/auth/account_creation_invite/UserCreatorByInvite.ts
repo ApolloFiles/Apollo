@@ -28,7 +28,7 @@ export default class UserCreatorByInvite {
     const createdUser = await this.databaseClient.$transaction(async (transaction) => {
       const inviteToken = await transaction.authAccountCreationInviteToken.delete({
         where: {
-          hashedToken: this.secureTokenHelper.decodeToken(hashedToken),
+          hashedToken: Buffer.from(hashedToken, 'base64url'),
           expiresAt: { gt: await this.databaseClient.fetchNow() },
         },
         select: { createSuperUserAccount: true },

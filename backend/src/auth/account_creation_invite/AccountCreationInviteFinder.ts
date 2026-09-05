@@ -1,3 +1,4 @@
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import SecureTokenHelper from '../SecureTokenHelper.js';
@@ -36,7 +37,7 @@ export default class AccountCreationInviteFinder {
     }
 
     return {
-      hashedToken: this.secureTokenHelper.stringifyToken(inviteToken.hashedToken),
+      hashedToken: ByteUtils.toBuffer(inviteToken.hashedToken).toString('base64url'),
       createdAt: inviteToken.createdAt,
       expiresAt: inviteToken.expiresAt,
       createSuperUserAccount: inviteToken.createSuperUserAccount,

@@ -1,31 +1,26 @@
 import Crypto from 'node:crypto';
 import { singleton } from 'tsyringe';
+import SecureRandomBase62Generator from './SecureRandomBase62Generator.js';
 
 @singleton()
 export default class SecureTokenHelper {
+  private static readonly TOKEN_LENGTH = 43;
+
+  constructor(
+    private readonly randomBase62Generator: SecureRandomBase62Generator,
+  ) {
+  }
+
   create(): { value: string, sha256sum: Buffer<ArrayBuffer> } {
-    const token = Crypto.randomBytes(64);
+    const token = this.randomBase62Generator.generate(SecureTokenHelper.TOKEN_LENGTH);
 
     return {
-      value: token.toString('base64url'),
+      value: token,
       sha256sum: this.hashToken(token),
     };
   }
 
-  hashToken(token: string | Buffer): Buffer<ArrayBuffer> {
-    if (!Buffer.isBuffer(token)) {
-      token = this.decodeToken(token);
-    }
+  hashToken(token: string): Buffer<ArrayBuffer> {
     return Crypto.hash('sha256', token, { outputEncoding: 'buffer' });
-  }
-
-  stringifyToken(tokenValue: NodeJS.ArrayBufferView): string {
-    return Buffer
-      .from(tokenValue.buffer, tokenValue.byteOffset, tokenValue.byteLength)
-      .toString('base64url');
-  }
-
-  decodeToken(tokenValue: string): Buffer<ArrayBuffer> {
-    return Buffer.from(tokenValue, 'base64url');
   }
 }
