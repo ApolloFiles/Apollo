@@ -16,6 +16,7 @@ model AuthUser {
   mediaLibraryUserPreferences     MediaLibraryUserPreferences[]
   mediaLibraryUserWatchProgresses MediaLibraryUserWatchProgress[]
   feedbackReports                 FeedbackReport[]
+  authAccessTokens                AuthAccessToken[]
 
   @@index([createdAt])
   @@map("auth_users")
@@ -45,7 +46,7 @@ model AuthSession {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
   expiresAt         DateTime @map("expires_at") @db.Timestamptz()
   userAgent         String   @map("user_agent")
-  roughLastActivity DateTime @map("rough_last_activity") @db.Timestamptz()
+  roughLastActivity DateTime @map("rough_last_activity") @db.Timestamptz() /// normalised to the hour
 
   user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -62,6 +63,27 @@ model AuthAnonymousSession {
 
   @@index([expiresAt])
   @@map("auth_anonymous_sessions")
+}
+
+model AuthAccessToken {
+  id              BigInt  @id @default(dbgenerated("generate_snowflake('auth_access_tokens_id_seq'::text)"))
+  userId          String  @map("user_id")
+  hashedToken     Bytes?  @unique @map("hashed_token") /// set to NULL when the token is revoked/expired (just-in-case)
+  tokenHint       String  @map("token_hint") @db.VarChar(32)
+  name            String  @db.VarChar(50)
+  description     String? @db.VarChar(4000)
+  lifetimeSeconds Int?    @map("lifetime_seconds") /// the duration the user picked; NULL = never expires
+
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  expiresAt       DateTime? @map("expires_at") @db.Timestamptz() /// NULL = never
+  rotatedAt       DateTime? @map("rotated_at") @db.Timestamptz()
+  revokedAt       DateTime? @map("revoked_at") @db.Timestamptz()
+  roughLastUsedAt DateTime? @map("rough_last_used_at") @db.Timestamptz() /// normalised to the hour
+
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_access_tokens")
 }
 
 model AuthAccountCreationInviteToken {
