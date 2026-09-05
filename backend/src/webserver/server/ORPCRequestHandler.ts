@@ -35,6 +35,8 @@ export default class ORPCRequestHandler extends oRpcNodeJs.RPCHandler<ORpcInitia
           onError((err) => {
             if (err instanceof ORPCError && err.code === 'INTERNAL_SERVER_ERROR') {
               console.dir(err, { depth: 4 }); // Enough depth for useful info in ValidationErrors
+            } else if (err instanceof ORPCError && !err.defined) {
+              console.error(err);
             } else if (!(err instanceof HttpError)) {
               console.error(err);
             }
