@@ -67,6 +67,7 @@ export default class AuthSessionFinder {
         userId,
         expiresAt: { gt: await this.databaseClient.fetchNow() },
       },
+      orderBy: { id: 'desc' },
       select: {
         id: true,
         csrfToken: true,
