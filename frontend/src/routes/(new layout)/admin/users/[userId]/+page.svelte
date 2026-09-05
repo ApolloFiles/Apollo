@@ -1,33 +1,14 @@
 <script lang="ts">
   import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
+  import RelativeTime from '$lib/components/RelativeTime.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import { m } from '$lib/paraglide/messages.js';
-  import { getLocale } from '$lib/paraglide/runtime';
 
   let { data } = $props();
 
   const user = $derived(data.user);
   const linkedAuthProviders = $derived(data.linkedAuthProviders);
-
-  function formatDate(date: Date | null, removeTime = false): string {
-    if (date == null) {
-      return m.page_admin_user_details_date_never();
-    }
-
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    };
-
-    if (!removeTime) {
-      options.hour = '2-digit';
-      options.minute = '2-digit';
-    }
-
-    return date.toLocaleDateString(getLocale(), options);
-  }
 
   function updateUserBlockStatus(block: boolean): void {
     const confirmMessage = block
@@ -68,6 +49,14 @@
       });
   }
 </script>
+
+{#snippet dateValue(date: Date | null, withTime: boolean)}
+  {#if date != null}
+    <RelativeTime {date} {withTime} />
+  {:else}
+    {m.common_text_never()}
+  {/if}
+{/snippet}
 
 <svelte:head>
   <title>{user.displayName} · {m.page_admin_user_details_subtitle()} | Apollo</title>
@@ -136,15 +125,15 @@
           </div>
           <div class="info-item">
             <span class="label">{m.page_admin_user_details_field_created_at()}</span>
-            <div class="value">{formatDate(user.createdAt)}</div>
+            <div class="value">{@render dateValue(user.createdAt, true)}</div>
           </div>
           <div class="info-item">
             <span class="label">{m.page_admin_user_details_field_last_login()}</span>
-            <div class="value">{formatDate(user.lastLoginDate, true)}</div>
+            <div class="value">{@render dateValue(user.lastLoginDate, false)}</div>
           </div>
           <div class="info-item">
             <span class="label">{m.page_admin_user_details_field_last_activity()}</span>
-            <div class="value">{formatDate(user.lastActivityDate, true)}</div>
+            <div class="value">{@render dateValue(user.lastActivityDate, false)}</div>
           </div>
         </div>
       </div>
@@ -179,7 +168,7 @@
                       {m.page_admin_user_details_provider_field_identifier()}: <strong>{provider.providerUserId}</strong>
                     </span>
                     <span class="detail-text">
-                      {m.page_admin_user_details_provider_field_linked()}: {formatDate(provider.linkedAt)}
+                      {m.page_admin_user_details_provider_field_linked()}: {@render dateValue(provider.linkedAt, true)}
                     </span>
                   </div>
                 </div>

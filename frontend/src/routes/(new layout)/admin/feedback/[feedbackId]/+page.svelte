@@ -1,9 +1,9 @@
 <script lang="ts">
   import { beforeNavigate, goto, invalidateAll } from '$app/navigation';
+  import RelativeTime from '$lib/components/RelativeTime.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import { m } from '$lib/paraglide/messages.js';
-  import { getLocale } from '$lib/paraglide/runtime';
 
   let { data } = $props();
 
@@ -62,16 +62,6 @@
       navigation.cancel();
     }
   });
-
-  function formatDate(date: Date): string {
-    return date.toLocaleDateString(getLocale(), {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
 
   async function saveChanges(): Promise<void> {
     if (saving) {
@@ -163,7 +153,7 @@
           </div>
           <div class="info-item">
             <span class="label">{m.page_admin_feedback_detail_field_created_at()}</span>
-            <div class="value">{formatDate(report.createdAt)}</div>
+            <div class="value"><RelativeTime date={report.createdAt} /></div>
           </div>
           <div class="info-item">
             <span class="label">{m.page_admin_feedback_detail_field_app_version()}</span>

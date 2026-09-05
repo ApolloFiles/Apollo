@@ -1,26 +1,16 @@
 <script lang="ts">
   import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
   import InterpolatedMessage, { MESSAGE_SLOT } from '$lib/components/InterpolatedMessage.svelte';
+  import RelativeTime from '$lib/components/RelativeTime.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '$lib/oRPCClientSide';
   import { m } from '$lib/paraglide/messages.js';
-  import { getLocale } from '$lib/paraglide/runtime';
   import type { PageProps } from './$types';
 
   // TODO: This page needs CSRF protection
   // TODO: Hide provider user ids by default (show on click)
 
   let { data }: PageProps = $props();
-
-  function formatDate(date: Date): string {
-    return date.toLocaleDateString(getLocale(), {
-      year:   'numeric',
-      month:  'short',
-      day:    'numeric',
-      hour:   '2-digit',
-      minute: '2-digit',
-    });
-  }
 
   const authProviders = $derived.by(() => {
     const authProviders: ({
@@ -168,9 +158,9 @@
                 {/if}
               </div>
               <div class="session-meta">
-                <span>{m.page_settings_security_session_created()}: {formatDate(session.createdAt)}</span>
-                <span>{m.page_settings_security_session_expires()}: {formatDate(session.expiresAt)}</span>
-                <span>{m.page_settings_security_session_last_activity()}: {formatDate(session.roughLastActivity)}</span>
+                <span>{m.page_settings_security_session_created()}: <RelativeTime date={session.createdAt} /></span>
+                <span>{m.page_settings_security_session_expires()}: <RelativeTime date={session.expiresAt} /></span>
+                <span>{m.page_settings_security_session_last_activity()}: <RelativeTime date={session.roughLastActivity} /></span>
               </div>
             </div>
             <div class="session-action">

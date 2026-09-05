@@ -1,7 +1,7 @@
 <script lang="ts">
+  import RelativeTime from '$lib/components/RelativeTime.svelte';
   import TablerIcon from '$lib/components/TablerIcon.svelte';
   import { m } from '$lib/paraglide/messages.js';
-  import { getLocale } from '$lib/paraglide/runtime';
 
   let { data } = $props();
 
@@ -18,16 +18,6 @@
     RESOLVED: m.page_admin_feedback_status_resolved,
     WONT_FIX: m.page_admin_feedback_status_wont_fix,
   } as const;
-
-  function formatDate(date: Date): string {
-    return date.toLocaleDateString(getLocale(), {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
 
   function messageExcerpt(message: string): string {
     const firstLine = message.split('\n', 1)[0].trim();
@@ -60,7 +50,7 @@
             <div class="report-meta">
               <span>{report.user.displayName}</span>
               <span>·</span>
-              <span>{formatDate(report.createdAt)}</span>
+              <span><RelativeTime date={report.createdAt} /></span>
               <span>·</span>
               <span class="monospace">{report.appVersion}</span>
             </div>
