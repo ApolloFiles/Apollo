@@ -8,5 +8,7 @@ export default interface Router {
 
   allowUnauthenticatedAccess?(): boolean;
 
+  allowAccessTokenAccess?(): boolean;
+
   register(server: FastifyInstanceWithZod, options?: unknown): void;
 }

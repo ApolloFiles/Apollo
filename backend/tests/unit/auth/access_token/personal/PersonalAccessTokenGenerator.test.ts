@@ -21,6 +21,33 @@ function createGeneratorWithRealRandomness(): PersonalAccessTokenGenerator {
   return new PersonalAccessTokenGenerator(new SecureTokenHelper(new SecureRandomBase62Generator()));
 }
 
+describe('PersonalAccessTokenGenerator#isValidTokenFormat', () => {
+  const VALID_BODY = 'a'.repeat(EXPECTED_TOKEN_LENGTH);
+
+  test('Accepts what the generator produces', () => {
+    const generator = createGeneratorWithRealRandomness();
+
+    for (let i = 0; i < 100; ++i) {
+      expect(generator.isValidTokenFormat(generator.generate().fullToken)).toBe(true);
+    }
+  });
+
+  test.each([
+    ['a missing prefix', VALID_BODY],
+    ['a different prefix', `apollo_sat_${VALID_BODY}`],
+    ['a prefix that is not separated by an underscore', `apollo_pat${VALID_BODY}`],
+    ['a body that is one character too short', `${PREFIX}${'a'.repeat(EXPECTED_TOKEN_LENGTH - 1)}`],
+    ['a body that is one character too long', `${PREFIX}${'a'.repeat(EXPECTED_TOKEN_LENGTH + 1)}`],
+    ['a non-base62 character in the body', `${PREFIX}${'a'.repeat(EXPECTED_TOKEN_LENGTH - 1)}-`],
+    ['leading whitespace', ` ${PREFIX}${VALID_BODY}`],
+    ['trailing whitespace', `${PREFIX}${VALID_BODY} `],
+    ['a trailing newline', `${PREFIX}${VALID_BODY}\n`],
+    ['an empty string', ''],
+  ])('Rejects a token with %s', (_description, token) => {
+    expect(createGeneratorWithRealRandomness().isValidTokenFormat(token)).toBe(false);
+  });
+});
+
 describe('PersonalAccessTokenGenerator#generate', () => {
   test('Prefixes the token from the SecureTokenHelper', () => {
     const { generator } = createGeneratorWithFixedToken('someGeneratedToken');

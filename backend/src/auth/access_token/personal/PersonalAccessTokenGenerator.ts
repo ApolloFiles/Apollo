@@ -11,10 +11,15 @@ export type GeneratedPersonalAccessToken = {
 export default class PersonalAccessTokenGenerator {
   private static readonly PREFIX = 'apollo_pat_';
   private static readonly HINT_VISIBLE_CHARS = 4;
+  private static readonly TOKEN_PATTERN = new RegExp(`^${PersonalAccessTokenGenerator.PREFIX}[0-9A-Za-z]{${SecureTokenHelper.TOKEN_LENGTH}}$`);
 
   constructor(
     private readonly secureTokenHelper: SecureTokenHelper,
   ) {
+  }
+
+  isValidTokenFormat(token: string): boolean {
+    return PersonalAccessTokenGenerator.TOKEN_PATTERN.test(token);
   }
 
   generate(): GeneratedPersonalAccessToken {

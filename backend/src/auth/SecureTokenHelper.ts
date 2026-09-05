@@ -4,7 +4,7 @@ import SecureRandomBase62Generator from './SecureRandomBase62Generator.js';
 
 @singleton()
 export default class SecureTokenHelper {
-  private static readonly TOKEN_LENGTH = 43;
+  static readonly TOKEN_LENGTH = 43;
 
   constructor(
     private readonly randomBase62Generator: SecureRandomBase62Generator,

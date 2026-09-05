@@ -5,6 +5,8 @@ import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import * as FastifyTypeProviderZod from 'fastify-type-provider-zod';
 import Http from 'node:http';
 import { injectAll, singleton } from 'tsyringe';
+import AccessTokenBearerHelper from '../../auth/access_token/AccessTokenBearerHelper.js';
+import type { AccessTokenUser } from '../../auth/access_token/UserByAccessTokenProvider.js';
 import CsrfTokenValidator from '../../auth/CsrfTokenValidator.js';
 import SessionCookieHelper from '../../auth/session/SessionCookieHelper.js';
 import UserBySessionTokenProvider, { type SessionUser } from '../../auth/UserBySessionTokenProvider.js';
@@ -19,17 +21,25 @@ import ORPCRequestHandler from './ORPCRequestHandler.js';
 import NotFoundHandlerPlugin from './plugin/NotFoundHandlerPlugin.js';
 import ServerTimingHeaderPlugin from './plugin/ServerTiming/ServerTimingHeaderPlugin.js';
 
+export type RequestAuthentication =
+  | ({ kind: 'session' } & SessionUser)
+  | ({ kind: 'accessToken' } & AccessTokenUser);
+
 declare module 'fastify' {
   interface FastifyRequest {
     /** @internal Use {@link getSessionUser}, {@link getSessionUserOptional} or {@link getAuthenticatedUser} instead */
-    _apollo_session_data: SessionUser | null;
+    _apollo_auth_data: RequestAuthentication | null;
 
+    /** Only resolves a cookie session – a request authenticated by an access token yields `null`. */
     getSessionUserOptional(): SessionUser | null;
 
     /**
-     * @throws {Error} If no user is authenticated for this request
+     * @throws {Error} If no cookie session exists for this request
      */
     getSessionUser(): SessionUser;
+
+    /** Resolves a cookie session as well as an access token. */
+    getAuthenticatedUserOptional(): ApolloUser | null;
 
     /**
      * @throws {Error} If no user is authenticated for this request
@@ -62,6 +72,7 @@ export default class FastifyWebServer {
     sessionCookieHelper: SessionCookieHelper,
     userBySessionTokenProvider: UserBySessionTokenProvider,
     csrfTokenValidator: CsrfTokenValidator,
+    private readonly accessTokenBearerHelper: AccessTokenBearerHelper,
   ) {
     this.fastify = Fastify({
       routerOptions: {
@@ -140,22 +151,23 @@ export default class FastifyWebServer {
   }
 
   private decorateRequestForAuthentication(sessionCookieHelper: SessionCookieHelper, userBySessionTokenProvider: UserBySessionTokenProvider): void {
-    this.fastify.decorateRequest('_apollo_session_data', null);
+    this.fastify.decorateRequest('_apollo_auth_data', null);
 
     this.fastify.addHook('preHandler', async (request, reply): Promise<void> => {
       reply.serverTiming?.startNext('auth');
 
       const sessionToken = sessionCookieHelper.extractSessionCookieValue(request.cookies, false);
       if (sessionToken == null) {
-        request._apollo_session_data = null;
+        request._apollo_auth_data = null;
 
         reply.serverTiming?.stopCurrent();
         return;
       }
 
-      request._apollo_session_data = await userBySessionTokenProvider.findBySessionTokenAndUpdateLastActivity(sessionToken);
+      const sessionUser = await userBySessionTokenProvider.findBySessionTokenAndUpdateLastActivity(sessionToken);
+      request._apollo_auth_data = sessionUser != null ? { kind: 'session', ...sessionUser } : null;
 
-      if (request._apollo_session_data == null) {
+      if (sessionUser == null) {
         sessionCookieHelper.unsetCookie(reply, false);
       }
 
@@ -163,7 +175,7 @@ export default class FastifyWebServer {
     });
 
     this.fastify.decorateRequest('getSessionUserOptional', function(): SessionUser | null {
-      return this._apollo_session_data;
+      return this._apollo_auth_data?.kind === 'session' ? this._apollo_auth_data : null;
     });
 
     this.fastify.decorateRequest('getSessionUser', function(): SessionUser {
@@ -174,8 +186,16 @@ export default class FastifyWebServer {
       return sessionUser;
     });
 
+    this.fastify.decorateRequest('getAuthenticatedUserOptional', function(): ApolloUser | null {
+      return this._apollo_auth_data?.user ?? null;
+    });
+
     this.fastify.decorateRequest('getAuthenticatedUser', function(): ApolloUser {
-      return this.getSessionUser().user;
+      const user = this.getAuthenticatedUserOptional();
+      if (user == null) {
+        throw new Error('No user is authenticated for this request');
+      }
+      return user;
     });
   }
 
@@ -202,12 +222,17 @@ export default class FastifyWebServer {
 
   private setupRouters(routers: Router[]): void {
     for (const router of routers) {
+      const allowsAccessToken = router.allowAccessTokenAccess?.() === true;
+
       this.fastify.register((instance, options) => {
+        if (allowsAccessToken) {
+          instance.addHook('preHandler', this.createAccessTokenPreHandler());
+        }
+
         if (router.allowUnauthenticatedAccess?.() !== true) {
-          instance.addHook('preHandler', async (req: FastifyRequest): Promise<void> => {
-            const sessionUser = req.getSessionUserOptional();
-            if (sessionUser == null) {
-              throw new UnauthorizedError();
+          instance.addHook('preHandler', async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
+            if (req.getAuthenticatedUserOptional() == null) {
+              throw this.createUnauthorizedError(reply, allowsAccessToken);
             }
           });
         }
@@ -215,5 +240,33 @@ export default class FastifyWebServer {
         router.register(instance, options);
       }, { prefix: router.getRoutePrefix?.() });
     }
+  }
+
+  private createAccessTokenPreHandler(): (request: FastifyRequest, reply: FastifyReply) => Promise<void> {
+    return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      const authorizationHeader = request.headers.authorization;
+      if (authorizationHeader == null || authorizationHeader === '') {
+        return;
+      }
+
+      reply.serverTiming?.startNext('auth-token');
+      const bearerToken = this.accessTokenBearerHelper.extractBearerToken(authorizationHeader);
+      const accessTokenUser = bearerToken != null ? await this.accessTokenBearerHelper.findUserByBearerToken(bearerToken) : null;
+      reply.serverTiming?.stopCurrent();
+
+      // The client explicitly presented credentials, so the cookie is out of the picture even if the header is unusable
+      if (accessTokenUser == null) {
+        throw this.createUnauthorizedError(reply, true);
+      }
+
+      request._apollo_auth_data = { kind: 'accessToken', ...accessTokenUser };
+    };
+  }
+
+  private createUnauthorizedError(reply: FastifyReply, allowsAccessToken: boolean): UnauthorizedError {
+    if (allowsAccessToken) {
+      reply.header('WWW-Authenticate', 'Bearer');
+    }
+    return new UnauthorizedError();
   }
 }
