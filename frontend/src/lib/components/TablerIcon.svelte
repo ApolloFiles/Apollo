@@ -13,6 +13,8 @@
   import IconChevronUp from 'virtual:icons/tabler/chevron-up';
   import IconCircleCaretRight from 'virtual:icons/tabler/circle-caret-right';
   import IconCircleCheck from 'virtual:icons/tabler/circle-check';
+  import IconClipboard from 'virtual:icons/tabler/clipboard';
+  import IconClipboardCheck from 'virtual:icons/tabler/clipboard-check';
   import IconCurrentLocation from 'virtual:icons/tabler/current-location';
   import IconDeviceDesktop from 'virtual:icons/tabler/device-desktop';
   import IconDeviceFloppy from 'virtual:icons/tabler/device-floppy';
@@ -25,6 +27,7 @@
   import IconFolderOpen from 'virtual:icons/tabler/folder-open';
   import IconHeadphones from 'virtual:icons/tabler/headphones';
   import IconInfoCircle from 'virtual:icons/tabler/info-circle';
+  import IconKey from 'virtual:icons/tabler/key';
   import IconLanguage from 'virtual:icons/tabler/language';
   import IconLink from 'virtual:icons/tabler/link';
   import IconLinkOff from 'virtual:icons/tabler/link-off';
@@ -75,6 +78,8 @@
     | 'chevron-up'
     | 'circle-caret-right'
     | 'circle-check'
+    | 'clipboard'
+    | 'clipboard-check'
     | 'current-location'
     | 'device-desktop'
     | 'device-floppy'
@@ -87,6 +92,7 @@
     | 'folder-open'
     | 'headphones'
     | 'info-circle'
+    | 'key'
     | 'language'
     | 'link'
     | 'link-off'
@@ -158,6 +164,10 @@
         return IconCircleCaretRight;
       case 'circle-check':
         return IconCircleCheck;
+      case 'clipboard':
+        return IconClipboard;
+      case 'clipboard-check':
+        return IconClipboardCheck;
       case 'current-location':
         return IconCurrentLocation;
       case 'device-desktop':
@@ -182,6 +192,8 @@
         return IconHeadphones;
       case 'info-circle':
         return IconInfoCircle;
+      case 'key':
+        return IconKey;
       case 'language':
         return IconLanguage;
       case 'link':

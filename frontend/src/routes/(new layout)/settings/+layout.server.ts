@@ -10,6 +10,7 @@ export const load: LayoutServerLoad = (): RenderingLayoutData => {
           { label: m.nav_settings_profile(), href: '/settings/profile', icon: 'user-filled' },
           { label: m.nav_settings_language(), href: '/settings/language', icon: 'language' },
           { label: m.nav_settings_security(), href: '/settings/security', icon: 'shield-lock' },
+          { label: m.nav_settings_access_tokens(), href: '/settings/access-tokens', icon: 'key' },
         ],
       },
     },
