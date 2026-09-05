@@ -58,7 +58,7 @@ async function bootstrap(): Promise<void> {
 
     // I use a transaction here, to only take-up one 'connection',
     // but I would prefer one failed delete not to roll back the other deletes
-    const sessionCleanUpResult = await databaseClient.$transaction([
+    const cleanUpResult = await databaseClient.$transaction([
       databaseClient.authAnonymousSession.deleteMany({
         where: {
           expiresAt: { lte: now },
@@ -74,16 +74,31 @@ async function bootstrap(): Promise<void> {
           expiresAt: { lte: now },
         },
       }),
+
+      // TODO: access tokens can be cleaned once an hour or something – Doesn't have to be so frequent
+      // TODO: Maybe we delete expired/revoked tokens older than 90 days? And add a hint in the UI for that?
+      databaseClient.authAccessToken.updateMany({
+        where: {
+          hashedToken: { not: null },
+          expiresAt: { lte: now },
+        },
+        data: {
+          hashedToken: null,
+        },
+      }),
     ]);
 
-    if (sessionCleanUpResult[0].count > 0) {
-      console.debug('Cleaned up', sessionCleanUpResult[0].count, 'expired anonymous sessions');
+    if (cleanUpResult[0].count > 0) {
+      console.debug('Cleaned up', cleanUpResult[0].count, 'expired anonymous sessions');
     }
-    if (sessionCleanUpResult[1].count > 0) {
-      console.debug('Cleaned up', sessionCleanUpResult[1].count, 'expired auth sessions');
+    if (cleanUpResult[1].count > 0) {
+      console.debug('Cleaned up', cleanUpResult[1].count, 'expired auth sessions');
     }
-    if (sessionCleanUpResult[2].count > 0) {
-      console.debug('Cleaned up', sessionCleanUpResult[2].count, 'expired account creation invites');
+    if (cleanUpResult[2].count > 0) {
+      console.debug('Cleaned up', cleanUpResult[2].count, 'expired account creation invites');
+    }
+    if (cleanUpResult[3].count > 0) {
+      console.debug('Unset the secret of', cleanUpResult[3].count, 'dead access tokens');
     }
   }, 5 * 60 * 1000);
 }
