@@ -181,7 +181,7 @@
   "page_media_manage_library_hide_from_sidebar": "Hide from sidebar",
   "page_media_manage_library_name_placeholder": "e.g. My Movies",
   "page_media_manage_library_personal_badge": "Just for you",
-  "page_media_manage_library_personal_subtitle": "Personal preferences for this library — they only affect your view.",
+  "page_media_manage_library_personal_subtitle": "Personal preferences for this library — they only affect your view",
   "page_media_manage_library_save_error": "Error saving changes: {message}",
   "page_media_manage_library_search_placeholder": "Search User ID or Name…",
   "page_media_manage_library_shared_with": "Shared With",
