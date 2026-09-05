@@ -1,9 +1,16 @@
 import { injectable } from 'tsyringe';
+import AccessTokenFinder, { type AccessTokenData } from '../../../auth/access_token/AccessTokenFinder.js';
+import AccessTokenRevoker from '../../../auth/access_token/AccessTokenRevoker.js';
+import TokenRevocationFailedError from '../../../auth/access_token/error/TokenRevocationFailedError.js';
+import TokenRotationFailedError from '../../../auth/access_token/error/TokenRotationFailedError.js';
+import PersonalAccessTokenCreator from '../../../auth/access_token/personal/PersonalAccessTokenCreator.js';
+import PersonalAccessTokenRotator from '../../../auth/access_token/personal/PersonalAccessTokenRotator.js';
 import OAuthConfigurationProvider from '../../../auth/oauth/OAuthConfigurationProvider.js';
 import AuthSessionFinder from '../../../auth/session/AuthSessionFinder.js';
 import AuthSessionRevoker from '../../../auth/session/AuthSessionRevoker.js';
 import DatabaseClient from '../../../database/DatabaseClient.js';
 import UploadedProfilePicturePreProcessor from '../../../user/picture/UploadedProfilePicturePreProcessor.js';
+import type { ORpcContractOutputs } from '../../contract/oRpcContract.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
 
 @injectable()
@@ -14,6 +21,10 @@ export default class UserORpcRouterFactory {
     private readonly oAuthConfigurationProvider: OAuthConfigurationProvider,
     private readonly authSessionFinder: AuthSessionFinder,
     private readonly authSessionRevoker: AuthSessionRevoker,
+    private readonly accessTokenFinder: AccessTokenFinder,
+    private readonly accessTokenRevoker: AccessTokenRevoker,
+    private readonly personalAccessTokenCreator: PersonalAccessTokenCreator,
+    private readonly personalAccessTokenRotator: PersonalAccessTokenRotator,
   ) {
   }
 
@@ -145,7 +156,73 @@ export default class UserORpcRouterFactory {
               await this.authSessionRevoker.revokeAllForUserExcept(context.authSession.user.id, context.authSession.id);
             }),
         },
+
+        accessTokens: {
+          list: os.settings.accessTokens.list
+            .handler(async ({ context }) => {
+              const tokenList = await this.accessTokenFinder.findByUserId(context.authSession.user.id);
+              return { tokens: tokenList.map((token) => this.mapAccessTokenForContract(token)) };
+            }),
+          create: os.settings.accessTokens.create
+            .handler(async ({ input, context }) => {
+              const createdToken = await this.personalAccessTokenCreator.create(
+                context.authSession.user.id,
+                {
+                  name: input.name,
+                  description: input.description,
+                  lifetimeSeconds: input.lifetimeSeconds,
+                },
+              );
+
+              return {
+                fullToken: createdToken.fullToken,
+                token: this.mapAccessTokenForContract(createdToken.tokenData),
+              };
+            }),
+          rotate: os.settings.accessTokens.rotate
+            .handler(async ({ input, context, errors }) => {
+              try {
+                const rotatedToken = await this.personalAccessTokenRotator.rotate(input.tokenId, context.authSession.user.id);
+                return {
+                  fullToken: rotatedToken.fullToken,
+                };
+              } catch (err) {
+                if (err instanceof TokenRotationFailedError) {
+                  throw errors.ROTATION_FAILED({ message: 'Rotation failed, it may have been revoked or expired in the meantime' });
+                }
+
+                throw err;
+              }
+            }),
+          revoke: os.settings.accessTokens.revoke
+            .handler(async ({ input, context, errors }) => {
+              try {
+                await this.accessTokenRevoker.revoke(input.tokenId, context.authSession.user.id);
+              } catch (err) {
+                if (err instanceof TokenRevocationFailedError) {
+                  throw errors.REVOCATION_FAILED({ message: 'Revocation failed, it may have been revoked or expired in the meantime' });
+                }
+
+                throw err;
+              }
+            }),
+        },
       },
+    };
+  }
+
+  private mapAccessTokenForContract(token: AccessTokenData): ORpcContractOutputs['user']['settings']['accessTokens']['create']['token'] {
+    return {
+      id: token.id,
+      tokenHint: token.tokenHint,
+      name: token.name,
+      description: token.description,
+
+      createdAt: token.createdAt,
+      expiresAt: token.expiresAt,
+      rotatedAt: token.rotatedAt,
+      revokedAt: token.revokedAt,
+      roughLastUsedAt: token.roughLastUsedAt,
     };
   }
 }

@@ -61,6 +61,45 @@ const revokeAllSessionsExceptCurrent = baseOc
   .input(z.undefined())
   .output(z.undefined());
 
+const ACCESS_TOKEN_SCHEMA = z.strictObject({
+  id: z.bigint(),
+  tokenHint: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+
+  createdAt: z.date(),
+  expiresAt: z.date().nullable(),
+  rotatedAt: z.date().nullable(),
+  revokedAt: z.date().nullable(),
+  roughLastUsedAt: z.date().nullable(),
+});
+
+const listAccessTokens = baseOc
+  .input(z.undefined())
+  .output(z.strictObject({
+    tokens: z.array(ACCESS_TOKEN_SCHEMA),
+  }));
+const createAccessToken = baseOc
+  .input(z.object({
+    name: z.string().trim().nonempty().max(50),
+    description: z.string().trim().max(4000).nullable().transform((value) => value === '' ? null : value),
+    lifetimeSeconds: z.int().positive().nullable(),
+  }))
+  .output(z.strictObject({
+    fullToken: z.string(),
+    token: ACCESS_TOKEN_SCHEMA,
+  }));
+const rotateAccessToken = baseOc
+  .errors({ ROTATION_FAILED: { status: 409 } })
+  .input(z.object({ tokenId: z.coerce.bigint().positive() }))
+  .output(z.strictObject({
+    fullToken: z.string(),
+  }));
+const revokeAccessToken = baseOc
+  .errors({ REVOCATION_FAILED: { status: 409 } })
+  .input(z.object({ tokenId: z.coerce.bigint().positive() }))
+  .output(z.undefined());
+
 export const userContract = {
   get: getUser,
 
@@ -76,6 +115,12 @@ export const userContract = {
       get: getSecuritySettingsData,
       revokeSingleSession: revokeSingleSession,
       revokeAllSessionsExceptCurrent: revokeAllSessionsExceptCurrent,
+    },
+    accessTokens: {
+      list: listAccessTokens,
+      create: createAccessToken,
+      rotate: rotateAccessToken,
+      revoke: revokeAccessToken,
     },
   },
 };
