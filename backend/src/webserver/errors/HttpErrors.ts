@@ -29,6 +29,18 @@ export class NotFoundError extends HttpError {
   }
 }
 
+export class ConflictError extends HttpError {
+  constructor(httpErrorMessage: string) {
+    super(409, httpErrorMessage);
+  }
+}
+
+export class LengthRequiredError extends HttpError {
+  constructor(httpErrorMessage = 'Content-Length header is required') {
+    super(411, httpErrorMessage);
+  }
+}
+
 export class PayloadTooLargeError extends HttpError {
   constructor(httpErrorMessage: string) {
     super(413, httpErrorMessage);
