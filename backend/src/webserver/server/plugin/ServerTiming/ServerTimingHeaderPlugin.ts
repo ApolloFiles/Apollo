@@ -14,15 +14,16 @@ export default fastifyPlugin(registerPlugin);
 function registerPlugin(instance: FastifyInstance, _opts: FastifyPluginOptions, done: (err?: Error) => void): void {
   instance.decorateReply('serverTiming');
 
-  instance.addHook('onRequest', (request, reply, done): void => {
-    if (!IS_PRODUCTION || request.getSessionUserOptional()?.user.hasSuperUserPrivileges) {
-      reply.serverTiming = new ServerTiming();
-    }
+  instance.addHook('onRequest', (_request, reply, done): void => {
+    reply.serverTiming = new ServerTiming();
     done();
   });
 
+  // Authentication only resolves in preHandler, so the header can be gated no earlier than this
   instance.addHook('onSend', (request, reply, payload: unknown, done): void => {
-    reply.serverTiming?.setHttpHeader(reply);
+    if (!IS_PRODUCTION || request.getAuthenticatedUserOptional()?.hasSuperUserPrivileges) {
+      reply.serverTiming?.setHttpHeader(reply);
+    }
     done();
   });
 
