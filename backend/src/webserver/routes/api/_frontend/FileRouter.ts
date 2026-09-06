@@ -45,12 +45,19 @@ export default class FileRouter implements Router {
             .send({ error: 'Requested path is not a file' });
         }
 
-        return reply
+        const fileResponse = reply
           // TODO: Try to send the correct MIME type
           // TODO: Support streaming and range requests for large files
           .header('Content-Type', 'application/octet-stream')
-          .header('Content-Disposition', this.generateContentDispositionHeaderValueForFileName(requestedFile.getFileName()))
-          .send(requestedFile.supportsStreaming() ? requestedFile.createReadStream() : await requestedFile.read());
+          .header('Content-Disposition', this.generateContentDispositionHeaderValueForFileName(requestedFile.getFileName()));
+
+        if (requestedFile.supportsStreaming()) {
+          return fileResponse
+            .header('Content-Length', String((await requestedFile.stat()).size))
+            .send(requestedFile.createReadStream());
+        }
+
+        return fileResponse.send(await requestedFile.read());
       },
     });
   }
