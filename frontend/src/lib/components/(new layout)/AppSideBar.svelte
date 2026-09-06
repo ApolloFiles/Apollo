@@ -187,7 +187,7 @@
         <small
           class="text-secondary d-block"
           style="font-size: 0.8rem">{activeSubApp?.label ?? m.component_app_sidebar_select_app()}&nbsp;<TablerIcon icon="chevron-down"
-                                                                                           class="ms-1 w-25 h-25" /></small>
+                                                                                           class="ms-1" /></small>
       </span>
     </button>
     <ul

@@ -47,7 +47,7 @@
         alt=""
         class="bg-info"
       />
-      <TablerIcon icon="chevron-down" class="text-secondary w-75 h-75" />
+      <TablerIcon icon="chevron-down" class="text-secondary" />
     </button>
     <ul
       class="dropdown-menu dropdown-menu-end dropdown-menu-dark"
