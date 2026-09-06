@@ -28,3 +28,15 @@ export class NotFoundError extends HttpError {
     super(404, httpErrorMessage);
   }
 }
+
+export class PayloadTooLargeError extends HttpError {
+  constructor(httpErrorMessage: string) {
+    super(413, httpErrorMessage);
+  }
+}
+
+export class UnsupportedMediaTypeError extends HttpError {
+  constructor(httpErrorMessage = 'Unsupported media type') {
+    super(415, httpErrorMessage);
+  }
+}

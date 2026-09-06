@@ -1,7 +1,7 @@
 import FastifyCookiePlugin from '@fastify/cookie';
 import FastifyFormBodyPlugin from '@fastify/formbody';
 import FastifyWebSocketPlugin from '@fastify/websocket';
-import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import Fastify, { errorCodes as FastifyErrorCodes, type FastifyReply, type FastifyRequest } from 'fastify';
 import * as FastifyTypeProviderZod from 'fastify-type-provider-zod';
 import Http from 'node:http';
 import { injectAll, singleton } from 'tsyringe';
@@ -13,7 +13,13 @@ import UserBySessionTokenProvider, { type SessionUser } from '../../auth/UserByS
 import { ContainerTokens } from '../../constants.js';
 import type ApolloUser from '../../user/ApolloUser.js';
 import { jsonStringifyWithBigInt } from '../../utils/json.js';
-import { BadRequestError, HttpError, UnauthorizedError } from '../errors/HttpErrors.js';
+import {
+  BadRequestError,
+  HttpError,
+  PayloadTooLargeError,
+  UnauthorizedError,
+  UnsupportedMediaTypeError,
+} from '../errors/HttpErrors.js';
 import type Router from '../routes/Router.js';
 import FrontendRequestHandlerFactory from './FrontendRequestHandlerFactory.js';
 import InitialRequestRouter from './InitialRequestRouter.js';
@@ -143,11 +149,31 @@ export default class FastifyWebServer {
           .send(jsonStringifyWithBigInt(responseBody) + '\n');
       }
 
+      const translatedError = this.translateFastifyRequestBodyError(err);
+      if (translatedError != null) {
+        return reply
+          .code(translatedError.httpStatusCode)
+          .send(translatedError.createResponseBody());
+      }
+
       console.error(err);
       return reply
         .code(500)
         .send({ error: 'Internal Server Error' });
     });
+  }
+
+  private translateFastifyRequestBodyError(err: Error): HttpError | null {
+    if (err instanceof FastifyErrorCodes.FST_ERR_CTP_INVALID_MEDIA_TYPE) {
+      return new UnsupportedMediaTypeError();
+    }
+    if (err instanceof FastifyErrorCodes.FST_ERR_CTP_INVALID_CONTENT_LENGTH) {
+      return new BadRequestError('Request body size did not match Content-Length');
+    }
+    if (err instanceof FastifyErrorCodes.FST_ERR_CTP_BODY_TOO_LARGE) {
+      return new PayloadTooLargeError('Request body is too large');
+    }
+    return null;
   }
 
   private decorateRequestForAuthentication(sessionCookieHelper: SessionCookieHelper, userBySessionTokenProvider: UserBySessionTokenProvider): void {
