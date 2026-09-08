@@ -21,6 +21,7 @@ export type AppConfig = {
 
   feedback: {
     enabled: boolean;
+    discordWebhookUrl: string | null;
   }
 
   ffmpeg: {
@@ -69,6 +70,7 @@ export default class AppConfiguration {
 
       feedback: {
         enabled: process.env.APOLLO_FEATURE_FEEDBACK_ENABLED === 'true',
+        discordWebhookUrl: process.env.APOLLO_FEATURE_FEEDBACK_DISCORD_WEBHOOK_URL?.trim() || null,
       },
 
       ffmpeg: {
@@ -97,7 +99,7 @@ export default class AppConfiguration {
 
   private deepFreeze(obj: any): any {
     for (const key of Object.keys(obj)) {
-      if (typeof obj[key] === 'object') {
+      if (obj[key] !== null && typeof obj[key] === 'object') {
         this.deepFreeze(obj[key]);
       }
     }

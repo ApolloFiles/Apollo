@@ -3,6 +3,7 @@ import AppConfiguration from '../../../config/AppConfiguration.js';
 import { getAppInfo } from '../../../constants.js';
 import DatabaseClient from '../../../database/DatabaseClient.js';
 import type { Prisma } from '../../../database/prisma-client/client.js';
+import FeedbackDiscordNotifier from '../../../feedback/FeedbackDiscordNotifier.js';
 import type { ORpcImplementer, SubRouter } from '../ORpcRouter.js';
 
 @injectable()
@@ -12,6 +13,7 @@ export default class FeedbackORpcRouterFactory {
   constructor(
     private readonly appConfig: AppConfiguration,
     private readonly databaseClient: DatabaseClient,
+    private readonly discordNotifier: FeedbackDiscordNotifier,
   ) {
   }
 
@@ -35,6 +37,13 @@ export default class FeedbackORpcRouterFactory {
             appVersion: getAppInfo().version,
           },
           select: { id: true },
+        });
+
+        void this.discordNotifier.notify({
+          id: report.id,
+          category: input.category,
+          message: input.message,
+          userDisplayName: context.authSession.user.displayName,
         });
 
         return { id: report.id };
