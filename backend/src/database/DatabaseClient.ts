@@ -35,7 +35,11 @@ export default class DatabaseClient extends PrismaClient implements Disposable {
     const dbMigrations = ChildProcess.spawnSync(
       'node',
       ['node_modules/.bin/prisma', 'migrate', 'deploy'],
-      { stdio: 'inherit', cwd: APP_ROOT_DIR },
+      {
+        stdio: 'inherit',
+        cwd: APP_ROOT_DIR,
+        env: { ...process.env, CHECKPOINT_DISABLE: '1' },
+      },
     );
 
     if (dbMigrations.status !== 0) {
