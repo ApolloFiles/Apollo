@@ -9,6 +9,7 @@ import { BURN_IN_INPUT } from '../../../../src/plugins/official/media/_old/video
 import VideoStreamArgumentsBuilder from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/VideoStreamArgumentsBuilder.js';
 import LiveTranscodeLauncher from '../../../../src/plugins/official/media/_old/video-player/live-transcode/launcher/LiveTranscodeLauncher.js';
 import SeekThumbnailGenerator from '../../../../src/plugins/official/media/_old/video-player/seek-thumbnails/generator/SeekThumbnailGenerator.js';
+import FontExtractor from '../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';
 import TextBasedSubtitleExtractor from '../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';
 import VideoThumbnailFrameExtractor from '../../../../src/plugins/official/media/library/thumbnail/VideoThumbnailFrameExtractor.js';
 
@@ -49,6 +50,7 @@ const EXTRACTED_SUBTITLES = [
   { fileName: 'en.2.ass', streamIndex: 2, title: 'en', language: 'en', codecName: 'ass' },
   { fileName: 'de.3.ass', streamIndex: 3, title: 'de', language: 'de', codecName: 'ass' },
 ];
+const EXTRACTED_FONTS = [{ fileName: 'arial.ttf', streamIndex: 4 }, { fileName: 'comic.otf', streamIndex: 5 }];
 const TARGET = { fps: 23.976, capFrameRate: false, width: 1920, segmentDuration: 2 };
 
 function liveTranscode(accel: Accel, bitDepth: VideoBitDepth, subtitle: SubtitleStream | null, sourceWidth = 3840): string[] {
@@ -66,6 +68,7 @@ const CASES: Case[] = [
   { name: 'live transcode with burned-in subtitle', build: (accel, bitDepth) => liveTranscode(accel, bitDepth, SUBTITLE_STREAM), modes: ['fullChain', 'encodeOnly'] },
   { name: 'live transcode with burned-in subtitle, without scaling', build: (accel, bitDepth) => liveTranscode(accel, bitDepth, SUBTITLE_STREAM, 1920), modes: ['fullChain', 'encodeOnly'] },
   { name: 'text-based subtitle extraction', build: () => TextBasedSubtitleExtractor.buildArgs('/media/in.mkv', '/tmp/subtitles', EXTRACTED_SUBTITLES), modes: [] },
+  { name: 'subtitle font extraction', build: () => FontExtractor.buildArgs('/media/in.mkv', '/tmp/subtitles/fonts', EXTRACTED_FONTS), modes: [] },
 ];
 
 function accelsFor(testCase: Case, bitDepth: VideoBitDepth): Accel[] {
