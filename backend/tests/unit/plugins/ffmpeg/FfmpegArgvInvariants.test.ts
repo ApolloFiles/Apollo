@@ -9,6 +9,7 @@ import { BURN_IN_INPUT } from '../../../../src/plugins/official/media/_old/video
 import VideoStreamArgumentsBuilder from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/VideoStreamArgumentsBuilder.js';
 import LiveTranscodeLauncher from '../../../../src/plugins/official/media/_old/video-player/live-transcode/launcher/LiveTranscodeLauncher.js';
 import SeekThumbnailGenerator from '../../../../src/plugins/official/media/_old/video-player/seek-thumbnails/generator/SeekThumbnailGenerator.js';
+import TextBasedSubtitleExtractor from '../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';
 import VideoThumbnailFrameExtractor from '../../../../src/plugins/official/media/library/thumbnail/VideoThumbnailFrameExtractor.js';
 
 /**
@@ -26,8 +27,8 @@ const BIT_DEPTHS: VideoBitDepth[] = [8, 10];
 
 const GPU_FILTERS = /^(scale_vaapi|vpp_qsv|scale_cuda|overlay_vaapi|overlay_qsv|overlay_cuda|hwdownload)$/;
 const CPU_ONLY_FILTERS = /^(scale|tile|thumbnail|showinfo|overlay)$/;
-const INPUT_ONLY_OPTIONS = new Set(['-hwaccel', '-hwaccel_device', '-hwaccel_output_format', '-init_hw_device', '-filter_hw_device', '-skip_frame', '-ss']);
-const OUTPUT_ONLY_OPTIONS = new Set(['-vf', '-filter_complex', '-fps_mode', '-frames:v', '-c:v', '-map', '-f', '-an', '-t']);
+const INPUT_ONLY_OPTIONS = new Set(['-hwaccel', '-hwaccel_device', '-hwaccel_output_format', '-init_hw_device', '-filter_hw_device', '-skip_frame', '-ss', '-fix_sub_duration']);
+const OUTPUT_ONLY_OPTIONS = new Set(['-vf', '-filter_complex', '-fps_mode', '-frames:v', '-c:v', '-c:s', '-map', '-f', '-an', '-t']);
 
 type Case = {
   readonly name: string;
@@ -44,6 +45,10 @@ function videoStream(bitDepth: VideoBitDepth, width = 3840): VideoStream {
 }
 
 const SUBTITLE_STREAM = { index: 3, codecType: 'subtitle', codecName: 'hdmv_pgs_subtitle' } as unknown as SubtitleStream;
+const EXTRACTED_SUBTITLES = [
+  { fileName: 'en.2.ass', streamIndex: 2, title: 'en', language: 'en', codecName: 'ass' },
+  { fileName: 'de.3.ass', streamIndex: 3, title: 'de', language: 'de', codecName: 'ass' },
+];
 const TARGET = { fps: 23.976, capFrameRate: false, width: 1920, segmentDuration: 2 };
 
 function liveTranscode(accel: Accel, bitDepth: VideoBitDepth, subtitle: SubtitleStream | null, sourceWidth = 3840): string[] {
@@ -60,6 +65,7 @@ const CASES: Case[] = [
   { name: 'live transcode without scaling', build: (accel, bitDepth) => liveTranscode(accel, bitDepth, null, 1920), modes: ['fullChain', 'encodeOnly'] },
   { name: 'live transcode with burned-in subtitle', build: (accel, bitDepth) => liveTranscode(accel, bitDepth, SUBTITLE_STREAM), modes: ['fullChain', 'encodeOnly'] },
   { name: 'live transcode with burned-in subtitle, without scaling', build: (accel, bitDepth) => liveTranscode(accel, bitDepth, SUBTITLE_STREAM, 1920), modes: ['fullChain', 'encodeOnly'] },
+  { name: 'text-based subtitle extraction', build: () => TextBasedSubtitleExtractor.buildArgs('/media/in.mkv', '/tmp/subtitles', EXTRACTED_SUBTITLES), modes: [] },
 ];
 
 function accelsFor(testCase: Case, bitDepth: VideoBitDepth): Accel[] {
