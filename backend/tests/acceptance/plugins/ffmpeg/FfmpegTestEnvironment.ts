@@ -39,7 +39,17 @@ export type FfmpegTestEnvironment = {
    * an oversized canvas would just be clipped and still look right.
    */
   readonly pgsMismatchedCanvasSample: FfmpegTestSample | null;
+  /** An h264 sample carrying three `subrip` streams, one `ass` stream and one attached font, or `null` without libx264 */
+  readonly multiSubtitleSample: FfmpegMultiSubtitleSample | null;
   readonly devices: readonly FfmpegTestDevice[];
+}
+
+export type FfmpegMultiSubtitleSample = FfmpegTestSample & {
+  /** The input stream indices of the text-based subtitle streams, in the order they appear in the file */
+  readonly subtitleStreamIndices: readonly number[];
+  readonly attachedFontFileName: string;
+  /** The first cue of each subtitle stream, in the same order – the last cue of a stream never survives `-fix_sub_duration` */
+  readonly firstCues: readonly string[];
 }
 
 declare module 'vitest' {
@@ -66,7 +76,7 @@ export function requireFfmpeg(ctx: TestContext): FfmpegTestEnvironment {
   return environment;
 }
 
-export function requireSample(ctx: TestContext, sample: FfmpegTestSample | null, description: string): FfmpegTestSample {
+export function requireSample<T extends FfmpegTestSample>(ctx: TestContext, sample: T | null, description: string): T {
   requireFfmpeg(ctx);
   if (sample == null) {
     ctx.skip(`this ffmpeg has no encoder to create ${description} with`);
@@ -80,13 +90,14 @@ export async function probeFfmpegEnvironment(): Promise<FfmpegTestEnvironment> {
 
   const ffmpegVersion = await determineFfmpegVersion(ffmpegProcessRunner);
   if (ffmpegVersion == null) {
-    return { ffmpegVersion: null, sampleDirectory, h264Sample: null, hevc10Sample: null, pgsSample: null, pgsMismatchedCanvasSample: null, devices: [] };
+    return { ffmpegVersion: null, sampleDirectory, h264Sample: null, hevc10Sample: null, pgsSample: null, pgsMismatchedCanvasSample: null, multiSubtitleSample: null, devices: [] };
   }
 
   const h264Sample = await createSample(ffmpegProcessRunner, sampleDirectory, 'h264', 'libx264', 'yuv420p');
   const hevc10Sample = await createSample(ffmpegProcessRunner, sampleDirectory, 'hevc', 'libx265', 'yuv420p10le');
   const pgsSample = await createPgsSample(ffmpegProcessRunner, sampleDirectory, 'sample-h264-pgs.mkv', [640, 360]);
   const pgsMismatchedCanvasSample = await createPgsSample(ffmpegProcessRunner, sampleDirectory, 'sample-h264-pgs-mismatched-canvas.mkv', [320, 180]);
+  const multiSubtitleSample = await createMultiSubtitleSample(ffmpegProcessRunner, sampleDirectory);
 
   return withoutProbeNoise(async () => ({
     ffmpegVersion,
@@ -95,6 +106,7 @@ export async function probeFfmpegEnvironment(): Promise<FfmpegTestEnvironment> {
     hevc10Sample,
     pgsSample,
     pgsMismatchedCanvasSample,
+    multiSubtitleSample,
     devices: await probeDevices(h264Sample, hevc10Sample),
   }));
 }
@@ -106,7 +118,7 @@ export function logFfmpegEnvironment(environment: FfmpegTestEnvironment): void {
   }
 
   console.info(`[ffmpeg] ${environment.ffmpegVersion}`);
-  console.info(`[ffmpeg] Samples: h264=${environment.h264Sample != null} hevc10=${environment.hevc10Sample != null} pgs=${environment.pgsSample != null} pgsMismatchedCanvas=${environment.pgsMismatchedCanvasSample != null}`);
+  console.info(`[ffmpeg] Samples: h264=${environment.h264Sample != null} hevc10=${environment.hevc10Sample != null} pgs=${environment.pgsSample != null} pgsMismatchedCanvas=${environment.pgsMismatchedCanvasSample != null} multiSubtitle=${environment.multiSubtitleSample != null}`);
   if (environment.devices.length === 0) {
     console.info('[ffmpeg] No hardware devices – every acceptance test that needs one skips itself');
   }
@@ -147,6 +159,79 @@ async function createSample(ffmpegProcessRunner: FfmpegProcessRunner, directory:
     return null;
   }
   return { path, codecName, pixelFormat, width: 640, height: 360 };
+}
+
+/**
+ * Three `subrip` streams (one of them without a language tag) plus one `ass` stream, so a single file covers both the
+ * codec that is taken as it is and the ones that have to be converted, and one attached font to dump.
+ */
+async function createMultiSubtitleSample(ffmpegProcessRunner: FfmpegProcessRunner, directory: string): Promise<FfmpegMultiSubtitleSample | null> {
+  const width = 320;
+  const height = 180;
+  const firstCues = ['First English line', 'Erste deutsche Zeile', 'Premiere ligne', 'First styled line'];
+  const languages = ['eng', 'ger', 'fre'];
+
+  for (let index = 0; index < languages.length; ++index) {
+    await Fs.promises.writeFile(Path.join(directory, `sample-subtitle-${index}.srt`), srtCues(firstCues[index]));
+  }
+  await Fs.promises.writeFile(Path.join(directory, 'sample-subtitle-3.ass'), assCues(firstCues[3]));
+
+  const attachedFontFileName = 'sample-font.ttf';
+  await Fs.promises.writeFile(Path.join(directory, attachedFontFileName), Buffer.alloc(512, 0x2a));
+
+  const path = Path.join(directory, 'sample-h264-multi-subtitle.mkv');
+  const handle = ffmpegProcessRunner.spawn([
+    '-f', 'lavfi', '-i', `testsrc2=s=${width}x${height}:r=25`,
+    ...languages.flatMap((_language, index) => ['-i', `sample-subtitle-${index}.srt`]),
+    '-i', 'sample-subtitle-3.ass',
+    '-attach', attachedFontFileName,
+    '-metadata:s:t:0', 'mimetype=application/x-truetype-font',
+    '-t', '2',
+    '-map', '0:v',
+    '-map', '1:0', '-map', '2:0', '-map', '3:0', '-map', '4:0',
+    '-c:v', 'libx264',
+    '-pix_fmt', 'yuv420p',
+    '-c:s:0', 'srt', '-c:s:1', 'srt', '-c:s:2', 'srt', '-c:s:3', 'copy',
+    ...languages.flatMap((language, index) => [`-metadata:s:s:${index}`, `language=${language}`]),
+    '-metadata:s:s:0', 'title=English',
+    '-y', path,
+  ], { cwd: directory, logVerbosity: 'error', timeoutInMillis: 60_000 });
+
+  const exitResult = await handle.waitForExit();
+  if (exitResult.exitCode !== 0) {
+    return null;
+  }
+  return {
+    path,
+    codecName: 'h264',
+    pixelFormat: 'yuv420p',
+    width,
+    height,
+    subtitleStreamIndices: [1, 2, 3, 4],
+    attachedFontFileName,
+    firstCues,
+  };
+}
+
+function srtCues(firstCue: string): string {
+  return `1\n00:00:00,500 --> 00:00:01,000\n${firstCue}\n\n2\n00:00:01,200 --> 00:00:01,800\nSecond line\n`;
+}
+
+function assCues(firstCue: string): string {
+  return [
+    '[Script Info]',
+    'ScriptType: v4.00+',
+    '',
+    '[V4+ Styles]',
+    'Format: Name, Fontname, Fontsize',
+    'Style: Default,Arial,20',
+    '',
+    '[Events]',
+    'Format: Layer, Start, End, Style, Text',
+    `Dialogue: 0,0:00:00.50,0:00:01.00,Default,${firstCue}`,
+    'Dialogue: 0,0:00:01.20,0:00:01.80,Default,Second line',
+    '',
+  ].join('\n');
 }
 
 /** No encoder in ffmpeg produces bitmap subtitles from anything but bitmap subtitles, so the PGS stream is written by hand */
