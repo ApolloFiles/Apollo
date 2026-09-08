@@ -9,6 +9,8 @@ export type StartPlaybackResponse = {
   startOffsetInSeconds: number,
   mediaMetadata: {
     mediaItemId: string,
+    libraryId?: string,
+    mediaId?: string,
     title: string,
     episode?: {
       season: number,

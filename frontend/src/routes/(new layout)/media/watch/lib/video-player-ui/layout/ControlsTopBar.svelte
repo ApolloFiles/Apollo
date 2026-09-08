@@ -13,6 +13,11 @@
     autoPlayEnabled: boolean,
   } = $props();
 
+  const backHref = $derived(
+    mediaMetadata.libraryId != null && mediaMetadata.mediaId != null
+      ? `/media/${mediaMetadata.libraryId}/${mediaMetadata.mediaId}`
+      : '/media',
+  );
   const previousMediaItem = $derived(mediaMetadata.episode?.previousMedia);
   const nextMediaItem = $derived(mediaMetadata.episode?.nextMedia);
 
@@ -31,7 +36,7 @@
 
 <div class="top-bar">
   <div class="left-section">
-    <button class="back-button"><IconArrowBack /></button>
+    <a class="back-button" href={backHref} aria-label={m.component_video_player_back_label()}><IconArrowBack /></a>
     <div class="video-title-container">
       <h1 class="video-title">{mediaMetadata.title}</h1>
       {#if mediaMetadata.episode}
@@ -88,12 +93,16 @@
   }
 
   .back-button {
-    background:    transparent;
-    color:         white;
-    border:        1px solid white;
-    padding:       8px 16px;
-    border-radius: 4px;
-    cursor:        pointer;
+    background:      transparent;
+    color:           white;
+    border:          1px solid white;
+    padding:         8px 16px;
+    border-radius:   4px;
+    cursor:          pointer;
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    text-decoration: none;
   }
 
   .video-title-container {

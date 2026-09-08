@@ -230,6 +230,8 @@ export default class PlayerSessionRouter implements Router {
 
         await playerSession.startLiveTranscode(apolloFile, startOffset, {
           mediaItemId: mediaItem.mediaItem.id.toString(),
+          libraryId: mediaItem.mediaItem.libraryId.toString(),
+          mediaId: mediaItem.mediaItem.mediaId.toString(),
           title: libraryMedia.media.title,
           episode: ((mediaItem.mediaItem.seasonNumber != null && mediaItem.mediaItem.episodeNumber != null) ? {
             title: mediaItem.mediaItem.title,
@@ -445,6 +447,8 @@ export default class PlayerSessionRouter implements Router {
           const fullMediaItem = await this.libraryMediaItemFinder_new.findFullById(mediaItem.mediaItem.id);
           videoLiveTranscodeMedia = await playerSession.startLiveTranscode(owningUserDefaultFileSystem.getFile(Path.join(fullMediaItem!.mediaBaseDirectoryUri.filePath, fullMediaItem!.relativeFilePath)), startOffset, {
             mediaItemId: mediaItemId.toString(),
+            libraryId: mediaItem.mediaItem.libraryId.toString(),
+            mediaId: mediaItem.mediaItem.mediaId.toString(),
             title: libraryMedia.media.title,
             episode: ((mediaItem.mediaItem.seasonNumber != null && mediaItem.mediaItem.episodeNumber != null) ? {
               title: mediaItem.mediaItem.title,
