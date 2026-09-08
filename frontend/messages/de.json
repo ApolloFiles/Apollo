@@ -122,6 +122,8 @@
   "page_admin_feedback_detail_saved": "Gespeichert",
   "page_admin_feedback_detail_subtitle": "Feedback-Bericht",
   "page_admin_feedback_empty": "Es wurde noch kein Feedback übermittelt",
+  "page_admin_feedback_section_active_heading": "Aktiv",
+  "page_admin_feedback_section_closed_heading": "Abgeschlossen",
   "page_admin_feedback_status_in_progress": "In Bearbeitung",
   "page_admin_feedback_status_open": "Offen",
   "page_admin_feedback_status_resolved": "Erledigt",

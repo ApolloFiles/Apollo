@@ -122,6 +122,8 @@
   "page_admin_feedback_detail_saved": "Saved",
   "page_admin_feedback_detail_subtitle": "Feedback Report",
   "page_admin_feedback_empty": "No feedback has been submitted yet",
+  "page_admin_feedback_section_active_heading": "Active",
+  "page_admin_feedback_section_closed_heading": "Closed",
   "page_admin_feedback_status_in_progress": "In progress",
   "page_admin_feedback_status_open": "Open",
   "page_admin_feedback_status_resolved": "Resolved",

@@ -7,6 +7,9 @@
 
   const reports = $derived(data.reports);
 
+  type FeedbackReport = (typeof reports)[number];
+  type FeedbackReportStatus = FeedbackReport['status'];
+
   const categoryLabels = {
     BUG: m.page_admin_feedback_category_bug,
     FEEDBACK: m.page_admin_feedback_category_feedback,
@@ -18,6 +21,13 @@
     RESOLVED: m.page_admin_feedback_status_resolved,
     WONT_FIX: m.page_admin_feedback_status_wont_fix,
   } as const;
+
+  const activeReports = $derived(reports.filter((report) => !isClosed(report.status)));
+  const closedReports = $derived(reports.filter((report) => isClosed(report.status)));
+
+  function isClosed(status: FeedbackReportStatus): boolean {
+    return status === 'RESOLVED' || status === 'WONT_FIX';
+  }
 
   function messageExcerpt(message: string): string {
     const firstLine = message.split('\n', 1)[0].trim();
@@ -38,38 +48,38 @@
   </header>
 
   {#if reports.length > 0}
-    <div class="report-list">
-      {#each reports as report (report.id)}
-        <a href="/admin/feedback/{report.id}" class="report-item">
-          <div class="report-category-icon" class:is-bug={report.category === 'BUG'}>
-            <TablerIcon icon={report.category === 'BUG' ? 'bug' : 'message'} />
-          </div>
+    {#if activeReports.length > 0}
+      <section class="report-section">
+        <h2 class="section-heading">
+          {m.page_admin_feedback_section_active_heading()}
+          <span class="section-count">{activeReports.length}</span>
+        </h2>
 
-          <div class="report-info">
-            <div class="report-message">{messageExcerpt(report.message)}</div>
-            <div class="report-meta">
-              <span>{report.user.displayName}</span>
-              <span>·</span>
-              <span><RelativeTime date={report.createdAt} /></span>
-              <span>·</span>
-              <span class="monospace">{report.appVersion}</span>
-            </div>
-            <div class="badges">
-              <span class="badge badge-category" class:is-bug={report.category === 'BUG'}>
-                {categoryLabels[report.category]()}
-              </span>
-              <span class="badge badge-status-{report.status.toLowerCase()}">
-                {statusLabels[report.status]()}
-              </span>
-            </div>
-          </div>
+        <div class="report-list">
+          {#each activeReports as report (report.id)}
+            {@render reportItem(report)}
+          {/each}
+        </div>
+      </section>
+    {/if}
 
-          <div class="report-actions">
-            <TablerIcon icon="chevron-right" />
-          </div>
-        </a>
-      {/each}
-    </div>
+    {#if closedReports.length > 0}
+      <details class="report-section closed-section" open={activeReports.length === 0}>
+        <summary>
+          <TablerIcon icon="chevron-right" class="closed-section-chevron" />
+          <h2 class="section-heading">
+            {m.page_admin_feedback_section_closed_heading()}
+            <span class="section-count">{closedReports.length}</span>
+          </h2>
+        </summary>
+
+        <div class="report-list">
+          {#each closedReports as report (report.id)}
+            {@render reportItem(report)}
+          {/each}
+        </div>
+      </details>
+    {/if}
   {:else}
     <div class="empty-state">
       <TablerIcon icon="message-off" />
@@ -77,6 +87,37 @@
     </div>
   {/if}
 </div>
+
+{#snippet reportItem(report: FeedbackReport)}
+  <a href="/admin/feedback/{report.id}" class="report-item">
+    <div class="report-category-icon" class:is-bug={report.category === 'BUG'}>
+      <TablerIcon icon={report.category === 'BUG' ? 'bug' : 'message'} />
+    </div>
+
+    <div class="report-info">
+      <div class="report-message">{messageExcerpt(report.message)}</div>
+      <div class="report-meta">
+        <span>{report.user.displayName}</span>
+        <span>·</span>
+        <span><RelativeTime date={report.createdAt} /></span>
+        <span>·</span>
+        <span class="monospace">{report.appVersion}</span>
+      </div>
+      <div class="badges">
+        <span class="badge badge-category" class:is-bug={report.category === 'BUG'}>
+          {categoryLabels[report.category]()}
+        </span>
+        <span class="badge badge-status-{report.status.toLowerCase()}">
+          {statusLabels[report.status]()}
+        </span>
+      </div>
+    </div>
+
+    <div class="report-actions">
+      <TablerIcon icon="chevron-right" />
+    </div>
+  </a>
+{/snippet}
 
 <style>
   .page-container {
@@ -104,6 +145,69 @@
     margin:    0;
   }
 
+  .report-section + .report-section {
+    margin-top: 32px;
+  }
+
+  .section-heading {
+    display:     flex;
+    align-items: center;
+    gap:         8px;
+    font-size:   1.1rem;
+    font-weight: 600;
+    color:       var(--text-primary);
+    margin:      0 0 12px 0;
+  }
+
+  .section-count {
+    font-size:        0.8rem;
+    font-weight:      600;
+    padding:          2px 8px;
+    border-radius:    999px;
+    background-color: var(--tertiary-bg, #252525);
+    border:           1px solid var(--border-color, #333);
+    color:            var(--text-secondary, #aaa);
+  }
+
+  .closed-section > summary {
+    display:     flex;
+    align-items: center;
+    gap:         6px;
+    cursor:      pointer;
+    list-style:  none;
+  }
+
+  .closed-section > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .closed-section > summary .section-heading {
+    color:  var(--text-secondary, #aaa);
+    margin: 0;
+  }
+
+  .closed-section > summary :global(.closed-section-chevron) {
+    color:      var(--text-secondary, #aaa);
+    transition: transform 0.2s;
+  }
+
+  .closed-section[open] > summary {
+    margin-bottom: 12px;
+  }
+
+  .closed-section[open] > summary :global(.closed-section-chevron) {
+    transform: rotate(90deg);
+  }
+
+  .closed-section .report-item {
+    opacity: 0.8;
+  }
+
+  .closed-section .report-item:hover,
+  .closed-section .report-item:focus-visible {
+    opacity: 1;
+  }
+
   .report-list {
     display:        flex;
     flex-direction: column;
@@ -122,7 +226,8 @@
     color:            inherit;
     transition:       transform 0.2s,
                       box-shadow 0.2s,
-                      background-color 0.2s;
+                      background-color 0.2s,
+                      opacity 0.2s;
   }
 
   .report-item:hover {
