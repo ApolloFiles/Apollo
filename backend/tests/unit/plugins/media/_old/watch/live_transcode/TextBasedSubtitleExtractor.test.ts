@@ -66,7 +66,6 @@ describe('TextBasedSubtitleExtractor.buildArgs', () => {
 
     expect(args).toEqual([
       '-bitexact', '-n',
-      '-fix_sub_duration',
       '-i', '/media/in.mkv',
       '-map', '0:2', '-c:s', 'ass', '/tmp/subs/en.2.ass',
       '-map', '0:3', '-c:s', 'ass', '/tmp/subs/de.3.ass',
@@ -80,7 +79,6 @@ describe('TextBasedSubtitleExtractor.buildArgs', () => {
 
     expect(args.filter((arg) => arg === '-i')).toHaveLength(1);
     expect(args.filter((arg) => arg === '-map')).toHaveLength(29);
-    expect(args.indexOf('-fix_sub_duration')).toBeLessThan(args.indexOf('-i'));
     expect(args.indexOf('-map')).toBeGreaterThan(args.indexOf('-i'));
     expect(new Set(args.filter((arg) => arg.endsWith('.ass'))).size).toBe(29);
   });

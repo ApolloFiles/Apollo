@@ -107,8 +107,6 @@ export default class TextBasedSubtitleExtractor {
       '-bitexact',
       '-n',
 
-      '-fix_sub_duration',
-
       '-i', videoFile,
 
       ...targets.flatMap((target) => [

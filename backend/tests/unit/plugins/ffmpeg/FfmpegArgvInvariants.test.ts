@@ -28,7 +28,7 @@ const BIT_DEPTHS: VideoBitDepth[] = [8, 10];
 
 const GPU_FILTERS = /^(scale_vaapi|vpp_qsv|scale_cuda|overlay_vaapi|overlay_qsv|overlay_cuda|hwdownload)$/;
 const CPU_ONLY_FILTERS = /^(scale|tile|thumbnail|showinfo|overlay)$/;
-const INPUT_ONLY_OPTIONS = new Set(['-hwaccel', '-hwaccel_device', '-hwaccel_output_format', '-init_hw_device', '-filter_hw_device', '-skip_frame', '-ss', '-fix_sub_duration']);
+const INPUT_ONLY_OPTIONS = new Set(['-hwaccel', '-hwaccel_device', '-hwaccel_output_format', '-init_hw_device', '-filter_hw_device', '-skip_frame', '-ss']);
 const OUTPUT_ONLY_OPTIONS = new Set(['-vf', '-filter_complex', '-fps_mode', '-frames:v', '-c:v', '-c:s', '-map', '-f', '-an', '-t']);
 
 type Case = {

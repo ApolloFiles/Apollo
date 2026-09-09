@@ -48,8 +48,10 @@ export type FfmpegMultiSubtitleSample = FfmpegTestSample & {
   /** The input stream indices of the text-based subtitle streams, in the order they appear in the file */
   readonly subtitleStreamIndices: readonly number[];
   readonly attachedFontFileName: string;
-  /** The first cue of each subtitle stream, in the same order – the last cue of a stream never survives `-fix_sub_duration` */
+  /** The first cue of each subtitle stream, in the same order */
   readonly firstCues: readonly string[];
+  /** The last cue of every subtitle stream */
+  readonly lastCue: string;
 }
 
 declare module 'vitest' {
@@ -161,6 +163,8 @@ async function createSample(ffmpegProcessRunner: FfmpegProcessRunner, directory:
   return { path, codecName, pixelFormat, width: 640, height: 360 };
 }
 
+const LAST_CUE = 'Second line';
+
 /**
  * Three `subrip` streams (one of them without a language tag) plus one `ass` stream, so a single file covers both the
  * codec that is taken as it is and the ones that have to be converted, and one attached font to dump.
@@ -210,11 +214,12 @@ async function createMultiSubtitleSample(ffmpegProcessRunner: FfmpegProcessRunne
     subtitleStreamIndices: [1, 2, 3, 4],
     attachedFontFileName,
     firstCues,
+    lastCue: LAST_CUE,
   };
 }
 
 function srtCues(firstCue: string): string {
-  return `1\n00:00:00,500 --> 00:00:01,000\n${firstCue}\n\n2\n00:00:01,200 --> 00:00:01,800\nSecond line\n`;
+  return `1\n00:00:00,500 --> 00:00:01,000\n${firstCue}\n\n2\n00:00:01,200 --> 00:00:01,800\n${LAST_CUE}\n`;
 }
 
 function assCues(firstCue: string): string {
@@ -229,7 +234,7 @@ function assCues(firstCue: string): string {
     '[Events]',
     'Format: Layer, Start, End, Style, Text',
     `Dialogue: 0,0:00:00.50,0:00:01.00,Default,${firstCue}`,
-    'Dialogue: 0,0:00:01.20,0:00:01.80,Default,Second line',
+    `Dialogue: 0,0:00:01.20,0:00:01.80,Default,${LAST_CUE}`,
     '',
   ].join('\n');
 }

@@ -47,6 +47,7 @@ describe('TextBasedSubtitleExtractor', () => {
 
       expect(fileContent).toMatch(/^\[Script Info]/);
       expect(fileContent).toContain(sample.firstCues[index]);
+      expect(fileContent).toContain(sample.lastCue);
     }
   });
 
