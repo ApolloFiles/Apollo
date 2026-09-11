@@ -6,10 +6,7 @@ import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
 import { type ExtendedProbeResult } from '../../../ffmpeg/probe/FfprobeExecutor.js';
-import PlayableDurationUtil, {
-  type DurationRelevantStream,
-  type StreamSpanSource,
-} from '../../../ffmpeg/probe/PlayableDurationUtil.js';
+import PlayableDurationUtil, { type StreamSpanSource } from '../../../ffmpeg/probe/PlayableDurationUtil.js';
 import ProbeTagUtil from '../../../ffmpeg/probe/ProbeTagUtil.js';
 import ForcedSubtitleDetector, { type SubtitleStreamCandidate } from './ForcedSubtitleDetector.js';
 import LanguageTagUtil from './LanguageTagUtil.js';
@@ -96,7 +93,7 @@ export default abstract class AbstractScanner {
 
     if (file instanceof LocalFile) {
       const fileProbe = await this.ffprobeExecutor.probeFull(file);
-      durationInSec = Math.ceil(this.determinePlayableDurationInSec(fileProbe) ?? 0);
+      durationInSec = Math.ceil(PlayableDurationUtil.determineProbedPlayableDurationInSec(fileProbe) ?? 0);
 
       const extractedTitle = this.extractMetadataFromProbe(fileProbe, 'title') ?? this.extractMetadataFromProbe(fileProbe, 'name');
       if (extractedTitle != null && extractedTitle.trim().length > 0) {
@@ -203,27 +200,6 @@ export default abstract class AbstractScanner {
   /** Seconds between the first and the last packet of a stream – *not* the accumulated on-screen time. */
   private extractStreamSpanInSec(stream: ProbeStream): number | null {
     return PlayableDurationUtil.determineStreamSpanInSec(this.toStreamSpanSource(stream));
-  }
-
-  /**
-   * The container's duration is the end of its *longest* track, which may well be a subtitle stream
-   * that outlives video and audio – what actually plays is what {@link PlayableDurationUtil} determines.
-   */
-  private determinePlayableDurationInSec(fileProbe: ExtendedProbeResult): number | null {
-    const relevantStreams: DurationRelevantStream[] = [];
-    for (const stream of fileProbe.streams) {
-      if (stream.codec_type === 'video' || stream.codec_type === 'audio') {
-        relevantStreams.push({
-          ...this.toStreamSpanSource(stream),
-          type: stream.codec_type,
-        });
-      }
-    }
-
-    return PlayableDurationUtil.determinePlayableDurationInSec(
-      relevantStreams,
-      PlayableDurationUtil.parseFiniteFloat(fileProbe.format.duration),
-    );
   }
 
   private toStreamSpanSource(stream: ProbeStream): StreamSpanSource {

@@ -7,6 +7,7 @@ import type { FfmpegVideoInput } from '../../../ffmpeg/job/FfmpegJob.js';
 import FfmpegJobRunner from '../../../ffmpeg/job/FfmpegJobRunner.js';
 import FfmpegVideoInputs from '../../../ffmpeg/job/FfmpegVideoInputs.js';
 import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
+import PlayableDurationUtil from '../../../ffmpeg/probe/PlayableDurationUtil.js';
 import ImageFileConstants from '../images/ImageFileConstants.js';
 
 @singleton()
@@ -30,7 +31,7 @@ export default class VideoThumbnailFrameExtractor {
     if (input == null) {
       throw new Error(`${file.getAbsolutePathOnHost()} has no video stream to extract thumbnail frames from`);
     }
-    const seekPosition = VideoThumbnailFrameExtractor.determineSeekPosition(probeResult.format.duration);
+    const seekPosition = VideoThumbnailFrameExtractor.determineSeekPosition(PlayableDurationUtil.determineProbedPlayableDurationInSec(probeResult));
 
     await this.ffmpegJobRunner.run({
       name: 'video-thumbnail-frame-extraction',
@@ -98,12 +99,10 @@ export default class VideoThumbnailFrameExtractor {
       .map((fileName) => Fs.promises.rm(Path.join(targetDirectory, fileName), { force: true })));
   }
 
-  private static determineSeekPosition(duration: string | undefined): number {
-    const durationInSeconds = parseInt(duration ?? '0', 10);
-
-    if (durationInSeconds <= VideoThumbnailFrameExtractor.SHORTEST_VIDEO_WORTH_SEEKING_IN) {
+  private static determineSeekPosition(playableDurationInSec: number | null): number {
+    if (playableDurationInSec == null || playableDurationInSec <= VideoThumbnailFrameExtractor.SHORTEST_VIDEO_WORTH_SEEKING_IN) {
       return 0;
     }
-    return durationInSeconds * VideoThumbnailFrameExtractor.SEEK_FRACTION;
+    return playableDurationInSec * VideoThumbnailFrameExtractor.SEEK_FRACTION;
   }
 }

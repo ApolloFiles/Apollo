@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import type { ExtendedProbeResult } from '../../../../src/plugins/official/ffmpeg/probe/FfprobeExecutor.js';
 import PlayableDurationUtil, {
   type DurationRelevantStream,
 } from '../../../../src/plugins/official/ffmpeg/probe/PlayableDurationUtil.js';
@@ -8,6 +9,10 @@ function stream(partial: Partial<DurationRelevantStream> & { type: DurationRelev
     tags: {},
     ...partial,
   };
+}
+
+function probeResult(formatDuration: string | undefined, streams: Record<string, unknown>[]): ExtendedProbeResult {
+  return { format: { duration: formatDuration }, streams } as unknown as ExtendedProbeResult;
 }
 
 describe('PlayableDurationUtil#determineStreamSpanInSec', () => {
@@ -139,5 +144,29 @@ describe('PlayableDurationUtil#determinePlayableDurationInSec', () => {
     ], null);
 
     expect(duration).toBe(600);
+  });
+});
+
+describe('PlayableDurationUtil#determineProbedPlayableDurationInSec', () => {
+  test('Ignores a subtitle stream that outlives video and audio', () => {
+    const duration = PlayableDurationUtil.determineProbedPlayableDurationInSec(probeResult('50428.000000', [
+      { codec_type: 'video', time_base: '1/1000', tags: { DURATION: '00:30:45.640000000' } },
+      { codec_type: 'audio', time_base: '1/1000', tags: { DURATION: '00:30:45.638000000' } },
+      { codec_type: 'subtitle', time_base: '1/1000', duration: '50428.000000', tags: { DURATION: '14:00:28.000000000' } },
+    ]));
+
+    expect(duration).toBeCloseTo(1845.64, 2);
+  });
+
+  test('Falls back to the container duration when no stream reports a span', () => {
+    const duration = PlayableDurationUtil.determineProbedPlayableDurationInSec(probeResult('1234.5', [
+      { codec_type: 'video', time_base: '1/1000', tags: {} },
+    ]));
+
+    expect(duration).toBeCloseTo(1234.5, 1);
+  });
+
+  test('Returns null when nothing reports a duration at all', () => {
+    expect(PlayableDurationUtil.determineProbedPlayableDurationInSec(probeResult(undefined, []))).toBeNull();
   });
 });

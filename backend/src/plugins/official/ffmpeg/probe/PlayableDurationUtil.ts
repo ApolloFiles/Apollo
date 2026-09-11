@@ -1,3 +1,4 @@
+import type { ExtendedProbeResult } from './FfprobeExecutor.js';
 import ProbeTagUtil from './ProbeTagUtil.js';
 
 /** Everything needed to tell how far a single stream reaches, regardless of its type. */
@@ -80,6 +81,24 @@ export default class PlayableDurationUtil {
       return containerDuration;
     }
     return playableDuration;
+  }
+
+  /** {@link determinePlayableDurationInSec} for a probed file, picking the streams that decide it out of the probe. */
+  static determineProbedPlayableDurationInSec(probeResult: ExtendedProbeResult): number | null {
+    const relevantStreams: DurationRelevantStream[] = [];
+    for (const stream of probeResult.streams) {
+      if (stream.codec_type === 'video' || stream.codec_type === 'audio') {
+        relevantStreams.push({
+          duration: stream.duration,
+          durationTs: stream.duration_ts,
+          timeBase: stream.time_base,
+          tags: stream.tags,
+          type: stream.codec_type,
+        });
+      }
+    }
+
+    return this.determinePlayableDurationInSec(relevantStreams, this.parseFiniteFloat(probeResult.format.duration));
   }
 
   private static determineLongestSpanInSec(streams: DurationRelevantStream[], type: DurationRelevantStream['type']): number | null {
