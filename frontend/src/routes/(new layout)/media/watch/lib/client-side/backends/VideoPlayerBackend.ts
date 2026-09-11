@@ -57,6 +57,11 @@ export default abstract class VideoPlayerBackend<T extends BackendOptions = Back
   abstract getBufferedRanges(): { start: number, end: number }[];
   abstract getRemotelyBufferedRange(): { start: number, end: number } | null;
 
+  /** Whatever helps to make sense of a bug report about this player; attached to feedback reports. */
+  getDiagnostics(): Record<string, unknown> {
+    return {};
+  }
+
   abstract addPassiveEventListener(event: PlayerEvent, listener: () => void): void;
 
   abstract destroy(): void;

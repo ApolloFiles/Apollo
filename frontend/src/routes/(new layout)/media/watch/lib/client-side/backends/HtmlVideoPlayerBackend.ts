@@ -150,20 +150,32 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
   }
 
   getBufferedRanges(): { start: number, end: number }[] {
-    const currentlyBuffered = this.videoElement.buffered;
-
-    const bufferedRanges = [];
-    for (let i = 0; i < currentlyBuffered.length; ++i) {
-      bufferedRanges.push({
-        start: currentlyBuffered.start(i),
-        end: currentlyBuffered.end(i),
-      });
-    }
-    return bufferedRanges;
+    return HtmlVideoPlayerBackend.toRanges(this.videoElement.buffered);
   }
 
   getRemotelyBufferedRange(): { start: number, end: number } | null {
     return null;
+  }
+
+  override getDiagnostics(): Record<string, unknown> {
+    return {
+      videoElement: {
+        readyState: this.videoElement.readyState,
+        networkState: this.videoElement.networkState,
+        paused: this.videoElement.paused,
+        seeking: this.videoElement.seeking,
+        ended: this.videoElement.ended,
+        playbackRate: this.videoElement.playbackRate,
+        currentTime: this.videoElement.currentTime,
+        duration: this.videoElement.duration,
+        buffered: HtmlVideoPlayerBackend.toRanges(this.videoElement.buffered),
+        seekable: HtmlVideoPlayerBackend.toRanges(this.videoElement.seekable),
+        error: this.videoElement.error == null ? null : {
+          code: this.videoElement.error.code,
+          message: this.videoElement.error.message,
+        },
+      },
+    };
   }
 
   destroy(): void {
@@ -177,6 +189,17 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
 
   protected async waitForPlayerBackendReady(): Promise<void> {
     // no-op
+  }
+
+  private static toRanges(timeRanges: TimeRanges): { start: number, end: number }[] {
+    const ranges = [];
+    for (let i = 0; i < timeRanges.length; ++i) {
+      ranges.push({
+        start: timeRanges.start(i),
+        end: timeRanges.end(i),
+      });
+    }
+    return ranges;
   }
 
   static async create(container: HTMLDivElement, options: HtmlVideoPlayerBackendOptions): Promise<HtmlVideoPlayerBackend> {

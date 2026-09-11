@@ -209,6 +209,10 @@ export default class VideoPlayer {
     this.backend.fastSeek(time, stillSeeking);
   }
 
+  getDiagnostics(): Record<string, unknown> {
+    return this.backend.getDiagnostics();
+  }
+
   destroy(): void {
     window.clearInterval(this.localBufferedRangesIntervalId);
     window.clearInterval(this.referencePlayerSyncIntervalId);

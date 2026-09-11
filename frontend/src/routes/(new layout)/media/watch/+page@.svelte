@@ -437,6 +437,7 @@
         localBufferedRanges: videoPlayer.$localBufferedRanges,
         remoteBufferedRange: videoPlayer.$remoteBufferedRange,
         showsCustomControls: videoPlayer.$shouldShowCustomControls,
+        diagnostics: videoPlayer.getDiagnostics(),
       },
     };
   }
