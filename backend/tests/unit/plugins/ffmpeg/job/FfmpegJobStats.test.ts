@@ -38,11 +38,32 @@ describe('FfmpegJobStats#record', () => {
     expect(console.debug).toHaveBeenCalledWith(expect.stringContaining(`input='/media/broken.mkv'`));
   });
 
+  test('A failed attempt reports what FFmpeg complained about', () => {
+    const stats = new FfmpegJobStats();
+
+    stats.record({
+      ...record('video-thumbnail-frame-extraction'),
+      verdict: 'failed',
+      failureKind: 'unknown',
+      logProblems: '[out#0/image2] [warning] Output file is empty, nothing was encoded',
+    });
+
+    expect(console.debug).toHaveBeenCalledWith(expect.stringContaining('Output file is empty, nothing was encoded'));
+  });
+
   test('A successful attempt stays short', () => {
     const stats = new FfmpegJobStats();
 
     stats.record({ ...record('poster-candidates'), args: ['-i', '/media/fine.mkv', '-f', 'null', '-'] });
 
     expect(console.debug).toHaveBeenCalledWith(expect.not.stringContaining('/media/fine.mkv'));
+  });
+
+  test('A successful attempt keeps its problem lines out of the log', () => {
+    const stats = new FfmpegJobStats();
+
+    stats.record({ ...record('live-transcode'), logProblems: '[warning] deprecated pixel format used' });
+
+    expect(console.debug).toHaveBeenCalledWith(expect.not.stringContaining('deprecated pixel format used'));
   });
 });
