@@ -8,6 +8,8 @@ export interface ExtractedFont {
   readonly fileName: string;
 
   readonly streamIndex: number;
+  /** What the attachment announces, so a dump cut short can be told from a finished one */
+  readonly byteSize: number;
 }
 
 @singleton()
@@ -26,10 +28,12 @@ export default class FontExtractor {
     }
 
     await Fs.promises.mkdir(targetDir, { recursive: true });
+    // Only what this run writes may reach a player: whatever sits at a target path now is not a font of this file
+    await this.discardOutputs(targets, targetDir);
     await this.dumpAttachments(videoFile, targets, targetDir);
 
-    const written = await Promise.all(targets.map((target) => FontExtractor.exists(Path.join(targetDir, target.fileName))));
-    const extractedFonts = targets.filter((_target, index) => written[index]);
+    const dumped = await Promise.all(targets.map((target) => FontExtractor.isDumpedInFull(targetDir, target)));
+    const extractedFonts = targets.filter((_target, index) => dumped[index]);
     if (extractedFonts.length !== targets.length) {
       console.warn(`Only ${extractedFonts.length} of ${targets.length} fonts attached to ${videoFile} could be extracted`);
     }
@@ -56,7 +60,7 @@ export default class FontExtractor {
       if (fileName === '' || fileName === '.' || fileName === '..' || targetsByFileName.has(fileName)) {
         continue;
       }
-      targetsByFileName.set(fileName, { fileName, streamIndex: stream.index });
+      targetsByFileName.set(fileName, { fileName, streamIndex: stream.index, byteSize: stream.extraDataSize || 0 });
     }
 
     return Array.from(targetsByFileName.values());
@@ -92,8 +96,14 @@ export default class FontExtractor {
     });
   }
 
-  private static async exists(filePath: string): Promise<boolean> {
-    return Fs.promises.stat(filePath).then(() => true, () => false);
+  private async discardOutputs(targets: readonly ExtractedFont[], targetDir: string): Promise<void> {
+    await Promise.all(targets.map((target) => Fs.promises.rm(Path.join(targetDir, target.fileName), { force: true })));
+  }
+
+  /** An attachment's bytes are the stream's extradata, so what it announces says whether the dump ran to the end */
+  private static async isDumpedInFull(targetDir: string, target: ExtractedFont): Promise<boolean> {
+    return Fs.promises.stat(Path.join(targetDir, target.fileName))
+      .then((stats) => stats.size > 0 && stats.size >= target.byteSize, () => false);
   }
 
   private static createSafeFilename(filename: string): string {

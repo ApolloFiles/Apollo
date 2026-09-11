@@ -53,6 +53,8 @@ export default class TextBasedSubtitleExtractor {
     }
 
     await Fs.promises.mkdir(targetDir, { recursive: true });
+    // Only what this run writes may reach a player: whatever sits at a target path now is not subtitle data of this file
+    await this.discardOutputs(targets, targetDir);
 
     let batchError: unknown = null;
     try {

@@ -50,7 +50,7 @@ const EXTRACTED_SUBTITLES = [
   { fileName: 'en.2.ass', streamIndex: 2, title: 'en', language: 'en', codecName: 'ass' },
   { fileName: 'de.3.ass', streamIndex: 3, title: 'de', language: 'de', codecName: 'ass' },
 ];
-const EXTRACTED_FONTS = [{ fileName: 'arial.ttf', streamIndex: 4 }, { fileName: 'comic.otf', streamIndex: 5 }];
+const EXTRACTED_FONTS = [{ fileName: 'arial.ttf', streamIndex: 4, byteSize: 512 }, { fileName: 'comic.otf', streamIndex: 5, byteSize: 512 }];
 const TARGET = { fps: 23.976, capFrameRate: false, width: 1920, segmentDuration: 2 };
 
 function liveTranscode(accel: Accel, bitDepth: VideoBitDepth, subtitle: SubtitleStream | null, sourceWidth = 3840): string[] {

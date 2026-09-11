@@ -51,18 +51,17 @@ describe('TextBasedSubtitleExtractor', () => {
     }
   });
 
-  test('Rescues the streams the batch left empty behind, one process per stream', async (ctx) => {
+  test('Never hands the player what was lying at a target path before', async (ctx) => {
     const sample = requireSample(ctx, ffmpegEnvironment().multiSubtitleSample, 'a file with multiple subtitle streams');
-    // FFmpeg refuses to overwrite, gives up on the whole batch over one output – and still exits with code 0
-    await Fs.promises.writeFile(Path.join(targetDir, 'fr.3.ass'), 'leftover');
-    const spawn = vi.spyOn(FfmpegProcessRunner.prototype, 'spawn');
+    await Fs.promises.writeFile(Path.join(targetDir, 'fr.3.ass'), 'stale subtitles of an entirely different file');
 
     const extracted = await container.resolve(TextBasedSubtitleExtractor)
       .extract(sample.path, await VideoAnalyser.analyze(sample.path, true), targetDir);
 
-    expect(spawn).toHaveBeenCalledTimes(4);  // the batch, then one for each stream it left empty
     expect(extracted).toHaveLength(sample.subtitleStreamIndices.length);
-    expect(await Fs.promises.readFile(Path.join(targetDir, 'en.1.ass'), 'utf-8')).toContain(sample.firstCues[0]);
+    const staleTarget = await Fs.promises.readFile(Path.join(targetDir, 'fr.3.ass'), 'utf-8');
+    expect(staleTarget).not.toContain('stale subtitles');
+    expect(staleTarget).toContain(sample.firstCues[2]);
   });
 });
 
@@ -75,7 +74,7 @@ describe('FontExtractor', () => {
       .extract(sample.path, await VideoAnalyser.analyze(sample.path, true), targetDir);
 
     expect(spawn).toHaveBeenCalledTimes(1);
-    expect(extracted).toEqual([{ fileName: sample.attachedFontFileName, streamIndex: 5 }]);
+    expect(extracted).toEqual([{ fileName: sample.attachedFontFileName, streamIndex: 5, byteSize: 512 }]);
     await expect(Fs.promises.readFile(Path.join(targetDir, sample.attachedFontFileName)))
       .resolves.toEqual(Buffer.alloc(512, 0x2a));
   });
