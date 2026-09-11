@@ -1,6 +1,8 @@
 import type { StartPlaybackResponse } from '../../legacy-types';
 import type SubtitleTrack from './backends/subtitles/SubtitleTrack';
 import type VideoPlayerBackend from './backends/VideoPlayerBackend';
+import type { AudioTrackInfo } from './backends/VideoPlayerBackend';
+import { rememberAudioLanguage, rememberSubtitleTrack } from './stream-selection-preference';
 import VideoPlayerExtras from './VideoPlayerExtras.svelte.js';
 import type { ReferencePlayerState } from './WebSocketClient.svelte.js';
 
@@ -27,7 +29,7 @@ export default class VideoPlayer {
   private muted = $state(false);
   private isPlaying = $state(false);
   private activeAutoTrackId: string | null = $state(null);
-  private audioTracks = $state<{ id: string, label: string }[]>([]);
+  private audioTracks = $state<AudioTrackInfo[]>([]);
   private activeSubtitleTrack: SubtitleTrack | null = $state(null);
   private subtitleTracks = $state<ReadonlyArray<SubtitleTrack>>([]);
   private localBufferedRanges = $state<{ start: number, end: number }[]>([]);
@@ -137,10 +139,15 @@ export default class VideoPlayer {
   }
 
   set $activeAudioTrackId(trackId: string) {
+    const track = this.audioTracks.find((audioTrack) => audioTrack.id === trackId);
+    if (track != null) {
+      rememberAudioLanguage(track.language);
+    }
+
     this.backend.setActiveAudioTrack(trackId);
   }
 
-  get $audioTracks(): { id: string, label: string }[] {
+  get $audioTracks(): AudioTrackInfo[] {
     return this.audioTracks;
   }
 
@@ -149,6 +156,12 @@ export default class VideoPlayer {
   }
 
   set $activeSubtitleTrackId(trackId: string | null) {
+    // Remembered before delegating: selecting a bitmap subtitle restarts the transcode and destroys this player
+    const track = trackId == null ? null : this.subtitleTracks.find((subtitleTrack) => subtitleTrack.id === trackId);
+    if (track !== undefined) {
+      rememberSubtitleTrack(track);
+    }
+
     this.backend.setActiveSubtitleTrack(trackId);
   }
 

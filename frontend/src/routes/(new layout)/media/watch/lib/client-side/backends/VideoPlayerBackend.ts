@@ -8,6 +8,8 @@ export interface BackendOptions {
   };
 }
 
+export type AudioTrackInfo = { id: string, label: string, language: string };
+
 export type PlayerEvent = 'loadedmetadata'
                           | 'play'
                           | 'pause'
@@ -45,7 +47,7 @@ export default abstract class VideoPlayerBackend<T extends BackendOptions = Back
 
   abstract getActiveAudioTrackId(): string | null;
   abstract setActiveAudioTrack(id: string): void;
-  abstract getAudioTracks(): { id: string, label: string }[];
+  abstract getAudioTracks(): AudioTrackInfo[];
 
   abstract getSubtitleTracks(): ReadonlyArray<SubtitleTrack>;
   abstract addSubtitleTrack(subtitleTrack: SubtitleTrack): void;

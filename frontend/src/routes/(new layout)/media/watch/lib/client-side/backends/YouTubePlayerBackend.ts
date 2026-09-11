@@ -1,5 +1,5 @@
 import type SubtitleTrack from './subtitles/SubtitleTrack';
-import VideoPlayerBackend, { type BackendOptions, type PlayerEvent } from './VideoPlayerBackend';
+import VideoPlayerBackend, { type AudioTrackInfo, type BackendOptions, type PlayerEvent } from './VideoPlayerBackend';
 
 export interface YouTubePlayerBackendOptions extends BackendOptions {
   backend: {
@@ -100,8 +100,8 @@ export default class YouTubePlayerBackend<T extends YouTubePlayerBackendOptions 
     // no-op
   }
 
-  getAudioTracks(): { id: string, label: string }[] {
-    return [{ id: 'default', label: 'Default' }];
+  getAudioTracks(): AudioTrackInfo[] {
+    return [{ id: 'default', label: 'Default', language: 'und' }];
   }
 
   getSubtitleTracks(): ReadonlyArray<SubtitleTrack> {

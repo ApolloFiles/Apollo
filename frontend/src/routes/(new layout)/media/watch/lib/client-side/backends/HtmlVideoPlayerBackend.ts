@@ -3,7 +3,7 @@ import AssSubtitleTrack from './subtitles/AssSubtitleTrack';
 import BurnedInSubtitleTrack from './subtitles/BurnedInSubtitleTrack';
 import NativeSubtitleTrack from './subtitles/NativeSubtitleTrack';
 import type SubtitleTrack from './subtitles/SubtitleTrack';
-import VideoPlayerBackend, { type BackendOptions, type PlayerEvent } from './VideoPlayerBackend';
+import VideoPlayerBackend, { type AudioTrackInfo, type BackendOptions, type PlayerEvent } from './VideoPlayerBackend';
 
 export interface HtmlVideoPlayerBackendOptions extends BackendOptions {
   backend: {
@@ -113,8 +113,8 @@ export default class HtmlVideoPlayerBackend<T extends HtmlVideoPlayerBackendOpti
     // TODO
   }
 
-  getAudioTracks(): { id: string, label: string }[] {
-    return [{ id: '1', label: 'Default' }];
+  getAudioTracks(): AudioTrackInfo[] {
+    return [{ id: '1', label: 'Default', language: 'und' }];
   }
 
   getSubtitleTracks(): ReadonlyArray<SubtitleTrack> {

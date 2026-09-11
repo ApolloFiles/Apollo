@@ -13,6 +13,7 @@
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';
   import TwitchPlayerBackend from './lib/client-side/backends/TwitchPlayerBackend';
   import YouTubePlayerBackend from './lib/client-side/backends/YouTubePlayerBackend';
+  import { findPreferredSubtitleTrack, readPreferredAudioLanguage } from './lib/client-side/stream-selection-preference';
   import VideoPlayer from './lib/client-side/VideoPlayer.svelte.js';
   import WebSocketClient from './lib/client-side/WebSocketClient.svelte.js';
   import { fetchPlaybackSessionInfo } from './lib/playback-session-backend-api';
@@ -227,19 +228,18 @@
     );
   }
 
-  async function createVideoPlayer(playbackStatus: StartPlaybackResponse, initialAudioTrack?: number, initialSubtitleTrack?: number, resumeAtInSeconds?: number | null): Promise<VideoPlayer> {
+  async function createVideoPlayer(playbackStatus: StartPlaybackResponse, resumeAtInSeconds?: number | null): Promise<VideoPlayer> {
     const backend = await VideoLiveTranscodeBackend.create(videoContainerRef, {
       backend: {
         src: playbackStatus.hlsManifest,
         subtitles: playbackStatus.additionalStreams.subtitles,
-        initialAudioTrack,
-        initialSubtitleTrack,
+        preferredAudioLanguage: readPreferredAudioLanguage() ?? undefined,
 
         totalDurationInSeconds: playbackStatus.totalDurationInSeconds,
         startOffset: playbackStatus.startOffsetInSeconds,
         resumeAtInSeconds,
         activeBurnedInSubtitleStreamIndex: playbackStatus.activeBurnedInSubtitleStreamIndex,
-        restartTranscode: (startOffset, activeAudioTrack, activeSubtitleTrack) => {
+        restartTranscode: (startOffset) => {
           if (transcodeRestartInProgress) {
             return;
           }
@@ -252,13 +252,13 @@
 
           videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
           // Preserve the currently burned-in subtitle across an out-of-window seek restart.
-          videoPlayerPromise = restartVideoLiveTranscode(playbackStatus.mediaMetadata.mediaItemId, startOffset, activeAudioTrack, activeSubtitleTrack, playbackStatus.activeBurnedInSubtitleStreamIndex)
+          videoPlayerPromise = restartVideoLiveTranscode(playbackStatus.mediaMetadata.mediaItemId, startOffset, playbackStatus.activeBurnedInSubtitleStreamIndex)
             .finally(() => {
               transcodeRestartInProgress = false;
             });
           videoPlayerPromise.then((videoPlayer) => webSocketClient?.setVideoPlayer(videoPlayer));
         },
-        changeBurnedInSubtitle: (streamIndex, startOffset, activeAudioTrack, desiredSoftSubtitleIdAfterReload) => {
+        changeBurnedInSubtitle: (streamIndex, startOffset) => {
           if (transcodeRestartInProgress) {
             return;
           }
@@ -268,13 +268,7 @@
           transcodeRestartInProgress = true;
 
           videoPlayerPromise?.then((videoPlayer) => videoPlayer?.destroy());
-          videoPlayerPromise = restartVideoLiveTranscode(playbackStatus.mediaMetadata.mediaItemId, startOffset, activeAudioTrack, -1, streamIndex)
-            .then((videoPlayer) => {
-              if (desiredSoftSubtitleIdAfterReload != null) {
-                videoPlayer.$activeSubtitleTrackId = desiredSoftSubtitleIdAfterReload;
-              }
-              return videoPlayer;
-            })
+          videoPlayerPromise = restartVideoLiveTranscode(playbackStatus.mediaMetadata.mediaItemId, startOffset, streamIndex)
             .finally(() => {
               transcodeRestartInProgress = false;
             });
@@ -282,6 +276,8 @@
         },
       },
     });
+
+    restorePreferredSubtitleTrack(backend, playbackStatus);
 
     mediaTitle = playbackStatus.mediaMetadata.title;
     episodeTitlePrefix = playbackStatus.mediaMetadata.episode ? `S${playbackStatus.mediaMetadata.episode.season.toString()
@@ -327,7 +323,22 @@
     );
   }
 
-  async function restartVideoLiveTranscode(mediaItemId: string, startOffset: number, initialAudioTrack: number, initialSubtitleTrack: number, burnInSubtitleStreamIndex: number | null): Promise<VideoPlayer> {
+  /**
+   * Re-applies the last text subtitle the user picked. Skipped while an image-based subtitle is burned in,
+   * because switching away from it would immediately restart the shared transcode again.
+   */
+  function restorePreferredSubtitleTrack(backend: VideoLiveTranscodeBackend, playbackStatus: StartPlaybackResponse): void {
+    if (playbackStatus.activeBurnedInSubtitleStreamIndex != null) {
+      return;
+    }
+
+    const preferredSubtitleTrack = findPreferredSubtitleTrack(backend.getSubtitleTracks());
+    if (preferredSubtitleTrack != null) {
+      backend.setActiveSubtitleTrack(preferredSubtitleTrack.id);
+    }
+  }
+
+  async function restartVideoLiveTranscode(mediaItemId: string, startOffset: number, burnInSubtitleStreamIndex: number | null): Promise<VideoPlayer> {
     if (sessionId == null) {
       throw new Error('Session ID is not set, cannot restart video live transcode');
     }
@@ -347,7 +358,7 @@
     });
 
     const changeMediaBody: StartPlaybackResponse = await changeMediaResponse.json();
-    return createVideoPlayer(changeMediaBody, initialAudioTrack, initialSubtitleTrack);
+    return createVideoPlayer(changeMediaBody);
   }
 
   async function initiateMediaChange(mediaItemId: string, startOffset: number): Promise<void> {
@@ -386,7 +397,7 @@
       if (playbackStatusResponse.playbackStatus.type === 'twitch') {
         return createTwitchVideoPlayer(playbackStatusResponse.playbackStatus);
       }
-      return createVideoPlayer(playbackStatusResponse.playbackStatus, undefined, undefined, playbackStatusResponse.resumeAtInSeconds);
+      return createVideoPlayer(playbackStatusResponse.playbackStatus, playbackStatusResponse.resumeAtInSeconds);
     }
     return null;
   }

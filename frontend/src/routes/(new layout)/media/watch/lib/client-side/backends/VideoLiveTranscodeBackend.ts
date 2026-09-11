@@ -10,15 +10,13 @@ export interface VideoLiveTranscodeBackendOptions extends HlsVideoBackendOptions
     resumeAtInSeconds?: number | null,
     /** The stream index of the image-based subtitle currently burned into the video, or `null` if none. */
     activeBurnedInSubtitleStreamIndex: number | null,
-    restartTranscode: (startOffset: number, activeAudioTrack: number, activeSubtitleTrack: number) => void,
+    restartTranscode: (startOffset: number) => void,
     /**
      * Restarts the (shared) live transcode with a different burned-in subtitle selection.
      * @param streamIndex the image-based subtitle stream to burn in, or `null` to burn none.
      * @param startOffset the playback position (seconds) to resume the restarted transcode at.
-     * @param activeAudioTrack the HLS audio track to keep selected across the restart.
-     * @param desiredSoftSubtitleIdAfterReload a soft/text subtitle track id to (re-)activate once the new stream has loaded, or `null`.
      */
-    changeBurnedInSubtitle: (streamIndex: number | null, startOffset: number, activeAudioTrack: number, desiredSoftSubtitleIdAfterReload: string | null) => void,
+    changeBurnedInSubtitle: (streamIndex: number | null, startOffset: number) => void,
   };
 }
 
@@ -61,14 +59,9 @@ export default class VideoLiveTranscodeBackend<T extends VideoLiveTranscodeBacke
     }
 
     // A burned-in (hard) subtitle is involved -> the whole transcode has to restart with a different video stream.
+    // The new selection is remembered before the restart, so the reloaded player picks it up again.
     const newBurnInStreamIndex = targetIsBitmap ? target.streamIndex : null;
-    const desiredSoftSubtitleIdAfterReload = (!targetIsBitmap && target != null) ? target.id : null;
-    this.backendOptions.backend.changeBurnedInSubtitle(
-      newBurnInStreamIndex,
-      Math.floor(this.currentTime),
-      this.hls.audioTrack,
-      desiredSoftSubtitleIdAfterReload,
-    );
+    this.backendOptions.backend.changeBurnedInSubtitle(newBurnInStreamIndex, Math.floor(this.currentTime));
   }
 
   protected override get initialStreamPosition(): number {
@@ -99,7 +92,7 @@ export default class VideoLiveTranscodeBackend<T extends VideoLiveTranscodeBacke
     time = Math.max(0, Math.min(time, this.duration));
 
     if (!stillSeeking && (time < this.backendOptions.backend.startOffset || time > maxPossibleTime)) {
-      this.backendOptions.backend.restartTranscode(Math.floor(time), this.hls.audioTrack, this.hls.subtitleTrack);
+      this.backendOptions.backend.restartTranscode(Math.floor(time));
       return;
     }
 

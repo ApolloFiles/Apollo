@@ -1,13 +1,14 @@
 import Hls, { type HlsConfig } from 'hls.js';
 import HtmlVideoPlayerBackend, { type HtmlVideoPlayerBackendOptions } from './HtmlVideoPlayerBackend';
 import HlsSubtitleTrack from './subtitles/HlsSubtitleTrack';
+import type { AudioTrackInfo } from './VideoPlayerBackend';
 
 export interface HlsVideoBackendOptions extends HtmlVideoPlayerBackendOptions {
   backend: HtmlVideoPlayerBackendOptions['backend'] & {
     hlsConfig?: Partial<HlsConfig>,
 
-    initialAudioTrack?: number,
-    initialSubtitleTrack?: number,
+    /** ISO-639 language to start playback with; ignored when no audio track matches it. */
+    preferredAudioLanguage?: string,
   };
 }
 
@@ -18,18 +19,16 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
   protected constructor(container: HTMLDivElement, options: T) {
     super(container, options);
 
-    this.hls = new Hls(options.backend.hlsConfig);
+    const hlsConfig: Partial<HlsConfig> = { ...options.backend.hlsConfig };
+    if (options.backend.preferredAudioLanguage != null) {
+      hlsConfig.audioPreference = { lang: options.backend.preferredAudioLanguage };
+    }
+
+    this.hls = new Hls(hlsConfig);
     this.hls.attachMedia(this.videoElement);
 
     this.hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, () => this.onAudioTrackSwitched());
     this.hls.once(Hls.Events.MANIFEST_LOADED, () => {
-      if (options.backend.initialAudioTrack != null) {
-        this.hls.audioTrack = options.backend.initialAudioTrack;
-      }
-      if (options.backend.initialSubtitleTrack != null) {
-        this.hls.subtitleTrack = options.backend.initialSubtitleTrack;
-      }
-
       this.hls.startLoad(this.initialStreamPosition);
     });
     this.hls.once(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
@@ -61,11 +60,12 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
     this.hls.audioTrack = newAudioTrackId;
   }
 
-  getAudioTracks(): { id: string, label: string }[] {
+  getAudioTracks(): AudioTrackInfo[] {
     return this.hls.audioTracks
       .map((track) => ({
         id: track.id.toString(),
         label: track.name || `${track.type.toLowerCase()}${track.lang ? ` (${track.lang})` : ''}`,
+        language: track.lang ?? 'und',
       }));
   }
 
