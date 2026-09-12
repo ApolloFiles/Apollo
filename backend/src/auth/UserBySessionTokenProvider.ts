@@ -1,6 +1,7 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../database/DatabaseClient.js';
 import ApolloUser from '../user/ApolloUser.js';
+import InFlightRequestTracker from '../utils/InFlightRequestTracker.js';
 import AuthSessionFinder, { type SessionDataWithUser } from './session/AuthSessionFinder.js';
 
 export type SessionUser = {
@@ -10,7 +11,7 @@ export type SessionUser = {
 
 @singleton()
 export default class UserBySessionTokenProvider {
-  private readonly inFlightFindBySessionToken = new Map<string, Promise<SessionUser | null>>();
+  private readonly inFlightRequests = new InFlightRequestTracker<SessionUser | null>();
 
   constructor(
     private readonly databaseClient: DatabaseClient,
@@ -18,21 +19,11 @@ export default class UserBySessionTokenProvider {
   ) {
   }
 
-  async findBySessionTokenAndUpdateLastActivity(token: string): Promise<SessionUser | null> {
-    if (this.inFlightFindBySessionToken.has(token)) {
-      return await this.inFlightFindBySessionToken.get(token)!;
-    }
-
-    try {
-      const task = this.executeFindBySessionTokenAndUpdateLastActivity(token);
-      this.inFlightFindBySessionToken.set(token, task);
-      return await task;
-    } finally {
-      this.inFlightFindBySessionToken.delete(token);
-    }
+  findBySessionTokenAndUpdateLastActivity(token: string): Promise<SessionUser | null> {
+    return this.inFlightRequests.run(token, () => this.executeFindAndUpdate(token));
   }
 
-  private async executeFindBySessionTokenAndUpdateLastActivity(token: string): Promise<SessionUser | null> {
+  private async executeFindAndUpdate(token: string): Promise<SessionUser | null> {
     const [session, now] = await Promise.all([
       this.authSessionFinder.findSession(token),
       this.databaseClient.fetchNow(),

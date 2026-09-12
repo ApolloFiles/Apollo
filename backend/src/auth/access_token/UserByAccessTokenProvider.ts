@@ -1,6 +1,7 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import ApolloUser from '../../user/ApolloUser.js';
+import InFlightRequestTracker from '../../utils/InFlightRequestTracker.js';
 import AccessTokenFinder, { type AccessTokenDataWithUser } from './AccessTokenFinder.js';
 
 export type AccessTokenUser = {
@@ -10,7 +11,7 @@ export type AccessTokenUser = {
 
 @singleton()
 export default class UserByAccessTokenProvider {
-  private readonly inFlightFindByAccessToken = new Map<string, Promise<AccessTokenUser | null>>();
+  private readonly inFlightRequests = new InFlightRequestTracker<AccessTokenUser | null>();
 
   constructor(
     private readonly databaseClient: DatabaseClient,
@@ -18,21 +19,11 @@ export default class UserByAccessTokenProvider {
   ) {
   }
 
-  async findByAccessTokenAndUpdateLastActivity(token: string): Promise<AccessTokenUser | null> {
-    if (this.inFlightFindByAccessToken.has(token)) {
-      return await this.inFlightFindByAccessToken.get(token)!;
-    }
-
-    try {
-      const task = this.executeFindByAccessTokenAndUpdateLastActivity(token);
-      this.inFlightFindByAccessToken.set(token, task);
-      return await task;
-    } finally {
-      this.inFlightFindByAccessToken.delete(token);
-    }
+  findByAccessTokenAndUpdateLastActivity(token: string): Promise<AccessTokenUser | null> {
+    return this.inFlightRequests.run(token, () => this.executeFindAndUpdate(token));
   }
 
-  private async executeFindByAccessTokenAndUpdateLastActivity(token: string): Promise<AccessTokenUser | null> {
+  private async executeFindAndUpdate(token: string): Promise<AccessTokenUser | null> {
     const [accessToken, now] = await Promise.all([
       this.accessTokenFinder.findByToken(token),
       this.databaseClient.fetchNow(),
