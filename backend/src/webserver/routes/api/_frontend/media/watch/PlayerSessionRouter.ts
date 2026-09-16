@@ -695,29 +695,15 @@ export default class PlayerSessionRouter implements Router {
       }
     }
 
-    const readStreamOptions = { start: bytesStart, end: bytesEnd };
-    const fileReadStream = Fs.createReadStream(file, readStreamOptions);
-
-    fileReadStream.on('error', (err: any) => {
-      console.error(err);
-
-      fileReadStream.destroy();
-      reply.raw.end();
-    });
-
-    reply.raw.on('close', () => {
-      fileReadStream.destroy();
-    });
-
     reply
       .type(mimeType)
-      .header('Accept-Ranges', 'bytes');
+      .header('Accept-Ranges', 'bytes')
+      .header('Content-Length', fileSize);
 
     if (sendAsAttachment) {
       reply.header('Content-Disposition', `attachment; filename="${Path.basename(file)}"`);
     }
 
-    reply.header('Content-Length', fileSize);
     if (bytesStart != undefined && bytesEnd != undefined) {
       reply
         .status(206)
@@ -725,7 +711,7 @@ export default class PlayerSessionRouter implements Router {
         .header('Content-Range', `bytes ${bytesStart}-${bytesEnd}/${fileSize}`);
     }
 
-    fileReadStream.pipe(reply.raw);
+    reply.send(Fs.createReadStream(file, { start: bytesStart, end: bytesEnd }));
   }
 
   private determineRange(request: FastifyRequest, fileSize: number, rangeParserOptions?: { combine: boolean }) {
@@ -747,7 +733,7 @@ export default class PlayerSessionRouter implements Router {
       return undefined;
     }
 
-    return { unit: (res as any).type, ranges: res };
+    return res;
   }
 
   private encodeUriProperly(uri: string): string {
