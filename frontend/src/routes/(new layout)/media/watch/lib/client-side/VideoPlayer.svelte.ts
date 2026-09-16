@@ -1,7 +1,7 @@
 import type { StartPlaybackResponse } from '../../legacy-types';
 import type SubtitleTrack from './backends/subtitles/SubtitleTrack';
 import type VideoPlayerBackend from './backends/VideoPlayerBackend';
-import type { AudioTrackInfo } from './backends/VideoPlayerBackend';
+import type { AudioTrackInfo, PlaybackConnectionState } from './backends/VideoPlayerBackend';
 import { rememberAudioLanguage, rememberSubtitleTrack } from './stream-selection-preference';
 import VideoPlayerExtras from './VideoPlayerExtras.svelte.js';
 import type { ReferencePlayerState } from './WebSocketClient.svelte.js';
@@ -34,6 +34,7 @@ export default class VideoPlayer {
   private subtitleTracks = $state<ReadonlyArray<SubtitleTrack>>([]);
   private localBufferedRanges = $state<{ start: number, end: number }[]>([]);
   private remoteBufferedRange = $state<{ start: number, end: number } | null>(null);
+  private connectionState = $state<PlaybackConnectionState>('connected');
 
   private readonly localBufferedRangeToDisplay = $derived.by(() => {
     for (const { start, end } of this.localBufferedRanges) {
@@ -72,6 +73,7 @@ export default class VideoPlayer {
 
     this.referencePlayerSyncIntervalId = window.setInterval(() => {
       this.currentTime = this.backend.currentTime;
+      this.connectionState = this.backend.connectionState;
 
       this.updatePlayerStateForBroadcast(this, false, false);
       this.tickSynchronizationWithReferencePlayer();
@@ -100,6 +102,10 @@ export default class VideoPlayer {
 
   get $currentTime(): number {
     return this.currentTime;
+  }
+
+  get $connectionState(): PlaybackConnectionState {
+    return this.connectionState;
   }
 
   get $playbackRate(): number {

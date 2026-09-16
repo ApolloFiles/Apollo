@@ -326,6 +326,16 @@
       />
     </div>
   {/if}
+  {#if videoPlayer.$connectionState !== 'connected'}
+    <div
+      class="connection-status"
+      class:unrecoverable={videoPlayer.$connectionState === 'unrecoverable'}
+      role="status"
+      aria-live="polite"
+    >
+      {videoPlayer.$connectionState === 'unrecoverable' ? m.component_video_player_connection_unrecoverable() : m.component_video_player_connection_lost()}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -369,5 +379,26 @@
 
   .controls-overlay :global(> *) {
     pointer-events: auto;
+  }
+
+  .connection-status {
+    position:       absolute;
+    top:            12%;
+    left:           50%;
+    transform:      translateX(-50%);
+    max-width:      min(90%, 32rem);
+    padding:        0.5rem 1rem;
+    border-radius:  9999px;
+    background:     rgba(0, 0, 0, 0.75);
+    color:          rgba(255, 255, 255, 0.95);
+    font-size:      0.875rem;
+    line-height:    1.3;
+    text-align:     center;
+    pointer-events: none;
+  }
+
+  .connection-status.unrecoverable {
+    background: rgba(127, 29, 29, 0.85);
+    color:      rgb(254, 226, 226);
   }
 </style>
