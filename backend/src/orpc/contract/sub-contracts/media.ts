@@ -99,6 +99,7 @@ const getMedia = baseOc
           id: z.string(),
           title: z.string(),
           synopsis: z.string().nullable(),
+          seasonNumber: z.number(),
           episodeNumber: z.number(),
           durationInSeconds: z.number(),
           watchProgress: z.strictObject({

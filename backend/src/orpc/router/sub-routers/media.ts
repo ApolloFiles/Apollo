@@ -229,7 +229,7 @@ export default class MediaORpcRouterFactory {
             year: number | null,
             hasClearLogo: boolean,
             genres: string[],
-            nextMediaItemToWatch: MediaItemData | null,
+            nextMediaItemToWatch: (MediaItemData & { seasonNumber: number }) | null,
             seasons?: SeasonData[],
           }
 
@@ -245,6 +245,7 @@ export default class MediaORpcRouterFactory {
             id: continueWatchingResultItem.item.id.toString(),
             title: continueWatchingResultItem.item.title,
             synopsis: continueWatchingResultItem.item.synopsis,
+            seasonNumber: continueWatchingResultItem.item.seasonNumber ?? 0,
             episodeNumber: continueWatchingResultItem.item.episodeNumber ?? 0,
             durationInSeconds: continueWatchingResultItem.item.durationInSec,
             watchProgress: {

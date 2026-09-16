@@ -66,6 +66,7 @@
   "component_media_hero_btn_start_over": "Start Over",
   "component_media_hero_episode": "Episode {number}",
   "component_media_hero_resume_episode": "Resume Episode {number}",
+  "component_media_hero_season": "Season {number}",
   "component_media_hero_time_left": "{duration} left",
   "component_media_hero_time_watched": "{duration} watched",
   "component_media_hero_up_next": "Up next",

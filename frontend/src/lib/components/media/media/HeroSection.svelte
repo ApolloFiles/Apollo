@@ -12,6 +12,7 @@
     mediaType: 'movie' | 'tv_show',
     nextMediaItem: {
                      id: string,
+                     seasonNumber: number,
                      episodeNumber: number,
                      title: string,
                      synopsis: string | null,
@@ -25,11 +26,16 @@
 
   let isMovie = $derived(mediaType === 'movie');
   let episodeNumber = $derived(nextMediaItem?.episodeNumber ?? 0);
-  // Standalone episode label for the middot-separated "Up next" line.
-  let episodeLabel = $derived(isMovie ? '' : ` ${m.component_media_hero_episode({ number: episodeNumber })}`);
+  let seasonNumber = $derived(nextMediaItem?.seasonNumber ?? 0);
+  // Specials and items without a detected season land in season 0 and stay unlabelled.
+  let hasSeason = $derived(!isMovie && seasonNumber > 0);
+  let seasonLabel = $derived(m.component_media_hero_season({ number: seasonNumber }));
+  let episodeLabel = $derived(m.component_media_hero_episode({ number: episodeNumber }));
   // Full-phrase labels so translations keep correct word order (e.g. German "Folge 3 abspielen").
   let playLabel = $derived(isMovie ? m.component_media_hero_btn_play() : m.component_media_hero_btn_play_episode({ number: episodeNumber }));
   let resumeStatusLabel = $derived(isMovie ? m.component_media_hero_btn_resume() : m.component_media_hero_resume_episode({ number: episodeNumber }));
+  let upNextLabel = $derived(hasSeason ? `${seasonLabel} · ${episodeLabel}` : episodeLabel);
+  let resumeLabel = $derived(hasSeason ? `${seasonLabel} · ${resumeStatusLabel}` : resumeStatusLabel);
   let watchedSeconds = $derived(nextMediaItem?.watchProgress?.inSeconds ?? 0);
   let isInProgress = $derived(watchedSeconds > 0);
   // Progress recorded against an outdated (too long) duration can exceed the item's runtime
@@ -120,7 +126,7 @@
         {#if isInProgress}
           <div class="mb-4" style="max-width: 400px">
             <div class="d-flex justify-content-between text-secondary small mb-1">
-              <span>{resumeStatusLabel} · {m.component_media_hero_time_left({ duration: formatDuration(remainingSeconds) })}</span>
+              <span>{resumeLabel} · {m.component_media_hero_time_left({ duration: formatDuration(remainingSeconds) })}</span>
               <span>{m.component_media_hero_time_watched({ duration: formatDuration(watchedSeconds) })}</span>
             </div>
             <div class="progress progress-container">
@@ -153,7 +159,7 @@
             {#if isMovie}
               {formatDuration(nextMediaItem.durationInSeconds)}
             {:else}
-              {m.component_media_hero_up_next()} ·{episodeLabel} · {formatDuration(nextMediaItem.durationInSeconds)}
+              {m.component_media_hero_up_next()} · {upNextLabel} · {formatDuration(nextMediaItem.durationInSeconds)}
             {/if}
           </div>
 

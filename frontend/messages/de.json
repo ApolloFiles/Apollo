@@ -66,6 +66,7 @@
   "component_media_hero_btn_start_over": "Von vorne",
   "component_media_hero_episode": "Folge {number}",
   "component_media_hero_resume_episode": "Folge {number} fortsetzen",
+  "component_media_hero_season": "Staffel {number}",
   "component_media_hero_time_left": "Noch {duration}",
   "component_media_hero_time_watched": "{duration} angesehen",
   "component_media_hero_up_next": "Als Nächstes",
