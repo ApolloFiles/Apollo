@@ -114,6 +114,8 @@
   "page_admin_feedback_detail_admin_note_heading": "Admin note",
   "page_admin_feedback_detail_admin_note_placeholder": "Internal note (only visible to admins)",
   "page_admin_feedback_detail_back_label": "Back to feedback",
+  "page_admin_feedback_detail_context_btn_copied": "Copied",
+  "page_admin_feedback_detail_context_btn_copy": "Copy JSON",
   "page_admin_feedback_detail_context_heading": "Collected context",
   "page_admin_feedback_detail_context_none": "No technical details were included",
   "page_admin_feedback_detail_delete_confirm": "Are you sure you want to delete this feedback report?",

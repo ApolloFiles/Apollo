@@ -28,6 +28,10 @@
   let recentlySaved = $state(false);
   let bypassUnsavedChangesWarning = false;
 
+  let contextJsonRef: HTMLPreElement | undefined = $state(undefined);
+  let visualizeContextCopyToClipboard = $state(false);
+  let contextCopyToClipboardTimeout: number | undefined;
+
   const hasUnsavedChanges = $derived(
     editedStatus !== report.status ||
     editedAdminNote.trim() !== (report.adminNote ?? ''),
@@ -110,6 +114,39 @@
       .catch((error) => {
         alert(`ERROR: ${error.message}`);
       });
+  }
+
+  async function copyContext(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(report.context, null, 2));
+    } catch (err) {
+      // No clipboard access on insecure origins – select the JSON so it can be copied manually
+      console.error('Failed to copy the collected context to the clipboard:', err);
+      selectContextJson();
+      return;
+    }
+
+    if (contextCopyToClipboardTimeout != null) {
+      window.clearTimeout(contextCopyToClipboardTimeout);
+    }
+    contextCopyToClipboardTimeout = window.setTimeout(() => {
+      visualizeContextCopyToClipboard = false;
+      contextCopyToClipboardTimeout = undefined;
+    }, 2000);
+    visualizeContextCopyToClipboard = true;
+  }
+
+  function selectContextJson(): void {
+    if (contextJsonRef == null) {
+      return;
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(contextJsonRef);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
   }
 </script>
 
@@ -211,12 +248,23 @@
       </section>
 
       <section class="card">
-        <div class="card-header">
+        <div class="card-header context-header">
           <h2>{m.page_admin_feedback_detail_context_heading()}</h2>
+          {#if report.context != null}
+            <button class="btn btn-outline" onclick={copyContext}>
+              {#if visualizeContextCopyToClipboard}
+                <TablerIcon icon="clipboard-check" />
+                {m.page_admin_feedback_detail_context_btn_copied()}
+              {:else}
+                <TablerIcon icon="clipboard" />
+                {m.page_admin_feedback_detail_context_btn_copy()}
+              {/if}
+            </button>
+          {/if}
         </div>
         <div class="card-body">
           {#if report.context != null}
-            <pre class="context-json">{JSON.stringify(report.context, null, 2)}</pre>
+            <pre bind:this={contextJsonRef} class="context-json">{JSON.stringify(report.context, null, 2)}</pre>
           {:else}
             <p class="context-none">{m.page_admin_feedback_detail_context_none()}</p>
           {/if}
@@ -299,6 +347,19 @@
     color:            white;
   }
 
+  .btn-outline {
+    color:        var(--text-secondary);
+    border-color: var(--border-color);
+    background:   transparent;
+    padding:      6px 12px;
+    font-size:    0.85rem;
+  }
+
+  .btn-outline:hover {
+    color:      var(--text-primary);
+    background: var(--tertiary-bg);
+  }
+
   .btn-primary:hover:not(:disabled) {
     filter: brightness(110%);
   }
@@ -339,6 +400,13 @@
   .card-header {
     padding:       20px 24px;
     border-bottom: 1px solid var(--border-color);
+  }
+
+  .context-header {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    gap:             12px;
   }
 
   .card-header h2 {
