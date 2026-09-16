@@ -43,6 +43,7 @@
         libraryId={params.libraryId}
         mediaId={data.page.media.id}
         nextEpisodeIdToWatch={nextEpisodeIdToWatchForEpisodeList}
+        continueSeasonNumber={data.page.media.nextMediaItemToWatch?.seasonNumber ?? null}
         seasons={data.page.media.seasons ?? []}
       />
     </div>

@@ -4,10 +4,11 @@
   import EpisodeCard from '$lib/components/media/media/EpisodeCard.svelte';
   import { m } from '$lib/paraglide/messages.js';
 
-  let { libraryId, mediaId, nextEpisodeIdToWatch, seasons }: {
+  let { libraryId, mediaId, nextEpisodeIdToWatch, continueSeasonNumber, seasons }: {
     libraryId: string,
     mediaId: string,
     nextEpisodeIdToWatch: string | null,
+    continueSeasonNumber: number | null,
     seasons: {
       seasonNumber: number,
       episodes: {
@@ -30,11 +31,16 @@
   const episodeToWatchNext = $derived(episodesForSelectedSeason.find(e => e.id === nextEpisodeIdToWatch) ?? null);
 
   function determineInitialSeasonIndex(): number {
-    const queryParamValue = parseInt(page.url.searchParams.get('s') || '1', 10);
+    const queryParamValue = parseInt(page.url.searchParams.get('s') ?? '', 10);
 
     const querySeasonIndex = seasons.findIndex(s => s.seasonNumber === queryParamValue);
     if (querySeasonIndex !== -1) {
       return querySeasonIndex;
+    }
+
+    const continueSeasonIndex = continueSeasonNumber != null ? seasons.findIndex(s => s.seasonNumber === continueSeasonNumber) : -1;
+    if (continueSeasonIndex !== -1) {
+      return continueSeasonIndex;
     }
 
     const firstSeason = seasons.findIndex(s => s.seasonNumber === 1);
