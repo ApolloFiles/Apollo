@@ -167,7 +167,7 @@ export default class LiveTranscodeLauncher {
       '-hls_segment_type', 'mpegts',
       '-hls_playlist_type', 'event',
       '-master_pl_name', LiveTranscodeLauncher.MASTER_HLS_FILE_NAME,
-      '-hls_flags', 'independent_segments',
+      '-hls_flags', 'independent_segments+temp_file',
       '-var_stream_map', varStreamMap.join(' '),
 
       '-f', 'hls',
