@@ -10,6 +10,9 @@ export interface BackendOptions {
 
 export type AudioTrackInfo = { id: string, label: string, language: string };
 
+/** `reconnecting` means playback is waiting on the network and will resume by itself; `unrecoverable` means it will not. */
+export type PlaybackConnectionState = 'connected' | 'reconnecting' | 'unrecoverable';
+
 export type PlayerEvent = 'loadedmetadata'
                           | 'play'
                           | 'pause'
@@ -35,6 +38,10 @@ export default abstract class VideoPlayerBackend<T extends BackendOptions = Back
   abstract get currentTime(): number;
   abstract get duration(): number;
   abstract get isSeeking(): boolean;
+
+  get connectionState(): PlaybackConnectionState {
+    return 'connected';
+  }
 
   protected constructor() {
   }

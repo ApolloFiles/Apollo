@@ -1,7 +1,7 @@
 import Hls, { type ErrorData, type HlsConfig, type InFlightFragments } from 'hls.js';
 import HtmlVideoPlayerBackend, { type HtmlVideoPlayerBackendOptions } from './HtmlVideoPlayerBackend';
 import HlsSubtitleTrack from './subtitles/HlsSubtitleTrack';
-import type { AudioTrackInfo } from './VideoPlayerBackend';
+import type { AudioTrackInfo, PlaybackConnectionState } from './VideoPlayerBackend';
 
 export interface HlsVideoBackendOptions extends HtmlVideoPlayerBackendOptions {
   backend: HtmlVideoPlayerBackendOptions['backend'] & {
@@ -14,6 +14,8 @@ export interface HlsVideoBackendOptions extends HtmlVideoPlayerBackendOptions {
 
 type PlaybackIssue = {
   timestamp: string,
+  lastTimestamp: string,
+  count: number,
   type: string,
   details: string,
   fatal: boolean,
@@ -24,18 +26,27 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
   private static readonly MAX_REMEMBERED_ISSUES = 25;
   private static readonly STALL_TOLERANCE_IN_MILLIS = 15_000;
   private static readonly MEDIA_ERROR_RECOVERY_COOLDOWN_IN_MILLIS = 5_000;
-  private static readonly MAX_RECOVERY_ATTEMPTS_WITHOUT_PROGRESS = 10;
+  private static readonly MAX_MEDIA_ERROR_RECOVERIES = 5;
+  private static readonly RECONNECT_BASE_DELAY_IN_MILLIS = 1_000;
+  private static readonly RECONNECT_MAX_DELAY_IN_MILLIS = 30_000;
 
   protected readonly hls: Hls;
   private waitForAudioBufferFlush = false;
 
   private readonly playbackIssues: PlaybackIssue[] = [];
   private readonly stallWatchdogIntervalId: number;
+  private readonly onBrowserBackOnline = () => this.retryNow();
   private lastObservedTime = -1;
   private lastTimeAdvancedAt = performance.now();
   private stallReported = false;
   private lastMediaErrorRecoveryAt: number | null = null;
-  private recoveryAttemptsWithoutProgress = 0;
+  private mediaErrorRecoveries = 0;
+
+  private currentConnectionState: PlaybackConnectionState = 'connected';
+  private unrecoverableReason: string | null = null;
+  private reconnectTimeoutId: number | null = null;
+  private reconnectAttempts = 0;
+  private lastFragmentLoadedAt = performance.now();
 
   protected constructor(container: HTMLDivElement, options: T) {
     super(container, options);
@@ -49,6 +60,7 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
     this.hls.attachMedia(this.videoElement);
 
     this.hls.on(Hls.Events.ERROR, (_event, data) => this.onHlsError(data));
+    this.hls.on(Hls.Events.FRAG_LOADED, () => this.onFragmentLoaded());
     this.hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, () => this.onAudioTrackSwitched());
     this.hls.once(Hls.Events.MANIFEST_LOADED, () => {
       this.hls.startLoad(this.initialStreamPosition);
@@ -61,6 +73,7 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
     });
 
     this.stallWatchdogIntervalId = window.setInterval(() => this.checkForStall(), 1000);
+    window.addEventListener('online', this.onBrowserBackOnline);
 
     this.hls.loadSource(options.backend.src);
   }
@@ -68,6 +81,10 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
   /** Position within the HLS stream to start loading at, in stream-local seconds. */
   protected get initialStreamPosition(): number {
     return 0;
+  }
+
+  override get connectionState(): PlaybackConnectionState {
+    return this.currentConnectionState;
   }
 
   getActiveAudioTrackId(): string | null {
@@ -105,6 +122,15 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
 
     return {
       ...super.getDiagnostics(),
+      connection: {
+        state: this.currentConnectionState,
+        unrecoverableReason: this.unrecoverableReason,
+        reconnectAttempts: this.reconnectAttempts,
+        reconnectScheduled: this.reconnectTimeoutId != null,
+        browserReportsOnline: navigator.onLine,
+        secondsSinceLastFragmentLoaded: (performance.now() - this.lastFragmentLoadedAt) / 1000,
+        estimatedBandwidthInBitsPerSecond: Math.round(this.hls.bandwidthEstimate),
+      },
       hls: {
         loadingEnabled: this.hls.loadingEnabled,
         bufferingEnabled: this.hls.bufferingEnabled,
@@ -130,6 +156,8 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
 
   destroy(): void {
     window.clearInterval(this.stallWatchdogIntervalId);
+    window.removeEventListener('online', this.onBrowserBackOnline);
+    this.cancelScheduledReconnect();
     this.hls.destroy();
     super.destroy();
   }
@@ -179,18 +207,24 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
   }
 
   private recoverFromFatalError(data: ErrorData): void {
-    // Recovering keeps requesting a stream that may be gone for good, so it only goes on until playback advances again
-    if (this.recoveryAttemptsWithoutProgress >= HlsVideoBackend.MAX_RECOVERY_ATTEMPTS_WITHOUT_PROGRESS) {
-      return;
-    }
-    ++this.recoveryAttemptsWithoutProgress;
-
     if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-      this.hls.startLoad();
+      const httpStatus = data.response?.code;
+      if (httpStatus != null && HlsVideoBackend.meansTheStreamIsGone(httpStatus)) {
+        this.giveUp(`the server answered ${httpStatus} for ${data.url ?? data.frag?.url ?? 'the stream'}`);
+        return;
+      }
+
+      this.scheduleReconnect();
       return;
     }
 
     if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+      if (this.mediaErrorRecoveries >= HlsVideoBackend.MAX_MEDIA_ERROR_RECOVERIES) {
+        this.giveUp(`hls.js kept reporting media errors (${data.details}) after ${this.mediaErrorRecoveries} recovery attempts`);
+        return;
+      }
+      ++this.mediaErrorRecoveries;
+
       const previousRecovery = this.lastMediaErrorRecoveryAt;
       this.lastMediaErrorRecoveryAt = performance.now();
 
@@ -202,7 +236,72 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
       return;
     }
 
-    console.error(`Playback stopped: hls.js reported a fatal ${data.type} that cannot be recovered from`);
+    this.giveUp(`hls.js reported a fatal ${data.type} (${data.details}) that cannot be recovered from`);
+  }
+
+  /**
+   * A dropped connection is the normal case here, not an exceptional one: this instance is reached over a
+   * home uplink and an SSH tunnel that reconnect every now and then. So reconnecting never stops on its own –
+   * it only backs off. Giving up after a fixed number of tries left the player dead for good once the outage
+   * outlasted the budget, which is the "it just stopped and never came back" every bug report so far described.
+   */
+  private scheduleReconnect(): void {
+    if (this.reconnectTimeoutId != null || this.currentConnectionState === 'unrecoverable') {
+      return;
+    }
+
+    this.currentConnectionState = 'reconnecting';
+
+    const delayInMillis = Math.min(
+      HlsVideoBackend.RECONNECT_BASE_DELAY_IN_MILLIS * (2 ** this.reconnectAttempts),
+      HlsVideoBackend.RECONNECT_MAX_DELAY_IN_MILLIS,
+    );
+    ++this.reconnectAttempts;
+
+    this.reconnectTimeoutId = window.setTimeout(() => {
+      this.reconnectTimeoutId = null;
+      this.hls.startLoad(this.videoElement.currentTime);
+    }, delayInMillis);
+  }
+
+  /** Reconnects without waiting out the backoff – the browser telling us it is online again is better news than a timer. */
+  private retryNow(): void {
+    if (this.currentConnectionState !== 'reconnecting') {
+      return;
+    }
+
+    this.cancelScheduledReconnect();
+    this.reconnectAttempts = 0;
+    this.hls.startLoad(this.videoElement.currentTime);
+  }
+
+  private cancelScheduledReconnect(): void {
+    if (this.reconnectTimeoutId == null) {
+      return;
+    }
+
+    window.clearTimeout(this.reconnectTimeoutId);
+    this.reconnectTimeoutId = null;
+  }
+
+  private onFragmentLoaded(): void {
+    this.lastFragmentLoadedAt = performance.now();
+    this.reconnectAttempts = 0;
+    this.mediaErrorRecoveries = 0;
+    this.cancelScheduledReconnect();
+
+    if (this.currentConnectionState === 'reconnecting') {
+      this.currentConnectionState = 'connected';
+    }
+  }
+
+  private giveUp(reason: string): void {
+    this.cancelScheduledReconnect();
+    this.currentConnectionState = 'unrecoverable';
+    this.unrecoverableReason = reason;
+
+    this.rememberIssue('playback', 'gaveUpRecovering', true, { reason });
+    console.error(`Playback stopped for good: ${reason}`);
   }
 
   /** Catches a player that stopped without any error being reported – the shape most bug reports about this have. */
@@ -211,35 +310,60 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
       this.lastObservedTime = this.videoElement.currentTime;
       this.lastTimeAdvancedAt = performance.now();
       this.stallReported = false;
-      this.recoveryAttemptsWithoutProgress = 0;
       return;
     }
 
-    const playbackShouldAdvance = !this.videoElement.paused && !this.videoElement.seeking && !this.videoElement.ended && this.videoElement.playbackRate > 0;
+    // `seeking` is deliberately not excluded: a seek that never finishes is exactly the stall we are looking for
+    const playbackShouldAdvance = !this.videoElement.paused && !this.videoElement.ended && this.videoElement.playbackRate > 0;
     if (!playbackShouldAdvance) {
       this.lastTimeAdvancedAt = performance.now();
       return;
     }
 
     const stalledForInMillis = performance.now() - this.lastTimeAdvancedAt;
-    if (this.stallReported || stalledForInMillis < HlsVideoBackend.STALL_TOLERANCE_IN_MILLIS) {
+    if (stalledForInMillis < HlsVideoBackend.STALL_TOLERANCE_IN_MILLIS) {
       return;
     }
-    this.stallReported = true;
+    this.lastTimeAdvancedAt = performance.now();  // re-arm, so a nudge that did not help is repeated
 
-    const state = this.currentState();
-    this.rememberIssue('stall', 'playbackStalledWithoutError', false, { stalledForInMillis, ...state });
-    console.error(`Playback has not advanced for ${Math.round(stalledForInMillis / 1000)}s – asking hls.js to load again`, state);
+    if (this.reconnectTimeoutId != null || this.currentConnectionState === 'unrecoverable') {
+      return;
+    }
+
+    if (!this.stallReported) {
+      this.stallReported = true;
+
+      const state = this.currentState();
+      this.rememberIssue('stall', 'playbackStalledWithoutError', false, { stalledForInMillis, ...state });
+      console.error(`Playback has not advanced for ${Math.round(stalledForInMillis / 1000)}s – asking hls.js to load again`, state);
+    }
 
     this.hls.startLoad(this.videoElement.currentTime);
   }
 
+  /**
+   * Repeats collapse into one entry: an outage produces a timeout per fragment per retry, which used to push
+   * everything that happened before it out of the list long before anyone got around to reporting the problem.
+   */
   private rememberIssue(type: string, details: string, fatal: boolean, info: Record<string, unknown>): void {
-    this.playbackIssues.push({ timestamp: new Date().toISOString(), type, details, fatal, info });
+    const timestamp = new Date().toISOString();
+    const alreadySeenIndex = this.playbackIssues.findIndex((issue) => issue.type === type && issue.details === details);
+
+    if (alreadySeenIndex !== -1) {
+      const [alreadySeen] = this.playbackIssues.splice(alreadySeenIndex, 1);
+      this.playbackIssues.push({ ...alreadySeen, lastTimestamp: timestamp, count: alreadySeen.count + 1, fatal, info });
+      return;
+    }
+
+    this.playbackIssues.push({ timestamp, lastTimestamp: timestamp, count: 1, type, details, fatal, info });
 
     if (this.playbackIssues.length > HlsVideoBackend.MAX_REMEMBERED_ISSUES) {
       this.playbackIssues.shift();
     }
+  }
+
+  private static meansTheStreamIsGone(httpStatus: number): boolean {
+    return httpStatus === 401 || httpStatus === 403 || httpStatus === 404 || httpStatus === 410;
   }
 
   private static describeInFlightFragments(inFlightFragments: InFlightFragments): Record<string, unknown> {
