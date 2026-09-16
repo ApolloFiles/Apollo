@@ -30,6 +30,26 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
   private static readonly RECONNECT_BASE_DELAY_IN_MILLIS = 1_000;
   private static readonly RECONNECT_MAX_DELAY_IN_MILLIS = 30_000;
 
+  /**
+   * The server keeps the whole transcode on disk, so buffering far ahead costs nothing but memory – and it is
+   * what carries playback across a connection that drops for a few seconds without the viewer ever noticing.
+   */
+  private static readonly PLAYBACK_DEFAULTS: Partial<HlsConfig> = {
+    maxBufferLength: 90,
+    maxBufferSize: 120 * 1000 * 1000,
+    backBufferLength: 90,
+    fragLoadPolicy: {
+      default: {
+        maxTimeToFirstByteMs: 10_000,
+        maxLoadTimeMs: 120_000,
+        // hls.js defaults to retrying a timed-out fragment immediately, which burns the whole retry budget
+        // within seconds of a connection going away; backing off keeps the budget alive long enough to outlast it
+        timeoutRetry: { maxNumRetry: 6, retryDelayMs: 1_000, maxRetryDelayMs: 8_000 },
+        errorRetry: { maxNumRetry: 6, retryDelayMs: 1_000, maxRetryDelayMs: 8_000 },
+      },
+    },
+  };
+
   protected readonly hls: Hls;
   private waitForAudioBufferFlush = false;
 
@@ -51,7 +71,7 @@ export default class HlsVideoBackend<T extends HlsVideoBackendOptions = HlsVideo
   protected constructor(container: HTMLDivElement, options: T) {
     super(container, options);
 
-    const hlsConfig: Partial<HlsConfig> = { ...options.backend.hlsConfig };
+    const hlsConfig: Partial<HlsConfig> = { ...HlsVideoBackend.PLAYBACK_DEFAULTS, ...options.backend.hlsConfig };
     if (options.backend.preferredAudioLanguage != null) {
       hlsConfig.audioPreference = { lang: options.backend.preferredAudioLanguage };
     }
