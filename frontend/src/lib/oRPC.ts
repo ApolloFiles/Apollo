@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { APOLLO_INTERNAL_BACKEND_URL } from '$app/env/private';
 import { ORpcContract } from '#lib/ORpcHelper.js';
 import { setUiLanguageCookie, UI_LANGUAGE_COOKIE_NAME, uiLanguageCookieValue } from '#lib/uiLanguageCookie.js';
 import { createORPCClient, onError, onSuccess, ORPCError } from '@orpc/client';
@@ -9,8 +9,7 @@ import { type Cookies, redirect } from '@sveltejs/kit';
 
 type ClientContext = { cookies: Cookies, fetch: typeof fetch };
 
-const backendBaseUrl = env.APOLLO_INTERNAL_BACKEND_URL || 'http://127.0.0.1:8081';
-const oRpcUrl = backendBaseUrl + '/api/_frontend/oRPC/';
+const oRpcUrl = APOLLO_INTERNAL_BACKEND_URL + '/api/_frontend/oRPC/';
 
 export const rpcClient: ContractRouterClient<typeof ORpcContract, ClientContext> = createORPCClient(new RPCLink<ClientContext>({
   url: oRpcUrl,

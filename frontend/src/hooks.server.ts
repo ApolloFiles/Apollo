@@ -1,7 +1,7 @@
-import { dev } from '$app/environment';
 import { defineCustomServerStrategy } from '#lib/paraglide/runtime.js';
 import { paraglideMiddleware } from '#lib/paraglide/server.js';
 import { readUiLanguageCookie, UI_LANGUAGE_AUTO_VALUE } from '#lib/uiLanguageCookie.js';
+import { dev } from '$app/env';
 import type { Handle, HandleFetch, HandleServerError } from '@sveltejs/kit/hooks';
 
 defineCustomServerStrategy('custom-userPreference', {

@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import type SubtitleTrack from './backends/subtitles/SubtitleTrack';
 
 const STORAGE_KEY = 'apollo-video-player-stream-selection';
