@@ -6,6 +6,7 @@
   "common_btn_label_edit": "Bearbeiten",
   "common_btn_label_logout": "Abmelden",
   "common_btn_label_save": "Speichern",
+  "common_confirm_leave_with_unsaved_changes": "Es gibt ungespeicherte Änderungen, die beim Verlassen dieser Seite verloren gehen. Trotzdem fortfahren?",
   "common_text_loading": "Lädt…",
   "common_text_never": "Nie",
   "component_apollo_file_picker_breadcrumbs_label": "Aktueller Dateipfad",

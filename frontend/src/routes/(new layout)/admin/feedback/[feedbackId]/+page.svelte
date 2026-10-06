@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { beforeNavigate, goto, refreshAll } from '$app/navigation';
+  import { goto, refreshAll } from '$app/navigation';
   import RelativeTime from '#lib/components/RelativeTime.svelte';
   import TablerIcon from '#lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
   import { m } from '#lib/paraglide/messages.js';
+  import { guardUnsavedChanges } from '#lib/unsavedChangesGuard.js';
 
   let { data } = $props();
 
@@ -26,7 +27,6 @@
   let editedAdminNote = $derived(report.adminNote ?? '');
   let saving = $state(false);
   let recentlySaved = $state(false);
-  let bypassUnsavedChangesWarning = false;
 
   let contextJsonRef: HTMLPreElement | undefined = $state(undefined);
   let visualizeContextCopyToClipboard = $state(false);
@@ -37,35 +37,7 @@
     editedAdminNote.trim() !== (report.adminNote ?? ''),
   );
 
-  function beforeUnloadEventListener(event: BeforeUnloadEvent): void {
-    event.preventDefault();
-    //noinspection JSDeprecatedSymbols
-    event.returnValue = true;
-  }
-
-  $effect(() => {
-    if (hasUnsavedChanges) {
-      window.addEventListener('beforeunload', beforeUnloadEventListener);
-
-      return () => {
-        window.removeEventListener('beforeunload', beforeUnloadEventListener);
-      };
-    }
-  });
-
-  beforeNavigate((navigation) => {
-    if (navigation.willUnload) {
-      return; // Handled by the 'beforeunload' event listener above
-    }
-    if (!hasUnsavedChanges || bypassUnsavedChangesWarning) {
-      return;
-    }
-
-    const proceed = window.confirm('There are unsaved changes that will be lost if you leave this page. Do you want to proceed?');
-    if (proceed !== true) {
-      navigation.cancel();
-    }
-  });
+  const unsavedChangesGuard = guardUnsavedChanges(() => hasUnsavedChanges);
 
   async function saveChanges(): Promise<void> {
     if (saving) {
@@ -108,7 +80,7 @@
       .feedback
       .delete({ id: report.id })
       .then(() => {
-        bypassUnsavedChangesWarning = true;
+        unsavedChangesGuard.bypass();
         return goto('/admin/feedback');
       })
       .catch((error) => {

@@ -6,6 +6,7 @@
   "common_btn_label_edit": "Edit",
   "common_btn_label_logout": "Logout",
   "common_btn_label_save": "Save",
+  "common_confirm_leave_with_unsaved_changes": "There are unsaved changes that will be lost if you leave this page. Do you want to proceed?",
   "common_text_loading": "Loading…",
   "common_text_never": "Never",
   "component_apollo_file_picker_breadcrumbs_label": "Current path",
