@@ -53,7 +53,7 @@
     "@inlang/paraglide-js": "^2.25.4",
     "@orpc/contract": "^1.15.4",
     "@sveltejs/adapter-node": "^6.0.0",
-    "@sveltejs/enhanced-img": "^0.11.0",
+    "@sveltejs/enhanced-img": "^1.0.0",
     "@sveltejs/kit": "^3.0.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/node": "^24.19.1",
@@ -64,6 +64,6 @@
     "vite": "^8.3.3"
   },
   "allowScripts": {
-    "sharp@0.34.5": true
+    "sharp@0.35.5": true
   }
 }
