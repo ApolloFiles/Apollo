@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
+  import { refreshAll } from '$app/navigation';
   import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
   import RelativeTime from '#lib/components/RelativeTime.svelte';
   import TablerIcon from '#lib/components/TablerIcon.svelte';
@@ -51,7 +51,7 @@
 
   async function rotateToken(token: AccessToken): Promise<string | null> {
     const result = await safe(getClientSideRpcClient().user.settings.accessTokens.rotate({ tokenId: token.id }));
-    await invalidateAll();
+    await refreshAll();
 
     if (result.error != null) {
       if (isDefinedError(result.error) && result.error.code === 'ROTATION_FAILED') {
@@ -69,7 +69,7 @@
 
   async function revokeToken(token: AccessToken): Promise<string | null> {
     const result = await safe(getClientSideRpcClient().user.settings.accessTokens.revoke({ tokenId: token.id }));
-    await invalidateAll();
+    await refreshAll();
 
     if (result.error != null) {
       if (isDefinedError(result.error) && result.error.code === 'REVOCATION_FAILED') {
@@ -85,7 +85,7 @@
 
   async function onTokenCreated(fullToken: string): Promise<void> {
     revealDialogRef.show(fullToken, 'created');
-    await invalidateAll();
+    await refreshAll();
   }
 </script>
 

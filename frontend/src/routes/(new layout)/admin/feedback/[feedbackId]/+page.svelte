@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { beforeNavigate, goto, invalidateAll } from '$app/navigation';
+  import { beforeNavigate, goto, refreshAll } from '$app/navigation';
   import RelativeTime from '#lib/components/RelativeTime.svelte';
   import TablerIcon from '#lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
@@ -85,7 +85,7 @@
         });
 
       // Refresh the page data, so the edited values become the new baseline for the unsaved-changes check
-      await invalidateAll();
+      await refreshAll();
 
       recentlySaved = true;
       window.setTimeout(() => {

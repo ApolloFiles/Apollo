@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
+  import { refreshAll } from '$app/navigation';
   import TablerIcon from '#lib/components/TablerIcon.svelte';
   import { m } from '#lib/paraglide/messages.js';
   import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
@@ -32,7 +32,7 @@
     isBusy = true;
     try {
       await getClientSideRpcClient().media.markWatched({ libraryId, mediaId, mediaItemId });
-      await invalidateAll();
+      await refreshAll();
     } finally {
       isBusy = false;
     }
@@ -46,7 +46,7 @@
     isBusy = true;
     try {
       await getClientSideRpcClient().media.removeWatchProgress({ libraryId, mediaId, mediaItemId });
-      await invalidateAll();
+      await refreshAll();
     } finally {
       isBusy = false;
     }

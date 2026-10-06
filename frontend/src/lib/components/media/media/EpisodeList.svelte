@@ -60,13 +60,13 @@
     if (typeof selectedSeasonNumber !== 'number') {
       if (url.searchParams.has('s')) {
         url.searchParams.delete('s');
-        goto(url.href, { replaceState: true, keepFocus: true, noScroll: true });
+        goto(url.href, { replace: true, reset: false });
       }
       return;
     }
 
     url.searchParams.set('s', selectedSeasonNumber.toString());
-    goto(url.href, { replaceState: true, keepFocus: true, noScroll: true });
+    goto(url.href, { replace: true, reset: false });
   }
 </script>
 
