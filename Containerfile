@@ -36,7 +36,6 @@ COPY --chown=node:node \
      ./frontend/package-lock.json \
      ./frontend/tsconfig.json \
      ./frontend/vite.config.ts \
-     ./frontend/svelte.config.ts \
      ./frontend/
 COPY --chown=node:node ./frontend/patches/ ./frontend/patches/
 

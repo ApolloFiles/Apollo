@@ -2,7 +2,7 @@ import { dev } from '$app/environment';
 import { defineCustomServerStrategy } from '$lib/paraglide/runtime';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { readUiLanguageCookie, UI_LANGUAGE_AUTO_VALUE } from '$lib/uiLanguageCookie';
-import type { Handle, HandleFetch, HandleServerError } from '@sveltejs/kit';
+import type { Handle, HandleFetch, HandleServerError } from '@sveltejs/kit/hooks';
 
 defineCustomServerStrategy('custom-userPreference', {
   getLocale: (request) => {
@@ -14,7 +14,8 @@ defineCustomServerStrategy('custom-userPreference', {
   },
 });
 
-export const handleError: HandleServerError = ({ error, event, status, message }) => {
+export const handleError: HandleServerError = ({ kind, error, event }) => {
+  const { status, message } = kind === 'unknown' ? { status: 500, message: 'Internal Error' } : error;
   const logLine = `[${status}] ${event.request.method} ${event.url.pathname}: ${message}`;
 
   // Expected client errors (404, etc.) don't carry a useful stack trace – log just the line.
@@ -38,9 +39,7 @@ export const handleFetch: HandleFetch = async ({ request, fetch }) => {
   return response;
 };
 
-const handleParaglide: Handle = ({ event, resolve }) => paraglideMiddleware(event.request, ({ request, locale }) => {
-  event.request = request;
-
+const handleParaglide: Handle = ({ event, resolve }) => paraglideMiddleware(event.request, ({ locale }) => {
   return resolve(event, {
     transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', locale),
     preload: ({ type, path }) => {
