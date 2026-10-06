@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { m } from '$lib/paraglide/messages.js';
-  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
-  import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
+  import { getUserProfile } from '#lib/stores/UserProfileStore.svelte.js';
 
   let { data } = $props();
 

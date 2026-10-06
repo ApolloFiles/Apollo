@@ -1,6 +1,6 @@
 <script lang="ts">
-  import MediaOverviewSectionGrid from '$lib/components/media/library/MediaOverviewSectionGrid.svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import MediaOverviewSectionGrid from '#lib/components/media/library/MediaOverviewSectionGrid.svelte';
+  import { m } from '#lib/paraglide/messages.js';
   import type { PageProps } from './$types';
 
   const { data }: PageProps = $props();

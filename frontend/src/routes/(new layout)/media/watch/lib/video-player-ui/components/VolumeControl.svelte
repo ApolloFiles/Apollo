@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import { m } from '#lib/paraglide/messages.js';
   import IconVolumeFull from 'virtual:icons/tabler/volume';
   import IconVolume50 from 'virtual:icons/tabler/volume-2';
   import IconVolume0 from 'virtual:icons/tabler/volume-3';

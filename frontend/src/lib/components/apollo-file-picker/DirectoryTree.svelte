@@ -1,8 +1,8 @@
 <script lang="ts">
-  import LazyTreeView from '$lib/components/tree-view/LazyTreeView.svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { m } from '$lib/paraglide/messages.js';
-  import type { TreeItemContext, TreeNode } from '$lib/components/tree-view/TreeView.types.js';
+  import LazyTreeView from '#lib/components/tree-view/LazyTreeView.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { TreeItemContext, TreeNode } from '#lib/components/tree-view/TreeView.types.js';
   import type ApolloFilePickerState from './ApolloFilePickerState.svelte.js';
   import type { DirRef } from './ApolloFilePickerState.svelte.js';
 

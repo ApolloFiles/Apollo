@@ -15,7 +15,7 @@
 
   let { identifier }: { identifier: string } = $props();
 
-  const assetThirdPartyLoginLogos: Record<string, any> = import.meta.glob('$lib/assets/login/third-party/*.svg', {
+  const assetThirdPartyLoginLogos: Record<string, any> = import.meta.glob('#lib/assets/login/third-party/*.svg', {
     eager: true,
     query: { enhanced: true },
   });

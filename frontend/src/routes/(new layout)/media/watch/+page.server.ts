@@ -1,4 +1,4 @@
-import { rpcClient } from '$lib/oRPC';
+import { rpcClient } from '#lib/oRPC.js';
 import { safe } from '@orpc/client';
 import type { PageServerLoad } from './$types';
 

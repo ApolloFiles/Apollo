@@ -1,6 +1,6 @@
 <script lang="ts">
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
   import { onMount } from 'svelte';
 
   let { mediaId, title, synopsis, year, hasClearLogo, mediaType, nextMediaItem }: {

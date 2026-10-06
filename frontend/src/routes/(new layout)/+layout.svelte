@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import AppLayout from '$lib/components/(new layout)/AppLayout.svelte';
+  import AppLayout from '#lib/components/(new layout)/AppLayout.svelte';
   import type { RenderingLayoutData } from './types';
 
   const { children } = $props();

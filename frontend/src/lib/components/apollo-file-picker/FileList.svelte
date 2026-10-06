@@ -1,7 +1,7 @@
 <script lang="ts">
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { typeahead } from '$lib/attachments/typeahead.svelte.js';
-  import { m } from '$lib/paraglide/messages.js';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { typeahead } from '#lib/attachments/typeahead.svelte.js';
+  import { m } from '#lib/paraglide/messages.js';
   import type { FsEntry } from './ApolloFilePickerState.svelte.js';
 
   let { entries, highlightedUri, loading = false, onHighlight, onOpen, onNavigateUp }: {

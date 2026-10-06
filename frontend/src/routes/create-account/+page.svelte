@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages.js';
-  import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import AuthProviderIcon from '#lib/components/auth/AuthProviderIcon.svelte';
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();

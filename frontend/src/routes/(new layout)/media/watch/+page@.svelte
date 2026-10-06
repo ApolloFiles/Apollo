@@ -4,10 +4,10 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import FeedbackDialog from '$lib/components/feedback/FeedbackDialog.svelte';
-  import { registerFeedbackPageContextProvider, type FeedbackPageContext } from '$lib/feedback/feedbackContext';
-  import { m } from '$lib/paraglide/messages.js';
-  import { setUserProfileContext } from '$lib/stores/UserProfileStore.svelte';
+  import FeedbackDialog from '#lib/components/feedback/FeedbackDialog.svelte';
+  import { registerFeedbackPageContextProvider, type FeedbackPageContext } from '#lib/feedback/feedbackContext.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import { setUserProfileContext } from '#lib/stores/UserProfileStore.svelte.js';
   import type { PageProps } from './$types';
   import type { StartPlaybackResponse, TwitchMediaInfo, YouTubeMediaInfo } from './legacy-types';
   import VideoLiveTranscodeBackend from './lib/client-side/backends/VideoLiveTranscodeBackend';

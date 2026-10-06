@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
-import { getClientSideRpcClient } from '$lib/oRPCClientSide';
-import type { ORpcContractOutputs } from '$lib/ORpcHelper';
+import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
+import type { ORpcContractOutputs } from '#lib/ORpcHelper.js';
 
 type StartResult = ORpcContractOutputs['files']['filePicker']['start'];
 type DirResult = ORpcContractOutputs['files']['filePicker']['openDirectory'];

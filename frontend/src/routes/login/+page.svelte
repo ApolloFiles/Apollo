@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages.js';
-  import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
-  import HrSectionBreak from '$lib/components/login/HrSectionBreak.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import AuthProviderIcon from '#lib/components/auth/AuthProviderIcon.svelte';
+  import HrSectionBreak from '#lib/components/login/HrSectionBreak.svelte';
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();
@@ -74,7 +74,7 @@
     <div class="col-right">
       <enhanced:img
         class="login-background-image"
-        src="$lib/assets/login/background.jpg?w=1920;1280;640;320"
+        src="#lib/assets/login/background.jpg?w=1920;1280;640;320"
         sizes="(min-width: 1200px) 50vw, (min-width: 800px) 75vw, 100vw"
         alt="Close-up view of a wooden dock extending over a lake, with misty mountains and forested hills reflected in the still water under a clear blue sky"
         fetchpriority="high"

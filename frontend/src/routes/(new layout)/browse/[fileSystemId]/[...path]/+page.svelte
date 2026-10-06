@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();

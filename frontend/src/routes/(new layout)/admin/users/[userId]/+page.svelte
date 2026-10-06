@@ -1,9 +1,9 @@
 <script lang="ts">
-  import AuthProviderIcon from '$lib/components/auth/AuthProviderIcon.svelte';
-  import RelativeTime from '$lib/components/RelativeTime.svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
-  import { m } from '$lib/paraglide/messages.js';
+  import AuthProviderIcon from '#lib/components/auth/AuthProviderIcon.svelte';
+  import RelativeTime from '#lib/components/RelativeTime.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
+  import { m } from '#lib/paraglide/messages.js';
 
   let { data } = $props();
 

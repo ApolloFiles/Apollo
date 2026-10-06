@@ -1,9 +1,9 @@
 <script lang="ts">
-  import InterpolatedMessage, { MESSAGE_SLOT } from '$lib/components/InterpolatedMessage.svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
-  import { m } from '$lib/paraglide/messages.js';
-  import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
+  import InterpolatedMessage, { MESSAGE_SLOT } from '#lib/components/InterpolatedMessage.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import { getUserProfile } from '#lib/stores/UserProfileStore.svelte.js';
 
   const userProfile = getUserProfile();
 

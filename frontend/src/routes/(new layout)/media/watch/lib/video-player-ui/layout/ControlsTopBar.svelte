@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import { m } from '#lib/paraglide/messages.js';
   import IconArrowBack from 'virtual:icons/tabler/arrow-back-up';
   import IconPlayerSkipForward from 'virtual:icons/tabler/player-skip-forward';
   import IconPlayerSkipBack from 'virtual:icons/tabler/player-skip-back';

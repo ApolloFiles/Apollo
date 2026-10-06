@@ -1,9 +1,9 @@
 <script lang="ts">
   import { beforeNavigate, goto, invalidateAll } from '$app/navigation';
-  import RelativeTime from '$lib/components/RelativeTime.svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
-  import { m } from '$lib/paraglide/messages.js';
+  import RelativeTime from '#lib/components/RelativeTime.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
+  import { m } from '#lib/paraglide/messages.js';
 
   let { data } = $props();
 

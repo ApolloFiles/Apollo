@@ -1,7 +1,7 @@
 <script lang="ts">
-  import EpisodeActionsMenu from '$lib/components/media/media/EpisodeActionsMenu.svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import EpisodeActionsMenu from '#lib/components/media/media/EpisodeActionsMenu.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
 
   let {
     libraryId,

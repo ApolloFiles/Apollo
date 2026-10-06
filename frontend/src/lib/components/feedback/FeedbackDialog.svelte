@@ -1,8 +1,8 @@
 <script lang="ts">
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { collectFeedbackContext, type FeedbackContext } from '$lib/feedback/feedbackContext';
-  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
-  import { m } from '$lib/paraglide/messages.js';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { collectFeedbackContext, type FeedbackContext } from '#lib/feedback/feedbackContext.js';
+  import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
+  import { m } from '#lib/paraglide/messages.js';
 
   type FeedbackCategory = 'BUG' | 'FEEDBACK';
 

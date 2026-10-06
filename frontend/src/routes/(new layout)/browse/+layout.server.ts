@@ -1,6 +1,6 @@
-import type { SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
-import { rpcClient } from '$lib/oRPC';
-import { m } from '$lib/paraglide/messages.js';
+import type { SideBarMenuItems } from '#lib/components/(new layout)/AppSideBar.svelte';
+import { rpcClient } from '#lib/oRPC.js';
+import { m } from '#lib/paraglide/messages.js';
 import type { RenderingLayoutData } from '../types';
 import type { LayoutServerLoad } from './$types';
 

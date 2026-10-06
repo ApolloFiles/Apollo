@@ -1,10 +1,10 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation';
-  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-  import RelativeTime from '$lib/components/RelativeTime.svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
-  import { m } from '$lib/paraglide/messages.js';
+  import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+  import RelativeTime from '#lib/components/RelativeTime.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
+  import { m } from '#lib/paraglide/messages.js';
   import { isDefinedError, safe } from '@orpc/client';
   import CreateAccessTokenDialog from './components/CreateAccessTokenDialog.svelte';
   import RevealAccessTokenDialog from './components/RevealAccessTokenDialog.svelte';

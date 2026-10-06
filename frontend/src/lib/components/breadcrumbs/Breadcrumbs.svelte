@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { m } from '$lib/paraglide/messages.js';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
   import type { BreadcrumbSegment } from './Breadcrumbs.types.js';
 
   let {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import { m } from '#lib/paraglide/messages.js';
   import IconBitmapSubtitle from 'virtual:icons/tabler/photo';
   import type SubtitleTrack from '../../client-side/backends/subtitles/SubtitleTrack';
 

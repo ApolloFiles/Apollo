@@ -1,4 +1,4 @@
-import { rpcClient } from '$lib/oRPC';
+import { rpcClient } from '#lib/oRPC.js';
 import { isDefinedError, safe } from '@orpc/client';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from '../../../../../.svelte-kit/types/src/routes/(new layout)/media/$types';

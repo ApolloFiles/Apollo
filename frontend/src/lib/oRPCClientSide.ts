@@ -1,4 +1,4 @@
-import { ORpcContract } from '$lib/ORpcHelper';
+import { ORpcContract } from '#lib/ORpcHelper.js';
 import { createORPCClient, onError, ORPCError } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import * as oRpcPlugins from '@orpc/client/plugins';

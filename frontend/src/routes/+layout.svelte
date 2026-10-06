@@ -1,9 +1,9 @@
 <script lang="ts">
   import 'bootstrap/dist/css/bootstrap.css';
-  import '$lib/styles/fonts.css';
+  import '#lib/styles/fonts.css';
 
   import { onMount } from 'svelte';
-  import { installClientErrorLog } from '$lib/feedback/clientErrorLog';
+  import { installClientErrorLog } from '#lib/feedback/clientErrorLog.js';
 
   let { children } = $props();
 

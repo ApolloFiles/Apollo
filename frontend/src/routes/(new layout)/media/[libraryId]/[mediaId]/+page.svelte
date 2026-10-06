@@ -1,6 +1,6 @@
 <script lang="ts">
-  import HeroSection from '$lib/components/media/media/HeroSection.svelte';
-  import EpisodeList from '$lib/components/media/media/EpisodeList.svelte';
+  import HeroSection from '#lib/components/media/media/HeroSection.svelte';
+  import EpisodeList from '#lib/components/media/media/EpisodeList.svelte';
   import type { PageProps } from './$types';
 
   // TODO: Remove default values and get real data from the backend

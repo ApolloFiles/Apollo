@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { ORpcContract } from '$lib/ORpcHelper';
+import { ORpcContract } from '#lib/ORpcHelper.js';
 import type { InferContractRouterInputs } from '@orpc/contract';
 import { getClientErrorLog } from './clientErrorLog';
 

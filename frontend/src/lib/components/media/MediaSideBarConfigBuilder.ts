@@ -1,5 +1,5 @@
-import type { SideBarMenuItem, SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
-import { m } from '$lib/paraglide/messages.js';
+import type { SideBarMenuItem, SideBarMenuItems } from '#lib/components/(new layout)/AppSideBar.svelte';
+import { m } from '#lib/paraglide/messages.js';
 
 type LibraryEntry = { id: string, name: string, hideFromSidebar: boolean };
 type Libraries = {

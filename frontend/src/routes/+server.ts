@@ -1,4 +1,4 @@
-import { rpcClient } from '$lib/oRPC';
+import { rpcClient } from '#lib/oRPC.js';
 import { redirect, type RequestHandler } from '@sveltejs/kit';
 
 export const GET: RequestHandler = async ({ cookies, fetch }): Promise<never> => {

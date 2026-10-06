@@ -1,11 +1,11 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { page } from '$app/state';
-  import SideBarMenuGroup from '$lib/components/(new layout)/SideBarMenuGroup.svelte';
-  import FeedbackDialog from '$lib/components/feedback/FeedbackDialog.svelte';
-  import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
-  import { m } from '$lib/paraglide/messages.js';
-  import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
+  import SideBarMenuGroup from '#lib/components/(new layout)/SideBarMenuGroup.svelte';
+  import FeedbackDialog from '#lib/components/feedback/FeedbackDialog.svelte';
+  import TablerIcon, { type TablerIconId } from '#lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import { getUserProfile } from '#lib/stores/UserProfileStore.svelte.js';
 
   export type SideBarMenuItem = {
     label: string,

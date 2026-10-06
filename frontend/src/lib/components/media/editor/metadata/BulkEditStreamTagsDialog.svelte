@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages.js';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
   import { applyBulkEditPlan } from './bulkEdit/applyPlan.js';
   import { collectDispositionFlags, computeBulkEditPlan } from './bulkEdit/computePlan.js';
   import { describeMatchedStreams } from './bulkEdit/format.js';

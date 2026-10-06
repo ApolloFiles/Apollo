@@ -1,6 +1,6 @@
-import { buildMediaSideBarConfig } from '$lib/components/media/MediaSideBarConfigBuilder';
-import { rpcClient } from '$lib/oRPC';
-import type { ORpcContractOutputs } from '$lib/ORpcHelper';
+import { buildMediaSideBarConfig } from '#lib/components/media/MediaSideBarConfigBuilder.js';
+import { rpcClient } from '#lib/oRPC.js';
+import type { ORpcContractOutputs } from '#lib/ORpcHelper.js';
 import type { RenderingLayoutData } from '../../../types';
 import type { PageServerLoad } from './$types';
 

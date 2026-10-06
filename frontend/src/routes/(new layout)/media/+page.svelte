@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LibraryView from '$lib/components/media/library/_LibraryView.svelte';
+  import LibraryView from '#lib/components/media/library/_LibraryView.svelte';
   import type { PageProps } from './$types';
 
   const { data }: PageProps = $props();

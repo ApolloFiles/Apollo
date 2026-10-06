@@ -19,6 +19,10 @@
     "url": "https://github.com/ApolloFiles/Apollo/issues"
   },
   "type": "module",
+  "imports": {
+    "#lib": "./src/lib/index.js",
+    "#lib/*": "./src/lib/*"
+  },
   "scripts": {
     "postinstall": "patch-package",
 

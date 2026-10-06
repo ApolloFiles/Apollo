@@ -1,4 +1,4 @@
-import type { ORpcContractOutputs } from '$lib/ORpcHelper';
+import type { ORpcContractOutputs } from '#lib/ORpcHelper.js';
 import TagCollection from './TagCollection.svelte';
 
 export type MetadataTag = { key: string, value: string };

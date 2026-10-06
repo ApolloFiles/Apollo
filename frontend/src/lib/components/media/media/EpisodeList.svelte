@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import EpisodeCard from '$lib/components/media/media/EpisodeCard.svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import EpisodeCard from '#lib/components/media/media/EpisodeCard.svelte';
+  import { m } from '#lib/paraglide/messages.js';
 
   let { libraryId, mediaId, nextEpisodeIdToWatch, continueSeasonNumber, seasons }: {
     libraryId: string,

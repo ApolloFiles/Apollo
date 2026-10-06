@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
-import { ORpcContract } from '$lib/ORpcHelper';
-import { setUiLanguageCookie, UI_LANGUAGE_COOKIE_NAME, uiLanguageCookieValue } from '$lib/uiLanguageCookie';
+import { ORpcContract } from '#lib/ORpcHelper.js';
+import { setUiLanguageCookie, UI_LANGUAGE_COOKIE_NAME, uiLanguageCookieValue } from '#lib/uiLanguageCookie.js';
 import { createORPCClient, onError, onSuccess, ORPCError } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import * as oRpcPlugins from '@orpc/client/plugins';

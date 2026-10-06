@@ -1,4 +1,4 @@
-import { m } from '$lib/paraglide/messages.js';
+import { m } from '#lib/paraglide/messages.js';
 import type { RenderingLayoutData } from '../types';
 import type { LayoutServerLoad } from './$types';
 

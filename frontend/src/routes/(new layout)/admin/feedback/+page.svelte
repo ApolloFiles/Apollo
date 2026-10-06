@@ -1,7 +1,7 @@
 <script lang="ts">
-  import RelativeTime from '$lib/components/RelativeTime.svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import RelativeTime from '#lib/components/RelativeTime.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
 
   let { data } = $props();
 

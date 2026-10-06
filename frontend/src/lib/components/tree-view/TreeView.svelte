@@ -3,7 +3,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import TreeItem from './TreeItem.svelte';
   import { setTreeViewState, TreeViewState } from './TreeViewState.svelte.js';
-  import { typeahead } from '$lib/attachments/typeahead.svelte.js';
+  import { typeahead } from '#lib/attachments/typeahead.svelte.js';
   import type { TreeItemContext, TreeNode } from './TreeView.types.js';
 
   let {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages.js';
+  import { m } from '#lib/paraglide/messages.js';
   import IconSubtitles from 'virtual:icons/tabler/badge-cc';
   import IconHeadphones from 'virtual:icons/tabler/headphones';
   import IconPause from 'virtual:icons/tabler/player-pause';

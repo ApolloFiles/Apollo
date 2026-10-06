@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Breadcrumbs from '$lib/components/breadcrumbs/Breadcrumbs.svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import Breadcrumbs from '#lib/components/breadcrumbs/Breadcrumbs.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
   import SortControl from './SortControl.svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import { m } from '#lib/paraglide/messages.js';
   import type { Breadcrumb, SortDir, SortKey } from './ApolloFilePickerState.svelte.js';
 
   let { breadcrumbs, rootUri, loading = false, onNavigate, onRefresh, sortKey, sortDir, onSort }: {

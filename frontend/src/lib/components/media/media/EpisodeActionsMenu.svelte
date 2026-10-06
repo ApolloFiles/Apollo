@@ -1,8 +1,8 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { m } from '$lib/paraglide/messages.js';
-  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
 
   let { libraryId, mediaId, mediaItemId, durationInSeconds, watchProgress }: {
     libraryId: string,

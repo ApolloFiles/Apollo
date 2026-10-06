@@ -1,7 +1,7 @@
 <script lang="ts">
-  import MediaOverviewSectionGrid from '$lib/components/media/library/MediaOverviewSectionGrid.svelte';
-  import MediaOverviewSectionRow from '$lib/components/media/library/MediaOverviewSectionRow.svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import MediaOverviewSectionGrid from '#lib/components/media/library/MediaOverviewSectionGrid.svelte';
+  import MediaOverviewSectionRow from '#lib/components/media/library/MediaOverviewSectionRow.svelte';
+  import { m } from '#lib/paraglide/messages.js';
 
   let { continueWatchingItems, mediaItems, mediaItemsOrder, mediaItemsDisplayAsRow }: {
     continueWatchingItems: {

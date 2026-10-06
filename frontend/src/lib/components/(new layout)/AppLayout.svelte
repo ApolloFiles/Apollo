@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import AppSideBar, { type SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
-  import AppTopNav from '$lib/components/(new layout)/AppTopNav.svelte';
-  import { setUserProfileContext } from '$lib/stores/UserProfileStore.svelte';
+  import AppSideBar, { type SideBarMenuItems } from '#lib/components/(new layout)/AppSideBar.svelte';
+  import AppTopNav from '#lib/components/(new layout)/AppTopNav.svelte';
+  import { setUserProfileContext } from '#lib/stores/UserProfileStore.svelte.js';
   import type { Snippet } from 'svelte';
 
   const {

@@ -1,6 +1,6 @@
 <script lang="ts" generics="T">
   import type { Snippet } from 'svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
   import TreeItem from './TreeItem.svelte';
   import { getTreeViewState, isExpandable } from './TreeViewState.svelte.js';
   import type { TreeItemContext, TreeNode } from './TreeView.types.js';

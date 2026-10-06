@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
   import TagCollection, { type TagData } from '../TagCollection.svelte';
   import { getMkvTagInfo, hasMkvTagInfo } from './MkvTagInfoTextMap';
 

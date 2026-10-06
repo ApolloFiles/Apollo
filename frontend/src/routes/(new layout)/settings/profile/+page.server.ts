@@ -1,4 +1,4 @@
-import { rpcClient } from '$lib/oRPC';
+import { rpcClient } from '#lib/oRPC.js';
 import type { AuthenticatedPageData } from '../../types';
 import type { PageServerLoad } from './$types';
 

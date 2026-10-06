@@ -6,7 +6,7 @@
   import IconNorthStar from 'virtual:icons/tabler/north-star';
   import IconRefresh from 'virtual:icons/tabler/refresh';
   import IconUserGroup from 'virtual:icons/tabler/users-group';
-  import { getUserProfile } from '$lib/stores/UserProfileStore.svelte';
+  import { getUserProfile } from '#lib/stores/UserProfileStore.svelte.js';
   import type { PlayerSessionInfoResponse } from '../legacy-types';
   import WebSocketClient, { type WebSocketSelfInfo } from './client-side/WebSocketClient.svelte.js';
   import { regenerateJoinToken } from './playback-session-backend-api';

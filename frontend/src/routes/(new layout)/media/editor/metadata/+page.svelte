@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto, refreshAll } from '$app/navigation';
-  import ApolloFilePicker from '$lib/components/apollo-file-picker/ApolloFilePicker.svelte';
-  import BulkEditStreamTagsDialog from '$lib/components/media/editor/metadata/BulkEditStreamTagsDialog.svelte';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
+  import ApolloFilePicker from '#lib/components/apollo-file-picker/ApolloFilePicker.svelte';
+  import BulkEditStreamTagsDialog from '#lib/components/media/editor/metadata/BulkEditStreamTagsDialog.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
   import { ORPCError } from '@orpc/client';
   import { onMount } from 'svelte';
   import type { PageProps } from './$types';

@@ -1,8 +1,8 @@
 <script lang="ts" generics="T">
   import type { Snippet } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { m } from '$lib/paraglide/messages.js';
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
   import TreeView from './TreeView.svelte';
   import type { LoadChildren, TreeItemContext, TreeNode } from './TreeView.types.js';
 

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
-  import { getClientSideRpcClient } from '$lib/oRPCClientSide';
-  import { m } from '$lib/paraglide/messages.js';
-  import { locales } from '$lib/paraglide/runtime';
-  import { setUiLanguageCookieInBrowser, UI_LANGUAGE_AUTO_VALUE as AUTO } from '$lib/uiLanguageCookie';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
+  import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import { locales } from '#lib/paraglide/runtime.js';
+  import { setUiLanguageCookieInBrowser, UI_LANGUAGE_AUTO_VALUE as AUTO } from '#lib/uiLanguageCookie.js';
   import { untrack } from 'svelte';
   import type { PageProps } from './$types';
 

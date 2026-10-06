@@ -1,6 +1,6 @@
 <script lang="ts">
-  import TablerIcon, { type TablerIconId } from '$lib/components/TablerIcon.svelte';
-  import { m } from '$lib/paraglide/messages.js';
+  import TablerIcon, { type TablerIconId } from '#lib/components/TablerIcon.svelte';
+  import { m } from '#lib/paraglide/messages.js';
 
   let { title, items, loadAllImagesLazy = true, sortOrders }: {
     title: string,

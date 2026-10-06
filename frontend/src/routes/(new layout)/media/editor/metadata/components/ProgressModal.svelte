@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TablerIcon from '$lib/components/TablerIcon.svelte';
+  import TablerIcon from '#lib/components/TablerIcon.svelte';
 
   let { title, bodyText }: { title: string, bodyText: string } = $props();
 

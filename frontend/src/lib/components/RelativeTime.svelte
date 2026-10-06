@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatAbsoluteDate, formatRelativeDate } from '$lib/dateFormatting';
+  import { formatAbsoluteDate, formatRelativeDate } from '#lib/dateFormatting.js';
 
   let { date, withTime = true }: {
     date: Date,

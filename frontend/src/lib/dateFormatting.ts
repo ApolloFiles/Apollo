@@ -1,4 +1,4 @@
-import { getLocale } from '$lib/paraglide/runtime';
+import { getLocale } from '#lib/paraglide/runtime.js';
 import { createSubscriber } from 'svelte/reactivity';
 
 const RELATIVE_TIME_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [

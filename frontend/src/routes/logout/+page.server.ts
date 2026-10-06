@@ -1,4 +1,4 @@
-import { rpcClient } from '$lib/oRPC';
+import { rpcClient } from '#lib/oRPC.js';
 import { redirect } from '@sveltejs/kit';
 
 export const load = async ({ cookies, fetch }) => {

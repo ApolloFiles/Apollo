@@ -1,4 +1,4 @@
-import type { SideBarMenuItems } from '$lib/components/(new layout)/AppSideBar.svelte';
+import type { SideBarMenuItems } from '#lib/components/(new layout)/AppSideBar.svelte';
 
 /** Data provided by the group's root +layout.server.ts to all pages rendered inside AppLayout */
 export type GlobalLayoutData = {
