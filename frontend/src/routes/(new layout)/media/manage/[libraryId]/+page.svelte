@@ -4,6 +4,7 @@
   import { m } from '#lib/paraglide/messages.js';
   import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
   import { getUserProfile } from '#lib/stores/UserProfileStore.svelte.js';
+  import { guardUnsavedChanges } from '#lib/unsavedChangesGuard.js';
 
   let { data } = $props();
 
@@ -21,6 +22,19 @@
   let editValueHideFromOverview: boolean = $state(data.libraryUserPreferences.hideFromOverview);
   // svelte-ignore state_referenced_locally
   let editValueHideFromSidebar: boolean = $state(data.libraryUserPreferences.hideFromSidebar);
+
+  const initialEditValues = serializeEditValues();
+  const unsavedChangesGuard = guardUnsavedChanges(() => serializeEditValues() !== initialEditValues);
+
+  function serializeEditValues(): string {
+    return JSON.stringify([
+      editValueName,
+      editValueDirectoryUris.filter(uri => uri.trim().length > 0),
+      editValueSharedWithUserIds.map(u => u.id),
+      editValueHideFromOverview,
+      editValueHideFromSidebar,
+    ]);
+  }
 
   let searchQuery = $state('');
   let searchResults = $state<{ id: string, displayName: string }[]>([]);
@@ -89,6 +103,7 @@
         });
       }
 
+      unsavedChangesGuard.bypass();
       return redirectToManagePage();
     } catch (err) {
       console.error(err);
