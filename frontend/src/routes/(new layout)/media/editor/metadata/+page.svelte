@@ -4,6 +4,7 @@
   import BulkEditStreamTagsDialog from '#lib/components/media/editor/metadata/BulkEditStreamTagsDialog.svelte';
   import TablerIcon from '#lib/components/TablerIcon.svelte';
   import { getClientSideRpcClient } from '#lib/oRPCClientSide.js';
+  import { guardUnsavedChanges } from '#lib/unsavedChangesGuard.js';
   import { ORPCError } from '@orpc/client';
   import { onMount } from 'svelte';
   import type { PageProps } from './$types';
@@ -421,23 +422,10 @@
 
   //
 
-  function beforeUnloadEventListener(event: BeforeUnloadEvent): void {
-    event.preventDefault();
-    //noinspection JSDeprecatedSymbols
-    event.returnValue = true;
-  }
+  guardUnsavedChanges(() => files.some(file => file.hasUnsavedChanges));
 
   onMount(() => {
-    $effect(() => {
-      if (files.some(file => file.hasUnsavedChanges)) {
-        window.addEventListener('beforeunload', beforeUnloadEventListener);
-      } else {
-        window.removeEventListener('beforeunload', beforeUnloadEventListener);
-      }
-    });
-
     return () => {
-      window.removeEventListener('beforeunload', beforeUnloadEventListener);
       window.clearTimeout(saveReFetchingTimeoutId);
 
       saveModalRef?.hide();
