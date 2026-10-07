@@ -58,7 +58,7 @@ export default class ExpiringApolloCache {
     let cacheMetadata = await this.stat(idPrefix, identifier);
 
     if (cacheMetadata != null && cacheMetadata.expiryTimestampMillis > 0) {
-      cacheMetadata.expiryTimestampMillis = ttlSeconds * 60 * 1000;
+      cacheMetadata.expiryTimestampMillis = Date.now() + (ttlSeconds * 1000);
       await this.writeMetadataFile(cachePaths.metadata, cacheMetadata);
     }
 
