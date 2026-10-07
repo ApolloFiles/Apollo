@@ -1,21 +1,15 @@
-import { injectable } from 'tsyringe';
+import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import { z } from 'zod';
 import AuthSessionRevoker from '../../../../auth/session/AuthSessionRevoker.js';
 import SessionCookieHelper from '../../../../auth/session/SessionCookieHelper.js';
-import { ContainerTokens } from '../../../../constants.js';
-import type { FastifyInstanceWithZod } from '../../../server/FastifyWebServer.js';
-import type { default as Router, RouteReturn } from '../../Router.js';
+import type ApolloRouter from '../../../server/ApolloRouter.js';
 
-@injectable({ token: ContainerTokens.ROUTER })
-export default class LogoutRouter implements Router {
+@HttpRouter()
+export default class LogoutRouter implements ApolloRouter {
   constructor(
     private readonly sessionCookieHelper: SessionCookieHelper,
     private readonly authSessionRevoker: AuthSessionRevoker,
   ) {
-  }
-
-  getRoutePrefix(): string {
-    return '/api/_auth/';
   }
 
   allowUnauthenticatedAccess(): boolean {

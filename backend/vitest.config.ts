@@ -8,6 +8,7 @@ const defaultProjectConfig: ProjectConfig = {
   globals: true,
 
   setupFiles: ['reflect-metadata'],
+  server: { deps: { inline: ['@sprax/node-framework'] } },
 };
 
 export default defineConfig({

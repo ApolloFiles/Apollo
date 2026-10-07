@@ -1,11 +1,11 @@
 import { onError, ORPCError } from '@orpc/server';
 import * as oRpcNodeJs from '@orpc/server/node';
 import * as oRpcPlugins from '@orpc/server/plugins';
+import { HttpError, NotFoundError } from '@sprax/node-framework';
 import { singleton } from 'tsyringe';
 import AppConfiguration from '../../config/AppConfiguration.js';
 import { ERROR_CODE_REQUESTED_ENTITY_NOT_FOUND } from '../../orpc/contract/SubContractHelpers.js';
 import { ORPC_ROUTER, type ORpcInitialContext } from '../../orpc/router/ORpcRouter.js';
-import { HttpError, NotFoundError } from '../errors/HttpErrors.js';
 
 @singleton()
 export default class ORPCRequestHandler extends oRpcNodeJs.RPCHandler<ORpcInitialContext> {

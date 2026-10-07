@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/node';
 import Os from 'node:os';
 import { getAppInfo, IS_PRODUCTION } from './constants.js';
-import { HttpError } from './webserver/errors/HttpErrors.js';
 
 (() => {
   const dsn = process.env.SENTRY_DSN ?? '';
@@ -22,10 +21,7 @@ import { HttpError } from './webserver/errors/HttpErrors.js';
     integrations: [
       Sentry.fastifyIntegration({
         shouldHandleError(err): boolean {
-          if (err instanceof HttpError) {
-            return err.httpStatusCode >= 500;
-          }
-          return (err as { code?: string }).code !== 'FST_ERR_VALIDATION';
+          return !isClientError(err);
         },
       }),
     ],
@@ -45,3 +41,8 @@ import { HttpError } from './webserver/errors/HttpErrors.js';
     },
   });
 })();
+
+function isClientError(err: Error): boolean {
+  const statusCode = (err as { statusCode?: unknown }).statusCode;
+  return typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500;
+}

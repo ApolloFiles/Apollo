@@ -1,3 +1,5 @@
+import { BadRequestError } from '@sprax/node-framework';
+import { type FastifyInstanceWithZod } from '@sprax/node-framework/web';
 import type * as Fastify from 'fastify';
 import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -5,9 +7,7 @@ import type {
   default as OAuthConfigurationProvider,
   OAuthConfig,
 } from '../../../../auth/oauth/OAuthConfigurationProvider.js';
-import { BadRequestError } from '../../../errors/HttpErrors.js';
-import type { FastifyInstanceWithZod } from '../../../server/FastifyWebServer.js';
-import type Router from '../../Router.js';
+import type ApolloRouter from '../../../server/ApolloRouter.js';
 
 const LOGIN_STATE_SCHEMA = z.object({
   code_verifier: z.string(),
@@ -23,7 +23,7 @@ const LOGIN_STATE_SCHEMA = z.object({
 });
 export type LoginStateData = z.infer<typeof LOGIN_STATE_SCHEMA>;
 
-export default abstract class AbstractLoginRouter implements Router {
+export default abstract class AbstractLoginRouter implements ApolloRouter {
   protected readonly ROUTE_OPTIONS_GET = {
     schema: {
       params: z.object({

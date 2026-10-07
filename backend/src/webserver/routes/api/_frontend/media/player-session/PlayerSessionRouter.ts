@@ -1,12 +1,11 @@
+import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import Fs from 'node:fs';
 import Http2 from 'node:http2';
 import Path from 'node:path';
 import rangeParser from 'range-parser';
-import { injectable } from 'tsyringe';
 import { z } from 'zod';
 import AppConfiguration from '../../../../../../config/AppConfiguration.js';
-import { ContainerTokens } from '../../../../../../constants.js';
 import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
 import LocalFileSystem from '../../../../../../files/local/LocalFileSystem.js';
 import FileTypeUtils from '../../../../../../plugins/official/media/_old/FileTypeUtils.js';
@@ -44,12 +43,11 @@ import WatchProgressFinder
 import ApolloFileURI from '../../../../../../uri/ApolloFileURI.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import UserProvider from '../../../../../../user/UserProvider.js';
-import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
-import type { default as Router, RouteReturn } from '../../../../Router.js';
+import type ApolloRouter from '../../../../../server/ApolloRouter.js';
 
 // TODO: Refactor this
-@injectable({ token: ContainerTokens.ROUTER })
-export default class PlayerSessionRouter implements Router {
+@HttpRouter()
+export default class PlayerSessionRouter implements ApolloRouter {
   constructor(
     private readonly appConfiguration: AppConfiguration,
     private readonly userProvider: UserProvider,
@@ -64,10 +62,6 @@ export default class PlayerSessionRouter implements Router {
     private readonly seekThumbnailProvider: SeekThumbnailProvider,
     private readonly watchProgressFinder: WatchProgressFinder,
   ) {
-  }
-
-  getRoutePrefix(): string {
-    return '/api/_frontend/media/player-session';
   }
 
   register(server: FastifyInstanceWithZod): void {

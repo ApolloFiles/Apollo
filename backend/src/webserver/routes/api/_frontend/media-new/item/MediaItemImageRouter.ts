@@ -1,17 +1,15 @@
-import { injectable } from 'tsyringe';
+import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import { z } from 'zod';
-import { ContainerTokens } from '../../../../../../constants.js';
 import MediaLibraryMediaItemFinder
   from '../../../../../../plugins/official/media/library/database/media-item/MediaLibraryMediaItemFinder.js';
 import PermissionAwareLibraryMediaItemProvider
   from '../../../../../../plugins/official/media/library/permission-aware/PermissionAwareLibraryMediaItemProvider.js';
 import VideoThumbnailProvider
   from '../../../../../../plugins/official/media/library/thumbnail/VideoThumbnailProvider.js';
-import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
-import type { default as Router, RouteReturn } from '../../../../Router.js';
+import type ApolloRouter from '../../../../../server/ApolloRouter.js';
 
-@injectable({ token: ContainerTokens.ROUTER })
-export default class MediaImageRouter implements Router {
+@HttpRouter()
+export default class MediaImageRouter implements ApolloRouter {
   private static readonly FILE_NAME_REGEX = /^(thumbnail)\.(jpeg|avif)$/;
 
   constructor(
@@ -21,12 +19,8 @@ export default class MediaImageRouter implements Router {
   ) {
   }
 
-  getRoutePrefix(): string {
-    return '/api/_frontend/media-new';
-  }
-
   register(server: FastifyInstanceWithZod): void {
-    server.get('/item/:mediaItemId/:fileName',
+    server.get('/:mediaItemId/:fileName',
       {
         schema: {
           params: z.object({

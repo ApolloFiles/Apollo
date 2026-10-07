@@ -1,8 +1,8 @@
 import './sentry-init.js';
 import './container-init.js';
+import { type App, registerShutdownHooks } from '@sprax/node-framework';
 import { container } from 'tsyringe';
 import AccountCreationInviteCreator from './auth/account_creation_invite/AccountCreationInviteCreator.js';
-import type App from './boot/App.js';
 import WebApp from './boot/WebApp.js';
 import AppConfiguration from './config/AppConfiguration.js';
 import { IS_PRODUCTION } from './constants.js';
@@ -19,7 +19,7 @@ await bootstrap();
 // functions
 
 async function bootstrap(): Promise<void> {
-  registerShutdownHooks();
+  registerShutdownHooks(() => app, { onShutdown: () => SentrySdk.shutdown() });
 
   if (!IS_PRODUCTION) {
     console.log('RUNNING IN DEVELOPMENT MODE');
@@ -101,30 +101,4 @@ async function bootstrap(): Promise<void> {
       console.debug('Unset the secret of', cleanUpResult[3].count, 'dead access tokens');
     }
   }, 5 * 60 * 1000);
-}
-
-function registerShutdownHooks(): void {
-  let shutdownInProgress = false;
-  const handleShutdown = async () => {
-    if (shutdownInProgress) {
-      console.warn('Received second shutdown signal – Forcing shutdown');
-      process.exit(90);
-    }
-
-    shutdownInProgress = true;
-    console.log('Shutting down...');
-
-    await app?.shutdown();
-    await container.dispose();
-
-    await SentrySdk.shutdown();
-
-    console.log('Finished graceful shutdown.');
-    process.exit();
-  };
-
-  process.on('SIGTERM', handleShutdown);
-  process.on('SIGINT', handleShutdown);
-  process.on('SIGQUIT', handleShutdown);
-  process.on('SIGHUP', handleShutdown);
 }

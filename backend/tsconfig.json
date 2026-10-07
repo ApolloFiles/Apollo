@@ -1,15 +1,12 @@
 {
-  "extends": "@tsconfig/node24/tsconfig.json",
+  "extends": ["@tsconfig/node24/tsconfig.json", "@sprax/node-framework/tsconfig.base.json"],
   "compilerOptions": {
     "outDir": "./dist/",
     "rootDir": "./src",
     "types": ["node"],
     "sourceMap": true,
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "verbatimModuleSyntax": true
   },
   "include": [
     "src/**/*.ts"

@@ -1,14 +1,14 @@
+import type { App } from '@sprax/node-framework';
 import { container } from 'tsyringe';
 import AppConfiguration from '../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../constants.js';
 import DatabaseClient from '../database/DatabaseClient.js';
 import StartupCleaner from '../files/StartupCleaner.js';
 import FfmpegDeviceRegistry from '../plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
-import FastifyWebServer from '../webserver/server/FastifyWebServer.js';
-import type App from './App.js';
+import ApolloWebServer from '../webserver/server/ApolloWebServer.js';
 
 export default class WebApp implements App {
-  private webServer: FastifyWebServer | undefined;
+  private webServer: ApolloWebServer | undefined;
 
   async boot(): Promise<void> {
     if (IS_PRODUCTION) {
@@ -20,7 +20,7 @@ export default class WebApp implements App {
 
     const appConfig = container.resolve(AppConfiguration);
     this.exposeInternalBackendUrlForFrontendSsr(appConfig);
-    this.webServer = container.resolve(FastifyWebServer);
+    this.webServer = container.resolve(ApolloWebServer);
 
     await this.webServer.listen(appConfig.config.serverInterface, appConfig.config.serverPort);
 

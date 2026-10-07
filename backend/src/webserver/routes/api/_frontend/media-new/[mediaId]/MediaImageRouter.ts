@@ -1,6 +1,5 @@
-import { injectable } from 'tsyringe';
+import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import { z } from 'zod';
-import { ContainerTokens } from '../../../../../../constants.js';
 import MediaLibraryMediaFinder
   from '../../../../../../plugins/official/media/library/database/media/MediaLibraryMediaFinder.js';
 import ImageFormatNotSupportedError
@@ -13,11 +12,10 @@ import MediaPosterImageProvider
   from '../../../../../../plugins/official/media/library/images/MediaPosterImageProvider.js';
 import PermissionAwareLibraryMediaProvider
   from '../../../../../../plugins/official/media/library/permission-aware/PermissionAwareLibraryMediaProvider.js';
-import type { FastifyInstanceWithZod } from '../../../../../server/FastifyWebServer.js';
-import type { default as Router, RouteReturn } from '../../../../Router.js';
+import type ApolloRouter from '../../../../../server/ApolloRouter.js';
 
-@injectable({ token: ContainerTokens.ROUTER })
-export default class MediaImageRouter implements Router {
+@HttpRouter()
+export default class MediaImageRouter implements ApolloRouter {
   private static readonly FILE_NAME_REGEX = /^(poster|backdrop|logo)\.(jpeg|avif|png)$/;
 
   constructor(
@@ -29,12 +27,8 @@ export default class MediaImageRouter implements Router {
   ) {
   }
 
-  getRoutePrefix(): string {
-    return '/api/_frontend/media-new';
-  }
-
   register(server: FastifyInstanceWithZod): void {
-    server.get('/:mediaId/:fileName',
+    server.get('/:fileName',
       {
         schema: {
           params: z.object({

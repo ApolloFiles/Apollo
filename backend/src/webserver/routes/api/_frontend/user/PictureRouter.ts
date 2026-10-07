@@ -1,22 +1,16 @@
-import { injectable } from 'tsyringe';
+import { NotFoundError } from '@sprax/node-framework';
+import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import { z } from 'zod';
-import { ContainerTokens } from '../../../../../constants.js';
 import ProfilePictureProvider from '../../../../../user/picture/ProfilePictureProvider.js';
 import UserProvider from '../../../../../user/UserProvider.js';
-import { NotFoundError } from '../../../../errors/HttpErrors.js';
-import type { FastifyInstanceWithZod } from '../../../../server/FastifyWebServer.js';
-import type { default as Router, RouteReturn } from '../../../Router.js';
+import type ApolloRouter from '../../../../server/ApolloRouter.js';
 
-@injectable({ token: ContainerTokens.ROUTER })
-export default class PictureRouter implements Router {
+@HttpRouter()
+export default class PictureRouter implements ApolloRouter {
   constructor(
     private readonly userProvider: UserProvider,
     private readonly profilePictureProvider: ProfilePictureProvider,
   ) {
-  }
-
-  getRoutePrefix(): string {
-    return '/api/_frontend/user';
   }
 
   register(server: FastifyInstanceWithZod): void {

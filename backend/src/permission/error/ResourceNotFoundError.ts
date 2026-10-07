@@ -1,4 +1,4 @@
-import { NotFoundError } from '../../webserver/errors/HttpErrors.js';
+import { NotFoundError } from '@sprax/node-framework';
 
 /**
  * This error is intended to be used by permission checking components and

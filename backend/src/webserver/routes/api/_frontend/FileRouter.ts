@@ -1,13 +1,11 @@
-import { injectable } from 'tsyringe';
+import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import { z } from 'zod';
-import { ContainerTokens } from '../../../../constants.js';
 import FileSystemProvider from '../../../../files/FileSystemProvider.js';
-import type { FastifyInstanceWithZod } from '../../../server/FastifyWebServer.js';
-import type { default as Router, RouteReturn } from '../../Router.js';
+import type ApolloRouter from '../../../server/ApolloRouter.js';
 
 // TODO: Refactor this. oRPC has an endpoint too, that has veeeeeery similar logic
-@injectable({ token: ContainerTokens.ROUTER })
-export default class FileRouter implements Router {
+@HttpRouter()
+export default class FileRouter implements ApolloRouter {
   constructor(
     private readonly fileSystemProvider: FileSystemProvider,
   ) {
@@ -16,7 +14,7 @@ export default class FileRouter implements Router {
   register(server: FastifyInstanceWithZod): void {
     server.route({
       method: ['GET'],
-      url: '/api/_frontend/file',
+      url: '/file',
       schema: {
         querystring: z.object({
           fileSystemId: z.string(),

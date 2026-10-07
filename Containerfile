@@ -14,6 +14,7 @@ WORKDIR /app/
 
 ## Backend
 COPY --chown=node:node \
+     ./backend/.npmrc \
      ./backend/package.json \
      ./backend/package-lock.json \
      ./backend/tsconfig.json \
@@ -22,7 +23,7 @@ COPY --chown=node:node \
 COPY --chown=node:node ./backend/prisma/ ./backend/prisma/
 
 RUN cd backend/ && \
-    npm clean-install --allow-git=root && \
+    npm clean-install && \
     npm cache clean --force
 
 COPY --chown=node:node ./backend/src/ ./backend/src/
@@ -83,13 +84,13 @@ WORKDIR /app/
 COPY --chown=node:node LICENSE README.md ./
 
 ## Backend
-COPY --chown=node:node ./backend/package.json ./backend/package-lock.json ./backend/prisma.config.ts ./backend/
+COPY --chown=node:node ./backend/package.json ./backend/package-lock.json ./backend/.npmrc ./backend/prisma.config.ts ./backend/
 COPY --chown=node:node ./backend/prisma/ ./backend/prisma/
 COPY --from=builder --chown=node:node /app/backend/dist/ ./backend/dist/
 
 # build-essential is needed to install xxhash dependency (TODO: check if this can be avoided)
 RUN cd backend/ && \
-    npm clean-install --allow-git=root --omit dev && \
+    npm clean-install --omit dev && \
     npm cache clean --force
 
 USER root

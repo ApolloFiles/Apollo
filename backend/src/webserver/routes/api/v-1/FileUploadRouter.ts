@@ -1,7 +1,13 @@
+import {
+  BadRequestError,
+  ConflictError,
+  LengthRequiredError,
+  NotFoundError,
+  PayloadTooLargeError,
+} from '@sprax/node-framework';
+import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import type { FastifyRequest } from 'fastify';
-import { injectable } from 'tsyringe';
 import { z } from 'zod';
-import { ContainerTokens } from '../../../../constants.js';
 import FileSystemInFileUriNotFoundError from '../../../../files/provider/errors/FileSystemInFileUriNotFoundError.js';
 import PermissionAwareFileProvider from '../../../../files/provider/PermissionAwareFileProvider.js';
 import type VirtualFile from '../../../../files/VirtualFile.js';
@@ -9,28 +15,16 @@ import type WriteableVirtualFile from '../../../../files/WriteableVirtualFile.js
 import ApolloFileURI from '../../../../uri/ApolloFileURI.js';
 import InvalidApolloURIError from '../../../../uri/errors/InvalidApolloURIError.js';
 import type ApolloUser from '../../../../user/ApolloUser.js';
-import {
-  BadRequestError,
-  ConflictError,
-  LengthRequiredError,
-  NotFoundError,
-  PayloadTooLargeError,
-} from '../../../errors/HttpErrors.js';
-import type { FastifyInstanceWithZod } from '../../../server/FastifyWebServer.js';
-import type { default as Router, RouteReturn } from '../../Router.js';
+import type ApolloRouter from '../../../server/ApolloRouter.js';
 
 // A temporary file upload endpoint for a friend – Delete when I took some time to design a proper and 'final' API for stuff :3
-@injectable({ token: ContainerTokens.ROUTER })
-export default class FileUploadRouter implements Router {
+@HttpRouter()
+export default class FileUploadRouter implements ApolloRouter {
   private static readonly MAX_UPLOAD_SIZE_BYTES = 300 * 1024 * 1024;
 
   constructor(
     private readonly permissionAwareFileProvider: PermissionAwareFileProvider,
   ) {
-  }
-
-  getRoutePrefix(): string {
-    return '/api/v-1';
   }
 
   allowAccessTokenAccess(): boolean {

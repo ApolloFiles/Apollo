@@ -1,4 +1,4 @@
-import { NotFoundError } from '../../webserver/errors/HttpErrors.js';
+import { NotFoundError } from '@sprax/node-framework';
 
 // FIXME: oRPC should automatically translate HttpErrors too
 

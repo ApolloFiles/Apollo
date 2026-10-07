@@ -1,6 +1,7 @@
+import { BadRequestError } from '@sprax/node-framework';
+import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import type { FastifyReply } from 'fastify';
 import * as OpenIdClient from 'openid-client';
-import { injectable } from 'tsyringe';
 import { z } from 'zod';
 import AccountCreationInviteFinder from '../../../../auth/account_creation_invite/AccountCreationInviteFinder.js';
 import OAuthConfigurationProvider, { type OAuthConfig } from '../../../../auth/oauth/OAuthConfigurationProvider.js';
@@ -8,15 +9,11 @@ import OAuthLinkPersister from '../../../../auth/oauth/OAuthLinkPersister.js';
 import AuthAnonymousSessionHelper from '../../../../auth/session/anonymous/AuthAnonymousSessionHelper.js';
 import SessionCookieHelper from '../../../../auth/session/SessionCookieHelper.js';
 import AppConfiguration from '../../../../config/AppConfiguration.js';
-import { ContainerTokens } from '../../../../constants.js';
-import { BadRequestError } from '../../../errors/HttpErrors.js';
-import type { FastifyInstanceWithZod } from '../../../server/FastifyWebServer.js';
-import type { RouteReturn } from '../../Router.js';
 import AbstractLoginRouter, { type LoginStateData } from './AbstractLoginRouter.js';
 
 // TODO: Instead of sending error response, redirect to SvelteKit with error query param?
 // TODO: Add some sane rate-limiting – Apollo only has OAuth logins right now, but too many attempts are still suspicious (also invite token tries/uses)
-@injectable({ token: ContainerTokens.ROUTER })
+@HttpRouter()
 export default class LoginRouter extends AbstractLoginRouter {
   public constructor(
     oAuthConfigurationProvider: OAuthConfigurationProvider,
@@ -27,10 +24,6 @@ export default class LoginRouter extends AbstractLoginRouter {
     private readonly oAuthLinkPersister: OAuthLinkPersister,
   ) {
     super(oAuthConfigurationProvider);
-  }
-
-  getRoutePrefix(): string {
-    return '/api/_auth/';
   }
 
   allowUnauthenticatedAccess(): boolean {
