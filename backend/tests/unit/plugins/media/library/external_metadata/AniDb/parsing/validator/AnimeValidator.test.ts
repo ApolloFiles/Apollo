@@ -1,16 +1,7 @@
 import type { AniDbAnime } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/Anime.js';
-import { AnimeMapper } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/AnimeMapper.js';
-import { NORMALIZING_ANIME_XML_SCHEMA } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/AnimeSchemas.js';
-import { LanguageNormalizer } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/LanguageNormalizer.js';
 import { AnimeValidator } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/validator/AnimeValidator.js';
 import { IssueCollector, type ParseIssue } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/validator/IssueCollector.js';
-import { AniDbXmlReader } from '#src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
-import { COMPLETE_ANIME_XML } from '#tests/unit/plugins/media/library/external_metadata/AniDb/parsing/AnimeXmlFixtures.js';
-
-function createAnime(): AniDbAnime {
-  const normalizedXml = NORMALIZING_ANIME_XML_SCHEMA.parse(new AniDbXmlReader().read(COMPLETE_ANIME_XML));
-  return new AnimeMapper(new LanguageNormalizer()).map(normalizedXml);
-}
+import { createCompleteAnime } from '#tests/unit/plugins/media/library/external_metadata/AniDb/parsing/AnimeXmlFixtures.js';
 
 function validate(anime: AniDbAnime): ParseIssue[] {
   const issueCollector = new IssueCollector();
@@ -18,13 +9,13 @@ function validate(anime: AniDbAnime): ParseIssue[] {
   return issueCollector.toArray();
 }
 
-describe('AnimeValidator#validate', () => {
+describe(AnimeValidator, () => {
   test('Reports nothing for an anime with only known values', () => {
-    expect(validate(createAnime())).toEqual([]);
+    expect(validate(createCompleteAnime())).toEqual([]);
   });
 
   test('Reports unknown literal values with their path', () => {
-    const anime = createAnime();
+    const anime = createCompleteAnime();
     anime.type = 'Unknown Anime Type';
     anime.titles[0].type = 'unknown title type';
     anime.relatedAnime[0].relationType = 'Unknown Relation';
@@ -45,7 +36,7 @@ describe('AnimeValidator#validate', () => {
   });
 
   test('Reports unclassified ids by their id', () => {
-    const anime = createAnime();
+    const anime = createCompleteAnime();
     anime.characters[0].characterType.kind = { id: 5, name: null };
     anime.episodes[0].episodeNumber.kind = { id: 7, name: null };
 
@@ -56,7 +47,7 @@ describe('AnimeValidator#validate', () => {
   });
 
   test('Reports unknown resource types of the anime, its episodes and its tags', () => {
-    const anime = createAnime();
+    const anime = createCompleteAnime();
     anime.resources.external[0].kind = { id: 9001, name: null };
     anime.episodes[0].resources.external[0].kind = { id: 9002, name: null };
     anime.tags[1].resources.external[0].kind = { id: 9003, name: null };
@@ -69,7 +60,7 @@ describe('AnimeValidator#validate', () => {
   });
 
   test('Reports languages without a BCP 47 tag by their raw code', () => {
-    const anime = createAnime();
+    const anime = createCompleteAnime();
     anime.titles[2].lang = { raw: 'bs', bcp47: null };
     anime.episodes[1].titles[0].lang = { raw: 'xx', bcp47: null };
 
@@ -80,7 +71,7 @@ describe('AnimeValidator#validate', () => {
   });
 
   test('Reports an unknown value shared by several episodes only once', () => {
-    const anime = createAnime();
+    const anime = createCompleteAnime();
     anime.episodes[0].episodeNumber.kind = { id: 7, name: null };
     anime.episodes[1].episodeNumber.kind = { id: 7, name: null };
 

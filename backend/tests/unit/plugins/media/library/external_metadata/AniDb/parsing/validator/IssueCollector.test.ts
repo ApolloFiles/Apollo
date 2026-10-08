@@ -1,6 +1,6 @@
 import { IssueCollector } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/validator/IssueCollector.js';
 
-describe('IssueCollector', () => {
+describe(IssueCollector, () => {
   test('Starts without issues', () => {
     expect(new IssueCollector().toArray()).toEqual([]);
   });
@@ -32,7 +32,7 @@ describe('IssueCollector', () => {
     expect(collector.toArray()).toEqual([{ kind: 'unknown-value', path: 'titles[].lang', value: 'bs' }]);
   });
 
-  test('Reports unknown keys', () => {
+  test('Reports an unknown key with its path', () => {
     const collector = new IssueCollector();
 
     collector.addUnknownKey('anime', 'broadcaster');
@@ -48,7 +48,10 @@ describe('IssueCollector', () => {
     collector.addUnknownKey('anime.episodes.episode[]', '@_new');
     collector.addUnknownKey('anime.episodes.episode[]', '@_new');
 
-    expect(collector.toArray()).toHaveLength(2);
+    expect(collector.toArray()).toEqual([
+      { kind: 'unknown-value', path: 'type', value: 'Movie' },
+      { kind: 'unknown-key', path: 'anime.episodes.episode[]', value: '@_new' },
+    ]);
   });
 
   test('Keeps the same value on different paths apart', () => {
@@ -57,6 +60,9 @@ describe('IssueCollector', () => {
     collector.checkValue('titles[].type', [], 'short');
     collector.checkValue('relatedAnime[].relationType', [], 'short');
 
-    expect(collector.toArray()).toHaveLength(2);
+    expect(collector.toArray()).toEqual([
+      { kind: 'unknown-value', path: 'titles[].type', value: 'short' },
+      { kind: 'unknown-value', path: 'relatedAnime[].relationType', value: 'short' },
+    ]);
   });
 });

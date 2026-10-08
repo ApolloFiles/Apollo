@@ -10,132 +10,166 @@ import {
   xmlText,
 } from '#src/plugins/official/media/library/external_metadata/AniDb/xml/XmlSchemaHelpers.js';
 
-describe('xmlInt', () => {
-  test('Turns a numeric string into a number', () => {
-    expect(xmlInt.parse('42')).toBe(42);
-    expect(xmlInt.parse('-7')).toBe(-7);
+describe('XmlSchemaHelpers', () => {
+  describe('xmlInt', () => {
+    test.for([
+      { input: '42', expected: 42 },
+      { input: '-7', expected: -7 },
+    ])('Turns the numeric string $input into $expected', ({ input, expected }) => {
+      expect(xmlInt.parse(input)).toBe(expected);
+    });
+
+    test.for([
+      { description: 'a decimal', input: '4.2' },
+      { description: 'an empty string', input: '' },
+      { description: 'digits followed by letters', input: '12abc' },
+      { description: 'a number instead of a string', input: 42 },
+    ])('Rejects $description', ({ input }) => {
+      expect(xmlInt.safeParse(input).success).toBe(false);
+    });
   });
 
-  test('Rejects anything that is not an integer string', () => {
-    expect(xmlInt.safeParse('4.2').success).toBe(false);
-    expect(xmlInt.safeParse('').success).toBe(false);
-    expect(xmlInt.safeParse('12abc').success).toBe(false);
-    expect(xmlInt.safeParse(42).success).toBe(false);
-  });
-});
+  describe('xmlNumber', () => {
+    test.for([
+      { input: '42', expected: 42 },
+      { input: '-4.25', expected: -4.25 },
+    ])('Turns the numeric string $input into $expected', ({ input, expected }) => {
+      expect(xmlNumber.parse(input)).toBe(expected);
+    });
 
-describe('xmlNumber', () => {
-  test('Accepts integers and decimals', () => {
-    expect(xmlNumber.parse('42')).toBe(42);
-    expect(xmlNumber.parse('-4.25')).toBe(-4.25);
-  });
-
-  test('Rejects malformed decimals and non-strings', () => {
-    expect(xmlNumber.safeParse('4.').success).toBe(false);
-    expect(xmlNumber.safeParse('.4').success).toBe(false);
-    expect(xmlNumber.safeParse('1e3').success).toBe(false);
-    expect(xmlNumber.safeParse(4.2).success).toBe(false);
-  });
-});
-
-describe('xmlBool', () => {
-  test('Accepts both the word and the digit spelling', () => {
-    expect(xmlBool.parse('true')).toBe(true);
-    expect(xmlBool.parse('1')).toBe(true);
-    expect(xmlBool.parse('false')).toBe(false);
-    expect(xmlBool.parse('0')).toBe(false);
+    test.for([
+      { description: 'a decimal without fraction digits', input: '4.' },
+      { description: 'a decimal without integer digits', input: '.4' },
+      { description: 'scientific notation', input: '1e3' },
+      { description: 'a number instead of a string', input: 4.2 },
+    ])('Rejects $description', ({ input }) => {
+      expect(xmlNumber.safeParse(input).success).toBe(false);
+    });
   });
 
-  test('Rejects any other spelling', () => {
-    expect(xmlBool.safeParse('yes').success).toBe(false);
-    expect(xmlBool.safeParse('TRUE').success).toBe(false);
-    expect(xmlBool.safeParse(true).success).toBe(false);
-  });
-});
+  describe('xmlBool', () => {
+    test.for([
+      { input: 'true', expected: true },
+      { input: '1', expected: true },
+      { input: 'false', expected: false },
+      { input: '0', expected: false },
+    ])('Turns the string $input into $expected', ({ input, expected }) => {
+      expect(xmlBool.parse(input)).toBe(expected);
+    });
 
-describe('xmlText', () => {
-  test('Unwraps the text node into a plain string', () => {
-    expect(xmlText.parse({ '#text': 'some title' })).toBe('some title');
-    expect(xmlText.parse({ '#text': '' })).toBe('');
-  });
-
-  test('Rejects a node carrying anything besides its text', () => {
-    expect(xmlText.safeParse({ '#text': 'some title', '@_type': 'main' }).success).toBe(false);
-    expect(xmlText.safeParse({}).success).toBe(false);
-    expect(xmlText.safeParse('some title').success).toBe(false);
-  });
-});
-
-describe('xmlArray', () => {
-  const schema = xmlArray(z.strictObject({ '#text': z.string() }));
-
-  test('Wraps a single element into a one-element array', () => {
-    expect(schema.parse({ '#text': 'only one' })).toEqual([{ '#text': 'only one' }]);
+    test.for([
+      { description: 'the word yes', input: 'yes' },
+      { description: 'an upper-case TRUE', input: 'TRUE' },
+      { description: 'a boolean instead of a string', input: true },
+    ])('Rejects $description', ({ input }) => {
+      expect(xmlBool.safeParse(input).success).toBe(false);
+    });
   });
 
-  test('Keeps an existing array as-is', () => {
-    expect(schema.parse([{ '#text': 'first' }, { '#text': 'second' }])).toEqual([{ '#text': 'first' }, { '#text': 'second' }]);
+  describe('xmlText', () => {
+    test('Unwraps the text node into a plain string', () => {
+      expect(xmlText.parse({ '#text': 'some title' })).toBe('some title');
+    });
+
+    test('Unwraps an empty text node into an empty string', () => {
+      expect(xmlText.parse({ '#text': '' })).toBe('');
+    });
+
+    test.for([
+      { description: 'a node with an attribute', input: { '#text': 'some title', '@_type': 'main' } },
+      { description: 'a node without text', input: {} },
+      { description: 'a plain string', input: 'some title' },
+    ])('Rejects $description', ({ input }) => {
+      expect(xmlText.safeParse(input).success).toBe(false);
+    });
   });
 
-  test('Turns a missing element into an empty array', () => {
-    expect(schema.parse(undefined)).toEqual([]);
+  describe(xmlArray, () => {
+    const schema = xmlArray(z.strictObject({ '#text': z.string() }));
+
+    test('Wraps a single element into a one-element array', () => {
+      expect(schema.parse({ '#text': 'only one' })).toEqual([{ '#text': 'only one' }]);
+    });
+
+    test('Keeps an existing array as-is', () => {
+      expect(schema.parse([{ '#text': 'first' }, { '#text': 'second' }])).toEqual([{ '#text': 'first' }, { '#text': 'second' }]);
+    });
+
+    test('Turns a missing element into an empty array', () => {
+      expect(schema.parse(undefined)).toEqual([]);
+    });
+
+    test.for([
+      { description: 'a single invalid element', input: { '#text': 5 } },
+      { description: 'an array with an invalid element', input: [{ '#text': 'first' }, 'second'] },
+    ])('Rejects $description', ({ input }) => {
+      expect(schema.safeParse(input).success).toBe(false);
+    });
   });
 
-  test('Still validates the wrapped elements', () => {
-    expect(schema.safeParse({ '#text': 5 }).success).toBe(false);
-    expect(schema.safeParse([{ '#text': 'first' }, 'second']).success).toBe(false);
-  });
-});
+  describe('simpleDate', () => {
+    test('Turns a full date into its parts', () => {
+      expect(simpleDate.parse('2023-10-22')).toEqual({ year: 2023, month: 10, day: 22 });
+    });
 
-describe('simpleDate', () => {
-  test('Turns a full date into its parts', () => {
-    expect(simpleDate.parse('2023-10-22')).toEqual({ year: 2023, month: 10, day: 22 });
-  });
+    test('Accepts the 29th of February in a leap year', () => {
+      expect(simpleDate.parse('2024-02-29')).toEqual({ year: 2024, month: 2, day: 29 });
+    });
 
-  test('Accepts the 29th of February in a leap year', () => {
-    expect(simpleDate.parse('2024-02-29')).toEqual({ year: 2024, month: 2, day: 29 });
-  });
+    test.for([
+      { input: '2024-03' },
+      { input: '2024-3-01' },
+      { input: '24-03-01' },
+    ])('Rejects the partial or malformed date $input', ({ input }) => {
+      expect(simpleDate.safeParse(input).success).toBe(false);
+    });
 
-  test('Rejects partial or malformed dates', () => {
-    expect(simpleDate.safeParse('2024-03').success).toBe(false);
-    expect(simpleDate.safeParse('2024-3-01').success).toBe(false);
-    expect(simpleDate.safeParse('24-03-01').success).toBe(false);
-    expect(simpleDate.safeParse('').success).toBe(false);
-  });
+    test('Rejects an empty string', () => {
+      expect(simpleDate.safeParse('').success).toBe(false);
+    });
 
-  test('Rejects dates that do not exist in the calendar', () => {
-    expect(simpleDate.safeParse('2023-02-29').success).toBe(false);
-    expect(simpleDate.safeParse('2024-04-31').success).toBe(false);
-    expect(simpleDate.safeParse('2024-13-01').success).toBe(false);
-    expect(simpleDate.safeParse('2024-00-10').success).toBe(false);
-  });
-});
-
-describe('partialSimpleDate', () => {
-  test('Accepts a year, a year and month, or a full date', () => {
-    expect(partialSimpleDate.parse('2024')).toEqual({ year: 2024, month: null, day: null });
-    expect(partialSimpleDate.parse('2024-03')).toEqual({ year: 2024, month: 3, day: null });
-    expect(partialSimpleDate.parse('2024-03-24')).toEqual({ year: 2024, month: 3, day: 24 });
+    test.for([
+      { input: '2023-02-29' },
+      { input: '2024-04-31' },
+      { input: '2024-13-01' },
+      { input: '2024-00-10' },
+    ])('Rejects $input, which does not exist in the calendar', ({ input }) => {
+      expect(simpleDate.safeParse(input).success).toBe(false);
+    });
   });
 
-  test('Rejects malformed dates', () => {
-    expect(partialSimpleDate.safeParse('2024-').success).toBe(false);
-    expect(partialSimpleDate.safeParse('2024-3').success).toBe(false);
-    expect(partialSimpleDate.safeParse('abc').success).toBe(false);
+  describe('partialSimpleDate', () => {
+    test.for([
+      { input: '2024', expected: { year: 2024, month: null, day: null } },
+      { input: '2024-03', expected: { year: 2024, month: 3, day: null } },
+      { input: '2024-03-24', expected: { year: 2024, month: 3, day: 24 } },
+    ])('Turns $input into its parts', ({ input, expected }) => {
+      expect(partialSimpleDate.parse(input)).toEqual(expected);
+    });
+
+    test.for([
+      { input: '2024-' },
+      { input: '2024-3' },
+      { input: 'abc' },
+    ])('Rejects the malformed date $input', ({ input }) => {
+      expect(partialSimpleDate.safeParse(input).success).toBe(false);
+    });
+
+    test.for([
+      { input: '2024-13' },
+      { input: '2024-02-30' },
+    ])('Rejects $input, which does not exist in the calendar', ({ input }) => {
+      expect(partialSimpleDate.safeParse(input).success).toBe(false);
+    });
   });
 
-  test('Rejects months and days that do not exist in the calendar', () => {
-    expect(partialSimpleDate.safeParse('2024-13').success).toBe(false);
-    expect(partialSimpleDate.safeParse('2024-02-30').success).toBe(false);
-  });
-});
+  describe('multilineText', () => {
+    test('Turns Windows and old Mac line breaks into plain line feeds', () => {
+      expect(multilineText.parse('a\r\nb\rc\nd')).toBe('a\nb\nc\nd');
+    });
 
-describe('multilineText', () => {
-  test('Turns Windows and old Mac line breaks into plain line feeds', () => {
-    expect(multilineText.parse('a\r\nb\rc\nd')).toBe('a\nb\nc\nd');
-  });
-
-  test('Leaves text without line breaks unchanged', () => {
-    expect(multilineText.parse('no line breaks')).toBe('no line breaks');
+    test('Leaves text without line breaks unchanged', () => {
+      expect(multilineText.parse('no line breaks')).toBe('no line breaks');
+    });
   });
 });

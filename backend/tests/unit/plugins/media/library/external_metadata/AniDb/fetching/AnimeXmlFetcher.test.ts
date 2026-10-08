@@ -12,151 +12,135 @@ import { createStrictDeepMock } from '#tests/test-helpers.js';
 const ANIME_XML = '<?xml version="1.0" encoding="UTF-8"?><anime id="1"><type>TV Series</type></anime>';
 const CACHE_ID_PREFIX = 'anidb_http_api';
 const GZIP_MAGIC_BYTES = Buffer.from([0x1f, 0x8b]);
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-let cacheDirectory: string;
+describe(AnimeXmlFetcher, () => {
+  let cacheDirectory: string;
+  let apolloDirectoryProvider: DeepMockProxy<ApolloDirectoryProvider>;
+  let cache: ExpiringApolloCache;
+  let uncachedAnimeXmlFetcher: DeepMockProxy<UncachedAnimeXmlFetcher>;
+  let subject: AnimeXmlFetcher;
 
-function createFetcher(): {
-  subject: AnimeXmlFetcher,
-  cache: ExpiringApolloCache,
-  mocks: { uncachedAnimeXmlFetcher: DeepMockProxy<UncachedAnimeXmlFetcher> },
-} {
-  const apolloDirectoryProvider = createStrictDeepMock<ApolloDirectoryProvider>();
-  apolloDirectoryProvider.getCacheBaseDirectory.mockReturnValue(cacheDirectory);
+  beforeEach(async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    cacheDirectory = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-anidb-cache-test-'));
 
-  const cache = new ExpiringApolloCache(apolloDirectoryProvider);
-  const uncachedAnimeXmlFetcher = createStrictDeepMock<UncachedAnimeXmlFetcher>();
-  uncachedAnimeXmlFetcher.fetchXml.mockResolvedValue(ANIME_XML);
+    apolloDirectoryProvider = createStrictDeepMock<ApolloDirectoryProvider>();
+    apolloDirectoryProvider.getCacheBaseDirectory.mockReturnValue(cacheDirectory);
+    cache = new ExpiringApolloCache(apolloDirectoryProvider);
 
-  return {
-    subject: new AnimeXmlFetcher(uncachedAnimeXmlFetcher, cache),
-    cache,
-    mocks: { uncachedAnimeXmlFetcher },
-  };
-}
+    uncachedAnimeXmlFetcher = createStrictDeepMock<UncachedAnimeXmlFetcher>();
+    uncachedAnimeXmlFetcher.fetchXml.mockResolvedValue(ANIME_XML);
 
-async function readCachedBytes(cache: ExpiringApolloCache, animeId: number): Promise<Buffer> {
-  const cachePath = await cache.get(CACHE_ID_PREFIX, `a${animeId}`);
-  return Fs.promises.readFile(cachePath!.path);
-}
+    subject = new AnimeXmlFetcher(uncachedAnimeXmlFetcher, cache);
+  });
 
-async function overwriteCachedBytes(cache: ExpiringApolloCache, animeId: number, bytes: Buffer): Promise<void> {
-  const cachePath = await cache.get(CACHE_ID_PREFIX, `a${animeId}`);
-  await Fs.promises.writeFile(cachePath!.path, bytes);
-}
+  afterEach(async () => {
+    vi.useRealTimers();
+    await Fs.promises.rm(cacheDirectory, { recursive: true, force: true });
+  });
 
-beforeEach(async () => {
-  vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  async function getCachedDataPath(animeId: number): Promise<string> {
+    const cachePath = await cache.get(CACHE_ID_PREFIX, `a${animeId}`);
+    return cachePath!.path;
+  }
 
-  cacheDirectory = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-anidb-cache-test-'));
-});
-
-afterEach(async () => {
-  vi.useRealTimers();
-  await Fs.promises.rm(cacheDirectory, { recursive: true, force: true });
-});
-
-describe('AnimeXmlFetcher#fetchXml', () => {
   test('Fetches the xml when nothing is cached yet', async () => {
-    const { subject, mocks } = createFetcher();
-
     await expect(subject.fetchXml(1)).resolves.toBe(ANIME_XML);
-    expect(mocks.uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledExactlyOnceWith(1);
+
+    expect(uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledExactlyOnceWith(1);
   });
 
   test('Serves a second request for the same anime from the cache', async () => {
-    const { subject, mocks } = createFetcher();
-
     await subject.fetchXml(1);
+
     await expect(subject.fetchXml(1)).resolves.toBe(ANIME_XML);
 
-    expect(mocks.uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(1);
+    expect(uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledOnce();
   });
 
   test('Keeps the cached anime separate from another one', async () => {
-    const { subject, mocks } = createFetcher();
-    mocks.uncachedAnimeXmlFetcher.fetchXml.mockImplementation(async (animeId) => `<anime id="${animeId}"/>`);
+    uncachedAnimeXmlFetcher.fetchXml.mockImplementation(async (animeId) => `<anime id="${animeId}"/>`);
 
     await expect(subject.fetchXml(1)).resolves.toBe('<anime id="1"/>');
     await expect(subject.fetchXml(2)).resolves.toBe('<anime id="2"/>');
     await expect(subject.fetchXml(1)).resolves.toBe('<anime id="1"/>');
 
-    expect(mocks.uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
+    expect(uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
   });
 
   test('Serves a cached "anime not found" without asking again', async () => {
-    const { subject, mocks } = createFetcher();
-    mocks.uncachedAnimeXmlFetcher.fetchXml.mockResolvedValue(null);
+    uncachedAnimeXmlFetcher.fetchXml.mockResolvedValue(null);
 
     await expect(subject.fetchXml(1)).resolves.toBeNull();
     await expect(subject.fetchXml(1)).resolves.toBeNull();
 
-    expect(mocks.uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(1);
+    expect(uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledOnce();
   });
 
   test('Stores the xml gzipped', async () => {
-    const { subject, cache } = createFetcher();
-
     await subject.fetchXml(1);
 
-    const cachedBytes = await readCachedBytes(cache, 1);
+    const cachedBytes = await Fs.promises.readFile(await getCachedDataPath(1));
     expect(cachedBytes.subarray(0, 2)).toEqual(GZIP_MAGIC_BYTES);
     expect(Zlib.gunzipSync(cachedBytes).toString()).toBe(ANIME_XML);
   });
 
   test('Leaves no partial file behind', async () => {
-    const { subject, cache } = createFetcher();
-
     await subject.fetchXml(1);
 
-    const cachePath = await cache.get(CACHE_ID_PREFIX, 'a1');
-    await expect(Fs.promises.readdir(Path.dirname(cachePath!.path))).resolves.toEqual(['data', 'metadata']);
+    const entryFiles = await Fs.promises.readdir(Path.dirname(await getCachedDataPath(1)));
+    expect(entryFiles.sort()).toEqual(['data', 'metadata']);
   });
 
   test('Does not cache a failed fetch', async () => {
-    const { subject, mocks } = createFetcher();
-    mocks.uncachedAnimeXmlFetcher.fetchXml.mockRejectedValueOnce(new Error('AniDB is unreachable'));
+    uncachedAnimeXmlFetcher.fetchXml.mockRejectedValueOnce(new Error('AniDB is unreachable'));
 
     await expect(subject.fetchXml(1)).rejects.toThrow('AniDB is unreachable');
     await expect(subject.fetchXml(1)).resolves.toBe(ANIME_XML);
 
-    expect(mocks.uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
+    expect(uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
   });
 
-  test('Fetches again when the cached entry cannot be read', async () => {
-    const { subject, cache, mocks } = createFetcher();
-
+  test('Fetches again, and logs an error, when the cached entry cannot be read', async () => {
     await subject.fetchXml(1);
-    await overwriteCachedBytes(cache, 1, Buffer.from('not gzipped at all'));
+    await Fs.promises.writeFile(await getCachedDataPath(1), 'not gzipped at all');
 
     await expect(subject.fetchXml(1)).resolves.toBe(ANIME_XML);
-    expect(mocks.uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
-    expect(console.error).toHaveBeenCalled();
+
+    expect(uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Error reading AniDB XML from cache'), expect.any(Error));
   });
 
-  test('Fetches again once the cached entry expired', async () => {
-    const { subject, mocks } = createFetcher();
-
+  test('Keeps the xml cached for a day', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
     await subject.fetchXml(1);
 
-    vi.useFakeTimers();
-    vi.setSystemTime(Date.now() + (ExpiringApolloCache.TTL_ONE_DAY * 1000) + 1000);
+    vi.setSystemTime(Date.now() + ONE_DAY_MS - 60_000);
+    await subject.fetchXml(1);
 
-    await expect(subject.fetchXml(1)).resolves.toBe(ANIME_XML);
-    expect(mocks.uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
+    expect(uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledOnce();
   });
 
-  test('Still returns the fetched data when it cannot be written to the cache', async () => {
+  test('Fetches again once the cached entry has expired', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    await subject.fetchXml(1);
+
+    vi.setSystemTime(Date.now() + ONE_DAY_MS + 60_000);
+    await subject.fetchXml(1);
+
+    expect(uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
+  });
+
+  test('Still returns the fetched data, and logs an error, when it cannot be written to the cache', async () => {
     const blockingFile = Path.join(cacheDirectory, 'not-a-directory');
     await Fs.promises.writeFile(blockingFile, '');
-    const temporaryDirectory = cacheDirectory;
-    cacheDirectory = Path.join(blockingFile, 'cache');
-    const { subject, mocks } = createFetcher();
-    cacheDirectory = temporaryDirectory;
+    apolloDirectoryProvider.getCacheBaseDirectory.mockReturnValue(Path.join(blockingFile, 'cache'));
 
     await expect(subject.fetchXml(1)).resolves.toEqual(ANIME_XML);
     await expect(subject.fetchXml(1)).resolves.toEqual(ANIME_XML);
 
-    expect(mocks.uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
-    expect(console.error).toHaveBeenCalled();
+    expect(uncachedAnimeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Error writing the AniDB XML of anime 1 to the cache'), expect.any(Error));
   });
 });

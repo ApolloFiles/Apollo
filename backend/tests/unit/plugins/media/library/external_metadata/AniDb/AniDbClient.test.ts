@@ -16,183 +16,169 @@ import { COMPLETE_ANIME_XML } from './parsing/AnimeXmlFixtures.js';
 
 const IMAGE_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
 
-function createClient(animeXml: string | null = COMPLETE_ANIME_XML): {
-  subject: AniDbClient,
-  mocks: { animeXmlFetcher: DeepMockProxy<AnimeXmlFetcher>, imageFetcher: DeepMockProxy<ImageFetcher> },
-} {
-  const animeXmlFetcher = createStrictDeepMock<AnimeXmlFetcher>();
-  animeXmlFetcher.fetchXml.mockResolvedValue(animeXml);
+describe(AniDbClient, () => {
+  let animeXmlFetcher: DeepMockProxy<AnimeXmlFetcher>;
+  let imageFetcher: DeepMockProxy<ImageFetcher>;
+  let subject: AniDbClient;
 
-  const imageFetcher = createStrictDeepMock<ImageFetcher>();
-  imageFetcher.fetchImage.mockResolvedValue(IMAGE_BYTES);
+  beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-  const animeParser = new AnimeParser(new AniDbXmlReader(), new AnimeMapper(new LanguageNormalizer()), new AnimeValidator());
-  return {
-    subject: new AniDbClient(animeXmlFetcher, animeParser, imageFetcher),
-    mocks: { animeXmlFetcher, imageFetcher },
-  };
-}
+    animeXmlFetcher = createStrictDeepMock<AnimeXmlFetcher>();
+    animeXmlFetcher.fetchXml.mockResolvedValue(COMPLETE_ANIME_XML);
 
-describe('AniDbClient#fetchAnime', () => {
-  test('Fetches and parses the anime with the given id', async () => {
-    const { subject, mocks } = createClient();
+    imageFetcher = createStrictDeepMock<ImageFetcher>();
+    imageFetcher.fetchImage.mockResolvedValue(IMAGE_BYTES);
 
-    const anime = await subject.fetchAnime(1);
-
-    expect(mocks.animeXmlFetcher.fetchXml).toHaveBeenCalledExactlyOnceWith(1);
-    expect(anime?.id).toBe(1);
-    expect(anime?.titles[0].title).toBe('Kusuriya no Hitorigoto');
+    const animeParser = new AnimeParser(new AniDbXmlReader(), new AnimeMapper(new LanguageNormalizer()), new AnimeValidator());
+    subject = new AniDbClient(animeXmlFetcher, animeParser, imageFetcher);
   });
 
-  test.each([0, -1, 1.5, NaN, Infinity])('Rejects the anime id %s without fetching anything', async (animeId) => {
-    const { subject, mocks } = createClient();
+  describe('fetchAnime', () => {
+    test('Fetches and parses the anime with the given id', async () => {
+      const anime = await subject.fetchAnime(1);
 
-    await expect(subject.fetchAnime(animeId)).rejects.toThrow(AniDbError);
-    expect(mocks.animeXmlFetcher.fetchXml).not.toHaveBeenCalled();
+      expect(animeXmlFetcher.fetchXml).toHaveBeenCalledExactlyOnceWith(1);
+      expect(anime?.id).toBe(1);
+      expect(anime?.titles[0].title).toBe('Kusuriya no Hitorigoto');
+    });
+
+    test.for([
+      { animeId: 0 },
+      { animeId: -1 },
+      { animeId: 1.5 },
+      { animeId: NaN },
+      { animeId: Infinity },
+    ])('Rejects the anime id $animeId without fetching anything', async ({ animeId }) => {
+      await expect(subject.fetchAnime(animeId)).rejects.toThrow(AniDbError);
+      await expect(subject.fetchAnime(animeId)).rejects.toThrow('The animeId has to be positive');
+
+      expect(animeXmlFetcher.fetchXml).not.toHaveBeenCalled();
+    });
+
+    test('Returns null when the anime does not exist', async () => {
+      animeXmlFetcher.fetchXml.mockResolvedValue(null);
+
+      await expect(subject.fetchAnime(1)).resolves.toBeNull();
+    });
+
+    test('Shares one fetch between concurrent calls for the same anime', async () => {
+      const [first, second] = await Promise.all([subject.fetchAnime(1), subject.fetchAnime(1)]);
+
+      expect(animeXmlFetcher.fetchXml).toHaveBeenCalledOnce();
+      expect(second).toBe(first);
+    });
+
+    test('Fetches again once the previous call has finished', async () => {
+      await subject.fetchAnime(1);
+      await subject.fetchAnime(1);
+
+      expect(animeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
+    });
+
+    test('Fetches different anime separately', async () => {
+      await Promise.all([subject.fetchAnime(1), subject.fetchAnime(2)]);
+
+      expect(animeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
+      expect(animeXmlFetcher.fetchXml).toHaveBeenCalledWith(1);
+      expect(animeXmlFetcher.fetchXml).toHaveBeenCalledWith(2);
+    });
+
+    test('Does not warn about an anime with only known keys and values', async () => {
+      await subject.fetchAnime(1);
+
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    test('Warns once about all unknown keys and values of an anime', async () => {
+      animeXmlFetcher.fetchXml.mockResolvedValue(COMPLETE_ANIME_XML
+        .replace('<type>TV Series</type>', '<type>Unknown Anime Type</type>')
+        .replace('<type>', '<broadcaster>NHK</broadcaster><type>'));
+
+      const anime = await subject.fetchAnime(1);
+
+      expect(anime?.type).toBe('Unknown Anime Type');
+      expect(console.warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Anime 1'));
+      expect(vi.mocked(console.warn).mock.calls[0][0]).toContain('unknown-key anime="broadcaster"');
+      expect(vi.mocked(console.warn).mock.calls[0][0]).toContain('unknown-value type="Unknown Anime Type"');
+    });
+
+    test('Wraps a parse failure into an AniDbParseError that keeps the cause', async () => {
+      animeXmlFetcher.fetchXml.mockResolvedValue(COMPLETE_ANIME_XML.replace('<episodecount>2</episodecount>', '<episodecount>two</episodecount>'));
+
+      await expect(subject.fetchAnime(1)).rejects.toThrow(AniDbParseError);
+      await expect(subject.fetchAnime(1)).rejects.toThrow('Unable to parse the AniDB XML of anime 1');
+      await expect(subject.fetchAnime(1)).rejects.toMatchObject({ cause: expect.any(ZodError) });
+    });
+
+    test('Passes errors of the fetcher through unchanged', async () => {
+      const fetchError = new Error('Banned');
+      animeXmlFetcher.fetchXml.mockRejectedValue(fetchError);
+
+      await expect(subject.fetchAnime(1)).rejects.toBe(fetchError);
+    });
   });
 
-  test('Returns null when the anime does not exist', async () => {
-    const { subject } = createClient(null);
+  describe('fetchImage', () => {
+    test('Fetches the image with the given file name', async () => {
+      await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
 
-    await expect(subject.fetchAnime(1)).resolves.toBeNull();
-  });
+      expect(imageFetcher.fetchImage).toHaveBeenCalledExactlyOnceWith('294282.jpg');
+    });
 
-  test('Shares one fetch between concurrent calls for the same anime', async () => {
-    const { subject, mocks } = createClient();
+    test.for([
+      { fileName: '294282.jpg' },
+      { fileName: '11249.jpeg' },
+      { fileName: '67867.png' },
+      { fileName: '1.GIF' },
+    ])('Accepts the file name $fileName', async ({ fileName }) => {
+      await expect(subject.fetchImage(fileName)).resolves.toEqual(IMAGE_BYTES);
+    });
 
-    const [first, second] = await Promise.all([subject.fetchAnime(1), subject.fetchAnime(1)]);
+    test.for([
+      { fileName: '' },
+      { fileName: '294282' },
+      { fileName: '.jpg' },
+      { fileName: 'abc.jpg' },
+      { fileName: '294282.' },
+      { fileName: '294282.jpg.exe' },
+      { fileName: '294282xjpg' },
+      { fileName: '../294282.jpg' },
+      { fileName: '294282.jpg?size=1' },
+      { fileName: '294282/jpg' },
+      { fileName: ' 294282.jpg' },
+    ])('Rejects the file name "$fileName" without fetching anything', async ({ fileName }) => {
+      await expect(subject.fetchImage(fileName)).rejects.toThrow(AniDbError);
+      await expect(subject.fetchImage(fileName)).rejects.toThrow('looks invalid');
 
-    expect(mocks.animeXmlFetcher.fetchXml).toHaveBeenCalledOnce();
-    expect(second).toBe(first);
-  });
+      expect(imageFetcher.fetchImage).not.toHaveBeenCalled();
+    });
 
-  test('Fetches again once the previous call has finished', async () => {
-    const { subject, mocks } = createClient();
+    test('Shares one fetch between concurrent calls for the same image', async () => {
+      const [first, second] = await Promise.all([subject.fetchImage('294282.jpg'), subject.fetchImage('294282.jpg')]);
 
-    await subject.fetchAnime(1);
-    await subject.fetchAnime(1);
+      expect(imageFetcher.fetchImage).toHaveBeenCalledOnce();
+      expect(second).toBe(first);
+    });
 
-    expect(mocks.animeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
-  });
+    test('Fetches different images separately', async () => {
+      await Promise.all([subject.fetchImage('294282.jpg'), subject.fetchImage('67867.png')]);
 
-  test('Fetches different anime separately', async () => {
-    const { subject, mocks } = createClient();
+      expect(imageFetcher.fetchImage).toHaveBeenCalledTimes(2);
+    });
 
-    await Promise.all([subject.fetchAnime(1), subject.fetchAnime(2)]);
+    test('Does not share an in-flight image fetch with an anime fetch', async () => {
+      await Promise.all([subject.fetchAnime(1), subject.fetchImage('1.jpg')]);
 
-    expect(mocks.animeXmlFetcher.fetchXml).toHaveBeenCalledTimes(2);
-    expect(mocks.animeXmlFetcher.fetchXml).toHaveBeenCalledWith(1);
-    expect(mocks.animeXmlFetcher.fetchXml).toHaveBeenCalledWith(2);
-  });
+      expect(animeXmlFetcher.fetchXml).toHaveBeenCalledOnce();
+      expect(imageFetcher.fetchImage).toHaveBeenCalledOnce();
+    });
 
-  test('Does not warn about an anime with only known keys and values', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const { subject } = createClient();
+    test('Passes errors of the image fetcher through unchanged', async () => {
+      const cdnError = AniDbCdnError.createForNotFoundResponse('294282.jpg');
+      imageFetcher.fetchImage.mockRejectedValue(cdnError);
 
-    await subject.fetchAnime(1);
-
-    expect(consoleWarn).not.toHaveBeenCalled();
-  });
-
-  test('Warns once about all unknown keys and values of an anime', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const { subject } = createClient(COMPLETE_ANIME_XML
-      .replace('<type>TV Series</type>', '<type>Unknown Anime Type</type>')
-      .replace('<type>', '<broadcaster>NHK</broadcaster><type>'));
-
-    const anime = await subject.fetchAnime(1);
-
-    expect(anime?.type).toBe('Unknown Anime Type');
-    expect(consoleWarn).toHaveBeenCalledOnce();
-    expect(consoleWarn.mock.calls[0][0]).toContain('Anime 1');
-    expect(consoleWarn.mock.calls[0][0]).toContain('unknown-key anime="broadcaster"');
-    expect(consoleWarn.mock.calls[0][0]).toContain('unknown-value type="Unknown Anime Type"');
-  });
-
-  test('Wraps a parse failure into an AniDbParseError that keeps the cause', async () => {
-    const { subject } = createClient(COMPLETE_ANIME_XML.replace('<episodecount>2</episodecount>', '<episodecount>two</episodecount>'));
-
-    const error = await subject.fetchAnime(1).catch((err: unknown) => err);
-
-    expect(error).toBeInstanceOf(AniDbParseError);
-    expect((error as AniDbParseError).message).toBe('Unable to parse the AniDB XML of anime 1');
-    expect((error as AniDbParseError).cause).toBeInstanceOf(ZodError);
-  });
-
-  test('Passes errors of the fetcher through unchanged', async () => {
-    const { subject, mocks } = createClient();
-    const fetchError = new Error('Banned');
-    mocks.animeXmlFetcher.fetchXml.mockRejectedValue(fetchError);
-
-    await expect(subject.fetchAnime(1)).rejects.toBe(fetchError);
-  });
-});
-
-describe('AniDbClient#fetchImage', () => {
-  test('Fetches the image with the given file name', async () => {
-    const { subject, mocks } = createClient();
-
-    await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
-
-    expect(mocks.imageFetcher.fetchImage).toHaveBeenCalledExactlyOnceWith('294282.jpg');
-  });
-
-  test.each(['294282.jpg', '11249.jpeg', '67867.png', '1.GIF'])('Accepts the file name %s', async (fileName) => {
-    const { subject } = createClient();
-
-    await expect(subject.fetchImage(fileName)).resolves.toEqual(IMAGE_BYTES);
-  });
-
-  test.each([
-    '',
-    '294282',
-    '.jpg',
-    'abc.jpg',
-    '294282.',
-    '294282.jpg.exe',
-    '294282xjpg',
-    '../294282.jpg',
-    '294282.jpg?size=1',
-    '294282/jpg',
-    ' 294282.jpg',
-  ])('Rejects the file name %j without fetching anything', async (fileName) => {
-    const { subject, mocks } = createClient();
-
-    await expect(subject.fetchImage(fileName)).rejects.toThrow(AniDbError);
-    expect(mocks.imageFetcher.fetchImage).not.toHaveBeenCalled();
-  });
-
-  test('Shares one fetch between concurrent calls for the same image', async () => {
-    const { subject, mocks } = createClient();
-
-    const [first, second] = await Promise.all([subject.fetchImage('294282.jpg'), subject.fetchImage('294282.jpg')]);
-
-    expect(mocks.imageFetcher.fetchImage).toHaveBeenCalledOnce();
-    expect(second).toBe(first);
-  });
-
-  test('Fetches different images separately', async () => {
-    const { subject, mocks } = createClient();
-
-    await Promise.all([subject.fetchImage('294282.jpg'), subject.fetchImage('67867.png')]);
-
-    expect(mocks.imageFetcher.fetchImage).toHaveBeenCalledTimes(2);
-  });
-
-  test('Does not share an in-flight image fetch with an anime fetch', async () => {
-    const { subject, mocks } = createClient();
-
-    await Promise.all([subject.fetchAnime(1), subject.fetchImage('1.jpg')]);
-
-    expect(mocks.animeXmlFetcher.fetchXml).toHaveBeenCalledOnce();
-    expect(mocks.imageFetcher.fetchImage).toHaveBeenCalledOnce();
-  });
-
-  test('Passes errors of the image fetcher through unchanged', async () => {
-    const { subject, mocks } = createClient();
-    const cdnError = AniDbCdnError.createForNotFoundResponse('294282.jpg');
-    mocks.imageFetcher.fetchImage.mockRejectedValue(cdnError);
-
-    await expect(subject.fetchImage('294282.jpg')).rejects.toBe(cdnError);
+      await expect(subject.fetchImage('294282.jpg')).rejects.toBe(cdnError);
+    });
   });
 });

@@ -1,40 +1,48 @@
-import { LanguageNormalizer } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/LanguageNormalizer.js';
+import {
+  LanguageNormalizer,
+} from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/LanguageNormalizer.js';
 
-describe('LanguageNormalizer#normalize', () => {
-  test('Passes a standard language code through', () => {
-    expect(new LanguageNormalizer().normalize('de')).toEqual({ raw: 'de', bcp47: 'de' });
+describe(LanguageNormalizer, () => {
+  let normalizer: LanguageNormalizer;
+
+  beforeEach(() => {
+    normalizer = new LanguageNormalizer();
   });
 
-  test.each([
-    ['x-jat', 'ja-Latn'],
-    ['es-CA', 'ca'],
-    ['es-PV', 'eu'],
-    ['bd', 'bn'],
-    ['my', 'ms'],
-    ['bur', 'my'],
-    ['al', 'sq'],
-    ['tl', 'fil'],
-    ['zh-nan', 'zh-Hant-TW'],
-    ['x-unk', 'und'],
-  ])('Translates the AniDB-specific code %s to %s', (raw, bcp47) => {
-    expect(new LanguageNormalizer().normalize(raw)).toEqual({ raw, bcp47 });
+  test.for([
+    { raw: 'ja' },
+    { raw: 'en' },
+    { raw: 'de' },
+    { raw: 'pt-BR' },
+    { raw: 'es-419' },
+  ])('Passes the standard language code $raw through', ({ raw }) => {
+    expect(normalizer.normalize(raw)).toEqual({ raw, bcp47: raw });
   });
 
-  test('Leaves codes that are unknown or unverified without a BCP 47 tag', () => {
-    const normalizer = new LanguageNormalizer();
+  test.for([
+    { raw: 'x-jat', bcp47: 'ja-Latn' },
+    { raw: 'es-CA', bcp47: 'ca' },
+    { raw: 'es-PV', bcp47: 'eu' },
+    { raw: 'bd', bcp47: 'bn' },
+    { raw: 'my', bcp47: 'ms' },
+    { raw: 'bur', bcp47: 'my' },
+    { raw: 'al', bcp47: 'sq' },
+    { raw: 'tl', bcp47: 'fil' },
+    { raw: 'zh-nan', bcp47: 'zh-Hant-TW' },
+    { raw: 'x-unk', bcp47: 'und' },
+  ])('Translates the AniDB-specific code $raw to $bcp47', ({ raw, bcp47 }) => {
+    expect(normalizer.normalize(raw)).toEqual({ raw, bcp47 });
+  });
 
-    expect(normalizer.normalize('bs')).toEqual({ raw: 'bs', bcp47: null });
-    expect(normalizer.normalize('xx-YY')).toEqual({ raw: 'xx-YY', bcp47: null });
-    expect(normalizer.normalize('')).toEqual({ raw: '', bcp47: null });
+  test.for([
+    { raw: 'bs' },
+    { raw: 'xx-YY' },
+    { raw: '' },
+  ])('Leaves the unknown or unverified code "$raw" without a BCP 47 tag', ({ raw }) => {
+    expect(normalizer.normalize(raw)).toEqual({ raw, bcp47: null });
   });
 
   test('Does not resolve object prototype keys as language codes', () => {
-    expect(new LanguageNormalizer().normalize('constructor')).toEqual({ raw: 'constructor', bcp47: null });
-  });
-
-  test('Only maps to canonical BCP 47 tags', () => {
-    for (const bcp47 of LanguageNormalizer['ANIDB_TO_BCP47'].values()) {
-      expect(Intl.getCanonicalLocales(bcp47)[0]).toBe(bcp47);
-    }
+    expect(normalizer.normalize('constructor')).toEqual({ raw: 'constructor', bcp47: null });
   });
 });

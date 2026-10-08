@@ -7,72 +7,61 @@ import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const IMAGE_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
 
-function createResponse(statusCode: number, contentType: string | null, body: Buffer | string): HttpResponse {
-  const headers = new Map<string, string>();
-  if (contentType != null) {
-    headers.set('content-type', contentType);
-  }
-  return new HttpResponse(statusCode, headers, typeof body === 'string' ? Buffer.from(body) : body);
+function createResponse(statusCode: number, headers: Record<string, string>, body: Buffer | string): HttpResponse {
+  return new HttpResponse(statusCode, new Map(Object.entries(headers)), typeof body === 'string' ? Buffer.from(body) : body);
 }
 
-function createFetcher(response: HttpResponse = createResponse(200, 'image/jpeg', IMAGE_BYTES)): {
-  subject: UncachedImageFetcher,
-  mocks: { httpClient: DeepMockProxy<SimpleHttpClient> },
-} {
-  const httpClient = createStrictDeepMock<SimpleHttpClient>();
-  httpClient.get.mockResolvedValue(response);
+describe(UncachedImageFetcher, () => {
+  let httpClient: DeepMockProxy<SimpleHttpClient>;
+  let subject: UncachedImageFetcher;
 
-  return { subject: new UncachedImageFetcher(httpClient), mocks: { httpClient } };
-}
+  beforeEach(() => {
+    httpClient = createStrictDeepMock<SimpleHttpClient>();
+    httpClient.get.mockResolvedValue(createResponse(200, { 'content-type': 'image/jpeg' }, IMAGE_BYTES));
 
-describe('UncachedImageFetcher#fetchImage', () => {
+    subject = new UncachedImageFetcher(httpClient);
+  });
+
   test('Requests the image from the CDN by its file name', async () => {
-    const { subject, mocks } = createFetcher();
-
     await subject.fetchImage('294282.jpg');
 
-    expect(mocks.httpClient.get).toHaveBeenCalledExactlyOnceWith(
+    expect(httpClient.get).toHaveBeenCalledExactlyOnceWith(
       'https://cdn.anidb.net/images/main/294282.jpg',
       { headers: { 'Accept': 'image/*' } },
     );
   });
 
   test('Returns the image bytes verbatim', async () => {
-    const { subject } = createFetcher();
-
     await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
   });
 
   test('Accepts any image content type', async () => {
-    const { subject } = createFetcher(createResponse(200, 'image/png', IMAGE_BYTES));
+    httpClient.get.mockResolvedValue(createResponse(200, { 'content-type': 'image/png' }, IMAGE_BYTES));
 
     await expect(subject.fetchImage('67867.png')).resolves.toEqual(IMAGE_BYTES);
   });
 
   test('Reports a missing image with its file name', async () => {
-    const { subject } = createFetcher(createResponse(404, 'text/html', '<html>404</html>'));
+    httpClient.get.mockResolvedValue(createResponse(404, { 'content-type': 'text/html' }, '<html>404</html>'));
 
-    await expect(subject.fetchImage('999999999.jpg')).rejects.toThrow(AniDbCdnError);
-    await expect(subject.fetchImage('999999999.jpg')).rejects.toThrow('404 Not Found for file 999999999.jpg');
+    await expect(subject.fetchImage('999999999.jpg')).rejects.toThrow(new AniDbCdnError('The AniDB CDN responded with 404 Not Found for file 999999999.jpg'));
   });
 
   test('Reports any other unexpected status code together with the response body', async () => {
-    const { subject } = createFetcher(createResponse(503, 'text/plain', 'Service Unavailable'));
+    httpClient.get.mockResolvedValue(createResponse(503, { 'content-type': 'text/plain' }, 'Service Unavailable'));
 
-    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow(AniDbCdnError);
-    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow('unexpected status 503: Service Unavailable');
+    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow(new AniDbCdnError('The AniDB CDN responded with unexpected status 503: Service Unavailable'));
   });
 
   test('Rejects a successful response that is not an image', async () => {
-    const { subject } = createFetcher(createResponse(200, 'text/html', '<html>maintenance</html>'));
+    httpClient.get.mockResolvedValue(createResponse(200, { 'content-type': 'text/html' }, '<html>maintenance</html>'));
 
-    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow(AniDbCdnError);
-    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow('non-image Content-Type "text/html"');
+    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow(new AniDbCdnError('The AniDB CDN responded with non-image Content-Type "text/html" for file 294282.jpg'));
   });
 
   test('Rejects a successful response without a content type', async () => {
-    const { subject } = createFetcher(createResponse(200, null, IMAGE_BYTES));
+    httpClient.get.mockResolvedValue(createResponse(200, {}, IMAGE_BYTES));
 
-    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow('non-image Content-Type ""');
+    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow(new AniDbCdnError('The AniDB CDN responded with non-image Content-Type "" for file 294282.jpg'));
   });
 });
