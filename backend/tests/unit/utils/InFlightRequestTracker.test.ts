@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import InFlightRequestTracker from '../../../src/utils/InFlightRequestTracker.js';
+import { InFlightRequestTracker } from '../../../src/utils/InFlightRequestTracker.js';
 
 describe('InFlightRequestTracker#run', () => {
   test('Callers asking for the same key at the same time share the first execution and its result', async () => {

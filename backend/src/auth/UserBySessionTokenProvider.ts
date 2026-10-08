@@ -1,7 +1,7 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../database/DatabaseClient.js';
 import ApolloUser from '../user/ApolloUser.js';
-import InFlightRequestTracker from '../utils/InFlightRequestTracker.js';
+import { InFlightRequestTracker } from '../utils/InFlightRequestTracker.js';
 import AuthSessionFinder, { type SessionDataWithUser } from './session/AuthSessionFinder.js';
 
 export type SessionUser = {
