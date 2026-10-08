@@ -2,7 +2,6 @@ import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
 import { container } from 'tsyringe';
-import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Accel } from '../../../../src/plugins/official/ffmpeg/accel/Accel.js';
 import { SOFTWARE } from '../../../../src/plugins/official/ffmpeg/accel/Accel.js';
 import { createFfmpegDevice } from '../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';

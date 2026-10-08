@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import type FfmpegCapabilityCache from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
 import { createFfmpegDevice, type FfmpegDevice } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
 import type FfmpegDeviceRegistry from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';

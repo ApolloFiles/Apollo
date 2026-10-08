@@ -1,6 +1,5 @@
 import { HttpResponse } from '@spraxdev/node-commons/http';
 import Zlib from 'node:zlib';
-import { describe, expect, test, vi } from 'vitest';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import type SimpleHttpClient from '../../../../../../../../src/http/SimpleHttpClient.js';
 import { AniDbApiError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbApiError.js';

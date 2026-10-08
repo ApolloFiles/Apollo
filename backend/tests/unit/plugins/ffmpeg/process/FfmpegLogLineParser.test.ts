@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import FfmpegLogLineParser from '../../../../../src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
 
 describe('FfmpegLogLineParser#parse', () => {

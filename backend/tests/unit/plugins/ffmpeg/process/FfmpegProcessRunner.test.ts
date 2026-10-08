@@ -1,6 +1,5 @@
 import ChildProcess from 'node:child_process';
 import Os from 'node:os';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 import FfmpegProcessRunner from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 import FakeChildProcess from './FakeChildProcess.js';
 

@@ -1,5 +1,4 @@
 import Sharp, { type Sharp as SharpInstance } from 'sharp';
-import { beforeEach, describe, expect, test } from 'vitest';
 import ThumbnailFrameRater from '../../../../../../src/plugins/official/media/library/thumbnail/ThumbnailFrameRater.js';
 
 let rater: ThumbnailFrameRater;

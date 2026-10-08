@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import WebVttSeekThumbnailGenerator from '../../../../../../../src/plugins/official/media/_old/video-player/seek-thumbnails/generator/WebVttSeekThumbnailGenerator.js';
 
 function cuesOf(webVtt: string): [string, string][] {

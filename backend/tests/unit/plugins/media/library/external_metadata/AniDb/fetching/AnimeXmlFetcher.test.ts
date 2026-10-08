@@ -2,7 +2,6 @@ import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
 import Zlib from 'node:zlib';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import type ApolloDirectoryProvider from '../../../../../../../../src/config/ApolloDirectoryProvider.js';
 import ExpiringApolloCache from '../../../../../../../../src/files/cache/global/ExpiringApolloCache.js';

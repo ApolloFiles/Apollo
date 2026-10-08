@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import {
   ERROR_RESPONSE_SCHEMA,
   LOOKS_LIKE_ERROR_RESPONSE,

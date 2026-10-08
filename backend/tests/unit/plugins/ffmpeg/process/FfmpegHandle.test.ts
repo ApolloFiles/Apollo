@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import FfmpegHandle, { type FfmpegHandleOptions } from '../../../../../src/plugins/official/ffmpeg/process/FfmpegHandle.js';
 import type { FfmpegLogLine } from '../../../../../src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
 import type { FfmpegProgress } from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProgressParser.js';

@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import { createFfmpegDevice, parseFfmpegDeviceId } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
 
 describe('parseFfmpegDeviceId', () => {

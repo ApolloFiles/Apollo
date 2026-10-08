@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import { AniDbFloodControlError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbFloodControlError.js';
 import type { AniDbBan } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';

@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import FfmpegLogBuffer from '../../../../../src/plugins/official/ffmpeg/process/FfmpegLogBuffer.js';
 import FfmpegLogLineParser from '../../../../../src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
 

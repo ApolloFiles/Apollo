@@ -1,5 +1,4 @@
 import type { FastifyInstanceWithZod, Router } from '@sprax/node-framework/web';
-import { afterEach, describe, expect, test } from 'vitest';
 import type AccessTokenBearerHelper from '../../../../src/auth/access_token/AccessTokenBearerHelper.js';
 import type { AccessTokenUser } from '../../../../src/auth/access_token/UserByAccessTokenProvider.js';
 import type CsrfTokenValidator from '../../../../src/auth/CsrfTokenValidator.js';

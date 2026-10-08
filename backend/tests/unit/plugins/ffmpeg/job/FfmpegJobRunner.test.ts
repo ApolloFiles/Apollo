@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { type Accel, SOFTWARE } from '../../../../../src/plugins/official/ffmpeg/accel/Accel.js';
 import { createFfmpegDevice } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
 import type FfmpegCapabilityCache from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';

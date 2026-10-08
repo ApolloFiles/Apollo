@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import FfmpegFailureClassifier from '../../../../../src/plugins/official/ffmpeg/job/FfmpegFailureClassifier.js';
 import UnretryableFfmpegJobError from '../../../../../src/plugins/official/ffmpeg/job/UnretryableFfmpegJobError.js';
 import FfmpegHandle from '../../../../../src/plugins/official/ffmpeg/process/FfmpegHandle.js';

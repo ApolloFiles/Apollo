@@ -1,5 +1,4 @@
 import Crypto from 'node:crypto';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 import CsrfTokenValidator from '../../../src/auth/CsrfTokenValidator.js';
 
 const TOKEN = 'HR7dQpZ2mKf0aVxLnB4tYs1';

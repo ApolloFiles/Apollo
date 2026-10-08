@@ -1,5 +1,4 @@
 import Fs from 'node:fs';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 import FfmpegDeviceEnumerator from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceEnumerator.js';
 import FakeProcessRunner from '../process/FakeProcessRunner.js';
 

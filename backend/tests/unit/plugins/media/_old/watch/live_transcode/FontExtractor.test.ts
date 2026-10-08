@@ -1,7 +1,6 @@
 import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { FfmpegJob } from '../../../../../../../src/plugins/official/ffmpeg/job/FfmpegJob.js';
 import type FfmpegJobRunner from '../../../../../../../src/plugins/official/ffmpeg/job/FfmpegJobRunner.js';
 import FontExtractor from '../../../../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';

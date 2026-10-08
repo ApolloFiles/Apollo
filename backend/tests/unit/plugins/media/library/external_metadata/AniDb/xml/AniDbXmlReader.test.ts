@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import { AniDbXmlReader } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
 
 describe('AniDbXmlReader#read', () => {

@@ -1,7 +1,6 @@
 import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type ApolloDirectoryProvider from '../../../../../../../../src/config/ApolloDirectoryProvider.js';
 import { AniDbBanState } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
 import { createStrictDeepMock } from '../../../../../../../test-helpers.js';

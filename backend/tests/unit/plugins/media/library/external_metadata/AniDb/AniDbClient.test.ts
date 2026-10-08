@@ -1,4 +1,3 @@
-import { describe, expect, test, vi } from 'vitest';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import { ZodError } from 'zod';
 import { AniDbClient } from '../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/AniDbClient.js';

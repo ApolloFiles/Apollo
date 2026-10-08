@@ -2,7 +2,6 @@ import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
 import { container } from 'tsyringe';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import type { FfmpegLogLine } from '../../../../src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
 import FfmpegProcessRunner from '../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 import type { FfmpegProgress } from '../../../../src/plugins/official/ffmpeg/process/FfmpegProgressParser.js';

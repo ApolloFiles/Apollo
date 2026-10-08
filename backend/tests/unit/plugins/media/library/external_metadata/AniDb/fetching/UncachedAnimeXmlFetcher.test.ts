@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import { AniDbApiError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbApiError.js';
 import { AniDbResponseError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbResponseError.js';

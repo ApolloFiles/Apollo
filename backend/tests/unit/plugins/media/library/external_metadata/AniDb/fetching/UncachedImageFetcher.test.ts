@@ -1,5 +1,4 @@
 import { HttpResponse } from '@spraxdev/node-commons/http';
-import { describe, expect, test } from 'vitest';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import type SimpleHttpClient from '../../../../../../../../src/http/SimpleHttpClient.js';
 import { AniDbCdnError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbCdnError.js';

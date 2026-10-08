@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import ApolloURI from '../../../src/uri/ApolloURI.js';
 
 describe('ApolloURI#parse with valid URIs', () => {

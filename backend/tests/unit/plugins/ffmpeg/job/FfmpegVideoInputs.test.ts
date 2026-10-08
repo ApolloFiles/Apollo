@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import FfmpegVideoInputs from '../../../../../src/plugins/official/ffmpeg/job/FfmpegVideoInputs.js';
 import type { ExtendedProbeResult } from '../../../../../src/plugins/official/ffmpeg/probe/FfprobeExecutor.js';
 

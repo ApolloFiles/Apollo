@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import { IssueCollector } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/validator/IssueCollector.js';
 
 describe('IssueCollector', () => {

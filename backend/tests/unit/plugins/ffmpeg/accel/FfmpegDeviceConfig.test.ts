@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type AppConfiguration from '../../../../../src/config/AppConfiguration.js';
 import FfmpegDeviceConfig from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceConfig.js';
 

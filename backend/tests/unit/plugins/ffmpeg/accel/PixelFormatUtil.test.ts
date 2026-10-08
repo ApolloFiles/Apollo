@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import PixelFormatUtil from '../../../../../src/plugins/official/ffmpeg/accel/PixelFormatUtil.js';
 
 describe('PixelFormatUtil.determineBitDepth', () => {

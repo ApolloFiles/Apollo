@@ -1,5 +1,4 @@
 import type { HttpResponse } from '@spraxdev/node-commons/http';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import type AppConfiguration from '../../../src/config/AppConfiguration.js';
 import FeedbackDiscordNotifier, { type FeedbackNotification } from '../../../src/feedback/FeedbackDiscordNotifier.js';

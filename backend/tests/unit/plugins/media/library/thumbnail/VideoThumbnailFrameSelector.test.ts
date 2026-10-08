@@ -2,7 +2,6 @@ import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
 import Sharp from 'sharp';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import ThumbnailFrameRater from '../../../../../../src/plugins/official/media/library/thumbnail/ThumbnailFrameRater.js';
 import VideoThumbnailFrameSelector from '../../../../../../src/plugins/official/media/library/thumbnail/VideoThumbnailFrameSelector.js';
 

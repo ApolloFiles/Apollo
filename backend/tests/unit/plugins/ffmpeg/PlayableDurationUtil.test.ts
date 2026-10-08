@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import type { ExtendedProbeResult } from '../../../../src/plugins/official/ffmpeg/probe/FfprobeExecutor.js';
 import PlayableDurationUtil, {
   type DurationRelevantStream,

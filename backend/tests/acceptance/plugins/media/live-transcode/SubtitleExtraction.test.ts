@@ -2,7 +2,6 @@ import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
 import { container } from 'tsyringe';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import FfmpegProcessRunner from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 import FontExtractor from '../../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';
 import TextBasedSubtitleExtractor from '../../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';

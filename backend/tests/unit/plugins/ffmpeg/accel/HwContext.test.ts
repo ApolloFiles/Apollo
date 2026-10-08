@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import { createFfmpegDevice } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
 import HwContext from '../../../../../src/plugins/official/ffmpeg/accel/HwContext.js';
 

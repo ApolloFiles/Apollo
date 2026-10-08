@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import ForcedSubtitleDetector, {
   type SubtitleStreamCandidate,
 } from '../../../../../../src/plugins/official/media/library/scanner/ForcedSubtitleDetector.js';

@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import FfmpegProgressParser, { type FfmpegProgress } from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProgressParser.js';
 
 function consumeBlock(parser: FfmpegProgressParser, lines: string[]): FfmpegProgress | null {

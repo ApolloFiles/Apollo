@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'vitest';
 import type { AniDbAnime } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/Anime.js';
 import { AnimeMapper } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/AnimeMapper.js';
 import { NORMALIZING_ANIME_XML_SCHEMA } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/AnimeSchemas.js';

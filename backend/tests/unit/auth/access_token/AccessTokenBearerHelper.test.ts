@@ -1,5 +1,4 @@
 import type { DeepMockProxy } from 'vitest-mock-extended';
-import { describe, expect, test } from 'vitest';
 import AccessTokenBearerHelper from '../../../../src/auth/access_token/AccessTokenBearerHelper.js';
 import PersonalAccessTokenGenerator from '../../../../src/auth/access_token/personal/PersonalAccessTokenGenerator.js';
 import type UserByAccessTokenProvider from '../../../../src/auth/access_token/UserByAccessTokenProvider.js';
