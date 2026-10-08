@@ -1,8 +1,13 @@
 import { InFlightRequestTracker } from '#src/utils/InFlightRequestTracker.js';
 
-describe('InFlightRequestTracker#run', () => {
-  test('Callers asking for the same key at the same time share the first execution and its result', async () => {
-    const tracker = new InFlightRequestTracker<string>();
+describe(InFlightRequestTracker, () => {
+  let tracker: InFlightRequestTracker<string>;
+
+  beforeEach(() => {
+    tracker = new InFlightRequestTracker<string>();
+  });
+
+  test('Lets callers asking for the same key at the same time share the first execution and its result', async () => {
     const pendingTask = Promise.withResolvers<string>();
     const firstTask = vi.fn(() => pendingTask.promise);
     const ignoredTask = vi.fn(() => Promise.resolve('ignored'));
@@ -16,8 +21,7 @@ describe('InFlightRequestTracker#run', () => {
     expect(ignoredTask).not.toHaveBeenCalled();
   });
 
-  test('Different keys run independently', async () => {
-    const tracker = new InFlightRequestTracker<string>();
+  test('Runs the tasks for different keys independently', async () => {
     const task = vi.fn((key: string) => Promise.resolve(`result for ${key}`));
 
     const results = await Promise.all([
@@ -29,8 +33,7 @@ describe('InFlightRequestTracker#run', () => {
     expect(task).toHaveBeenCalledTimes(2);
   });
 
-  test('A failure reaches every sharing caller without becoming sticky', async () => {
-    const tracker = new InFlightRequestTracker<string>();
+  test('Passes a failure to every sharing caller without keeping it for later callers', async () => {
     const pendingTask = Promise.withResolvers<string>();
     const error = new Error('task failed');
     const task = vi.fn()
@@ -47,15 +50,14 @@ describe('InFlightRequestTracker#run', () => {
     expect(task).toHaveBeenCalledTimes(2);
   });
 
-  test('A settled key is released before its own callers continue, so it is not a cache', async () => {
-    const tracker = new InFlightRequestTracker<number>();
+  test('Releases a settled key before its own callers continue, so it does not act as a cache', async () => {
     const task = vi.fn()
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(2);
+      .mockResolvedValueOnce('first result')
+      .mockResolvedValueOnce('second result');
 
     const secondResult = tracker.run('key', task).then(() => tracker.run('key', task));
 
-    await expect(secondResult).resolves.toBe(2);
+    await expect(secondResult).resolves.toBe('second result');
     expect(task).toHaveBeenCalledTimes(2);
   });
 });

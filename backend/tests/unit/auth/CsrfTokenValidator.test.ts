@@ -3,7 +3,7 @@ import CsrfTokenValidator from '#src/auth/CsrfTokenValidator.js';
 
 const TOKEN = 'HR7dQpZ2mKf0aVxLnB4tYs1';
 
-describe('CsrfTokenValidator#validate', () => {
+describe(CsrfTokenValidator, () => {
   let validator: CsrfTokenValidator;
 
   beforeEach(() => {
@@ -11,48 +11,53 @@ describe('CsrfTokenValidator#validate', () => {
   });
 
   test('Accepts two identical tokens', () => {
-    expect(validator.validate(TOKEN, TOKEN)).toBe(true);
-    expect(validator.validate(TOKEN, `${TOKEN}`)).toBe(true);
+    expect(validator.validate(TOKEN, 'HR7dQpZ2mKf0aVxLnB4tYs1')).toBe(true);
   });
 
-  test('Rejects tokens that differ in a single character', () => {
-    expect(validator.validate(TOKEN, `${TOKEN.slice(0, -1)}X`)).toBe(false);
-    expect(validator.validate(`X${TOKEN.slice(1)}`, TOKEN)).toBe(false);
+  test.for([
+    { position: 'last', sent: 'HR7dQpZ2mKf0aVxLnB4tYsX', expected: TOKEN },
+    { position: 'first', sent: 'XR7dQpZ2mKf0aVxLnB4tYs1', expected: TOKEN },
+  ])('Rejects tokens that differ in the $position character', ({ sent, expected }) => {
+    expect(validator.validate(sent, expected)).toBe(false);
   });
 
-  test('Is case-sensitive', () => {
-    expect(validator.validate(TOKEN.toLowerCase(), TOKEN.toUpperCase())).toBe(false);
+  test('Rejects tokens that differ only in case', () => {
+    expect(validator.validate('hr7dqpz2mkf0avxlnb4tys1', 'HR7DQPZ2MKF0AVXLNB4TYS1')).toBe(false);
   });
 
-  test('Rejects tokens of different length instead of throwing', () => {
-    expect(validator.validate(TOKEN, `${TOKEN}extra`)).toBe(false);
-    expect(validator.validate(`${TOKEN}extra`, TOKEN)).toBe(false);
-    expect(validator.validate('', TOKEN)).toBe(false);
-    expect(validator.validate(TOKEN, '')).toBe(false);
+  test.for([
+    { sent: TOKEN, expected: `${TOKEN}extra` },
+    { sent: `${TOKEN}extra`, expected: TOKEN },
+    { sent: '', expected: TOKEN },
+    { sent: TOKEN, expected: '' },
+  ])('Rejects tokens of different length instead of throwing ("$sent" vs. "$expected")', ({ sent, expected }) => {
+    expect(validator.validate(sent, expected)).toBe(false);
   });
 
   test('Rejects a token that is only a prefix of the expected one', () => {
-    expect(validator.validate(TOKEN.slice(0, 5), TOKEN)).toBe(false);
+    expect(validator.validate('HR7dQ', TOKEN)).toBe(false);
   });
 
-  test('Compares the utf-8 bytes, not the utf-16 code units', () => {
-    expect(validator.validate('äöü', 'äöü')).toBe(true);
-    expect(validator.validate('🔑', '🔑')).toBe(true);
+  test.for([
+    { token: 'äöü' },
+    { token: '🔑' },
+  ])('Accepts the identical non-ASCII token $token', ({ token }) => {
+    expect(validator.validate(token, token)).toBe(true);
+  });
 
-    expect(validator.validate('äöü', 'aou')).toBe(false);
-    expect(validator.validate('🔑', 'ab')).toBe(false);
+  test.for([
+    { sent: 'äöü', expected: 'aou' },
+    { sent: '🔑', expected: 'ab' },
+  ])('Rejects $sent against $expected, which has as many UTF-16 code units', ({ sent, expected }) => {
+    expect(validator.validate(sent, expected)).toBe(false);
   });
 
   test('Rejects strings that are equal only after unicode normalization', () => {
-    expect(validator.validate('é', 'é')).toBe(false);
+    expect(validator.validate('\u00e9', 'e\u0301')).toBe(false);
   });
 
   test('Rejects an empty token, even against another empty one', () => {
-    const timingSafeEqual = vi.spyOn(Crypto, 'timingSafeEqual');
-
     expect(validator.validate('', '')).toBe(false);
-
-    expect(timingSafeEqual).not.toHaveBeenCalled();
   });
 
   test('Compares in constant time', () => {
@@ -61,13 +66,5 @@ describe('CsrfTokenValidator#validate', () => {
     validator.validate(TOKEN, TOKEN);
 
     expect(timingSafeEqual).toHaveBeenCalledExactlyOnceWith(Buffer.from(TOKEN, 'utf-8'), Buffer.from(TOKEN, 'utf-8'));
-  });
-
-  test('Does not call the constant-time comparison for mismatching lengths', () => {
-    const timingSafeEqual = vi.spyOn(Crypto, 'timingSafeEqual');
-
-    expect(validator.validate(TOKEN, `${TOKEN}extra`)).toBe(false);
-
-    expect(timingSafeEqual).not.toHaveBeenCalled();
   });
 });

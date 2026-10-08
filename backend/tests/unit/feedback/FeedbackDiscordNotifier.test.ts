@@ -5,6 +5,8 @@ import FeedbackDiscordNotifier, { type FeedbackNotification } from '#src/feedbac
 import type SimpleHttpClient from '#src/http/SimpleHttpClient.js';
 import { createStrictDeepMock } from '#tests/test-helpers.js';
 
+const WEBHOOK_URL = 'https://discord.com/api/webhooks/1/token';
+
 const FEEDBACK: FeedbackNotification = {
   id: 'report-id',
   category: 'FEEDBACK',
@@ -12,98 +14,95 @@ const FEEDBACK: FeedbackNotification = {
   userDisplayName: 'SomeUser',
 };
 
-function createHttpResponse(statusCode: number): HttpResponse {
-  return { statusCode, ok: statusCode >= 200 && statusCode < 300 } as HttpResponse;
-}
-
-function createNotifier(discordWebhookUrl: string | null): {
-  notifier: FeedbackDiscordNotifier,
-  httpClient: DeepMockProxy<SimpleHttpClient>,
-} {
-  const appConfig = createStrictDeepMock<AppConfiguration>({
+function createAppConfig(discordWebhookUrl: string | null): AppConfiguration {
+  return createStrictDeepMock<AppConfiguration>({
     config: {
       baseUrl: 'https://apollo.example.com',
       feedback: { discordWebhookUrl },
     },
   });
-  const httpClient = createStrictDeepMock<SimpleHttpClient>();
-  httpClient.post.mockResolvedValue(createHttpResponse(204));
-
-  return { notifier: new FeedbackDiscordNotifier(appConfig, httpClient), httpClient };
 }
 
-function parseSentEmbed(httpClient: DeepMockProxy<SimpleHttpClient>): any {
-  const body = httpClient.post.mock.calls[0][1]?.body;
-  return JSON.parse(body as string).embeds[0];
+function createHttpResponse(statusCode: number): HttpResponse {
+  return { statusCode, ok: statusCode >= 200 && statusCode < 300 } as HttpResponse;
 }
 
-beforeEach(() => {
-  vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-  vi.spyOn(console, 'error').mockImplementation(() => undefined);
-});
+function parseSentPayload(httpClient: DeepMockProxy<SimpleHttpClient>): any {
+  return JSON.parse(httpClient.post.mock.calls[0][1]?.body as string);
+}
 
-describe('FeedbackDiscordNotifier#notify', () => {
+describe(FeedbackDiscordNotifier, () => {
+  let httpClient: DeepMockProxy<SimpleHttpClient>;
+  let notifier: FeedbackDiscordNotifier;
+
+  beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    httpClient = createStrictDeepMock<SimpleHttpClient>();
+    httpClient.post.mockResolvedValue(createHttpResponse(204));
+    notifier = new FeedbackDiscordNotifier(createAppConfig(WEBHOOK_URL), httpClient);
+  });
+
   test('Sends nothing when no webhook url is configured', async () => {
-    const { notifier, httpClient } = createNotifier(null);
+    notifier = new FeedbackDiscordNotifier(createAppConfig(null), httpClient);
 
     await notifier.notify(FEEDBACK);
 
     expect(httpClient.post).not.toHaveBeenCalled();
   });
 
-  test('Posts a preview linking to the admin page of the report', async () => {
-    const { notifier, httpClient } = createNotifier('https://discord.com/api/webhooks/1/token');
-
+  test('Posts the notification as JSON to the configured webhook', async () => {
     await notifier.notify(FEEDBACK);
 
-    expect(httpClient.post.mock.calls[0][0]).toBe('https://discord.com/api/webhooks/1/token');
+    expect(httpClient.post).toHaveBeenCalledExactlyOnceWith(WEBHOOK_URL, {
+      headers: { 'Content-Type': 'application/json' },
+      body: expect.any(String),
+    });
+  });
 
-    const embed = parseSentEmbed(httpClient);
-    expect(embed.url).toBe('https://apollo.example.com/admin/feedback/report-id');
-    expect(embed.description).toBe('The player keeps buffering');
-    expect(embed.author.name).toBe('SomeUser');
+  test('Posts a preview linking to the admin page of the report', async () => {
+    await notifier.notify(FEEDBACK);
+
+    expect(parseSentPayload(httpClient).embeds[0]).toMatchObject({
+      url: 'https://apollo.example.com/admin/feedback/report-id',
+      description: 'The player keeps buffering',
+      author: { name: 'SomeUser' },
+    });
   });
 
   test('Suppresses mentions so submitted text cannot ping the Discord server', async () => {
-    const { notifier, httpClient } = createNotifier('https://discord.com/api/webhooks/1/token');
-
     await notifier.notify({ ...FEEDBACK, message: '@everyone please fix this' });
 
-    const payload = JSON.parse(httpClient.post.mock.calls[0][1]?.body as string);
-    expect(payload.allowed_mentions).toEqual({ parse: [] });
+    expect(parseSentPayload(httpClient).allowed_mentions).toEqual({ parse: [] });
   });
 
-  test('Truncates a long message instead of forwarding the whole report', async () => {
-    const { notifier, httpClient } = createNotifier('https://discord.com/api/webhooks/1/token');
-
+  test('Truncates a long message to 320 characters ending in an ellipsis', async () => {
     await notifier.notify({ ...FEEDBACK, message: 'a'.repeat(4000) });
 
-    const embed = parseSentEmbed(httpClient);
-    expect(embed.description).toHaveLength(320);
-    expect(embed.description.endsWith('…')).toBe(true);
+    expect(parseSentPayload(httpClient).embeds[0].description).toBe(`${'a'.repeat(319)}…`);
   });
 
   test('Collapses whitespace so a multi-line report stays a one-line preview', async () => {
-    const { notifier, httpClient } = createNotifier('https://discord.com/api/webhooks/1/token');
-
     await notifier.notify({ ...FEEDBACK, message: ' first line \n\n second line ' });
 
-    expect(parseSentEmbed(httpClient).description).toBe('first line second line');
+    expect(parseSentPayload(httpClient).embeds[0].description).toBe('first line second line');
   });
 
-  test('Does not propagate a failing webhook request to the caller', async () => {
-    const { notifier, httpClient } = createNotifier('https://discord.com/api/webhooks/1/token');
-    httpClient.post.mockRejectedValue(new Error('connection refused'));
+  test('Logs a failing webhook request instead of propagating it to the caller', async () => {
+    const error = new Error('connection refused');
+    httpClient.post.mockRejectedValue(error);
 
     await expect(notifier.notify(FEEDBACK)).resolves.toBeUndefined();
+
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(error);
   });
 
   test('Warns when Discord rejects the webhook', async () => {
-    const { notifier, httpClient } = createNotifier('https://discord.com/api/webhooks/1/token');
     httpClient.post.mockResolvedValue(createHttpResponse(404));
 
     await notifier.notify(FEEDBACK);
 
-    expect(console.warn).toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Discord rejected'));
   });
 });
