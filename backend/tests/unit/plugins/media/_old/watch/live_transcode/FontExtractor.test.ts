@@ -1,10 +1,10 @@
 import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
-import type { FfmpegJob } from '../../../../../../../src/plugins/official/ffmpeg/job/FfmpegJob.js';
-import type FfmpegJobRunner from '../../../../../../../src/plugins/official/ffmpeg/job/FfmpegJobRunner.js';
-import FontExtractor from '../../../../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';
-import type { ExtendedVideoAnalysis, Stream } from '../../../../../../../src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
+import type { FfmpegJob } from '#src/plugins/official/ffmpeg/job/FfmpegJob.js';
+import type FfmpegJobRunner from '#src/plugins/official/ffmpeg/job/FfmpegJobRunner.js';
+import FontExtractor from '#src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';
+import type { ExtendedVideoAnalysis, Stream } from '#src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
 
 function attachment(index: number, codecName: string, filename?: string, extraDataSize = 512): Stream {
   return { index, codecType: 'attachment', codecName, extraDataSize, tags: filename != null ? { filename } : {} } as unknown as Stream;

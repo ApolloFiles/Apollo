@@ -1,5 +1,5 @@
-import type AppConfiguration from '../../../../../src/config/AppConfiguration.js';
-import FfmpegDeviceConfig from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceConfig.js';
+import type AppConfiguration from '#src/config/AppConfiguration.js';
+import FfmpegDeviceConfig from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceConfig.js';
 
 function createConfig(devices: string): FfmpegDeviceConfig {
   return new FfmpegDeviceConfig({ config: { ffmpeg: { devices } } } as unknown as AppConfiguration);

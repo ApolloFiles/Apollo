@@ -1,6 +1,6 @@
 import ChildProcess from 'node:child_process';
 import Os from 'node:os';
-import FfmpegProcessRunner from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
+import FfmpegProcessRunner from '#src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 import FakeChildProcess from './FakeChildProcess.js';
 
 vi.mock('node:child_process', () => ({

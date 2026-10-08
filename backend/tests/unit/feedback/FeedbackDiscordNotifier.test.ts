@@ -1,9 +1,9 @@
 import type { HttpResponse } from '@spraxdev/node-commons/http';
 import type { DeepMockProxy } from 'vitest-mock-extended';
-import type AppConfiguration from '../../../src/config/AppConfiguration.js';
-import FeedbackDiscordNotifier, { type FeedbackNotification } from '../../../src/feedback/FeedbackDiscordNotifier.js';
-import type SimpleHttpClient from '../../../src/http/SimpleHttpClient.js';
-import { createStrictDeepMock } from '../../test-helpers.js';
+import type AppConfiguration from '#src/config/AppConfiguration.js';
+import FeedbackDiscordNotifier, { type FeedbackNotification } from '#src/feedback/FeedbackDiscordNotifier.js';
+import type SimpleHttpClient from '#src/http/SimpleHttpClient.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const FEEDBACK: FeedbackNotification = {
   id: 'report-id',

@@ -1,9 +1,9 @@
 import { ZodError } from 'zod';
-import { AnimeMapper } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/AnimeMapper.js';
-import { AnimeParser } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/AnimeParser.js';
-import { LanguageNormalizer } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/LanguageNormalizer.js';
-import { AnimeValidator } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/validator/AnimeValidator.js';
-import { AniDbXmlReader } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
+import { AnimeMapper } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/AnimeMapper.js';
+import { AnimeParser } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/AnimeParser.js';
+import { LanguageNormalizer } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/LanguageNormalizer.js';
+import { AnimeValidator } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/validator/AnimeValidator.js';
+import { AniDbXmlReader } from '#src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
 import { COMPLETE_ANIME_XML, MINIMAL_ANIME_XML } from './AnimeXmlFixtures.js';
 
 function createParser(): AnimeParser {

@@ -1,9 +1,9 @@
 import type { DeepMockProxy } from 'vitest-mock-extended';
-import { AniDbApiError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbApiError.js';
-import { AniDbResponseError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbResponseError.js';
-import type { AniDbHttpTransport } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbHttpTransport.js';
-import { UncachedAnimeXmlFetcher } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedAnimeXmlFetcher.js';
-import { createStrictDeepMock } from '../../../../../../../test-helpers.js';
+import { AniDbApiError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbApiError.js';
+import { AniDbResponseError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbResponseError.js';
+import type { AniDbHttpTransport } from '#src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbHttpTransport.js';
+import { UncachedAnimeXmlFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedAnimeXmlFetcher.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const ANIME_XML = '<?xml version="1.0" encoding="UTF-8"?><anime id="1"><type>TV Series</type></anime>';
 

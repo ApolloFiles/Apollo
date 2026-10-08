@@ -1,6 +1,6 @@
 import Fs from 'node:fs';
-import FfmpegDeviceEnumerator from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceEnumerator.js';
-import FakeProcessRunner from '../process/FakeProcessRunner.js';
+import FfmpegDeviceEnumerator from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceEnumerator.js';
+import FakeProcessRunner from '#tests/unit/plugins/ffmpeg/process/FakeProcessRunner.js';
 
 const ALL_HWACCELS = 'Hardware acceleration methods:\nvdpau\ncuda\nvaapi\nqsv\ndrm\nopencl\nvulkan\n';
 

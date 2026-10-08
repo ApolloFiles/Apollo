@@ -20,6 +20,10 @@
   },
   "main": "src/main.ts",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*",
+    "#tests/*": "./tests/*"
+  },
   "scripts": {
     "postinstall": "npm run prisma:generate || true",
 

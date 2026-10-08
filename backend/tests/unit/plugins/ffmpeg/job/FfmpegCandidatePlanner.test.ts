@@ -1,9 +1,9 @@
-import type FfmpegCapabilityCache from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
-import { createFfmpegDevice, type FfmpegDevice } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
-import type FfmpegDeviceRegistry from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
-import HwContext from '../../../../../src/plugins/official/ffmpeg/accel/HwContext.js';
-import FfmpegCandidatePlanner from '../../../../../src/plugins/official/ffmpeg/job/FfmpegCandidatePlanner.js';
-import type { FfmpegAccelerationRequirement } from '../../../../../src/plugins/official/ffmpeg/job/FfmpegJob.js';
+import type FfmpegCapabilityCache from '#src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
+import { createFfmpegDevice, type FfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import type FfmpegDeviceRegistry from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
+import HwContext from '#src/plugins/official/ffmpeg/accel/HwContext.js';
+import FfmpegCandidatePlanner from '#src/plugins/official/ffmpeg/job/FfmpegCandidatePlanner.js';
+import type { FfmpegAccelerationRequirement } from '#src/plugins/official/ffmpeg/job/FfmpegJob.js';
 
 const CUDA = createFfmpegDevice('cuda', '0', 'nvidia');
 const INTEL_VAAPI = createFfmpegDevice('vaapi', '/dev/dri/renderD128', 'intel');

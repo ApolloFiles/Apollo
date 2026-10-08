@@ -1,6 +1,6 @@
-import FfmpegHandle from '../../../../../src/plugins/official/ffmpeg/process/FfmpegHandle.js';
-import type FfmpegProcessRunner from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
-import type { FfmpegSpawnOptions } from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
+import FfmpegHandle from '#src/plugins/official/ffmpeg/process/FfmpegHandle.js';
+import type FfmpegProcessRunner from '#src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
+import type { FfmpegSpawnOptions } from '#src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 import FakeChildProcess from './FakeChildProcess.js';
 
 export type ScriptedAttempt = {

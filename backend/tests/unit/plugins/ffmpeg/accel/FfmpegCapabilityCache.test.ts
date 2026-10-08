@@ -1,6 +1,6 @@
-import FfmpegCapabilityCache from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
-import { createFfmpegDevice } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
-import FakeProcessRunner, { type ScriptedAttempt } from '../process/FakeProcessRunner.js';
+import FfmpegCapabilityCache from '#src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
+import { createFfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import FakeProcessRunner, { type ScriptedAttempt } from '#tests/unit/plugins/ffmpeg/process/FakeProcessRunner.js';
 
 const INTEL_VAAPI = createFfmpegDevice('vaapi', '/dev/dri/renderD128', 'intel');
 const INTEL_QSV = createFfmpegDevice('qsv', '/dev/dri/renderD128', 'intel');

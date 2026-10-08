@@ -1,10 +1,10 @@
-import { SOFTWARE } from '../../../../../../../src/plugins/official/ffmpeg/accel/Accel.js';
-import { createFfmpegDevice } from '../../../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
-import HwContext from '../../../../../../../src/plugins/official/ffmpeg/accel/HwContext.js';
-import AudioStreamArgumentsBuilder from '../../../../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/AudioStreamArgumentsBuilder.js';
-import StreamArgumentsBuilder from '../../../../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/StreamArgumentsBuilder.js';
-import LiveTranscodeLauncher from '../../../../../../../src/plugins/official/media/_old/video-player/live-transcode/launcher/LiveTranscodeLauncher.js';
-import type { AudioStream, VideoStream } from '../../../../../../../src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
+import { SOFTWARE } from '#src/plugins/official/ffmpeg/accel/Accel.js';
+import { createFfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import HwContext from '#src/plugins/official/ffmpeg/accel/HwContext.js';
+import AudioStreamArgumentsBuilder from '#src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/AudioStreamArgumentsBuilder.js';
+import StreamArgumentsBuilder from '#src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/StreamArgumentsBuilder.js';
+import LiveTranscodeLauncher from '#src/plugins/official/media/_old/video-player/live-transcode/launcher/LiveTranscodeLauncher.js';
+import type { AudioStream, VideoStream } from '#src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
 
 function videoStream(avgFrameRate: string): VideoStream {
   return { avgFrameRate } as unknown as VideoStream;

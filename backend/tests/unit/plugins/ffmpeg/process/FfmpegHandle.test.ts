@@ -1,6 +1,6 @@
-import FfmpegHandle, { type FfmpegHandleOptions } from '../../../../../src/plugins/official/ffmpeg/process/FfmpegHandle.js';
-import type { FfmpegLogLine } from '../../../../../src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
-import type { FfmpegProgress } from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProgressParser.js';
+import FfmpegHandle, { type FfmpegHandleOptions } from '#src/plugins/official/ffmpeg/process/FfmpegHandle.js';
+import type { FfmpegLogLine } from '#src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
+import type { FfmpegProgress } from '#src/plugins/official/ffmpeg/process/FfmpegProgressParser.js';
 import FakeChildProcess, { flushStreams } from './FakeChildProcess.js';
 
 const PROGRESS_BLOCK = 'frame=75\nfps=24.50\nout_time_us=2920000\nspeed=31.9x\nprogress=continue\n';

@@ -1,4 +1,4 @@
-import { LanguageNormalizer } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/LanguageNormalizer.js';
+import { LanguageNormalizer } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/LanguageNormalizer.js';
 
 describe('LanguageNormalizer#normalize', () => {
   test('Passes a standard language code through', () => {

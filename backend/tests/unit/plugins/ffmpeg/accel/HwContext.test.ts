@@ -1,5 +1,5 @@
-import { createFfmpegDevice } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
-import HwContext from '../../../../../src/plugins/official/ffmpeg/accel/HwContext.js';
+import { createFfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import HwContext from '#src/plugins/official/ffmpeg/accel/HwContext.js';
 
 const INTEL_VAAPI = createFfmpegDevice('vaapi', '/dev/dri/renderD128', 'intel');
 const AMD_VAAPI = createFfmpegDevice('vaapi', '/dev/dri/renderD129', 'amd');

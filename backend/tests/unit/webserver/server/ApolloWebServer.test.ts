@@ -1,13 +1,13 @@
 import type { FastifyInstanceWithZod, Router } from '@sprax/node-framework/web';
-import type AccessTokenBearerHelper from '../../../../src/auth/access_token/AccessTokenBearerHelper.js';
-import type { AccessTokenUser } from '../../../../src/auth/access_token/UserByAccessTokenProvider.js';
-import type CsrfTokenValidator from '../../../../src/auth/CsrfTokenValidator.js';
-import type SessionCookieHelper from '../../../../src/auth/session/SessionCookieHelper.js';
-import type { default as UserBySessionTokenProvider, SessionUser } from '../../../../src/auth/UserBySessionTokenProvider.js';
-import type ApolloRouter from '../../../../src/webserver/server/ApolloRouter.js';
-import ApolloWebServer from '../../../../src/webserver/server/ApolloWebServer.js';
-import type ORPCRequestHandler from '../../../../src/webserver/server/ORPCRequestHandler.js';
-import { createStrictDeepMock } from '../../../test-helpers.js';
+import type AccessTokenBearerHelper from '#src/auth/access_token/AccessTokenBearerHelper.js';
+import type { AccessTokenUser } from '#src/auth/access_token/UserByAccessTokenProvider.js';
+import type CsrfTokenValidator from '#src/auth/CsrfTokenValidator.js';
+import type SessionCookieHelper from '#src/auth/session/SessionCookieHelper.js';
+import type { default as UserBySessionTokenProvider, SessionUser } from '#src/auth/UserBySessionTokenProvider.js';
+import type ApolloRouter from '#src/webserver/server/ApolloRouter.js';
+import ApolloWebServer from '#src/webserver/server/ApolloWebServer.js';
+import type ORPCRequestHandler from '#src/webserver/server/ORPCRequestHandler.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const SESSION_USER = { user: { id: 'session-user' }, session: {} } as unknown as SessionUser;
 const TOKEN_USER = { user: { id: 'token-user' }, accessToken: {} } as unknown as AccessTokenUser;

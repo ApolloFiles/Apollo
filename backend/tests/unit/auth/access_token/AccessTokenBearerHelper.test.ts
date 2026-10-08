@@ -1,10 +1,10 @@
 import type { DeepMockProxy } from 'vitest-mock-extended';
-import AccessTokenBearerHelper from '../../../../src/auth/access_token/AccessTokenBearerHelper.js';
-import PersonalAccessTokenGenerator from '../../../../src/auth/access_token/personal/PersonalAccessTokenGenerator.js';
-import type UserByAccessTokenProvider from '../../../../src/auth/access_token/UserByAccessTokenProvider.js';
-import SecureRandomBase62Generator from '../../../../src/auth/SecureRandomBase62Generator.js';
-import SecureTokenHelper from '../../../../src/auth/SecureTokenHelper.js';
-import { createStrictDeepMock } from '../../../test-helpers.js';
+import AccessTokenBearerHelper from '#src/auth/access_token/AccessTokenBearerHelper.js';
+import PersonalAccessTokenGenerator from '#src/auth/access_token/personal/PersonalAccessTokenGenerator.js';
+import type UserByAccessTokenProvider from '#src/auth/access_token/UserByAccessTokenProvider.js';
+import SecureRandomBase62Generator from '#src/auth/SecureRandomBase62Generator.js';
+import SecureTokenHelper from '#src/auth/SecureTokenHelper.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 function createHelper(): { helper: AccessTokenBearerHelper, provider: DeepMockProxy<UserByAccessTokenProvider>, validToken: string } {
   const generator = new PersonalAccessTokenGenerator(new SecureTokenHelper(new SecureRandomBase62Generator()));

@@ -1,5 +1,5 @@
-import FfmpegVideoInputs from '../../../../../src/plugins/official/ffmpeg/job/FfmpegVideoInputs.js';
-import type { ExtendedProbeResult } from '../../../../../src/plugins/official/ffmpeg/probe/FfprobeExecutor.js';
+import FfmpegVideoInputs from '#src/plugins/official/ffmpeg/job/FfmpegVideoInputs.js';
+import type { ExtendedProbeResult } from '#src/plugins/official/ffmpeg/probe/FfprobeExecutor.js';
 
 function probeResult(streams: Record<string, unknown>[]): ExtendedProbeResult {
   return { streams } as unknown as ExtendedProbeResult;

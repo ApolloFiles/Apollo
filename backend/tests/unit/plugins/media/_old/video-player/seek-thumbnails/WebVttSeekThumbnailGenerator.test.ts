@@ -1,4 +1,4 @@
-import WebVttSeekThumbnailGenerator from '../../../../../../../src/plugins/official/media/_old/video-player/seek-thumbnails/generator/WebVttSeekThumbnailGenerator.js';
+import WebVttSeekThumbnailGenerator from '#src/plugins/official/media/_old/video-player/seek-thumbnails/generator/WebVttSeekThumbnailGenerator.js';
 
 function cuesOf(webVtt: string): [string, string][] {
   return webVtt.split('\n\n').slice(1).filter((cue) => cue !== '').map((cue) => cue.split('\n') as [string, string]);

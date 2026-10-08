@@ -8,7 +8,7 @@ import {
   xmlInt,
   xmlNumber,
   xmlText,
-} from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/xml/XmlSchemaHelpers.js';
+} from '#src/plugins/official/media/library/external_metadata/AniDb/xml/XmlSchemaHelpers.js';
 
 describe('xmlInt', () => {
   test('Turns a numeric string into a number', () => {

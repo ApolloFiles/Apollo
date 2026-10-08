@@ -3,11 +3,11 @@ import Os from 'node:os';
 import Path from 'node:path';
 import Zlib from 'node:zlib';
 import type { DeepMockProxy } from 'vitest-mock-extended';
-import type ApolloDirectoryProvider from '../../../../../../../../src/config/ApolloDirectoryProvider.js';
-import ExpiringApolloCache from '../../../../../../../../src/files/cache/global/ExpiringApolloCache.js';
-import { AnimeXmlFetcher } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/fetching/AnimeXmlFetcher.js';
-import type { UncachedAnimeXmlFetcher } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedAnimeXmlFetcher.js';
-import { createStrictDeepMock } from '../../../../../../../test-helpers.js';
+import type ApolloDirectoryProvider from '#src/config/ApolloDirectoryProvider.js';
+import ExpiringApolloCache from '#src/files/cache/global/ExpiringApolloCache.js';
+import { AnimeXmlFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/AnimeXmlFetcher.js';
+import type { UncachedAnimeXmlFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedAnimeXmlFetcher.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const ANIME_XML = '<?xml version="1.0" encoding="UTF-8"?><anime id="1"><type>TV Series</type></anime>';
 const CACHE_ID_PREFIX = 'anidb_http_api';

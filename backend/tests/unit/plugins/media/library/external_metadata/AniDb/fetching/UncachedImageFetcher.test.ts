@@ -1,9 +1,9 @@
 import { HttpResponse } from '@spraxdev/node-commons/http';
 import type { DeepMockProxy } from 'vitest-mock-extended';
-import type SimpleHttpClient from '../../../../../../../../src/http/SimpleHttpClient.js';
-import { AniDbCdnError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbCdnError.js';
-import { UncachedImageFetcher } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedImageFetcher.js';
-import { createStrictDeepMock } from '../../../../../../../test-helpers.js';
+import type SimpleHttpClient from '#src/http/SimpleHttpClient.js';
+import { AniDbCdnError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbCdnError.js';
+import { UncachedImageFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedImageFetcher.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const IMAGE_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
 

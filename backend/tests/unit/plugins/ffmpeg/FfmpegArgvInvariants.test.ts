@@ -1,16 +1,16 @@
-import { type Accel, SOFTWARE } from '../../../../src/plugins/official/ffmpeg/accel/Accel.js';
-import { createFfmpegDevice } from '../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
-import HwContext, { type HwMode } from '../../../../src/plugins/official/ffmpeg/accel/HwContext.js';
-import type { VideoBitDepth } from '../../../../src/plugins/official/ffmpeg/accel/PixelFormatUtil.js';
-import type { FfmpegVideoInput } from '../../../../src/plugins/official/ffmpeg/job/FfmpegJob.js';
-import type { SubtitleStream, VideoStream } from '../../../../src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
-import { BURN_IN_INPUT } from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/BurnInInputs.js';
-import VideoStreamArgumentsBuilder from '../../../../src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/VideoStreamArgumentsBuilder.js';
-import LiveTranscodeLauncher from '../../../../src/plugins/official/media/_old/video-player/live-transcode/launcher/LiveTranscodeLauncher.js';
-import SeekThumbnailGenerator from '../../../../src/plugins/official/media/_old/video-player/seek-thumbnails/generator/SeekThumbnailGenerator.js';
-import FontExtractor from '../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';
-import TextBasedSubtitleExtractor from '../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';
-import VideoThumbnailFrameExtractor from '../../../../src/plugins/official/media/library/thumbnail/VideoThumbnailFrameExtractor.js';
+import { type Accel, SOFTWARE } from '#src/plugins/official/ffmpeg/accel/Accel.js';
+import { createFfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import HwContext, { type HwMode } from '#src/plugins/official/ffmpeg/accel/HwContext.js';
+import type { VideoBitDepth } from '#src/plugins/official/ffmpeg/accel/PixelFormatUtil.js';
+import type { FfmpegVideoInput } from '#src/plugins/official/ffmpeg/job/FfmpegJob.js';
+import type { SubtitleStream, VideoStream } from '#src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
+import { BURN_IN_INPUT } from '#src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/BurnInInputs.js';
+import VideoStreamArgumentsBuilder from '#src/plugins/official/media/_old/video-player/live-transcode/ffmpeg/arguments-builder/VideoStreamArgumentsBuilder.js';
+import LiveTranscodeLauncher from '#src/plugins/official/media/_old/video-player/live-transcode/launcher/LiveTranscodeLauncher.js';
+import SeekThumbnailGenerator from '#src/plugins/official/media/_old/video-player/seek-thumbnails/generator/SeekThumbnailGenerator.js';
+import FontExtractor from '#src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';
+import TextBasedSubtitleExtractor from '#src/plugins/official/media/_old/watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';
+import VideoThumbnailFrameExtractor from '#src/plugins/official/media/library/thumbnail/VideoThumbnailFrameExtractor.js';
 
 /**
  * Every job's argv, for every way it can run, checked against the rules the ffmpeg study established – so a caller

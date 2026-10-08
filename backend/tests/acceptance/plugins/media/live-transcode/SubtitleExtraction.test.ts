@@ -2,11 +2,11 @@ import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
 import { container } from 'tsyringe';
-import FfmpegProcessRunner from '../../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
-import FontExtractor from '../../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';
-import TextBasedSubtitleExtractor from '../../../../../src/plugins/official/media/_old/watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';
-import VideoAnalyser from '../../../../../src/plugins/official/media/_old/video/analyser/VideoAnalyser.js';
-import { ffmpegEnvironment, requireSample } from '../../ffmpeg/FfmpegTestEnvironment.js';
+import FfmpegProcessRunner from '#src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
+import FontExtractor from '#src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';
+import TextBasedSubtitleExtractor from '#src/plugins/official/media/_old/watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';
+import VideoAnalyser from '#src/plugins/official/media/_old/video/analyser/VideoAnalyser.js';
+import { ffmpegEnvironment, requireSample } from '#tests/acceptance/plugins/ffmpeg/FfmpegTestEnvironment.js';
 
 let targetDir: string;
 

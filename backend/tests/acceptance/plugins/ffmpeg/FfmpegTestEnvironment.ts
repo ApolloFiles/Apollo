@@ -3,10 +3,10 @@ import Os from 'node:os';
 import Path from 'node:path';
 import { container } from 'tsyringe';
 import { inject, type TestContext } from 'vitest';
-import FfmpegCapabilityCache from '../../../../src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
-import type { FfmpegDevice } from '../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
-import FfmpegDeviceRegistry from '../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
-import FfmpegProcessRunner from '../../../../src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
+import FfmpegCapabilityCache from '#src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
+import type { FfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import FfmpegDeviceRegistry from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
+import FfmpegProcessRunner from '#src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 
 export type FfmpegTestSample = {
   readonly path: string;

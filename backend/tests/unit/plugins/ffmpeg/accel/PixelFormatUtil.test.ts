@@ -1,4 +1,4 @@
-import PixelFormatUtil from '../../../../../src/plugins/official/ffmpeg/accel/PixelFormatUtil.js';
+import PixelFormatUtil from '#src/plugins/official/ffmpeg/accel/PixelFormatUtil.js';
 
 describe('PixelFormatUtil.determineBitDepth', () => {
   test.each(['yuv420p', 'yuvj420p', 'nv12', 'yuv444p', 'yuv410p', 'gray', 'rgb24', 'pal8', 'gbrp', null])('%s is 8-bit', (pixelFormat) => {

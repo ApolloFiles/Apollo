@@ -1,15 +1,15 @@
 import { HttpResponse } from '@spraxdev/node-commons/http';
 import Zlib from 'node:zlib';
 import type { DeepMockProxy } from 'vitest-mock-extended';
-import type SimpleHttpClient from '../../../../../../../../src/http/SimpleHttpClient.js';
-import { AniDbApiError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbApiError.js';
-import { AniDbFloodControlError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbFloodControlError.js';
-import { AniDbResponseError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbResponseError.js';
-import type { AniDbBanState } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
-import type { AniDbFloodControl } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbFloodControl.js';
-import { AniDbHttpTransport } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbHttpTransport.js';
-import { AniDbXmlReader } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
-import { createStrictDeepMock } from '../../../../../../../test-helpers.js';
+import type SimpleHttpClient from '#src/http/SimpleHttpClient.js';
+import { AniDbApiError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbApiError.js';
+import { AniDbFloodControlError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbFloodControlError.js';
+import { AniDbResponseError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbResponseError.js';
+import type { AniDbBanState } from '#src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
+import type { AniDbFloodControl } from '#src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbFloodControl.js';
+import { AniDbHttpTransport } from '#src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbHttpTransport.js';
+import { AniDbXmlReader } from '#src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const ANIME_RESPONSE = '<?xml version="1.0" encoding="UTF-8"?><anime id="1"><type>TV Series</type></anime>';
 const GZIP_MAGIC_BYTE = 0x1f;

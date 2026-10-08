@@ -1,4 +1,4 @@
-import ApolloURI from '../../../src/uri/ApolloURI.js';
+import ApolloURI from '#src/uri/ApolloURI.js';
 
 describe('ApolloURI#parse with valid URIs', () => {
   test.each([

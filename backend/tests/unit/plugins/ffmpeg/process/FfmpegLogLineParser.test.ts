@@ -1,4 +1,4 @@
-import FfmpegLogLineParser from '../../../../../src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
+import FfmpegLogLineParser from '#src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
 
 describe('FfmpegLogLineParser#parse', () => {
   test('Parses a line that only has a level prefix', () => {

@@ -1,4 +1,4 @@
-import { createFfmpegDevice, parseFfmpegDeviceId } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import { createFfmpegDevice, parseFfmpegDeviceId } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
 
 describe('parseFfmpegDeviceId', () => {
   test('Round-trips what createFfmpegDevice produces', () => {

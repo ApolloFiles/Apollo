@@ -1,9 +1,9 @@
 import type { DeepMockProxy } from 'vitest-mock-extended';
-import { AniDbFloodControlError } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbFloodControlError.js';
-import type { AniDbBan } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
-import type { AniDbBanState } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
-import { AniDbFloodControl } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbFloodControl.js';
-import { createStrictDeepMock } from '../../../../../../../test-helpers.js';
+import { AniDbFloodControlError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbFloodControlError.js';
+import type { AniDbBan } from '#src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
+import type { AniDbBanState } from '#src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
+import { AniDbFloodControl } from '#src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbFloodControl.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const MIN_DELAY_MS = 2000;
 const ACTIVE_BAN: AniDbBan = {

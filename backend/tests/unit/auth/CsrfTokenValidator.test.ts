@@ -1,5 +1,5 @@
 import Crypto from 'node:crypto';
-import CsrfTokenValidator from '../../../src/auth/CsrfTokenValidator.js';
+import CsrfTokenValidator from '#src/auth/CsrfTokenValidator.js';
 
 const TOKEN = 'HR7dQpZ2mKf0aVxLnB4tYs1';
 

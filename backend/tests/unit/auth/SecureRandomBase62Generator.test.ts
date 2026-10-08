@@ -1,5 +1,5 @@
 import Crypto from 'node:crypto';
-import SecureRandomBase62Generator from '../../../src/auth/SecureRandomBase62Generator.js';
+import SecureRandomBase62Generator from '#src/auth/SecureRandomBase62Generator.js';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const LOWEST_BIASED_BYTE_VALUE = 248;

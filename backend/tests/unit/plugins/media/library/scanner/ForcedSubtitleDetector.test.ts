@@ -1,6 +1,6 @@
 import ForcedSubtitleDetector, {
   type SubtitleStreamCandidate,
-} from '../../../../../../src/plugins/official/media/library/scanner/ForcedSubtitleDetector.js';
+} from '#src/plugins/official/media/library/scanner/ForcedSubtitleDetector.js';
 
 const EPISODE_RUNTIME_IN_SEC = 1428;
 

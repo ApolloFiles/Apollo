@@ -1,14 +1,14 @@
-import { type Accel, SOFTWARE } from '../../../../../src/plugins/official/ffmpeg/accel/Accel.js';
-import { createFfmpegDevice } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
-import type FfmpegCapabilityCache from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
-import HwContext from '../../../../../src/plugins/official/ffmpeg/accel/HwContext.js';
-import type FfmpegCandidatePlanner from '../../../../../src/plugins/official/ffmpeg/job/FfmpegCandidatePlanner.js';
-import type { FfmpegJob } from '../../../../../src/plugins/official/ffmpeg/job/FfmpegJob.js';
-import FfmpegJobRunner from '../../../../../src/plugins/official/ffmpeg/job/FfmpegJobRunner.js';
-import FfmpegJobStats, { type FfmpegAttemptRecord } from '../../../../../src/plugins/official/ffmpeg/job/FfmpegJobStats.js';
-import UnretryableFfmpegJobError from '../../../../../src/plugins/official/ffmpeg/job/UnretryableFfmpegJobError.js';
-import type FfmpegHandle from '../../../../../src/plugins/official/ffmpeg/process/FfmpegHandle.js';
-import FakeProcessRunner from '../process/FakeProcessRunner.js';
+import { type Accel, SOFTWARE } from '#src/plugins/official/ffmpeg/accel/Accel.js';
+import { createFfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import type FfmpegCapabilityCache from '#src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
+import HwContext from '#src/plugins/official/ffmpeg/accel/HwContext.js';
+import type FfmpegCandidatePlanner from '#src/plugins/official/ffmpeg/job/FfmpegCandidatePlanner.js';
+import type { FfmpegJob } from '#src/plugins/official/ffmpeg/job/FfmpegJob.js';
+import FfmpegJobRunner from '#src/plugins/official/ffmpeg/job/FfmpegJobRunner.js';
+import FfmpegJobStats, { type FfmpegAttemptRecord } from '#src/plugins/official/ffmpeg/job/FfmpegJobStats.js';
+import UnretryableFfmpegJobError from '#src/plugins/official/ffmpeg/job/UnretryableFfmpegJobError.js';
+import type FfmpegHandle from '#src/plugins/official/ffmpeg/process/FfmpegHandle.js';
+import FakeProcessRunner from '#tests/unit/plugins/ffmpeg/process/FakeProcessRunner.js';
 
 const CUDA_DEVICE = createFfmpegDevice('cuda', '0', 'nvidia');
 const CUDA = new HwContext(CUDA_DEVICE, 'fullChain', 8);

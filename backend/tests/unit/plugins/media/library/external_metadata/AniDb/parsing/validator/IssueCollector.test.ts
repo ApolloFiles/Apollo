@@ -1,4 +1,4 @@
-import { IssueCollector } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/validator/IssueCollector.js';
+import { IssueCollector } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/validator/IssueCollector.js';
 
 describe('IssueCollector', () => {
   test('Starts without issues', () => {

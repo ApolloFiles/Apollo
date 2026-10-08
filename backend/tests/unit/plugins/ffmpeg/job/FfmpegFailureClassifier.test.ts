@@ -1,7 +1,7 @@
-import FfmpegFailureClassifier from '../../../../../src/plugins/official/ffmpeg/job/FfmpegFailureClassifier.js';
-import UnretryableFfmpegJobError from '../../../../../src/plugins/official/ffmpeg/job/UnretryableFfmpegJobError.js';
-import FfmpegHandle from '../../../../../src/plugins/official/ffmpeg/process/FfmpegHandle.js';
-import FakeChildProcess, { flushStreams } from '../process/FakeChildProcess.js';
+import FfmpegFailureClassifier from '#src/plugins/official/ffmpeg/job/FfmpegFailureClassifier.js';
+import UnretryableFfmpegJobError from '#src/plugins/official/ffmpeg/job/UnretryableFfmpegJobError.js';
+import FfmpegHandle from '#src/plugins/official/ffmpeg/process/FfmpegHandle.js';
+import FakeChildProcess, { flushStreams } from '#tests/unit/plugins/ffmpeg/process/FakeChildProcess.js';
 
 async function classify(logLines: string[], exitCode = 1, error: unknown = new Error('attempt failed')) {
   const childProcess = new FakeChildProcess();

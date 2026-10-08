@@ -1,8 +1,8 @@
-import { createFfmpegDevice, type FfmpegDevice } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
-import type FfmpegDeviceConfig from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceConfig.js';
-import type { FfmpegDeviceSelection } from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceConfig.js';
-import type FfmpegDeviceEnumerator from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceEnumerator.js';
-import FfmpegDeviceRegistry from '../../../../../src/plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
+import { createFfmpegDevice, type FfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import type FfmpegDeviceConfig from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceConfig.js';
+import type { FfmpegDeviceSelection } from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceConfig.js';
+import type FfmpegDeviceEnumerator from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceEnumerator.js';
+import FfmpegDeviceRegistry from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
 
 const CUDA = createFfmpegDevice('cuda', '0', 'nvidia');
 const INTEL_VAAPI = createFfmpegDevice('vaapi', '/dev/dri/renderD128', 'intel');

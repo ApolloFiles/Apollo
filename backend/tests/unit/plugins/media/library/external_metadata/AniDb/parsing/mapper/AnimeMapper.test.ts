@@ -1,9 +1,9 @@
-import type { AniDbAnime } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/Anime.js';
-import { AnimeMapper } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/AnimeMapper.js';
-import { NORMALIZING_ANIME_XML_SCHEMA } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/AnimeSchemas.js';
-import { LanguageNormalizer } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/LanguageNormalizer.js';
-import { AniDbXmlReader } from '../../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
-import { COMPLETE_ANIME_XML, MINIMAL_ANIME_XML } from '../AnimeXmlFixtures.js';
+import type { AniDbAnime } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/Anime.js';
+import { AnimeMapper } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/AnimeMapper.js';
+import { NORMALIZING_ANIME_XML_SCHEMA } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/AnimeSchemas.js';
+import { LanguageNormalizer } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/mapper/LanguageNormalizer.js';
+import { AniDbXmlReader } from '#src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
+import { COMPLETE_ANIME_XML, MINIMAL_ANIME_XML } from '#tests/unit/plugins/media/library/external_metadata/AniDb/parsing/AnimeXmlFixtures.js';
 
 function mapXml(animeXml: string): AniDbAnime {
   const normalizedXml = NORMALIZING_ANIME_XML_SCHEMA.parse(new AniDbXmlReader().read(animeXml));

@@ -1,4 +1,4 @@
-import { classifyId, EPISODE_KINDS } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/parsing/AnimeEnums.js';
+import { classifyId, EPISODE_KINDS } from '#src/plugins/official/media/library/external_metadata/AniDb/parsing/AnimeEnums.js';
 
 describe('classifyId', () => {
   test('Names a known id', () => {

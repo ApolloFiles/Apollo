@@ -1,7 +1,7 @@
 import {
   ERROR_RESPONSE_SCHEMA,
   LOOKS_LIKE_ERROR_RESPONSE,
-} from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/ErrorSchema.js';
+} from '#src/plugins/official/media/library/external_metadata/AniDb/transport/ErrorSchema.js';
 
 describe('LOOKS_LIKE_ERROR_RESPONSE', () => {
   test('Matches an error body with and without an xml declaration', () => {

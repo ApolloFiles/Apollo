@@ -1,7 +1,7 @@
-import type { ExtendedProbeResult } from '../../../../src/plugins/official/ffmpeg/probe/FfprobeExecutor.js';
+import type { ExtendedProbeResult } from '#src/plugins/official/ffmpeg/probe/FfprobeExecutor.js';
 import PlayableDurationUtil, {
   type DurationRelevantStream,
-} from '../../../../src/plugins/official/ffmpeg/probe/PlayableDurationUtil.js';
+} from '#src/plugins/official/ffmpeg/probe/PlayableDurationUtil.js';
 
 function stream(partial: Partial<DurationRelevantStream> & { type: DurationRelevantStream['type'] }): DurationRelevantStream {
   return {

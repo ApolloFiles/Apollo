@@ -1,4 +1,4 @@
-import { AniDbXmlReader } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
+import { AniDbXmlReader } from '#src/plugins/official/media/library/external_metadata/AniDb/xml/AniDbXmlReader.js';
 
 describe('AniDbXmlReader#read', () => {
   test('Exposes the xml declaration as its own key', () => {

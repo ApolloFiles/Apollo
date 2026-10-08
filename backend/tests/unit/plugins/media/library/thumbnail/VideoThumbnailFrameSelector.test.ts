@@ -2,8 +2,8 @@ import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
 import Sharp from 'sharp';
-import ThumbnailFrameRater from '../../../../../../src/plugins/official/media/library/thumbnail/ThumbnailFrameRater.js';
-import VideoThumbnailFrameSelector from '../../../../../../src/plugins/official/media/library/thumbnail/VideoThumbnailFrameSelector.js';
+import ThumbnailFrameRater from '#src/plugins/official/media/library/thumbnail/ThumbnailFrameRater.js';
+import VideoThumbnailFrameSelector from '#src/plugins/official/media/library/thumbnail/VideoThumbnailFrameSelector.js';
 
 let frameDirectory: string;
 let selector: VideoThumbnailFrameSelector;

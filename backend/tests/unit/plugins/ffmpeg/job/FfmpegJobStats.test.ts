@@ -1,4 +1,4 @@
-import FfmpegJobStats, { type FfmpegAttemptRecord } from '../../../../../src/plugins/official/ffmpeg/job/FfmpegJobStats.js';
+import FfmpegJobStats, { type FfmpegAttemptRecord } from '#src/plugins/official/ffmpeg/job/FfmpegJobStats.js';
 
 function record(job: string): FfmpegAttemptRecord {
   return {

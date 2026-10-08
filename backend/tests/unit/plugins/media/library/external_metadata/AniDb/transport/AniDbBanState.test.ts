@@ -1,9 +1,9 @@
 import Fs from 'node:fs';
 import Os from 'node:os';
 import Path from 'node:path';
-import type ApolloDirectoryProvider from '../../../../../../../../src/config/ApolloDirectoryProvider.js';
-import { AniDbBanState } from '../../../../../../../../src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
-import { createStrictDeepMock } from '../../../../../../../test-helpers.js';
+import type ApolloDirectoryProvider from '#src/config/ApolloDirectoryProvider.js';
+import { AniDbBanState } from '#src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const BAN_FILE_NAME = 'AniDB-client-ban.json';
 const ASSUMED_BAN_DURATION_MS = 8 * 60 * 60 * 1000;

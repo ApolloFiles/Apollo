@@ -1,5 +1,5 @@
 import Sharp, { type Sharp as SharpInstance } from 'sharp';
-import ThumbnailFrameRater from '../../../../../../src/plugins/official/media/library/thumbnail/ThumbnailFrameRater.js';
+import ThumbnailFrameRater from '#src/plugins/official/media/library/thumbnail/ThumbnailFrameRater.js';
 
 let rater: ThumbnailFrameRater;
 

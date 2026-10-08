@@ -1,5 +1,5 @@
-import FfmpegLogBuffer from '../../../../../src/plugins/official/ffmpeg/process/FfmpegLogBuffer.js';
-import FfmpegLogLineParser from '../../../../../src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
+import FfmpegLogBuffer from '#src/plugins/official/ffmpeg/process/FfmpegLogBuffer.js';
+import FfmpegLogLineParser from '#src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
 
 function push(logBuffer: FfmpegLogBuffer, ...rawLines: string[]): void {
   for (const rawLine of rawLines) {
