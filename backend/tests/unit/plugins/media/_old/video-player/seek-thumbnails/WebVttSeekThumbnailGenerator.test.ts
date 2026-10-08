@@ -4,8 +4,12 @@ function cuesOf(webVtt: string): [string, string][] {
   return webVtt.split('\n\n').slice(1).filter((cue) => cue !== '').map((cue) => cue.split('\n') as [string, string]);
 }
 
-describe('WebVttSeekThumbnailGenerator#generate', () => {
-  const generator = new WebVttSeekThumbnailGenerator();
+describe(WebVttSeekThumbnailGenerator, () => {
+  let generator: WebVttSeekThumbnailGenerator;
+
+  beforeEach(() => {
+    generator = new WebVttSeekThumbnailGenerator();
+  });
 
   test('Writes one cue per frame, ending where the next one starts', () => {
     const cues = cuesOf(generator.generate(2, [200, 200], 2, [0, 5, 10, 15], (fileIndex) => `sheet-${fileIndex}.jpg`));
@@ -42,8 +46,12 @@ describe('WebVttSeekThumbnailGenerator#generate', () => {
   test('Writes no cue for a frame whose sprite sheet is gone', () => {
     const cues = cuesOf(generator.generate(1, [200, 200], 2, [0, 5, 10, 15, 20], (fileIndex) => `sheet-${fileIndex}.jpg`));
 
-    expect(cues).toHaveLength(4);
-    expect(cues.every(([, url]) => url.startsWith('sheet-0.jpg'))).toBe(true);
+    expect(cues.map(([, url]) => url)).toEqual([
+      'sheet-0.jpg#xywh=0,0,100,100',
+      'sheet-0.jpg#xywh=100,0,100,100',
+      'sheet-0.jpg#xywh=0,100,100,100',
+      'sheet-0.jpg#xywh=100,100,100,100',
+    ]);
   });
 
   test('Writes no cues for no frames', () => {
