@@ -1,72 +1,66 @@
-import { createFfmpegDevice, type FfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
+import type { DeepMockProxy } from 'vitest-mock-extended';
+import { createFfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
 import type FfmpegDeviceConfig from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceConfig.js';
-import type { FfmpegDeviceSelection } from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceConfig.js';
 import type FfmpegDeviceEnumerator from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceEnumerator.js';
 import FfmpegDeviceRegistry from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const CUDA = createFfmpegDevice('cuda', '0', 'nvidia');
 const INTEL_VAAPI = createFfmpegDevice('vaapi', '/dev/dri/renderD128', 'intel');
 const AMD_VAAPI = createFfmpegDevice('vaapi', '/dev/dri/renderD129', 'amd');
 
-function createRegistry(selection: FfmpegDeviceSelection, discovered: FfmpegDevice[] | Error): { registry: FfmpegDeviceRegistry, enumerate: ReturnType<typeof vi.fn> } {
-  const enumerate = vi.fn(async () => {
-    if (discovered instanceof Error) {
-      throw discovered;
-    }
-    return discovered;
+describe(FfmpegDeviceRegistry, () => {
+  let deviceEnumerator: DeepMockProxy<FfmpegDeviceEnumerator>;
+  let deviceConfig: DeepMockProxy<FfmpegDeviceConfig>;
+  let registry: FfmpegDeviceRegistry;
+
+  beforeEach(() => {
+    vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    deviceEnumerator = createStrictDeepMock<FfmpegDeviceEnumerator>();
+    deviceEnumerator.enumerate.mockResolvedValue([CUDA, INTEL_VAAPI, AMD_VAAPI]);
+    deviceConfig = createStrictDeepMock<FfmpegDeviceConfig>();
+    deviceConfig.getSelection.mockReturnValue({ mode: 'auto' });
+    registry = new FfmpegDeviceRegistry(deviceEnumerator, deviceConfig);
   });
-  const enumerator = { enumerate } as unknown as FfmpegDeviceEnumerator;
-  const config = { getSelection: () => selection } as unknown as FfmpegDeviceConfig;
-  return { registry: new FfmpegDeviceRegistry(enumerator, config), enumerate };
-}
 
-beforeEach(() => {
-  vi.spyOn(console, 'info').mockImplementation(() => undefined);
-  vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-});
-
-describe('FfmpegDeviceRegistry#getDevices', () => {
   test('Offers every discovered device in discovery order on auto', async () => {
-    const { registry } = createRegistry({ mode: 'auto' }, [CUDA, INTEL_VAAPI, AMD_VAAPI]);
-
     await expect(registry.getDevices()).resolves.toEqual([CUDA, INTEL_VAAPI, AMD_VAAPI]);
   });
 
   test('Offers nothing when turned off, without even looking', async () => {
-    const { registry, enumerate } = createRegistry({ mode: 'off' }, [CUDA]);
+    deviceConfig.getSelection.mockReturnValue({ mode: 'off' });
 
     await expect(registry.getDevices()).resolves.toEqual([]);
-    expect(enumerate).not.toHaveBeenCalled();
+    expect(deviceEnumerator.enumerate).not.toHaveBeenCalled();
   });
 
-  test('An allowlist picks and orders the discovered devices', async () => {
-    const { registry } = createRegistry({ mode: 'allowlist', deviceIds: [AMD_VAAPI.id, CUDA.id] }, [CUDA, INTEL_VAAPI, AMD_VAAPI]);
+  test('Picks and orders the discovered devices by the allowlist', async () => {
+    deviceConfig.getSelection.mockReturnValue({ mode: 'allowlist', deviceIds: [AMD_VAAPI.id, CUDA.id] });
 
     await expect(registry.getDevices()).resolves.toEqual([AMD_VAAPI, CUDA]);
   });
 
   test('Trusts an allowlisted device that was not discovered, but says so', async () => {
-    const { registry } = createRegistry({ mode: 'allowlist', deviceIds: ['cuda:1'] }, [INTEL_VAAPI]);
+    deviceConfig.getSelection.mockReturnValue({ mode: 'allowlist', deviceIds: ['cuda:1'] });
+    deviceEnumerator.enumerate.mockResolvedValue([INTEL_VAAPI]);
 
     await expect(registry.getDevices()).resolves.toEqual([expect.objectContaining({ id: 'cuda:1', api: 'cuda', address: '1', vendor: 'unknown' })]);
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("'cuda:1'"));
   });
 
-  test('Discovers once and remembers', async () => {
-    const { registry, enumerate } = createRegistry({ mode: 'auto' }, [CUDA]);
-
+  test('Discovers only once, also for callers asking at the same time', async () => {
     await Promise.all([registry.getDevices(), registry.getDevices()]);
     await registry.getDevices();
 
-    expect(enumerate).toHaveBeenCalledOnce();
+    expect(deviceEnumerator.enumerate).toHaveBeenCalledOnce();
   });
 
-  test('Tries discovering again after it failed', async () => {
-    const { registry, enumerate } = createRegistry({ mode: 'auto' }, new Error('ffmpeg is missing'));
-
-    await expect(registry.getDevices()).rejects.toThrow('ffmpeg is missing');
+  test('Discovers again after a failed discovery', async () => {
+    deviceEnumerator.enumerate.mockRejectedValueOnce(new Error('ffmpeg is missing'));
     await expect(registry.getDevices()).rejects.toThrow('ffmpeg is missing');
 
-    expect(enumerate).toHaveBeenCalledTimes(2);
+    await expect(registry.getDevices()).resolves.toEqual([CUDA, INTEL_VAAPI, AMD_VAAPI]);
   });
 });

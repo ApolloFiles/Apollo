@@ -1,6 +1,6 @@
 import Fs from 'node:fs';
 import FfmpegDeviceEnumerator from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceEnumerator.js';
-import FakeProcessRunner from '#tests/unit/plugins/ffmpeg/process/FakeProcessRunner.js';
+import FakeProcessRunner, { type ScriptedAttempt } from '#tests/unit/plugins/ffmpeg/process/FakeProcessRunner.js';
 
 const ALL_HWACCELS = 'Hardware acceleration methods:\nvdpau\ncuda\nvaapi\nqsv\ndrm\nopencl\nvulkan\n';
 
@@ -8,7 +8,7 @@ type FakeMachine = {
   /** render node name → PCI vendor id as sysfs reports it */
   readonly renderNodes?: Record<string, string | null>;
   readonly nvidiaGpus?: number;
-  readonly hwaccels?: string;
+  readonly hwaccels?: ScriptedAttempt;
 }
 
 function fakeMachine(machine: FakeMachine): FfmpegDeviceEnumerator {
@@ -36,15 +36,11 @@ function fakeMachine(machine: FakeMachine): FfmpegDeviceEnumerator {
     return `${vendorId}\n`;
   });
 
-  const processRunner = new FakeProcessRunner([{ exitCode: 0, stdout: machine.hwaccels ?? ALL_HWACCELS }]);
+  const processRunner = new FakeProcessRunner([machine.hwaccels ?? { exitCode: 0, stdout: ALL_HWACCELS }]);
   return new FfmpegDeviceEnumerator(processRunner.asFfmpegProcessRunner());
 }
 
-beforeEach(() => {
-  vi.spyOn(console, 'debug').mockImplementation(() => undefined);
-});
-
-describe('FfmpegDeviceEnumerator#enumerate', () => {
+describe(FfmpegDeviceEnumerator, () => {
   test('Finds an Intel node as both a VAAPI and a QSV device', async () => {
     const enumerator = fakeMachine({ renderNodes: { renderD128: '0x8086' } });
 
@@ -91,7 +87,7 @@ describe('FfmpegDeviceEnumerator#enumerate', () => {
     const enumerator = fakeMachine({
       renderNodes: { renderD128: '0x8086' },
       nvidiaGpus: 1,
-      hwaccels: 'Hardware acceleration methods:\nvaapi\n',
+      hwaccels: { exitCode: 0, stdout: 'Hardware acceleration methods:\nvaapi\n' },
     });
 
     const ids = (await enumerator.enumerate()).map((device) => device.id);
@@ -106,9 +102,10 @@ describe('FfmpegDeviceEnumerator#enumerate', () => {
   });
 
   test('Fails when ffmpeg cannot even say what it was built with', async () => {
-    fakeMachine({ renderNodes: { renderD128: '0x8086' } });
-    const processRunner = new FakeProcessRunner([{ exitCode: 1, logLines: ['[fatal] Unrecognized option'] }]);
-    const enumerator = new FfmpegDeviceEnumerator(processRunner.asFfmpegProcessRunner());
+    const enumerator = fakeMachine({
+      renderNodes: { renderD128: '0x8086' },
+      hwaccels: { exitCode: 1, logLines: ['[fatal] Unrecognized option'] },
+    });
 
     await expect(enumerator.enumerate()).rejects.toThrow('hardware APIs FFmpeg was built with');
   });

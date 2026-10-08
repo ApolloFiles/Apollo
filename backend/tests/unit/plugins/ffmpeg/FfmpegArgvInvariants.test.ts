@@ -153,96 +153,141 @@ function optionGroups(args: string[]): { inputOptions: string[][], outputOptions
   return { inputOptions, outputOptions: group };
 }
 
-describe.each(CASES)('$name', (testCase) => {
-  describe.each(BIT_DEPTHS)('%s-bit input', (bitDepth) => {
-    const accels = accelsFor(testCase, bitDepth);
+type Run = {
+  readonly accelId: string;
+  readonly accel: Accel;
+  readonly bitDepth: VideoBitDepth;
+  readonly args: string[];
+  readonly graph: string | null;
+  /** `null` when the job leaves the choice to ffmpeg, which picks an image encoder for its image outputs */
+  readonly encoder: string | null;
+}
 
-    test.each(accels.map((accel) => [accel.id, accel] as const))('%s: input options stay before -i, output options after', (_, accel) => {
+type BuildAttempt = {
+  readonly accelId: string;
+  readonly run: Run | null;
+  readonly buildError: unknown;
+}
+
+type GraphRun = Run & { readonly graph: string };
+type HwRun = Run & { readonly accel: HwContext };
+
+const FRAMES_ON_GPU_BY_ENCODER = new Map([['h264_vaapi', true], ['libx264', false], ['png', false]]);
+const EIGHT_BIT_ENCODERS = new Set(['h264_nvenc', 'h264_qsv', 'h264_vaapi', 'libx264']);
+
+/** Builds while tests are collected, so a throwing builder becomes a failing row instead of a broken file */
+function buildAttemptsOf(testCase: Case, bitDepth: VideoBitDepth): BuildAttempt[] {
+  return accelsFor(testCase, bitDepth).map((accel) => {
+    try {
       const args = testCase.build(accel, bitDepth);
+      const encoder = args.includes('-c:v') ? args[args.indexOf('-c:v') + 1] : null;
+      return { accelId: accel.id, run: { accelId: accel.id, accel, bitDepth, args, graph: filterGraph(args), encoder }, buildError: null };
+    } catch (error) {
+      return { accelId: accel.id, run: null, buildError: error };
+    }
+  });
+}
 
-      const { inputOptions, outputOptions } = optionGroups(args);
+function hasGraph(run: Run): run is GraphRun {
+  return run.graph != null;
+}
 
-      expect(inputOptions.length).toBeGreaterThan(0);
-      for (const option of inputOptions.flat()) {
-        expect(OUTPUT_ONLY_OPTIONS, `${option} before -i`).not.toContain(option);
-      }
-      for (const option of outputOptions) {
-        expect(INPUT_ONLY_OPTIONS, `${option} after -i`).not.toContain(option);
-      }
-    });
+function isHw(run: Run): run is HwRun {
+  return run.accel instanceof HwContext;
+}
 
-    test.each(accels.map((accel) => [accel.id, accel] as const))('%s: every filter runs where its frames are', (_, accel) => {
-      const args = testCase.build(accel, bitDepth);
-      const graph = filterGraph(args);
-      if (graph == null) {
-        return;
-      }
+describe('FFmpeg argv invariants', () => {
+  describe.for(CASES)('$name', (testCase) => {
+    describe.for(BIT_DEPTHS.map((bitDepth) => ({ bitDepth })))('$bitDepth-bit input', ({ bitDepth }) => {
+      const buildAttempts = buildAttemptsOf(testCase, bitDepth);
+      const runs = buildAttempts.flatMap((attempt) => attempt.run ?? []);
+      const graphRuns = runs.filter(hasGraph);
+      const hwRuns = runs.filter(isHw);
 
-      const framesOnGpu = verifyFrameLocations(graph, accel);
+      test.for(buildAttempts)('Builds its arguments on $accelId', ({ buildError }) => {
+        expect(buildError).toBeNull();
+      });
 
-      const encoder = args[args.indexOf('-c:v') + 1];
-      if (encoder === 'h264_vaapi') {
-        expect(framesOnGpu, `${encoder} fed system-memory frames in ${graph}`).toBe(true);
-      } else if (encoder === 'libx264' || encoder === 'png' || encoder === undefined) {
-        expect(framesOnGpu, `${encoder ?? 'the image encoder'} fed device frames in ${graph}`).toBe(false);
-      }
-    });
+      test.for(runs)('Keeps input options before -i and output options after it on $accelId', ({ args }) => {
+        const { inputOptions, outputOptions } = optionGroups(args);
 
-    test.each(accels.map((accel) => [accel.id, accel] as const))('%s: device spellings are the verified ones', (_, accel) => {
-      const args = testCase.build(accel, bitDepth);
-      const graph = filterGraph(args) ?? '';
+        expect(inputOptions.length).toBeGreaterThan(0);
+        expect(inputOptions.flat().filter((option) => OUTPUT_ONLY_OPTIONS.has(option)), 'output options before -i').toEqual([]);
+        expect(outputOptions.filter((option) => INPUT_ONLY_OPTIONS.has(option)), 'input options after -i').toEqual([]);
+      });
 
-      const filters = parseGraph(graph).flatMap((segment) => segment.filters);
-      expect(filters, `pointless pass-through filter in ${graph}`).not.toContain('null');
-      expect(graph).not.toMatch(/vpp_qsv=[^,;]*h=-2/);
-      expect(graph).not.toMatch(/hwdownload(?!,format=)/);
-      expect(graph).not.toMatch(/format=(nv12|yuv420p)[^;]*\]?[^;]*overlay_(vaapi|qsv|cuda)/);
-      if (accel instanceof HwContext) {
+      test.for(graphRuns)('Runs every filter where its frames are on $accelId', ({ graph, accel }) => {
+        verifyFrameLocations(graph, accel);
+      });
+
+      test.for(graphRuns.filter((run) => run.encoder != null && FRAMES_ON_GPU_BY_ENCODER.has(run.encoder)))('Hands $encoder its frames where it takes them on $accelId', ({ graph, accel, encoder }) => {
+        const framesOnGpu = verifyFrameLocations(graph, accel);
+
+        expect(framesOnGpu, `${encoder} fed frames from the wrong memory in ${graph}`).toBe(FRAMES_ON_GPU_BY_ENCODER.get(encoder!));
+      });
+
+      test.for(graphRuns.filter((run) => run.encoder == null))('Hands the default image encoder frames in system memory on $accelId', ({ graph, accel }) => {
+        const framesOnGpu = verifyFrameLocations(graph, accel);
+
+        expect(framesOnGpu, `image encoder fed frames from the device in ${graph}`).toBe(false);
+      });
+
+      test.for(graphRuns)('Uses only the verified filter spellings on $accelId', ({ graph }) => {
+        const filters = parseGraph(graph).flatMap((segment) => segment.filters);
+
+        expect(filters, `pointless pass-through filter in ${graph}`).not.toContain('null');
+        expect(graph).not.toMatch(/vpp_qsv=[^,;]*h=-2/);
+        expect(graph).not.toMatch(/hwdownload(?!,format=)/);
+        expect(graph).not.toMatch(/format=(nv12|yuv420p)[^;]*\]?[^;]*overlay_(vaapi|qsv|cuda)/);
+      });
+
+      test.for(hwRuns)('Initialises the device and names it for the filters on $accelId', ({ args }) => {
         expect(args).toContain('-init_hw_device');
         expect(args).toContain('-filter_hw_device');
-        if (accel.mode !== 'encodeOnly') {
-          expect(args).toContain('-hwaccel_output_format');
-        }
-      }
-    });
+      });
 
-    test.each(accels.map((accel) => [accel.id, accel] as const))('%s: 8-bit output for 8-bit encoders', (_, accel) => {
-      const args = testCase.build(accel, bitDepth);
-      const graph = filterGraph(args) ?? '';
-      const encoder = args[args.indexOf('-c:v') + 1];
+      test.for(hwRuns.filter((run) => run.accel.mode === 'fullChain'))('Asks the decoder for device frames on $accelId', ({ args }) => {
+        expect(args).toContain('-hwaccel_output_format');
+      });
 
-      if (bitDepth === 10 && ['h264_nvenc', 'h264_qsv', 'h264_vaapi', 'libx264'].includes(encoder)) {
+      test.for(runs.filter((run) => run.bitDepth === 10 && run.encoder != null && EIGHT_BIT_ENCODERS.has(run.encoder)))('Converts to 8 bit for $encoder on $accelId', ({ graph, encoder }) => {
         expect(graph, `${encoder} would see 10-bit frames`).toMatch(/format=(nv12|yuv420p)/);
-      }
+      });
     });
   });
-});
 
-describe('live transcode burned-in subtitle', () => {
-  const INTEL_VAAPI = new HwContext(DEVICES[0], 'fullChain', 8);
-  const CUDA = new HwContext(DEVICES[3], 'fullChain', 8);
+  describe('live transcode burned-in subtitle', () => {
+    const INTEL_VAAPI = new HwContext(DEVICES[0], 'fullChain', 8);
+    const CUDA = new HwContext(DEVICES[3], 'fullChain', 8);
 
-  function subtitleChain(args: string[]): string {
-    const graph = filterGraph(args) ?? '';
-    return graph.split(';').find((segment) => segment.startsWith(`[0:${SUBTITLE_STREAM.index}]`)) ?? '';
-  }
+    function subtitleChain(args: string[]): string {
+      const graph = filterGraph(args) ?? '';
+      return graph.split(';').find((segment) => segment.startsWith(`[0:${SUBTITLE_STREAM.index}]`)) ?? '';
+    }
 
-  test('Sizes the subtitle canvas to the output video, whose size the canvas does not have to share', () => {
-    expect(subtitleChain(liveTranscode(SOFTWARE, 8, SUBTITLE_STREAM))).toBe('[0:3]scale=1920:1080[v1]');
-    expect(subtitleChain(liveTranscode(INTEL_VAAPI, 8, SUBTITLE_STREAM))).toBe('[0:3]scale=1920:1080,format=rgba,hwupload[v1]');
-    expect(subtitleChain(liveTranscode(CUDA, 8, SUBTITLE_STREAM))).toBe('[0:3]scale=1920:1080[v1]');
-    expect(subtitleChain(liveTranscode(SOFTWARE, 8, SUBTITLE_STREAM, 1920))).toBe('[0:3]scale=1920:1080[v0]');
+    test.for([
+      { accel: SOFTWARE, sourceWidth: 3840, expected: '[0:3]scale=1920:1080[v1]' },
+      { accel: INTEL_VAAPI, sourceWidth: 3840, expected: '[0:3]scale=1920:1080,format=rgba,hwupload[v1]' },
+      { accel: CUDA, sourceWidth: 3840, expected: '[0:3]scale=1920:1080[v1]' },
+      { accel: SOFTWARE, sourceWidth: 1920, expected: '[0:3]scale=1920:1080[v0]' },
+    ])('Sizes the subtitle canvas to the output video on $accel.id with a $sourceWidth px wide source', ({ accel, sourceWidth, expected }) => {
+      expect(subtitleChain(liveTranscode(accel, 8, SUBTITLE_STREAM, sourceWidth))).toBe(expected);
+    });
   });
-});
 
-describe('live transcode frame rate', () => {
-  test('Caps the encoder frame rate only when the source runs faster than the target', () => {
-    const capped = new VideoStreamArgumentsBuilder().build(SOFTWARE,videoStream(8), null, { ...TARGET, fps: 60, capFrameRate: true });
-    const kept = new VideoStreamArgumentsBuilder().build(SOFTWARE,videoStream(8), null, TARGET);
+  describe('live transcode frame rate', () => {
+    test('Caps the encoder frame rate, with a matching closed GOP, when the source runs faster than the target', () => {
+      const args = new VideoStreamArgumentsBuilder().build(SOFTWARE, videoStream(8), null, { ...TARGET, fps: 60, capFrameRate: true });
 
-    expect(capped.slice(capped.indexOf('-r'), capped.indexOf('-r') + 2)).toEqual(['-r', '60']);
-    expect(capped[capped.indexOf('-g') + 1]).toBe('120');
-    expect(capped[capped.indexOf('-flags:v') + 1]).toBe('+cgop');
-    expect(kept).not.toContain('-r');
+      expect(args.slice(args.indexOf('-r'), args.indexOf('-r') + 2)).toEqual(['-r', '60']);
+      expect(args[args.indexOf('-g') + 1]).toBe('120');
+      expect(args[args.indexOf('-flags:v') + 1]).toBe('+cgop');
+    });
+
+    test('Leaves the encoder frame rate alone when the source does not run faster than the target', () => {
+      const args = new VideoStreamArgumentsBuilder().build(SOFTWARE, videoStream(8), null, TARGET);
+
+      expect(args).not.toContain('-r');
+    });
   });
 });

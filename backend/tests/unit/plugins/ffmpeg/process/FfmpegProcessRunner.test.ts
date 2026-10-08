@@ -7,112 +7,128 @@ vi.mock('node:child_process', () => ({
   default: { spawn: vi.fn() },
 }));
 
-const spawnMock = vi.mocked(ChildProcess.spawn);
+describe(FfmpegProcessRunner, () => {
+  const spawnMock = vi.mocked(ChildProcess.spawn);
+  let runner: FfmpegProcessRunner;
 
-function spawnedArgs(): string[] {
-  return spawnMock.mock.calls[0][1] as string[];
-}
-
-function spawnedOptions(): ChildProcess.SpawnOptions {
-  return spawnMock.mock.calls[0][2] as ChildProcess.SpawnOptions;
-}
-
-beforeEach(() => {
-  spawnMock.mockImplementation(() => new FakeChildProcess().asChildProcess());
-});
-
-describe('FfmpegProcessRunner#spawn', () => {
-  test('Runs the ffmpeg executable', () => {
-    new FfmpegProcessRunner().spawn([]);
-
-    expect(spawnMock.mock.calls[0][0]).toBe('ffmpeg');
+  beforeEach(() => {
+    spawnMock.mockImplementation(() => new FakeChildProcess().asChildProcess());
+    runner = new FfmpegProcessRunner();
   });
 
-  test('Appends the callers arguments to the base arguments', () => {
-    new FfmpegProcessRunner().spawn(['-i', 'input.mkv', 'output.mkv']);
+  function spawnedArgs(): string[] {
+    return spawnMock.mock.calls[0][1] as string[];
+  }
+
+  function spawnedArgAfter(flag: string): string | undefined {
+    const args = spawnedArgs();
+    return args[args.indexOf(flag) + 1];
+  }
+
+  function spawnedOptions(): ChildProcess.SpawnOptions {
+    return spawnMock.mock.calls[0][2] as ChildProcess.SpawnOptions;
+  }
+
+  test('Runs the ffmpeg executable', () => {
+    runner.spawn([]);
+
+    expect(spawnMock).toHaveBeenCalledExactlyOnceWith('ffmpeg', expect.any(Array), expect.any(Object));
+  });
+
+  test("Appends the caller's arguments to the base arguments", () => {
+    runner.spawn(['-i', 'input.mkv', 'output.mkv']);
 
     expect(spawnedArgs().slice(-3)).toEqual(['-i', 'input.mkv', 'output.mkv']);
   });
 
   test('Requests progress on a dedicated file descriptor', () => {
-    new FfmpegProcessRunner().spawn([]);
+    runner.spawn([]);
 
-    expect(spawnedArgs()).toContain('-progress');
-    expect(spawnedArgs()[spawnedArgs().indexOf('-progress') + 1]).toBe('pipe:3');
+    expect(spawnedArgAfter('-progress')).toBe('pipe:3');
     expect(spawnedOptions().stdio).toEqual(['ignore', 'ignore', 'pipe', 'pipe']);
   });
 
   test('Disables the stats output that would otherwise share stderr with the log', () => {
-    new FfmpegProcessRunner().spawn([]);
+    runner.spawn([]);
 
     expect(spawnedArgs()).toContain('-nostats');
   });
 
   test('Keeps ffmpeg from touching stdin and from printing its banner', () => {
-    new FfmpegProcessRunner().spawn([]);
+    runner.spawn([]);
 
     expect(spawnedArgs()).toContain('-nostdin');
     expect(spawnedArgs()).toContain('-hide_banner');
   });
 
   test('Logs at info level with the level prefix by default', () => {
-    new FfmpegProcessRunner().spawn([]);
+    runner.spawn([]);
 
-    expect(spawnedArgs()[spawnedArgs().indexOf('-loglevel') + 1]).toBe('level+info');
+    expect(spawnedArgAfter('-loglevel')).toBe('level+info');
   });
 
   test('Keeps the level prefix when the caller raises the verbosity', () => {
-    new FfmpegProcessRunner().spawn([], { logVerbosity: 'debug' });
+    runner.spawn([], { logVerbosity: 'debug' });
 
-    expect(spawnedArgs()[spawnedArgs().indexOf('-loglevel') + 1]).toBe('level+debug');
+    expect(spawnedArgAfter('-loglevel')).toBe('level+debug');
   });
 
   test('Reports progress once a second by default', () => {
-    new FfmpegProcessRunner().spawn([]);
+    runner.spawn([]);
 
-    expect(spawnedArgs()[spawnedArgs().indexOf('-stats_period') + 1]).toBe('1');
+    expect(spawnedArgAfter('-stats_period')).toBe('1');
   });
 
   test('Honors a custom progress period', () => {
-    new FfmpegProcessRunner().spawn([], { progressPeriodInSeconds: 0.5 });
+    runner.spawn([], { progressPeriodInSeconds: 0.5 });
 
-    expect(spawnedArgs()[spawnedArgs().indexOf('-stats_period') + 1]).toBe('0.5');
+    expect(spawnedArgAfter('-stats_period')).toBe('0.5');
   });
 
-  test('Pipes stdout only when it is supposed to be captured', () => {
-    new FfmpegProcessRunner().spawn([], { captureStdout: true });
+  test('Pipes stdout when it is supposed to be captured', () => {
+    runner.spawn([], { captureStdout: true });
 
     expect(spawnedOptions().stdio).toEqual(['ignore', 'pipe', 'pipe', 'pipe']);
   });
 
-  test('Falls back to the systems temporary directory when no working directory is given', () => {
-    new FfmpegProcessRunner().spawn([]);
+  test("Falls back to the system's temporary directory when no working directory is given", () => {
+    vi.spyOn(Os, 'tmpdir').mockReturnValue('/tmp/apollo-test');
 
-    expect(spawnedOptions().cwd).toBe(Os.tmpdir());
+    runner.spawn([]);
+
+    expect(spawnedOptions().cwd).toBe('/tmp/apollo-test');
   });
 
   test('Honors the given working directory', () => {
-    new FfmpegProcessRunner().spawn([], { cwd: '/some/work/dir' });
+    runner.spawn([], { cwd: '/some/work/dir' });
 
     expect(spawnedOptions().cwd).toBe('/some/work/dir');
   });
 
   test('Force-kills a process that exceeds its timeout', () => {
-    new FfmpegProcessRunner().spawn([], { timeoutInMillis: 15_000 });
+    runner.spawn([], { timeoutInMillis: 15_000 });
 
     expect(spawnedOptions()).toMatchObject({ timeout: 15_000, killSignal: 'SIGKILL' });
   });
 
   test('Does not impose a timeout by default', () => {
-    new FfmpegProcessRunner().spawn([]);
+    runner.spawn([]);
 
     expect(spawnedOptions().timeout).toBeUndefined();
   });
 
   test('Returns a handle for the spawned process', () => {
-    const handle = new FfmpegProcessRunner().spawn(['-i', 'input.mkv']);
+    const handle = runner.spawn(['-i', 'input.mkv']);
 
     expect(handle.getPid()).toBe(4242);
-    expect(handle.getArgs()).toEqual(spawnedArgs());
+    expect(handle.getArgs()).toEqual([
+      '-hide_banner',
+      '-nostdin',
+      '-nostats',
+      '-loglevel', 'level+info',
+      '-stats_period', '1',
+      '-progress', 'pipe:3',
+      '-i', 'input.mkv',
+    ]);
   });
 });

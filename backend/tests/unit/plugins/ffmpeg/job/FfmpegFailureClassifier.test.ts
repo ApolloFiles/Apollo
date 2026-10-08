@@ -18,7 +18,7 @@ async function classify(logLines: string[], exitCode = 1, error: unknown = new E
   return { failure: classifier.classify(handle.getExitResult(), error), classifier };
 }
 
-describe('FfmpegFailureClassifier#classify', () => {
+describe(FfmpegFailureClassifier, () => {
   test('A missing driver library is a device failure worth retrying elsewhere', async () => {
     const { failure } = await classify([
       '[AVHWDeviceContext @ 0x55a6] [error] Cannot load libcuda.so.1',
@@ -63,11 +63,15 @@ describe('FfmpegFailureClassifier#classify', () => {
     expect(failure).toMatchObject({ kind: 'device', retryable: true });
   });
 
-  test('Tells decoder, encoder and graph failures apart', async () => {
-    expect((await classify(['[av1 @ 0x1] [error] Failed setup for format vaapi: hwaccel initialisation returned error.'], 69)).failure.kind).toBe('decoder');
-    expect((await classify(['[h264_nvenc @ 0x1] [error] 10 bit encode not supported'], 218)).failure.kind).toBe('encoder');
-    expect((await classify(['[error] Impossible to convert between the formats supported by the filter \'graph -1 input from stream 0:0\' and the filter \'auto_scale_0\''], 218)).failure.kind).toBe('graph');
-    expect((await classify(['[error] Reconfiguring filter graph because video parameters changed to yuv420p10le, hwaccel changed'], 218)).failure.kind).toBe('mid-stream');
+  test.for([
+    { kind: 'decoder', exitCode: 69, logLine: '[av1 @ 0x1] [error] Failed setup for format vaapi: hwaccel initialisation returned error.' },
+    { kind: 'encoder', exitCode: 218, logLine: '[h264_nvenc @ 0x1] [error] 10 bit encode not supported' },
+    { kind: 'graph', exitCode: 218, logLine: `[error] Impossible to convert between the formats supported by the filter 'graph -1 input from stream 0:0' and the filter 'auto_scale_0'` },
+    { kind: 'mid-stream', exitCode: 218, logLine: '[error] Reconfiguring filter graph because video parameters changed to yuv420p10le, hwaccel changed' },
+  ])('Tells a $kind failure apart from the others', async ({ kind, exitCode, logLine }) => {
+    const { failure } = await classify([logLine], exitCode);
+
+    expect(failure.kind).toBe(kind);
   });
 
   test('Anything unrecognised is retryable, which costs a process at worst', async () => {

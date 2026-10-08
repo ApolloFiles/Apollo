@@ -5,17 +5,21 @@ function createConfig(devices: string): FfmpegDeviceConfig {
   return new FfmpegDeviceConfig({ config: { ffmpeg: { devices } } } as unknown as AppConfiguration);
 }
 
-beforeEach(() => {
-  vi.spyOn(console, 'info').mockImplementation(() => undefined);
-  vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-});
+describe(FfmpegDeviceConfig, () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
 
-describe('FfmpegDeviceConfig#getSelection', () => {
-  test.each(['auto', ' AUTO ', ''])("'%s' means every device", (value) => {
+  test.for([
+    { value: 'auto' },
+    { value: ' AUTO ' },
+    { value: '' },
+  ])("Uses every device for '$value'", ({ value }) => {
     expect(createConfig(value).getSelection()).toEqual({ mode: 'auto' });
   });
 
-  test("'off' means no device", () => {
+  test("Uses no device for 'off'", () => {
     expect(createConfig('off').getSelection()).toEqual({ mode: 'off' });
   });
 
@@ -26,12 +30,17 @@ describe('FfmpegDeviceConfig#getSelection', () => {
     });
   });
 
-  test('Drops ids it cannot parse and says so', () => {
-    expect(createConfig('nvidia,cuda:0').getSelection()).toEqual({ mode: 'allowlist', deviceIds: ['cuda:0'] });
+  test('Drops ids it cannot parse, and says so', () => {
+    const selection = createConfig('nvidia,cuda:0').getSelection();
+
+    expect(selection).toEqual({ mode: 'allowlist', deviceIds: ['cuda:0'] });
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("'nvidia'"));
   });
 
-  test('Falls back to auto when nothing in the list is usable', () => {
-    expect(createConfig('nvidia').getSelection()).toEqual({ mode: 'auto' });
+  test('Falls back to every device when nothing in the list is usable, and says so', () => {
+    const selection = createConfig('nvidia').getSelection();
+
+    expect(selection).toEqual({ mode: 'auto' });
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("APOLLO_FFMPEG_DEVICES='nvidia'"));
   });
 });

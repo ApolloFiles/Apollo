@@ -5,319 +5,360 @@ import FakeChildProcess, { flushStreams } from './FakeChildProcess.js';
 
 const PROGRESS_BLOCK = 'frame=75\nfps=24.50\nout_time_us=2920000\nspeed=31.9x\nprogress=continue\n';
 
-let childProcess: FakeChildProcess;
+describe(FfmpegHandle, () => {
+  let childProcess: FakeChildProcess;
 
-function createHandle(options: Partial<FfmpegHandleOptions> = {}): FfmpegHandle {
-  return new FfmpegHandle(childProcess.asChildProcess(), ['-i', 'input.mkv'], {
-    captureFullLog: false,
-    captureStdout: false,
-    ...options,
-  });
-}
-
-beforeEach(() => {
-  childProcess = new FakeChildProcess();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-});
-
-describe('FfmpegHandle log handling', () => {
-  test('Emits log lines that arrive split across chunk boundaries', async () => {
-    const handle = createHandle();
-    const logLines: FfmpegLogLine[] = [];
-    handle.on('log', (logLine) => logLines.push(logLine));
-
-    childProcess.stderr.write('[info] first line\n[warn');
-    await flushStreams();
-    childProcess.stderr.write('ing] second line\n');
-    await flushStreams();
-
-    expect(logLines.map((logLine) => [logLine.level, logLine.message])).toEqual([
-      ['info', 'first line'],
-      ['warning', 'second line'],
-    ]);
+  beforeEach(() => {
+    childProcess = new FakeChildProcess();
   });
 
-  test('Ignores a line that never got terminated', async () => {
-    const handle = createHandle();
-    const logLines: FfmpegLogLine[] = [];
-    handle.on('log', (logLine) => logLines.push(logLine));
-
-    childProcess.stderr.write('[info] incomplete');
-    await flushStreams();
-
-    expect(logLines).toHaveLength(0);
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  test('Keeps warnings and errors around after they fell out of the log tail', async () => {
-    const handle = createHandle();
+  function createHandle(options: Partial<FfmpegHandleOptions> = {}): FfmpegHandle {
+    return new FfmpegHandle(childProcess.asChildProcess(), ['-i', 'input.mkv'], {
+      captureFullLog: false,
+      captureStdout: false,
+      ...options,
+    });
+  }
 
-    childProcess.stderr.write('[error] the actual failure reason\n');
-    for (let i = 0; i < 100; ++i) {
-      childProcess.stderr.write(`[debug] noise ${i}\n`);
-    }
-    await flushStreams();
+  describe('reading the log', () => {
+    test('Emits log lines that arrive split across chunk boundaries', async () => {
+      const handle = createHandle();
+      const logLines: FfmpegLogLine[] = [];
+      handle.on('log', (logLine) => logLines.push(logLine));
 
-    expect(handle.getLogTail()).not.toContain('the actual failure reason');
-    expect(handle.getLogProblems()).toContain('the actual failure reason');
+      childProcess.stderr.write('[info] first line\n[warn');
+      await flushStreams();
+      childProcess.stderr.write('ing] second line\n');
+      await flushStreams();
+
+      expect(logLines).toMatchObject([
+        { level: 'info', message: 'first line' },
+        { level: 'warning', message: 'second line' },
+      ]);
+    });
+
+    test('Ignores a line that never got terminated', async () => {
+      const handle = createHandle();
+      const logLines: FfmpegLogLine[] = [];
+      handle.on('log', (logLine) => logLines.push(logLine));
+
+      childProcess.stderr.write('[info] incomplete');
+      await flushStreams();
+
+      expect(logLines).toEqual([]);
+    });
+
+    test('Keeps warnings and errors around after they fell out of the log tail', async () => {
+      const handle = createHandle();
+      const noise = Array.from({ length: 100 }, (_, i) => `[debug] noise ${i}\n`).join('');
+
+      childProcess.stderr.write(`[error] the actual failure reason\n${noise}`);
+      await flushStreams();
+
+      expect(handle.getLogTail()).not.toContain('the actual failure reason');
+      expect(handle.getLogProblems()).toBe('[error] the actual failure reason');
+    });
+
+    test('Does not collect the full log unless asked to', async () => {
+      const handle = createHandle();
+
+      childProcess.stderr.write('[info] hello\n');
+      await flushStreams();
+
+      expect(handle.getFullLog()).toBeNull();
+    });
+
+    test('Collects the full log when asked to', async () => {
+      const handle = createHandle({ captureFullLog: true });
+
+      childProcess.stderr.write('[info] hello\n[info] world\n');
+      await flushStreams();
+
+      expect(handle.getFullLog()).toBe('[info] hello\n[info] world');
+    });
+
+    test('Logs a failure to read the process output instead of losing the exit result', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const handle = createHandle();
+
+      childProcess.stderr.destroy(new Error('EIO'));
+      await flushStreams();
+      childProcess.emit('close', 0, null);
+
+      await expect(handle.waitForExit()).resolves.toMatchObject({ exitCode: 0 });
+      expect(console.error).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Failed to read the output'), new Error('EIO'));
+    });
   });
 
-  test('Does not collect the full log unless asked to', async () => {
-    const handle = createHandle();
+  describe('reading progress', () => {
+    test('Emits a progress update once its block is complete', async () => {
+      const handle = createHandle();
+      const progressUpdates: FfmpegProgress[] = [];
+      handle.on('progress', (progress) => progressUpdates.push(progress));
 
-    childProcess.stderr.write('[info] hello\n');
-    await flushStreams();
+      childProcess.progress.write(PROGRESS_BLOCK);
+      await flushStreams();
 
-    expect(handle.getFullLog()).toBeNull();
+      expect(progressUpdates).toMatchObject([{ frame: 75, fps: 24.5, outTimeInMillis: 2920, speed: 31.9 }]);
+      expect(handle.getLastProgress()).toBe(progressUpdates[0]);
+    });
+
+    test('Remembers the highest reported fps', async () => {
+      const handle = createHandle();
+
+      childProcess.progress.write('fps=30.0\nprogress=continue\n');
+      childProcess.progress.write('fps=80.5\nprogress=continue\n');
+      childProcess.progress.write('fps=12.0\nprogress=end\n');
+      await flushStreams();
+
+      expect(handle.getStats().peakFps).toBe(80.5);
+    });
+
+    test('Reports no progress before the first block arrives', () => {
+      const handle = createHandle();
+
+      expect(handle.getLastProgress()).toBeNull();
+      expect(handle.getStats().peakFps).toBeNull();
+    });
   });
 
-  test('Collects the full log when asked to', async () => {
-    const handle = createHandle({ captureFullLog: true });
+  describe('capturing stdout', () => {
+    test('Refuses to hand out stdout that was not captured', async () => {
+      const handle = createHandle();
 
-    childProcess.stderr.write('[info] hello\n[info] world\n');
-    await flushStreams();
+      childProcess.stdout.write('some output\n');
+      await flushStreams();
 
-    expect(handle.getFullLog()).toBe('[info] hello\n[info] world');
-  });
-});
+      expect(() => handle.getStdout()).toThrow(/not captured/);
+    });
 
-describe('FfmpegHandle stream failures', () => {
-  test('Logs a failure to read the process output instead of losing the exit result', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const handle = createHandle();
+    test('Captures stdout when asked to', async () => {
+      const handle = createHandle({ captureStdout: true });
 
-    childProcess.stderr.destroy(new Error('EIO'));
-    await flushStreams();
-    childProcess.emit('close', 0, null);
+      childProcess.stdout.write('first\n');
+      childProcess.stdout.write('second\n');
+      await flushStreams();
 
-    expect(await handle.waitForExit()).toMatchObject({ exitCode: 0 });
-    expect(consoleError).toHaveBeenCalledOnce();
-  });
-});
-
-describe('FfmpegHandle progress handling', () => {
-  test('Emits a progress update once its block is complete', async () => {
-    const handle = createHandle();
-    const progressUpdates: FfmpegProgress[] = [];
-    handle.on('progress', (progress) => progressUpdates.push(progress));
-
-    childProcess.progress.write(PROGRESS_BLOCK);
-    await flushStreams();
-
-    expect(progressUpdates).toHaveLength(1);
-    expect(progressUpdates[0]).toMatchObject({ frame: 75, fps: 24.5, outTimeInMillis: 2920, speed: 31.9 });
-    expect(handle.getLastProgress()).toBe(progressUpdates[0]);
+      expect(handle.getStdout()).toBe('first\nsecond\n');
+    });
   });
 
-  test('Remembers the highest reported fps', async () => {
-    const handle = createHandle();
+  describe('when the process exits', () => {
+    test('Resolves with the exit code', async () => {
+      const handle = createHandle();
 
-    childProcess.progress.write('fps=30.0\nprogress=continue\n');
-    childProcess.progress.write('fps=80.5\nprogress=continue\n');
-    childProcess.progress.write('fps=12.0\nprogress=end\n');
-    await flushStreams();
+      childProcess.simulateClose(0);
 
-    expect(handle.getStats().peakFps).toBe(80.5);
+      await expect(handle.waitForExit()).resolves.toMatchObject({ exitCode: 0, signal: null });
+      expect(handle.hasExited()).toBe(true);
+      expect(handle.getExitResult()).toMatchObject({ exitCode: 0 });
+    });
+
+    test('Resolves a non-zero exit code instead of rejecting', async () => {
+      const handle = createHandle();
+
+      childProcess.simulateClose(254);
+
+      await expect(handle.waitForExit()).resolves.toMatchObject({ exitCode: 254 });
+    });
+
+    test('Reports the signal a killed process died from', async () => {
+      const handle = createHandle();
+
+      childProcess.simulateClose(null, 'SIGKILL');
+
+      await expect(handle.waitForExit()).resolves.toMatchObject({ exitCode: null, signal: 'SIGKILL' });
+    });
+
+    test('Measures the runtime', async () => {
+      vi.useFakeTimers({ toFake: ['performance'] });
+      const handle = createHandle();
+      vi.advanceTimersByTime(1_500);
+
+      childProcess.simulateClose(0);
+
+      await expect(handle.waitForExit()).resolves.toMatchObject({ runtimeInMillis: 1_500 });
+      expect(handle.getStats().runtimeInMillis).toBe(1_500);
+    });
   });
 
-  test('Reports no progress before the first block arrives', () => {
-    const handle = createHandle();
+  describe('when the process could not be spawned', () => {
+    test('Rejects with the spawn error', async () => {
+      const handle = createHandle();
 
-    expect(handle.getLastProgress()).toBeNull();
-    expect(handle.getStats().peakFps).toBeNull();
-  });
-});
+      childProcess.simulateSpawnFailure(new Error('spawn ffmpeg ENOENT'));
 
-describe('FfmpegHandle stdout capturing', () => {
-  test('Refuses to hand out stdout that was not captured', async () => {
-    const handle = createHandle();
+      await expect(handle.waitForExit()).rejects.toThrow(new Error('spawn ffmpeg ENOENT'));
+    });
 
-    childProcess.stdout.write('some output\n');
-    await flushStreams();
+    test('Does not resolve with a close that follows the spawn failure', async () => {
+      const handle = createHandle();
 
-    expect(() => handle.getStdout()).toThrow(/not captured/);
-  });
+      childProcess.simulateSpawnFailure(new Error('spawn ffmpeg ENOENT'));
+      childProcess.simulateClose(null);
 
-  test('Captures stdout when asked to', async () => {
-    const handle = createHandle({ captureStdout: true });
-
-    childProcess.stdout.write('first\n');
-    childProcess.stdout.write('second\n');
-    await flushStreams();
-
-    expect(handle.getStdout()).toBe('first\nsecond\n');
-  });
-});
-
-describe('FfmpegHandle exit handling', () => {
-  test('Resolves with the exit code', async () => {
-    const handle = createHandle();
-
-    childProcess.simulateClose(0);
-
-    expect(await handle.waitForExit()).toMatchObject({ exitCode: 0, signal: null });
-    expect(handle.hasExited()).toBe(true);
-    expect(handle.getExitResult()).toMatchObject({ exitCode: 0 });
+      await expect(handle.waitForExit()).rejects.toThrow(new Error('spawn ffmpeg ENOENT'));
+      expect(handle.getExitResult()).toBeNull();
+    });
   });
 
-  test('Resolves a non-zero exit code instead of rejecting', async () => {
-    const handle = createHandle();
+  describe('while the process is running', () => {
+    test('Reports it as running', () => {
+      const handle = createHandle();
 
-    childProcess.simulateClose(254);
+      expect(handle.hasExited()).toBe(false);
+      expect(handle.getExitResult()).toBeNull();
+    });
 
-    expect(await handle.waitForExit()).toMatchObject({ exitCode: 254 });
+    test('Does not count it as crashed', () => {
+      const handle = createHandle();
+
+      expect(handle.crashed()).toBe(false);
+    });
   });
 
-  test('Reports the signal a killed process died from', async () => {
-    const handle = createHandle();
+  describe('when asked to shut down', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
 
-    childProcess.simulateClose(null, 'SIGKILL');
+    test('Asks the process to terminate right away', () => {
+      const handle = createHandle();
 
-    expect(await handle.waitForExit()).toMatchObject({ exitCode: null, signal: 'SIGKILL' });
+      void handle.shutdown(5_000);
+
+      expect(childProcess.receivedKillSignals).toEqual(['SIGTERM']);
+    });
+
+    test('Resolves with the exit of a process that terminates in time', async () => {
+      const handle = createHandle();
+
+      const shutdownPromise = handle.shutdown(5_000);
+      childProcess.simulateClose(255);
+
+      await expect(shutdownPromise).resolves.toMatchObject({ exitCode: 255 });
+    });
+
+    test('Does not force-kill a process that terminated in time', async () => {
+      const handle = createHandle();
+      const shutdownPromise = handle.shutdown(5_000);
+      childProcess.simulateClose(255);
+      await shutdownPromise;
+
+      await vi.advanceTimersByTimeAsync(5_000);
+
+      expect(childProcess.receivedKillSignals).toEqual(['SIGTERM']);
+    });
+
+    test('Force-kills a process that ignores the grace period', async () => {
+      const handle = createHandle();
+      void handle.shutdown(5_000);
+
+      await vi.advanceTimersByTimeAsync(5_000);
+
+      expect(childProcess.receivedKillSignals).toEqual(['SIGTERM', 'SIGKILL']);
+    });
+
+    test('Resolves with the exit of a force-killed process', async () => {
+      const handle = createHandle();
+      const shutdownPromise = handle.shutdown(5_000);
+      await vi.advanceTimersByTimeAsync(5_000);
+
+      childProcess.simulateClose(null, 'SIGKILL');
+
+      await expect(shutdownPromise).resolves.toMatchObject({ signal: 'SIGKILL' });
+    });
+
+    test('Does not signal an already exited process', async () => {
+      const handle = createHandle();
+      childProcess.simulateClose(0);
+      await handle.waitForExit();
+
+      const shutdownPromise = handle.shutdown();
+
+      await expect(shutdownPromise).resolves.toMatchObject({ exitCode: 0 });
+      expect(childProcess.receivedKillSignals).toEqual([]);
+    });
   });
 
-  test('Measures the runtime', async () => {
-    const handle = createHandle();
+  describe('when killed', () => {
+    test('Force-kills the process right away', () => {
+      const handle = createHandle();
 
-    childProcess.simulateClose(0);
-    const exitResult = await handle.waitForExit();
+      void handle.kill();
 
-    expect(exitResult.runtimeInMillis).toBeGreaterThanOrEqual(0);
-    expect(handle.getStats().runtimeInMillis).toBe(exitResult.runtimeInMillis);
+      expect(childProcess.receivedKillSignals).toEqual(['SIGKILL']);
+    });
+
+    test('Resolves with the exit of the killed process', async () => {
+      const handle = createHandle();
+      const killPromise = handle.kill();
+
+      childProcess.simulateClose(null, 'SIGKILL');
+
+      await expect(killPromise).resolves.toMatchObject({ signal: 'SIGKILL' });
+    });
+
+    test('Does not signal an already exited process', async () => {
+      const handle = createHandle();
+      childProcess.simulateClose(0);
+      await handle.waitForExit();
+
+      const killPromise = handle.kill();
+
+      await expect(killPromise).resolves.toMatchObject({ exitCode: 0 });
+      expect(childProcess.receivedKillSignals).toEqual([]);
+    });
   });
 
-  test('Rejects when the process could not be spawned', async () => {
-    const handle = createHandle();
+  describe('deciding whether the process crashed', () => {
+    test('Does not count a clean exit as a crash', async () => {
+      const handle = createHandle();
 
-    childProcess.simulateSpawnFailure(new Error('spawn ffmpeg ENOENT'));
+      childProcess.simulateClose(0);
+      await handle.waitForExit();
 
-    await expect(handle.waitForExit()).rejects.toThrow('spawn ffmpeg ENOENT');
-  });
+      expect(handle.crashed()).toBe(false);
+    });
 
-  test('Does not resolve with a close that follows a spawn failure', async () => {
-    const handle = createHandle();
+    test('Counts an error exit nobody asked for as a crash', async () => {
+      const handle = createHandle();
 
-    childProcess.simulateSpawnFailure(new Error('spawn ffmpeg ENOENT'));
-    childProcess.simulateClose(null);
+      childProcess.simulateClose(190);
+      await handle.waitForExit();
 
-    await expect(handle.waitForExit()).rejects.toThrow('spawn ffmpeg ENOENT');
-    expect(handle.getExitResult()).toBeNull();
-  });
+      expect(handle.crashed()).toBe(true);
+    });
 
-  test('Reports a not yet exited process as running', () => {
-    const handle = createHandle();
+    test('Counts a signal nobody sent – the OOM killer, say – as a crash', async () => {
+      const handle = createHandle();
 
-    expect(handle.hasExited()).toBe(false);
-    expect(handle.getExitResult()).toBeNull();
-  });
-});
+      childProcess.simulateClose(null, 'SIGKILL');
+      await handle.waitForExit();
 
-describe('FfmpegHandle#shutdown', () => {
-  test('Asks the process to terminate before force-killing it', async () => {
-    vi.useFakeTimers();
-    const handle = createHandle();
+      expect(handle.crashed()).toBe(true);
+    });
 
-    const shutdownPromise = handle.shutdown(5_000);
-    expect(childProcess.receivedKillSignals).toEqual(['SIGTERM']);
+    test('Does not count dying from the signal it sent as a crash', async () => {
+      const handle = createHandle();
+      childProcess.on('killed', () => childProcess.simulateClose(null, 'SIGKILL'));
 
-    childProcess.simulateClose(255);
-    await expect(shutdownPromise).resolves.toMatchObject({ exitCode: 255 });
-    expect(childProcess.receivedKillSignals).toEqual(['SIGTERM']);
-  });
+      await handle.kill();
 
-  test('Force-kills a process that ignores the grace period', async () => {
-    vi.useFakeTimers();
-    const handle = createHandle();
+      expect(handle.crashed()).toBe(false);
+    });
 
-    const shutdownPromise = handle.shutdown(5_000);
-    await vi.advanceTimersByTimeAsync(5_000);
+    test('Does not count an error exit after being asked to shut down as a crash', async () => {
+      const handle = createHandle();
+      childProcess.on('killed', () => childProcess.simulateClose(255));
 
-    expect(childProcess.receivedKillSignals).toEqual(['SIGTERM', 'SIGKILL']);
+      await handle.shutdown();
 
-    childProcess.simulateClose(null, 'SIGKILL');
-    await expect(shutdownPromise).resolves.toMatchObject({ signal: 'SIGKILL' });
-  });
-
-  test('Does not signal an already exited process', async () => {
-    const handle = createHandle();
-    childProcess.simulateClose(0);
-    await handle.waitForExit();
-
-    expect(await handle.shutdown()).toMatchObject({ exitCode: 0 });
-    expect(childProcess.receivedKillSignals).toEqual([]);
-  });
-});
-
-describe('FfmpegHandle#crashed', () => {
-  test('A clean exit is not a crash', async () => {
-    const handle = createHandle();
-
-    childProcess.simulateClose(0);
-    await handle.waitForExit();
-
-    expect(handle.crashed()).toBe(false);
-  });
-
-  test('An error exit nobody asked for is a crash', async () => {
-    const handle = createHandle();
-
-    childProcess.simulateClose(190);
-    await handle.waitForExit();
-
-    expect(handle.crashed()).toBe(true);
-  });
-
-  test('A signal nobody sent – the OOM killer, say – is a crash', async () => {
-    const handle = createHandle();
-
-    childProcess.simulateClose(null, 'SIGKILL');
-    await handle.waitForExit();
-
-    expect(handle.crashed()).toBe(true);
-  });
-
-  test('Dying from the signal we sent is not a crash', async () => {
-    const handle = createHandle();
-    childProcess.on('killed', () => childProcess.simulateClose(null, 'SIGKILL'));
-
-    await handle.kill();
-
-    expect(handle.crashed()).toBe(false);
-  });
-
-  test('Exiting with an error after being asked to shut down is not a crash', async () => {
-    const handle = createHandle();
-    childProcess.on('killed', () => childProcess.simulateClose(255));
-
-    await handle.shutdown();
-
-    expect(handle.crashed()).toBe(false);
-  });
-
-  test('A process that is still running has not crashed', () => {
-    expect(createHandle().crashed()).toBe(false);
-  });
-});
-
-describe('FfmpegHandle#kill', () => {
-  test('Force-kills the process right away', async () => {
-    const handle = createHandle();
-
-    const killPromise = handle.kill();
-    expect(childProcess.receivedKillSignals).toEqual(['SIGKILL']);
-
-    childProcess.simulateClose(null, 'SIGKILL');
-    await expect(killPromise).resolves.toMatchObject({ signal: 'SIGKILL' });
-  });
-
-  test('Does not signal an already exited process', async () => {
-    const handle = createHandle();
-    childProcess.simulateClose(0);
-    await handle.waitForExit();
-
-    expect(await handle.kill()).toMatchObject({ exitCode: 0 });
-    expect(childProcess.receivedKillSignals).toEqual([]);
+      expect(handle.crashed()).toBe(false);
+    });
   });
 });

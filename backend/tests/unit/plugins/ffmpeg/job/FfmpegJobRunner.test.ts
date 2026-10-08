@@ -1,27 +1,22 @@
+import type { Mock } from 'vitest';
+import type { DeepMockProxy } from 'vitest-mock-extended';
 import { type Accel, SOFTWARE } from '#src/plugins/official/ffmpeg/accel/Accel.js';
-import { createFfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
 import type FfmpegCapabilityCache from '#src/plugins/official/ffmpeg/accel/FfmpegCapabilityCache.js';
+import { createFfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
 import HwContext from '#src/plugins/official/ffmpeg/accel/HwContext.js';
 import type FfmpegCandidatePlanner from '#src/plugins/official/ffmpeg/job/FfmpegCandidatePlanner.js';
 import type { FfmpegJob } from '#src/plugins/official/ffmpeg/job/FfmpegJob.js';
 import FfmpegJobRunner from '#src/plugins/official/ffmpeg/job/FfmpegJobRunner.js';
-import FfmpegJobStats, { type FfmpegAttemptRecord } from '#src/plugins/official/ffmpeg/job/FfmpegJobStats.js';
+import type FfmpegJobStats from '#src/plugins/official/ffmpeg/job/FfmpegJobStats.js';
+import type { FfmpegAttemptRecord } from '#src/plugins/official/ffmpeg/job/FfmpegJobStats.js';
 import UnretryableFfmpegJobError from '#src/plugins/official/ffmpeg/job/UnretryableFfmpegJobError.js';
 import type FfmpegHandle from '#src/plugins/official/ffmpeg/process/FfmpegHandle.js';
+import { flushStreams } from '#tests/unit/plugins/ffmpeg/process/FakeChildProcess.js';
 import FakeProcessRunner from '#tests/unit/plugins/ffmpeg/process/FakeProcessRunner.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
 const CUDA_DEVICE = createFfmpegDevice('cuda', '0', 'nvidia');
 const CUDA = new HwContext(CUDA_DEVICE, 'fullChain', 8);
-
-function createRunner(processRunner: FakeProcessRunner, candidates: Accel[]): { runner: FfmpegJobRunner, forgetDevice: ReturnType<typeof vi.fn>, records: FfmpegAttemptRecord[] } {
-  const planner = { plan: async () => candidates } as unknown as FfmpegCandidatePlanner;
-  const forgetDevice = vi.fn();
-  const capabilityCache = { forgetDevice } as unknown as FfmpegCapabilityCache;
-  const records: FfmpegAttemptRecord[] = [];
-  const stats = new FfmpegJobStats();
-  vi.spyOn(stats, 'record').mockImplementation((record) => void records.push(record));
-  return { runner: new FfmpegJobRunner(processRunner.asFfmpegProcessRunner(), planner, capabilityCache, stats), forgetDevice, records };
-}
 
 /** Fails the attempt on a non-zero exit code, like the frame extracting jobs do. */
 function createJob(overrides: Partial<FfmpegJob<string>> = {}): FfmpegJob<string> {
@@ -43,40 +38,65 @@ function createJob(overrides: Partial<FfmpegJob<string>> = {}): FfmpegJob<string
   };
 }
 
-beforeEach(() => {
-  vi.spyOn(console, 'debug').mockImplementation(() => undefined);
-  vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-});
+async function returnOnceExited(handle: FfmpegHandle, accel: Accel): Promise<string> {
+  await handle.waitForExit();
+  return accel.id;
+}
 
-describe('FfmpegJobRunner#run', () => {
+describe(FfmpegJobRunner, () => {
+  let candidatePlanner: DeepMockProxy<FfmpegCandidatePlanner>;
+  let capabilityCache: DeepMockProxy<FfmpegCapabilityCache>;
+  let stats: DeepMockProxy<FfmpegJobStats>;
+
+  beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    candidatePlanner = createStrictDeepMock<FfmpegCandidatePlanner>();
+    candidatePlanner.plan.mockResolvedValue([CUDA, SOFTWARE]);
+    capabilityCache = createStrictDeepMock<FfmpegCapabilityCache>();
+    capabilityCache.forgetDevice.mockReturnValue(undefined);
+    stats = createStrictDeepMock<FfmpegJobStats>();
+    stats.record.mockReturnValue(undefined);
+  });
+
+  function createRunner(processRunner: FakeProcessRunner): FfmpegJobRunner {
+    return new FfmpegJobRunner(processRunner.asFfmpegProcessRunner(), candidatePlanner, capabilityCache, stats);
+  }
+
+  function recordedAttempts(): FfmpegAttemptRecord[] {
+    return stats.record.mock.calls.map(([record]) => record);
+  }
+
   test('Stops at the first candidate that works', async () => {
     const processRunner = new FakeProcessRunner([{ exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+    const runner = createRunner(processRunner);
 
-    await expect(runner.run(createJob())).resolves.toBe(CUDA.id);
+    await expect(runner.run(createJob())).resolves.toBe('cuda:0/fullChain');
     expect(processRunner.spawnCalls).toHaveLength(1);
   });
 
   test('Builds the arguments for the candidate it is attempting', async () => {
     const processRunner = new FakeProcessRunner([{ exitCode: 1 }, { exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+    const runner = createRunner(processRunner);
 
     await runner.run(createJob());
 
-    expect(processRunner.spawnCalls[0].args).toContain(CUDA.id);
-    expect(processRunner.spawnCalls[1].args).toContain('software');
+    expect(processRunner.spawnCalls.map((spawnCall) => spawnCall.args)).toEqual([
+      ['-i', 'input.mkv', '--accel', 'cuda:0/fullChain'],
+      ['-i', 'input.mkv', '--accel', 'software'],
+    ]);
   });
 
   test('Falls back to the next candidate when an attempt fails', async () => {
     const processRunner = new FakeProcessRunner([{ exitCode: 218 }, { exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+    const runner = createRunner(processRunner);
 
     await expect(runner.run(createJob())).resolves.toBe('software');
   });
 
   test('Passes the spawn options of the job through', async () => {
     const processRunner = new FakeProcessRunner([{ exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA]);
+    const runner = createRunner(processRunner);
 
     await runner.run(createJob({ spawnOptions: { cwd: '/tmp/work', logVerbosity: 'debug' } }));
 
@@ -85,10 +105,19 @@ describe('FfmpegJobRunner#run', () => {
 
   test('Throws the failure of the last candidate once every one of them failed', async () => {
     const processRunner = new FakeProcessRunner([{ exitCode: 1 }, { exitCode: 2 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+    const runner = createRunner(processRunner);
 
-    await expect(runner.run(createJob())).rejects.toThrow('exited with 2');
+    await expect(runner.run(createJob())).rejects.toThrow(new Error('exited with 2'));
     expect(processRunner.spawnCalls).toHaveLength(2);
+  });
+
+  test('Fails instead of quietly doing nothing when there are no candidates', async () => {
+    candidatePlanner.plan.mockResolvedValue([]);
+    const processRunner = new FakeProcessRunner([]);
+    const runner = createRunner(processRunner);
+
+    await expect(runner.run(createJob())).rejects.toThrow(new Error(`FFmpeg job 'test-job' had nothing to run with`));
+    expect(processRunner.spawnCalls).toHaveLength(0);
   });
 
   test('Gives up right away on a failure that taking hardware away cannot fix', async () => {
@@ -103,9 +132,9 @@ describe('FfmpegJobRunner#run', () => {
       },
       { exitCode: 0 },
     ]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+    const runner = createRunner(processRunner);
 
-    await expect(runner.run(createJob())).rejects.toThrow('exited with 254');
+    await expect(runner.run(createJob())).rejects.toThrow(new Error('exited with 254'));
     expect(processRunner.spawnCalls).toHaveLength(1);
   });
 
@@ -120,55 +149,10 @@ describe('FfmpegJobRunner#run', () => {
       },
       { exitCode: 0 },
     ]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+    const runner = createRunner(processRunner);
 
     await expect(runner.run(createJob())).resolves.toBe('software');
     expect(processRunner.spawnCalls).toHaveLength(2);
-  });
-
-  test('Has a device probed again when it could not be created although its probes passed', async () => {
-    const processRunner = new FakeProcessRunner([
-      { exitCode: 255, logLines: ['[AVHWDeviceContext @ 0x1] [error] Cannot load libcuda.so.1', '[error] Device creation failed: -1.'] },
-      { exitCode: 0 },
-    ]);
-    const { runner, forgetDevice } = createRunner(processRunner, [CUDA, SOFTWARE]);
-
-    await runner.run(createJob());
-
-    expect(forgetDevice).toHaveBeenCalledWith(CUDA_DEVICE);
-  });
-
-  test('Keeps what it knows about a device when only the decoder cannot handle the file', async () => {
-    const processRunner = new FakeProcessRunner([
-      { exitCode: 69, logLines: ['[av1 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.'] },
-      { exitCode: 0 },
-    ]);
-    const { runner, forgetDevice } = createRunner(processRunner, [CUDA, SOFTWARE]);
-
-    await runner.run(createJob());
-
-    expect(forgetDevice).not.toHaveBeenCalled();
-  });
-
-  test('Keeps what it knows about a device when NVDEC rejects one file\'s surface count', async () => {
-    const processRunner = new FakeProcessRunner([
-      {
-        exitCode: 218,
-        logLines: [
-          '[h264 @ 0x1] [error] decoder->cvdl->cuvidCreateDecoder(&decoder->decoder, params) failed -> CUDA_ERROR_INVALID_VALUE: invalid argument',
-          '[h264 @ 0x1] [warning] Using more than 32 (36) decode surfaces might cause nvdec to fail.',
-          '[h264 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.',
-          '[error] Error while filtering: Function not implemented',
-        ],
-      },
-      { exitCode: 0 },
-    ]);
-    const { runner, forgetDevice, records } = createRunner(processRunner, [CUDA, SOFTWARE]);
-
-    await runner.run(createJob());
-
-    expect(forgetDevice).not.toHaveBeenCalled();
-    expect(records[0]).toMatchObject({ verdict: 'failed', failureKind: 'decoder' });
   });
 
   test('Gives up right away when ffmpeg refuses to overwrite its output', async () => {
@@ -176,246 +160,248 @@ describe('FfmpegJobRunner#run', () => {
       { exitCode: 1, logLines: [`[fatal] File 'out.mp4' already exists. Exiting.`] },
       { exitCode: 0 },
     ]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+    const runner = createRunner(processRunner);
 
-    await expect(runner.run(createJob())).rejects.toThrow();
+    await expect(runner.run(createJob())).rejects.toThrow(new Error('exited with 1'));
     expect(processRunner.spawnCalls).toHaveLength(1);
   });
 
   test('Fails an attempt the moment its process dies, even while the job is still waiting for something else', async () => {
     const processRunner = new FakeProcessRunner([{ exitCode: 1 }, { exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+    const runner = createRunner(processRunner);
+    const awaitOutcome = vi.fn<FfmpegJob<string>['awaitOutcome']>()
+      .mockImplementationOnce(() => new Promise(() => undefined))
+      .mockImplementationOnce(returnOnceExited);
 
-    const result = await runner.run(createJob({
-      awaitOutcome: async (handle, accel) => {
-        if (accel !== SOFTWARE) {
-          await new Promise(() => undefined);
-        }
-        await handle.waitForExit();
-        return accel.id;
-      },
-    }));
-
-    expect(result).toBe('software');
+    await expect(runner.run(createJob({ awaitOutcome }))).resolves.toBe('software');
   });
 
   test('Kills a process the job gave up on', async () => {
     const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }, { exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+    const runner = createRunner(processRunner);
+    const awaitOutcome = vi.fn<FfmpegJob<string>['awaitOutcome']>()
+      .mockRejectedValueOnce(new Error('gave up while ffmpeg was still running'))
+      .mockImplementationOnce(returnOnceExited);
 
-    await runner.run(createJob({
-      awaitOutcome: async (handle, accel) => {
-        if (accel !== SOFTWARE) {
-          throw new Error('gave up while ffmpeg was still running');
-        }
-        await handle.waitForExit();
-        return accel.id;
-      },
-    }));
+    await runner.run(createJob({ awaitOutcome }));
 
     expect(processRunner.childProcesses[0].receivedKillSignals).toEqual(['SIGKILL']);
   });
 
   test('Leaves a process the job is still using alone', async () => {
     const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }]);
-    const { runner } = createRunner(processRunner, [CUDA]);
+    const runner = createRunner(processRunner);
 
     await runner.run(createJob({ awaitOutcome: async (_handle, accel) => accel.id }));
 
     expect(processRunner.childProcesses[0].receivedKillSignals).toEqual([]);
   });
-});
 
-describe('FfmpegJobRunner#run when the job cannot build its arguments', () => {
-  test('Fails without trying another candidate, but leaves a record', async () => {
-    const processRunner = new FakeProcessRunner([]);
-    const { runner, records } = createRunner(processRunner, [CUDA, SOFTWARE]);
+  describe('when a hardware attempt fails', () => {
+    test('Has the device probed again when it could not be created although its probes passed', async () => {
+      const processRunner = new FakeProcessRunner([
+        { exitCode: 255, logLines: ['[AVHWDeviceContext @ 0x1] [error] Cannot load libcuda.so.1', '[error] Device creation failed: -1.'] },
+        { exitCode: 0 },
+      ]);
+      const runner = createRunner(processRunner);
 
-    await expect(runner.run(createJob({
-      buildArgs: () => {
-        throw new Error('no video stream');
-      },
-    }))).rejects.toThrow('no video stream');
+      await runner.run(createJob());
 
-    expect(processRunner.spawnCalls).toHaveLength(0);
-    expect(records.map((record) => [record.accel, record.verdict, record.failureKind])).toEqual([[CUDA.id, 'failed', 'aborted']]);
-  });
-
-  test('Records whatever was thrown, even when it is not an Error', async () => {
-    const processRunner = new FakeProcessRunner([]);
-    const { runner, records } = createRunner(processRunner, [CUDA]);
-
-    await expect(runner.run(createJob({
-      buildArgs: () => {
-        throw 'not even an Error';
-      },
-    }))).rejects.toBe('not even an Error');
-
-    expect(records[0].logProblems).toBe('not even an Error');
-  });
-});
-
-describe('FfmpegJobRunner#run without candidates', () => {
-  test('Fails instead of quietly doing nothing', async () => {
-    const processRunner = new FakeProcessRunner([]);
-    const { runner } = createRunner(processRunner, []);
-
-    await expect(runner.run(createJob())).rejects.toThrow('nothing to run with');
-    expect(processRunner.spawnCalls).toHaveLength(0);
-  });
-});
-
-describe('FfmpegJobRunner#run stats', () => {
-  test('Records every attempt', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 218 }, { exitCode: 0 }]);
-    const { runner, records } = createRunner(processRunner, [CUDA, SOFTWARE]);
-
-    await runner.run(createJob());
-
-    expect(records.map((record) => [record.accel, record.verdict])).toEqual([[CUDA.id, 'failed'], ['software', 'ok']]);
-  });
-
-  test('Marks a decoder silently falling back to software as degraded', async () => {
-    const processRunner = new FakeProcessRunner([
-      { exitCode: 0, logLines: ['[h264 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.'] },
-    ]);
-    const { runner, records } = createRunner(processRunner, [CUDA]);
-
-    await runner.run(createJob());
-
-    expect(records[0].verdict).toBe('degraded');
-  });
-
-  test('Records how a process the job kept running eventually ends', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }]);
-    const { runner, records } = createRunner(processRunner, [CUDA]);
-
-    await runner.run(createJob({ awaitOutcome: async (_handle, accel) => accel.id }));
-    expect(records).toHaveLength(0);
-
-    processRunner.childProcesses[0].simulateClose(190);
-    await new Promise((resolve) => setImmediate(resolve));
-
-    expect(records[0].verdict).toBe('ready-then-failed');
-  });
-
-  test('Notices a decoder falling back to software only after the job had what it needed', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }]);
-    const { runner, records } = createRunner(processRunner, [CUDA]);
-
-    await runner.run(createJob({ awaitOutcome: async (_handle, accel) => accel.id }));
-    processRunner.childProcesses[0].stderr.write('[h264 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.\n');
-    await new Promise((resolve) => setImmediate(resolve));
-    processRunner.childProcesses[0].simulateClose(0);
-    await new Promise((resolve) => setImmediate(resolve));
-
-    expect(records.map((record) => record.verdict)).toEqual(['degraded']);
-  });
-
-  test('Being stopped by its owner is not a failure of the process the job kept running, but not a success either', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }]);
-    const { runner, records } = createRunner(processRunner, [CUDA]);
-
-    let runningHandle: FfmpegHandle | null = null;
-    await runner.run(createJob({ awaitOutcome: async (handle, accel) => {
-      runningHandle = handle;
-      return accel.id;
-    } }));
-    await runningHandle!.kill();
-
-    expect(records.map((record) => record.verdict)).toEqual(['stopped']);
-  });
-
-  test('Being killed by something else – the OOM killer, say – is a failure of the process the job kept running', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }]);
-    const { runner, records } = createRunner(processRunner, [CUDA]);
-
-    await runner.run(createJob({ awaitOutcome: async (_handle, accel) => accel.id }));
-    processRunner.childProcesses[0].simulateClose(null, 'SIGKILL');
-    await new Promise((resolve) => setImmediate(resolve));
-
-    expect(records.map((record) => record.verdict)).toEqual(['ready-then-failed']);
-  });
-});
-
-describe('FfmpegJobRunner#run output handling', () => {
-  test('Discards what a failed attempt left behind before retrying', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 1 }, { exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
-    const discardOutput = vi.fn(async () => undefined);
-
-    await runner.run(createJob({ discardOutput }));
-
-    expect(discardOutput).toHaveBeenCalledOnce();
-  });
-
-  test('Does not discard anything before the first attempt', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
-    const discardOutput = vi.fn(async () => undefined);
-
-    await runner.run(createJob({ discardOutput }));
-
-    expect(discardOutput).not.toHaveBeenCalled();
-  });
-
-  test('A cleanup failure costs neither the fallback nor the real error', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const processRunner = new FakeProcessRunner([{ exitCode: 1 }, { exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
-    const discardOutput = vi.fn(async () => {
-      throw new Error('EBUSY');
+      expect(capabilityCache.forgetDevice).toHaveBeenCalledExactlyOnceWith(CUDA_DEVICE);
     });
 
-    await expect(runner.run(createJob({ discardOutput }))).resolves.toBe('software');
+    test('Keeps what it knows about the device when only the decoder cannot handle the file', async () => {
+      const processRunner = new FakeProcessRunner([
+        { exitCode: 69, logLines: ['[av1 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.'] },
+        { exitCode: 0 },
+      ]);
+      const runner = createRunner(processRunner);
+
+      await runner.run(createJob());
+
+      expect(capabilityCache.forgetDevice).not.toHaveBeenCalled();
+    });
+
+    test(`Keeps what it knows about the device when NVDEC rejects one file's surface count`, async () => {
+      const processRunner = new FakeProcessRunner([
+        {
+          exitCode: 218,
+          logLines: [
+            '[h264 @ 0x1] [error] decoder->cvdl->cuvidCreateDecoder(&decoder->decoder, params) failed -> CUDA_ERROR_INVALID_VALUE: invalid argument',
+            '[h264 @ 0x1] [warning] Using more than 32 (36) decode surfaces might cause nvdec to fail.',
+            '[h264 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.',
+            '[error] Error while filtering: Function not implemented',
+          ],
+        },
+        { exitCode: 0 },
+      ]);
+      const runner = createRunner(processRunner);
+
+      await runner.run(createJob());
+
+      expect(capabilityCache.forgetDevice).not.toHaveBeenCalled();
+      expect(recordedAttempts()[0]).toMatchObject({ verdict: 'failed', failureKind: 'decoder' });
+    });
   });
 
-  test('Cleans up after the last attempt failed, so an exhausted job leaves nothing behind', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 1 }, { exitCode: 2 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
-    const discardOutput = vi.fn(async () => undefined);
+  describe('when the job cannot build its arguments', () => {
+    test('Fails without trying another candidate, but leaves a record', async () => {
+      const processRunner = new FakeProcessRunner([]);
+      const runner = createRunner(processRunner);
+      const buildArgs = vi.fn<FfmpegJob<string>['buildArgs']>().mockImplementation(() => {
+        throw new Error('no video stream');
+      });
 
-    await expect(runner.run(createJob({ discardOutput }))).rejects.toThrow();
+      await expect(runner.run(createJob({ buildArgs }))).rejects.toThrow(new Error('no video stream'));
+      expect(processRunner.spawnCalls).toHaveLength(0);
+      expect(recordedAttempts()).toMatchObject([{ accel: 'cuda:0/fullChain', verdict: 'failed', failureKind: 'aborted' }]);
+    });
 
-    expect(discardOutput).toHaveBeenCalledTimes(2);
+    test('Records whatever was thrown, even when it is not an Error', async () => {
+      candidatePlanner.plan.mockResolvedValue([CUDA]);
+      const runner = createRunner(new FakeProcessRunner([]));
+      const buildArgs = vi.fn<FfmpegJob<string>['buildArgs']>().mockImplementation(() => {
+        throw 'not even an Error';
+      });
+
+      await expect(runner.run(createJob({ buildArgs }))).rejects.toBe('not even an Error');
+      expect(recordedAttempts()).toMatchObject([{ logProblems: 'not even an Error' }]);
+    });
   });
 
-  test('Cleans up after a failure that is not worth retrying', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 1, logLines: [`[fatal] File 'out.mp4' already exists. Exiting.`] }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
-    const discardOutput = vi.fn(async () => undefined);
+  describe('recording attempts', () => {
+    test('Records every attempt', async () => {
+      const runner = createRunner(new FakeProcessRunner([{ exitCode: 218 }, { exitCode: 0 }]));
 
-    await expect(runner.run(createJob({ discardOutput }))).rejects.toThrow();
+      await runner.run(createJob());
 
-    expect(discardOutput).toHaveBeenCalledOnce();
+      expect(recordedAttempts()).toMatchObject([
+        { accel: 'cuda:0/fullChain', verdict: 'failed' },
+        { accel: 'software', verdict: 'ok' },
+      ]);
+    });
+
+    test('Marks a decoder silently falling back to software as degraded', async () => {
+      candidatePlanner.plan.mockResolvedValue([CUDA]);
+      const runner = createRunner(new FakeProcessRunner([
+        { exitCode: 0, logLines: ['[h264 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.'] },
+      ]));
+
+      await runner.run(createJob());
+
+      expect(recordedAttempts()).toMatchObject([{ verdict: 'degraded' }]);
+    });
+
+    describe('for a process the job kept running', () => {
+      let processRunner: FakeProcessRunner;
+      let keptHandle: FfmpegHandle | undefined;
+
+      beforeEach(async () => {
+        candidatePlanner.plan.mockResolvedValue([CUDA]);
+        processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }]);
+        keptHandle = undefined;
+        await createRunner(processRunner).run(createJob({
+          awaitOutcome: async (handle, accel) => {
+            keptHandle = handle;
+            return accel.id;
+          },
+        }));
+      });
+
+      test('Records a failure once it dies with an error exit', async () => {
+        processRunner.childProcesses[0].simulateClose(190);
+        await flushStreams();
+
+        expect(recordedAttempts()).toMatchObject([{ verdict: 'ready-then-failed' }]);
+      });
+
+      test('Notices a decoder falling back to software only after the job had what it needed', async () => {
+        processRunner.childProcesses[0].stderr.write('[h264 @ 0x1] [error] Failed setup for format cuda: hwaccel initialisation returned error.\n');
+        await flushStreams();
+        processRunner.childProcesses[0].simulateClose(0);
+        await flushStreams();
+
+        expect(recordedAttempts()).toMatchObject([{ verdict: 'degraded' }]);
+      });
+
+      test('Records being stopped by its owner as neither a failure nor a success', async () => {
+        await keptHandle?.kill();
+
+        expect(recordedAttempts()).toMatchObject([{ verdict: 'stopped' }]);
+      });
+
+      test('Records being killed by something else – the OOM killer, say – as a failure', async () => {
+        processRunner.childProcesses[0].simulateClose(null, 'SIGKILL');
+        await flushStreams();
+
+        expect(recordedAttempts()).toMatchObject([{ verdict: 'ready-then-failed' }]);
+      });
+    });
   });
-});
 
-describe('FfmpegJobRunner#run when a job rules out retrying', () => {
-  test('Stops after the attempt that raised it', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }, { exitCode: 0 }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+  describe('cleaning up after failed attempts', () => {
+    let discardOutput: Mock<NonNullable<FfmpegJob<string>['discardOutput']>>;
 
-    const runPromise = runner.run(createJob({
-      awaitOutcome: async () => {
-        throw new UnretryableFfmpegJobError('waited long enough');
-      },
-    }));
+    beforeEach(() => {
+      discardOutput = vi.fn<NonNullable<FfmpegJob<string>['discardOutput']>>().mockResolvedValue(undefined);
+    });
 
-    await expect(runPromise).rejects.toThrow('waited long enough');
-    expect(processRunner.spawnCalls).toHaveLength(1);
+    test('Discards what a failed attempt left behind before retrying', async () => {
+      const runner = createRunner(new FakeProcessRunner([{ exitCode: 1 }, { exitCode: 0 }]));
+
+      await runner.run(createJob({ discardOutput }));
+
+      expect(discardOutput).toHaveBeenCalledExactlyOnceWith();
+    });
+
+    test('Does not discard anything before the first attempt', async () => {
+      const runner = createRunner(new FakeProcessRunner([{ exitCode: 0 }]));
+
+      await runner.run(createJob({ discardOutput }));
+
+      expect(discardOutput).not.toHaveBeenCalled();
+    });
+
+    test('Costs neither the fallback nor the real error when the cleanup fails, but logs it', async () => {
+      discardOutput.mockRejectedValue(new Error('EBUSY'));
+      const runner = createRunner(new FakeProcessRunner([{ exitCode: 1 }, { exitCode: 0 }]));
+
+      await expect(runner.run(createJob({ discardOutput }))).resolves.toBe('software');
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('could not discard the output'), new Error('EBUSY'));
+    });
+
+    test('Cleans up after the last attempt failed, so an exhausted job leaves nothing behind', async () => {
+      const runner = createRunner(new FakeProcessRunner([{ exitCode: 1 }, { exitCode: 2 }]));
+
+      await expect(runner.run(createJob({ discardOutput }))).rejects.toThrow(new Error('exited with 2'));
+      expect(discardOutput).toHaveBeenCalledTimes(2);
+    });
+
+    test('Cleans up after a failure that is not worth retrying', async () => {
+      const runner = createRunner(new FakeProcessRunner([{ exitCode: 1, logLines: [`[fatal] File 'out.mp4' already exists. Exiting.`] }]));
+
+      await expect(runner.run(createJob({ discardOutput }))).rejects.toThrow(new Error('exited with 1'));
+      expect(discardOutput).toHaveBeenCalledExactlyOnceWith();
+    });
   });
 
-  test('Still kills the process it gave up on', async () => {
-    const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }]);
-    const { runner } = createRunner(processRunner, [CUDA, SOFTWARE]);
+  describe('when the job rules out retrying', () => {
+    test('Stops after the attempt that raised it', async () => {
+      const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }, { exitCode: 0 }]);
+      const runner = createRunner(processRunner);
+      const awaitOutcome = vi.fn<FfmpegJob<string>['awaitOutcome']>().mockRejectedValue(new UnretryableFfmpegJobError('waited long enough'));
 
-    await expect(runner.run(createJob({
-      awaitOutcome: async () => {
-        throw new UnretryableFfmpegJobError('waited long enough');
-      },
-    }))).rejects.toThrow();
+      await expect(runner.run(createJob({ awaitOutcome }))).rejects.toThrow(new UnretryableFfmpegJobError('waited long enough'));
+      expect(processRunner.spawnCalls).toHaveLength(1);
+    });
 
-    expect(processRunner.childProcesses[0].receivedKillSignals).toEqual(['SIGKILL']);
+    test('Still kills the process it gave up on', async () => {
+      const processRunner = new FakeProcessRunner([{ exitCode: 0, neverExits: true }]);
+      const runner = createRunner(processRunner);
+      const awaitOutcome = vi.fn<FfmpegJob<string>['awaitOutcome']>().mockRejectedValue(new UnretryableFfmpegJobError('waited long enough'));
+
+      await expect(runner.run(createJob({ awaitOutcome }))).rejects.toThrow(new UnretryableFfmpegJobError('waited long enough'));
+      expect(processRunner.childProcesses[0].receivedKillSignals).toEqual(['SIGKILL']);
+    });
   });
 });

@@ -16,53 +16,50 @@ function record(job: string): FfmpegAttemptRecord {
   };
 }
 
-beforeEach(() => {
-  vi.spyOn(console, 'debug').mockImplementation(() => undefined);
-});
+describe(FfmpegJobStats, () => {
+  let stats: FfmpegJobStats;
 
-describe('FfmpegJobStats#record', () => {
-  test('Leaves a debug line per attempt', () => {
-    const stats = new FfmpegJobStats();
+  beforeEach(() => {
+    vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+    stats = new FfmpegJobStats();
+  });
 
+  test('Logs a debug line naming the job, its verdict and the acceleration it used', () => {
     stats.record({ ...record('live-transcode'), accel: 'cuda:0/fullChain', verdict: 'failed', failureKind: 'device' });
 
-    expect(console.debug).toHaveBeenCalledWith(expect.stringMatching(/'live-transcode' failed using 'cuda:0\/fullChain' \(device\)/));
+    expect(console.debug).toHaveBeenCalledExactlyOnceWith(expect.stringMatching(/'live-transcode' failed using 'cuda:0\/fullChain' \(device\)/));
   });
 
-  test('A failed attempt names the file it was pointed at', () => {
-    const stats = new FfmpegJobStats();
+  describe('for a failed attempt', () => {
+    test('Names the input file', () => {
+      stats.record({ ...record('poster-candidates'), verdict: 'failed', args: ['-i', '/media/broken.mkv', '-f', 'null', '-'] });
 
-    stats.record({ ...record('poster-candidates'), verdict: 'failed', args: ['-i', '/media/broken.mkv', '-f', 'null', '-'] });
-
-    expect(console.debug).toHaveBeenCalledWith(expect.stringContaining(`input='/media/broken.mkv'`));
-  });
-
-  test('A failed attempt reports what FFmpeg complained about', () => {
-    const stats = new FfmpegJobStats();
-
-    stats.record({
-      ...record('video-thumbnail-frame-extraction'),
-      verdict: 'failed',
-      failureKind: 'unknown',
-      logProblems: '[out#0/image2] [warning] Output file is empty, nothing was encoded',
+      expect(console.debug).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(`input='/media/broken.mkv'`));
     });
 
-    expect(console.debug).toHaveBeenCalledWith(expect.stringContaining('Output file is empty, nothing was encoded'));
+    test('Reports what FFmpeg complained about', () => {
+      stats.record({
+        ...record('video-thumbnail-frame-extraction'),
+        verdict: 'failed',
+        failureKind: 'unknown',
+        logProblems: '[out#0/image2] [warning] Output file is empty, nothing was encoded',
+      });
+
+      expect(console.debug).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('Output file is empty, nothing was encoded'));
+    });
   });
 
-  test('A successful attempt stays short', () => {
-    const stats = new FfmpegJobStats();
+  describe('for a successful attempt', () => {
+    test('Leaves the input file out', () => {
+      stats.record({ ...record('poster-candidates'), args: ['-i', '/media/fine.mkv', '-f', 'null', '-'] });
 
-    stats.record({ ...record('poster-candidates'), args: ['-i', '/media/fine.mkv', '-f', 'null', '-'] });
+      expect(console.debug).toHaveBeenCalledExactlyOnceWith(expect.not.stringContaining('/media/fine.mkv'));
+    });
 
-    expect(console.debug).toHaveBeenCalledWith(expect.not.stringContaining('/media/fine.mkv'));
-  });
+    test('Leaves what FFmpeg complained about out', () => {
+      stats.record({ ...record('live-transcode'), logProblems: '[warning] deprecated pixel format used' });
 
-  test('A successful attempt keeps its problem lines out of the log', () => {
-    const stats = new FfmpegJobStats();
-
-    stats.record({ ...record('live-transcode'), logProblems: '[warning] deprecated pixel format used' });
-
-    expect(console.debug).toHaveBeenCalledWith(expect.not.stringContaining('deprecated pixel format used'));
+      expect(console.debug).toHaveBeenCalledExactlyOnceWith(expect.not.stringContaining('deprecated pixel format used'));
+    });
   });
 });

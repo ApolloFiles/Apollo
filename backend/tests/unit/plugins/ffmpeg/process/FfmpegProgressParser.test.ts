@@ -23,14 +23,14 @@ const COMPLETE_BLOCK = [
   'progress=continue',
 ];
 
-describe('FfmpegProgressParser#consumeLine', () => {
+describe(FfmpegProgressParser, () => {
   test('Emits nothing until the progress line completes the block', () => {
     const parser = new FfmpegProgressParser();
 
-    for (const line of COMPLETE_BLOCK.slice(0, -1)) {
-      expect(parser.consumeLine(line)).toBeNull();
-    }
-    expect(parser.consumeLine('progress=continue')).not.toBeNull();
+    const progressPerLine = COMPLETE_BLOCK.map((line) => parser.consumeLine(line));
+
+    expect(progressPerLine.slice(0, -1)).toEqual(Array(11).fill(null));
+    expect(progressPerLine.at(-1)).not.toBeNull();
   });
 
   test('Parses a complete block', () => {
@@ -51,6 +51,7 @@ describe('FfmpegProgressParser#consumeLine', () => {
 
   test('Marks the last block of a run as finished', () => {
     const progress = consumeBlock(new FfmpegProgressParser(), ['frame=75', 'progress=end']);
+
     expect(progress?.finished).toBe(true);
   });
 
@@ -96,6 +97,8 @@ describe('FfmpegProgressParser#consumeLine', () => {
   });
 
   test('Ignores lines that are not key-value pairs', () => {
-    expect(new FfmpegProgressParser().consumeLine('')).toBeNull();
+    const parser = new FfmpegProgressParser();
+
+    expect(parser.consumeLine('')).toBeNull();
   });
 });
