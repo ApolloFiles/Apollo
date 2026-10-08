@@ -67,18 +67,20 @@ const authenticatedSuperUserImplementer = authenticatedImplementer
     return next();
   });
 
-export const ORPC_ROUTER = plainImplementer.router({
-  tmpBackend: container.resolve(TmpBackendORpcRouterFactory).create(plainImplementer),
+export function createORpcRouter() {
+  return plainImplementer.router({
+    tmpBackend: container.resolve(TmpBackendORpcRouterFactory).create(plainImplementer),
 
-  user: container.resolve(UserORpcRouterFactory).create(authenticatedImplementer.user),
-  session: container.resolve(SessionORpcRouterFactory).create(baseImplementer),
+    user: container.resolve(UserORpcRouterFactory).create(authenticatedImplementer.user),
+    session: container.resolve(SessionORpcRouterFactory).create(baseImplementer),
 
-  auth: container.resolve(AuthORpcRouterFactory).create(baseImplementer),
+    auth: container.resolve(AuthORpcRouterFactory).create(baseImplementer),
 
-  files: container.resolve(FilesORpcRouterFactory).create(authenticatedImplementer.files),
-  media: container.resolve(MediaORpcRouterFactory).create(authenticatedImplementer.media),
+    files: container.resolve(FilesORpcRouterFactory).create(authenticatedImplementer.files),
+    media: container.resolve(MediaORpcRouterFactory).create(authenticatedImplementer.media),
 
-  feedback: container.resolve(FeedbackORpcRouterFactory).create(authenticatedImplementer.feedback),
+    feedback: container.resolve(FeedbackORpcRouterFactory).create(authenticatedImplementer.feedback),
 
-  admin: container.resolve(AdminORpcRouterFactory).create(authenticatedSuperUserImplementer.admin),
-});
+    admin: container.resolve(AdminORpcRouterFactory).create(authenticatedSuperUserImplementer.admin),
+  });
+}

@@ -5,13 +5,13 @@ import { HttpError, NotFoundError } from '@sprax/node-framework';
 import { singleton } from 'tsyringe';
 import AppConfiguration from '../../config/AppConfiguration.js';
 import { ERROR_CODE_REQUESTED_ENTITY_NOT_FOUND } from '../../orpc/contract/SubContractHelpers.js';
-import { ORPC_ROUTER, type ORpcInitialContext } from '../../orpc/router/ORpcRouter.js';
+import { createORpcRouter, type ORpcInitialContext } from '../../orpc/router/ORpcRouter.js';
 
 @singleton()
 export default class ORPCRequestHandler extends oRpcNodeJs.RPCHandler<ORpcInitialContext> {
   constructor(appConfig: AppConfiguration) {
     super(
-      ORPC_ROUTER,
+      createORpcRouter(),
       {
         strictGetMethodPluginEnabled: false,
         plugins: [

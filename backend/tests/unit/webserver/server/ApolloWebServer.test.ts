@@ -9,8 +9,6 @@ import ApolloWebServer from '#src/webserver/server/ApolloWebServer.js';
 import type ORPCRequestHandler from '#src/webserver/server/ORPCRequestHandler.js';
 import { createStrictDeepMock } from '#tests/test-helpers.js';
 
-vi.mock('#src/webserver/server/ORPCRequestHandler.js', () => ({ default: class {} }));
-
 const SESSION_USER = { user: { id: 'session-user' }, session: {} } as unknown as SessionUser;
 const TOKEN_USER = { user: { id: 'token-user' }, accessToken: {} } as unknown as AccessTokenUser;
 
