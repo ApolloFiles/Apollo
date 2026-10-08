@@ -1,1 +1,3 @@
-export class AniDbError extends Error {}
+export class AniDbError extends Error {
+  override name = this.constructor.name;
+}

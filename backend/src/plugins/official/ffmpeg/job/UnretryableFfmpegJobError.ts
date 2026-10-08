@@ -5,4 +5,5 @@
  * constellation. Either because it knows a specific error case or something like a deadline ran out.
  */
 export default class UnretryableFfmpegJobError extends Error {
+  override name = this.constructor.name;
 }

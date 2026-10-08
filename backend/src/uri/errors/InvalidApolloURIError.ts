@@ -1,4 +1,6 @@
 export default class InvalidApolloURIError extends Error {
+  override name = this.constructor.name;
+
   /** @internal */
   static createForUrlConstructorError(cause: unknown): InvalidApolloURIError {
     return new InvalidApolloURIError(`Cannot parse invalid URI`, { cause });

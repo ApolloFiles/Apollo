@@ -21,6 +21,8 @@ type AttemptResult<T> =
   };
 
 class FfmpegExitedEarlyError extends Error {
+  override name = this.constructor.name;
+
   constructor(exitResult: FfmpegExitResult) {
     super(`FFmpeg exited with code ${exitResult.exitCode} (signal=${exitResult.signal}) before the job got what it needed`);
   }

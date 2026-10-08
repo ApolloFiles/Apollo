@@ -9,6 +9,8 @@ type ExtraData = {
 }
 
 export default class FfmpegProcessError extends Error {
+  override name = this.constructor.name;
+
   public readonly exitCode: number | null;
   public readonly signal: NodeJS.Signals | null;
   public readonly log: string;
