@@ -25,6 +25,7 @@ export default class ExpiringApolloCache {
   public static readonly TTL_ONE_DAY = 86_400 as const;
   public static readonly TTL_ONE_WEEK = 604_800 as const;
   public static readonly TTL_ONE_MONTH = 2_592_000 as const;
+  public static readonly TTL_ONE_YEAR = 31_536_000 as const;
 
   private readonly apolloCacheProvider: ApolloCacheProvider;
 

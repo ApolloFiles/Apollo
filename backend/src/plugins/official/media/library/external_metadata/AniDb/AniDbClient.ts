@@ -3,17 +3,22 @@ import { InFlightRequestTracker } from '../../../../../../utils/InFlightRequestT
 import { AniDbError } from './errors/AniDbError.js';
 import { AniDbParseError } from './errors/AniDbParseError.js';
 import { AnimeXmlFetcher } from './fetching/AnimeXmlFetcher.js';
+import { ImageFetcher } from './fetching/ImageFetcher.js';
 import type { ReadonlyAniDbAnime } from './parsing/Anime.js';
 import { AnimeParser, type ParseResult } from './parsing/AnimeParser.js';
 import type { ParseIssue } from './parsing/validator/IssueCollector.js';
 
 @singleton()
 export class AniDbClient {
+  private static readonly FILE_NAME_PATTERN = /^[0-9]+\.[a-z]+$/i;
+
   private readonly inFlightAnimeRequests = new InFlightRequestTracker<ReadonlyAniDbAnime | null>();
+  private readonly inFlightImageRequests = new InFlightRequestTracker<Buffer>();
 
   constructor(
     private readonly animeXmlFetcher: AnimeXmlFetcher,
     private readonly animeParser: AnimeParser,
+    private readonly imageFetcher: ImageFetcher,
   ) {
   }
 
@@ -23,6 +28,14 @@ export class AniDbClient {
     }
 
     return this.inFlightAnimeRequests.run(animeId.toString(), () => this.fetchAndParseAnime(animeId));
+  }
+
+  async fetchImage(fileName: string): Promise<Buffer> {
+    if (!AniDbClient.FILE_NAME_PATTERN.test(fileName)) {
+      throw new AniDbError(`The fileName ${JSON.stringify(fileName)} looks invalid`);
+    }
+
+    return this.inFlightImageRequests.run(fileName, () => this.imageFetcher.fetchImage(fileName));
   }
 
   private async fetchAndParseAnime(animeId: number): Promise<ReadonlyAniDbAnime | null> {
