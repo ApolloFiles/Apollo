@@ -41,6 +41,7 @@
 
     "prisma:generate": "prisma generate --require-models",
     "prisma:migrate:dev": "prisma migrate dev && npm run prisma:generate",
+    "prisma:migrate:dev:create-only": "prisma migrate dev --create-only",
 
     "contributors:add": "npx all-contributors add --config ../.all-contributorsrc",
     "contributors:generate": "npx all-contributors generate --config ../.all-contributorsrc"
