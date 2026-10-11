@@ -4,6 +4,8 @@
   import IconHeadphones from 'virtual:icons/tabler/headphones';
   import IconPause from 'virtual:icons/tabler/player-pause';
   import IconPlay from 'virtual:icons/tabler/player-play';
+  import IconSeekBackward from 'virtual:icons/tabler/rewind-backward-10';
+  import IconSeekForward from 'virtual:icons/tabler/rewind-forward-10';
   import type VideoPlayer from '../../client-side/VideoPlayer.svelte.js';
   import BottomMenuBox from '../components/BottomMenuBox.svelte';
   import FullscreenButton from '../components/FullscreenButton.svelte';
@@ -54,6 +56,20 @@
             bind:muted={videoPlayer.$muted}
           />
         {/key}
+      </div>
+      <div class="desktop-seek-controls">
+        <button class="control-button"
+                aria-label={m.component_video_player_seek_backward()}
+                title={m.component_video_player_seek_backward()}
+                onclick={() => videoPlayer.seek(videoPlayer.$currentTime - 10, false, true)}>
+          <IconSeekBackward />
+        </button>
+        <button class="control-button"
+                aria-label={m.component_video_player_seek_forward()}
+                title={m.component_video_player_seek_forward()}
+                onclick={() => videoPlayer.seek(videoPlayer.$currentTime + 10, false, true)}>
+          <IconSeekForward />
+        </button>
       </div>
     </div>
 
@@ -127,7 +143,7 @@
     position:    relative;
   }
 
-  .desktop-audio-controls {
+  .desktop-audio-controls, .desktop-seek-controls {
     display:     flex;
     align-items: center;
   }
@@ -151,7 +167,8 @@
       gap: 8px;
     }
 
-    .desktop-audio-controls {
+    .desktop-audio-controls,
+    .desktop-seek-controls {
       display: none;
     }
   }

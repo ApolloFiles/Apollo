@@ -87,6 +87,8 @@
   "component_video_player_no_next_episode": "Keine nächste Folge gefunden",
   "component_video_player_no_previous_episode": "Keine vorherige Folge gefunden",
   "component_video_player_progress_label": "Videofortschritt",
+  "component_video_player_seek_backward": "10 Sekunden zurück",
+  "component_video_player_seek_forward": "10 Sekunden vor",
   "component_video_player_subtitle_burned_in_label": "Eingebrannter Untertitel: Aus- oder Abwählen startet die Wiedergabe neu",
   "component_video_player_subtitle_burned_in_title": "In das Video eingebrannt – Aus- oder Abwählen startet die Wiedergabe neu",
   "component_video_player_subtitle_none": "Keine",

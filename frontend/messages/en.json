@@ -87,6 +87,8 @@
   "component_video_player_no_next_episode": "No next episode found",
   "component_video_player_no_previous_episode": "No previous episode found",
   "component_video_player_progress_label": "Video progress",
+  "component_video_player_seek_backward": "Back 10 seconds",
+  "component_video_player_seek_forward": "Forward 10 seconds",
   "component_video_player_subtitle_burned_in_label": "Burned-in subtitle: selecting or deselecting restarts playback",
   "component_video_player_subtitle_burned_in_title": "Burned into the video — selecting or deselecting restarts playback",
   "component_video_player_subtitle_none": "None",
