@@ -3,6 +3,7 @@ import { container } from 'tsyringe';
 import AppConfiguration from '../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../constants.js';
 import DatabaseClient from '../database/DatabaseClient.js';
+import { DatabaseClockDriftCheck } from '../database/DatabaseClockDriftCheck.js';
 import StartupCleaner from '../files/StartupCleaner.js';
 import FfmpegDeviceRegistry from '../plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
 import ApolloWebServer from '../webserver/server/ApolloWebServer.js';
@@ -14,6 +15,19 @@ export default class WebApp implements App {
     if (IS_PRODUCTION) {
       await container.resolve(DatabaseClient).runDatabaseMigrations();
     }
+
+    container.resolve(DatabaseClockDriftCheck).check()
+      .then(checkResult => {
+        if (checkResult.exceedsTolerance) {
+          const driftSeconds = (checkResult.driftMs / 1000).toFixed(1);
+          console.warn(
+            `WARNING: The system clock of this server and the database clock differ by ${driftSeconds} seconds.\n` +
+            'Running Apollo with clocks this far apart is not recommended and may lead to unexpected behavior.\n' +
+            'Synchronize both machines with a time source (e.g. NTP) to resolve this.',
+          );
+        }
+      })
+      .catch(console.error);
 
     await container.resolve(StartupCleaner).cleanUp();
     container.resolve(FfmpegDeviceRegistry).getDevices().catch((err) => console.error('Failed to discover FFmpeg hardware devices', err));
