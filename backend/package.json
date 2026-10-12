@@ -30,11 +30,12 @@
     "build": "tsc",
     "build:podman": "cd .. && podman build --file Containerfile --pull=newer --rm --target ffmpeg-cuda --tag localhost/spraxdev/apollo:latest .",
 
-    "test": "npm run type-check && vitest --run",
-    "test:watch": "vitest",
-    "test:coverage": "npm run test -- --coverage",
-    "test:ci": "npm run test:coverage -- --reporter default --reporter github-actions",
+    "test": "npm run type-check && vitest --run --project unit",
+    "test:watch": "vitest --project unit",
     "test:acceptance": "vitest --run --project acceptance --reporter=verbose",
+    "test:all": "npm run type-check && vitest --run",
+    "test:coverage": "npm run test:all -- --coverage",
+    "test:ci": "npm run test:coverage -- --reporter default --reporter github-actions",
     "type-check": "tsc --noEmit && tsc -p tests/tsconfig.json --noEmit",
 
     "dev": "node --watch --env-file .env --import @swc-node/register/esm-register --enable-source-maps src/main.ts",
@@ -83,9 +84,11 @@
     "@swc-node/register": "^1.12.1",
     "@tsconfig/node24": "^24.0.5",
     "@types/node": "^24.19.1",
+    "@types/pg": "^8.23.1",
     "@types/range-parser": "^1.2.7",
     "@types/ws": "^8.18.2",
     "@vitest/coverage-v8": "^5.0.3",
+    "pg": "^8.23.1",
     "typescript": "^6.0.3",
     "vitest": "^5.0.3",
     "vitest-mock-extended": "^5.1.1"

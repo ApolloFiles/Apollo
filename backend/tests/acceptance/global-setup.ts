@@ -8,9 +8,13 @@
 import 'reflect-metadata';
 import Fs from 'node:fs';
 import type { TestProject } from 'vitest/node';
+import { ACCEPTANCE_ENV, recreateAcceptanceEnvironment, removeAcceptanceEnvironment } from './AcceptanceTestEnvironment.js';
 import { logFfmpegEnvironment, probeFfmpegEnvironment } from './plugins/ffmpeg/FfmpegTestEnvironment.js';
 
 export default async function setup(project: TestProject): Promise<() => Promise<void>> {
+  await recreateAcceptanceEnvironment();
+  Object.assign(process.env, ACCEPTANCE_ENV);
+
   const ffmpegEnvironment = await probeFfmpegEnvironment();
 
   logFfmpegEnvironment(ffmpegEnvironment);
@@ -20,5 +24,6 @@ export default async function setup(project: TestProject): Promise<() => Promise
 
   return async () => {
     await Fs.promises.rm(ffmpegEnvironment.sampleDirectory, { recursive: true, force: true });
+    await removeAcceptanceEnvironment();
   };
 }
