@@ -9,6 +9,7 @@ const defaultProjectConfig: ProjectConfig = {
 
   setupFiles: ['reflect-metadata'],
   server: { deps: { inline: ['@sprax/node-framework'] } },
+  sequence: { shuffle: true },
 };
 
 export default defineConfig({

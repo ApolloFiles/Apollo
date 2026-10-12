@@ -33,7 +33,7 @@
     "test": "npm run type-check && vitest --run",
     "test:watch": "vitest",
     "test:coverage": "npm run test -- --coverage",
-    "test:ci": "npm run test:coverage -- --reporter github-actions",
+    "test:ci": "npm run test:coverage -- --reporter default --reporter github-actions",
     "test:acceptance": "vitest --run --project acceptance --reporter=verbose",
     "type-check": "tsc --noEmit && tsc -p tests/tsconfig.json --noEmit",
 
