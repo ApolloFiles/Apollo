@@ -1,8 +1,7 @@
-import Os from 'node:os';
-import Path from 'node:path';
 import { defineConfig } from 'vitest/config';
 import { ProjectConfig } from 'vitest/node';
 import { ACCEPTANCE_ENV } from './tests/acceptance/AcceptanceTestEnvironment.js';
+import { UNIT_TEST_UNUSED_DATA_DIRECTORY } from './tests/unit/global-setup.js';
 
 const defaultProjectConfig: ProjectConfig = {
   environment: 'node',
@@ -14,8 +13,7 @@ const defaultProjectConfig: ProjectConfig = {
   server: { deps: { inline: ['@sprax/node-framework'] } },
   sequence: { shuffle: true },
   env: {
-    // Unit tests must not touch the file system through Apollo's directories, so this one is never created
-    APOLLO_DATA_DIRECTORY: Path.join(Os.tmpdir(), 'apollo-unit-tests-unused'),
+    APOLLO_DATA_DIRECTORY: UNIT_TEST_UNUSED_DATA_DIRECTORY,
     APOLLO_TMP_DIRECTORY: '',
     APOLLO_CACHE_DIRECTORY: '',
   },
@@ -29,6 +27,7 @@ export default defineConfig({
           ...defaultProjectConfig,
           dir: './tests/unit/',
           name: 'unit',
+          globalSetup: ['./tests/unit/global-setup.ts'],
         },
       },
       {

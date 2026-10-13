@@ -1,10 +1,10 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import { container } from 'tsyringe';
 import type { FfmpegLogLine } from '#src/plugins/official/ffmpeg/process/FfmpegLogLineParser.js';
 import FfmpegProcessRunner from '#src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
 import type { FfmpegProgress } from '#src/plugins/official/ffmpeg/process/FfmpegProgressParser.js';
+import { createTemporaryTestDirectory } from '#tests/test-helpers.js';
 import { requireFfmpeg } from './FfmpegTestEnvironment.js';
 
 /** Generates video without needing any encoder to be available. */
@@ -13,12 +13,8 @@ const ENDLESS_VIDEO = ['-f', 'lavfi', '-i', 'testsrc2=s=1280x720:r=25', '-f', 'n
 
 let tmpDir: string;
 
-beforeAll(async () => {
-  tmpDir = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-ffmpeg-acceptance-'));
-});
-
-afterAll(async () => {
-  await Fs.promises.rm(tmpDir, { recursive: true, force: true });
+beforeEach(async () => {
+  tmpDir = await createTemporaryTestDirectory();
 });
 
 describe('FfmpegProcessRunner log output', () => {

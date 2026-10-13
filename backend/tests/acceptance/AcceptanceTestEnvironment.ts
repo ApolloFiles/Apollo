@@ -1,15 +1,19 @@
 import ChildProcess from 'node:child_process';
 import Crypto from 'node:crypto';
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import Url from 'node:url';
 import Pg from 'pg';
+import { VITEST_ROOT_DIRECTORY } from '#tests/test-constants.js';
+import { removeVitestRootDirectoryIfEmpty } from '#tests/test-helpers.js';
 
 const DEFAULT_DATABASE_URL = 'postgresql://apollo:apollo@localhost:5433/apollo_acceptance';
 
 export const ACCEPTANCE_DATABASE_URL = process.env.APOLLO_ACCEPTANCE_DATABASE_URL?.trim() || DEFAULT_DATABASE_URL;
-export const ACCEPTANCE_DATA_DIRECTORY = Path.join(Os.tmpdir(), 'apollo-acceptance');
+const ACCEPTANCE_ROOT_DIRECTORY = Path.join(VITEST_ROOT_DIRECTORY, 'acceptance');
+const ACCEPTANCE_DATA_DIRECTORY = Path.join(ACCEPTANCE_ROOT_DIRECTORY, 'data');
+export const ACCEPTANCE_TEMPORARY_TEST_DIRECTORY_ROOT = Path.join(ACCEPTANCE_ROOT_DIRECTORY, 'test-tmp');
+export const ACCEPTANCE_FFMPEG_DIRECTORY = Path.join(ACCEPTANCE_ROOT_DIRECTORY, 'ffmpeg');
 
 export const ACCEPTANCE_ENV = {
   DATABASE_URL: ACCEPTANCE_DATABASE_URL,
@@ -26,6 +30,7 @@ export async function recreateAcceptanceEnvironment(): Promise<void> {
   migrateDatabase(withDatabaseName(templateDatabaseName()));
   await runOnMaintenanceDatabase(`CREATE DATABASE ${quoteIdentifier(databaseName())} TEMPLATE ${quoteIdentifier(templateDatabaseName())}`);
   await Fs.promises.mkdir(ACCEPTANCE_DATA_DIRECTORY, { recursive: true });
+  await Fs.promises.mkdir(ACCEPTANCE_TEMPORARY_TEST_DIRECTORY_ROOT, { recursive: true });
 }
 
 export async function removeAcceptanceEnvironment(): Promise<void> {
@@ -36,7 +41,8 @@ export async function removeAcceptanceEnvironment(): Promise<void> {
   for (const name of [databaseName(), templateDatabaseName(), ...leftoverIsolatedDatabases.map((row) => row.datname as string)]) {
     await runOnMaintenanceDatabase(`DROP DATABASE IF EXISTS ${quoteIdentifier(name)} WITH (FORCE)`);
   }
-  await Fs.promises.rm(ACCEPTANCE_DATA_DIRECTORY, { recursive: true, force: true });
+  await Fs.promises.rm(ACCEPTANCE_ROOT_DIRECTORY, { recursive: true, force: true });
+  await removeVitestRootDirectoryIfEmpty();
 }
 
 /**

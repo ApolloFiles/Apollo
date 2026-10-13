@@ -1,5 +1,4 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import { container } from 'tsyringe';
 import { inject, type TestContext } from 'vitest';
@@ -7,6 +6,7 @@ import FfmpegCapabilityCache from '#src/plugins/official/ffmpeg/accel/FfmpegCapa
 import type { FfmpegDevice } from '#src/plugins/official/ffmpeg/accel/FfmpegDevice.js';
 import FfmpegDeviceRegistry from '#src/plugins/official/ffmpeg/accel/FfmpegDeviceRegistry.js';
 import FfmpegProcessRunner from '#src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
+import { ACCEPTANCE_FFMPEG_DIRECTORY } from '#tests/acceptance/AcceptanceTestEnvironment.js';
 
 export type FfmpegTestSample = {
   readonly path: string;
@@ -26,7 +26,6 @@ export type FfmpegTestDevice = FfmpegDevice & {
 export type FfmpegTestEnvironment = {
   /** `null` if there is no usable ffmpeg executable at all. */
   readonly ffmpegVersion: string | null;
-  readonly sampleDirectory: string;
   /** An h264 8-bit sample, or `null` when this ffmpeg has no encoder to create one with */
   readonly h264Sample: FfmpegTestSample | null;
   /** A 10-bit HEVC sample, or `null` when this ffmpeg has no libx265 */
@@ -88,11 +87,12 @@ export function requireSample<T extends FfmpegTestSample>(ctx: TestContext, samp
 
 export async function probeFfmpegEnvironment(): Promise<FfmpegTestEnvironment> {
   const ffmpegProcessRunner = container.resolve(FfmpegProcessRunner);
-  const sampleDirectory = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-ffmpeg-acceptance-'));
+  const sampleDirectory = ACCEPTANCE_FFMPEG_DIRECTORY;
+  await Fs.promises.mkdir(sampleDirectory, { recursive: true });
 
   const ffmpegVersion = await determineFfmpegVersion(ffmpegProcessRunner);
   if (ffmpegVersion == null) {
-    return { ffmpegVersion: null, sampleDirectory, h264Sample: null, hevc10Sample: null, pgsSample: null, pgsMismatchedCanvasSample: null, multiSubtitleSample: null, devices: [] };
+    return { ffmpegVersion: null, h264Sample: null, hevc10Sample: null, pgsSample: null, pgsMismatchedCanvasSample: null, multiSubtitleSample: null, devices: [] };
   }
 
   const h264Sample = await createSample(ffmpegProcessRunner, sampleDirectory, 'h264', 'libx264', 'yuv420p');
@@ -103,7 +103,6 @@ export async function probeFfmpegEnvironment(): Promise<FfmpegTestEnvironment> {
 
   return withoutProbeNoise(async () => ({
     ffmpegVersion,
-    sampleDirectory,
     h264Sample,
     hevc10Sample,
     pgsSample,

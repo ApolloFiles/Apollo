@@ -1,5 +1,4 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import { container } from 'tsyringe';
 import type { Accel } from '#src/plugins/official/ffmpeg/accel/Accel.js';
@@ -20,6 +19,7 @@ import VideoStreamArgumentsBuilder from '#src/plugins/official/media/_old/video-
 import LiveTranscodeLauncher from '#src/plugins/official/media/_old/video-player/live-transcode/launcher/LiveTranscodeLauncher.js';
 import SeekThumbnailGenerator from '#src/plugins/official/media/_old/video-player/seek-thumbnails/generator/SeekThumbnailGenerator.js';
 import VideoThumbnailFrameExtractor from '#src/plugins/official/media/library/thumbnail/VideoThumbnailFrameExtractor.js';
+import { createTemporaryTestDirectory } from '#tests/test-helpers.js';
 import { ffmpegEnvironment, type FfmpegTestDevice, type FfmpegTestSample, requireFfmpeg, requireSample } from './FfmpegTestEnvironment.js';
 
 /**
@@ -31,15 +31,8 @@ import { ffmpegEnvironment, type FfmpegTestDevice, type FfmpegTestSample, requir
 
 let tmpDir: string;
 
-beforeAll(async () => {
-  tmpDir = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-ffmpeg-devices-'));
-});
-
-afterAll(async () => {
-  await Fs.promises.rm(tmpDir, { recursive: true, force: true });
-});
-
-beforeEach(() => {
+beforeEach(async () => {
+  tmpDir = await createTemporaryTestDirectory();
   vi.spyOn(console, 'debug').mockImplementation(() => undefined);
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 });

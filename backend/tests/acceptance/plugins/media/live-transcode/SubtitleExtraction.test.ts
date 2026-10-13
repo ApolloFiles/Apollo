@@ -1,5 +1,4 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import { container } from 'tsyringe';
 import FfmpegProcessRunner from '#src/plugins/official/ffmpeg/process/FfmpegProcessRunner.js';
@@ -7,15 +6,12 @@ import FontExtractor from '#src/plugins/official/media/_old/watch/live_transcode
 import TextBasedSubtitleExtractor from '#src/plugins/official/media/_old/watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';
 import VideoAnalyser from '#src/plugins/official/media/_old/video/analyser/VideoAnalyser.js';
 import { ffmpegEnvironment, requireSample } from '#tests/acceptance/plugins/ffmpeg/FfmpegTestEnvironment.js';
+import { createTemporaryTestDirectory } from '#tests/test-helpers.js';
 
 let targetDir: string;
 
 beforeEach(async () => {
-  targetDir = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-subtitle-acceptance-'));
-});
-
-afterEach(async () => {
-  await Fs.promises.rm(targetDir, { recursive: true, force: true });
+  targetDir = await createTemporaryTestDirectory();
 });
 
 describe('TextBasedSubtitleExtractor', () => {
