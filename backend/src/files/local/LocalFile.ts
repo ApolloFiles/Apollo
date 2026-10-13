@@ -1,7 +1,7 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import NodeStream from 'node:stream';
-import NodeFsUtils from '../../utils/NodeFsUtils.js';
+import { NodeFsUtils } from '../../utils/NodeFsUtils.js';
 import VirtualFile from '../VirtualFile.js';
 import LocalFileSystem from './LocalFileSystem.js';
 

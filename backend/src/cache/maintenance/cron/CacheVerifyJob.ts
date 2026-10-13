@@ -3,7 +3,7 @@ import Fs from 'node:fs';
 import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
-import NodeFsUtils from '../../../utils/NodeFsUtils.js';
+import { NodeFsUtils } from '../../../utils/NodeFsUtils.js';
 import { CacheFileStorage } from '../../internal/CacheFileStorage.js';
 
 interface NamespaceScope {

@@ -1,6 +1,6 @@
 import Fs from 'node:fs';
 import { singleton } from 'tsyringe';
-import NodeFsUtils from '../../utils/NodeFsUtils.js';
+import { NodeFsUtils } from '../../utils/NodeFsUtils.js';
 import { CacheRootError } from '../error/CacheRootError.js';
 import { CacheFileStorage } from '../internal/CacheFileStorage.js';
 import { UnknownCacheNamespaceFinder } from './UnknownCacheNamespaceFinder.js';

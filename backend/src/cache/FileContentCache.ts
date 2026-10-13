@@ -1,5 +1,5 @@
 import type VirtualFile from '../files/VirtualFile.js';
-import NodeFsUtils from '../utils/NodeFsUtils.js';
+import { NodeFsUtils } from '../utils/NodeFsUtils.js';
 import type { CacheDefinition } from './CacheDefinition.js';
 import type { CacheEntry } from './CacheEntry.js';
 import type { CacheFactory, CacheGetOrCreateOptions } from './CacheFactory.js';

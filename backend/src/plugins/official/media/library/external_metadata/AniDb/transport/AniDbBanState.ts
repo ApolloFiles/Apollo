@@ -3,6 +3,7 @@ import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import { z } from 'zod';
 import ApolloDirectoryProvider from '../../../../../../../config/ApolloDirectoryProvider.js';
+import { NodeFsUtils } from '../../../../../../../utils/NodeFsUtils.js';
 
 /** @internal */
 export type AniDbBan = {
@@ -55,15 +56,9 @@ export class AniDbBanState {
   }
 
   private async readBanFile(): Promise<AniDbBan | null> {
-    let banFileContents: string;
-    try {
-      banFileContents = await Fs.promises.readFile(this.getBanFilePath(), 'utf-8');
-    } catch (err) {
-      if ((err as any).code === 'ENOENT') {
-        return null;
-      }
-
-      throw err;
+    const banFileContents = await NodeFsUtils.nullIfMissing(Fs.promises.readFile(this.getBanFilePath(), 'utf-8'));
+    if (banFileContents == null) {
+      return null;
     }
 
     try {

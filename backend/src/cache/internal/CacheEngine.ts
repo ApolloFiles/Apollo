@@ -1,7 +1,7 @@
 import { TimeUnit } from '@spraxdev/node-commons/util';
 import Fs from 'node:fs';
 import { InFlightRequestTracker } from '../../utils/InFlightRequestTracker.js';
-import NodeFsUtils from '../../utils/NodeFsUtils.js';
+import { NodeFsUtils } from '../../utils/NodeFsUtils.js';
 import { type CacheDefinition, validateCacheDefinition } from '../CacheDefinition.js';
 import type { CacheEntry } from '../CacheEntry.js';
 import { type CacheExpiry, ensureValidCacheExpiry, toExpiryDates } from '../CacheExpiry.js';
