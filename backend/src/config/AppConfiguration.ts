@@ -11,6 +11,7 @@ export type AppConfig = {
   paths: {
     dataDirectory: string;
     tmpDirectory: string;
+    cacheDirectory: string;
   },
 
   login: {
@@ -60,7 +61,8 @@ export default class AppConfiguration {
 
       paths: {
         dataDirectory: pathDataDirectory,
-        tmpDirectory: this.determineApolloTmpDirectory(pathDataDirectory),
+        tmpDirectory: this.determineApolloDirectory('tmp', pathDataDirectory),
+        cacheDirectory: this.determineApolloDirectory('cache', pathDataDirectory),
       },
 
       login: {
@@ -117,12 +119,12 @@ export default class AppConfiguration {
     return Path.resolve(dataDir);
   }
 
-  private determineApolloTmpDirectory(dataDir: string): string {
-    const tmpDir = process.env.APOLLO_TMP_DIRECTORY?.trim();
-    if (tmpDir == null || tmpDir === '') {
-      return Path.join(dataDir, 'tmp');
+  private determineApolloDirectory(type: 'tmp' | 'cache', dataDir: string): string {
+    const configuredDir = process.env[`APOLLO_${type.toUpperCase()}_DIRECTORY`]?.trim();
+    if (configuredDir == null || configuredDir === '') {
+      return Path.join(dataDir, type);
     }
 
-    return Path.resolve(tmpDir);
+    return Path.resolve(configuredDir);
   }
 }

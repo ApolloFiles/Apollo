@@ -14,7 +14,7 @@ export default class ApolloDirectoryProvider {
   }
 
   getCacheBaseDirectory(): string {
-    return Path.join(this.getApolloDataDirectory(), 'cache');
+    return this.getApolloBaseCacheDirectory();
   }
 
   getStateBaseDirectory(): string {
@@ -43,5 +43,9 @@ export default class ApolloDirectoryProvider {
 
   private getApolloTmpDirectory(): string {
     return this.appConfiguration.config.paths.tmpDirectory;
+  }
+
+  private getApolloBaseCacheDirectory(): string {
+    return this.appConfiguration.config.paths.cacheDirectory;
   }
 }
