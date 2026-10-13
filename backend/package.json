@@ -61,7 +61,7 @@
     "@prisma/client": "^7.10.0",
     "@sentry/node": "^10.76.0",
     "@sprax/node-framework": "0.1.0-rc.3",
-    "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#651d93d15a2dbd60908668caaf1682c9f089d51a",
+    "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#7a5ca9d9426058fd783b07efd96ea79f899cd1f1",
     "@types/mime-types": "^3.0.1",
     "fast-xml-parser": "^5.11.2",
     "fastify": "^5.12.5",
