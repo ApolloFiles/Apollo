@@ -17,6 +17,7 @@ model AuthUser {
   mediaLibraryUserWatchProgresses MediaLibraryUserWatchProgress[]
   feedbackReports                 FeedbackReport[]
   authAccessTokens                AuthAccessToken[]
+  cacheEntries                    CacheUserEntry[]
 
   @@index([createdAt])
   @@map("auth_users")

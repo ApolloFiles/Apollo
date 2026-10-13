@@ -4,6 +4,7 @@ import { type App, registerShutdownHooks } from '@sprax/node-framework';
 import { container } from 'tsyringe';
 import AccountCreationInviteCreator from './auth/account_creation_invite/AccountCreationInviteCreator.js';
 import WebApp from './boot/WebApp.js';
+import { CacheMaintenanceSchedule } from './cache/maintenance/cron/CacheMaintenanceSchedule.js';
 import AppConfiguration from './config/AppConfiguration.js';
 import { IS_PRODUCTION } from './constants.js';
 import DatabaseClient from './database/DatabaseClient.js';
@@ -28,6 +29,7 @@ async function bootstrap(): Promise<void> {
 
   app = new WebApp();
   await app.boot();
+  container.resolve(CacheMaintenanceSchedule).start();
 
   // TODO: remove debug
   container.resolve(FullLibraryIndexingHelper).runForAllUsers().catch(console.error);

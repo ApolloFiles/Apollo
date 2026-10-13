@@ -21,6 +21,7 @@ export type LockAcquireOptions = Pick<MutexAcquireOptions, 'waitTimeoutMs' | 'le
 export default abstract class VirtualFileSystem {
   public static readonly SYSTEM_USER_ID = 'SYSTEM';
 
+  // file system IDs may never contain `:`
   private readonly ID_PATTERN = /^[a-z0-9_.=@+-]+$/i;
   protected static readonly mutexManager = new MutexManager();
 

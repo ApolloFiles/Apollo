@@ -13,6 +13,18 @@ export default class NodeFsUtils {
     }
   }
 
+  static async nullIfMissing<T>(operation: Promise<T>): Promise<T | null> {
+    try {
+      return await operation;
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        return null;
+      }
+
+      throw err;
+    }
+  }
+
   static async readdirIfExists(path: Fs.PathLike): Promise<string[]> {
     try {
       return await Fs.promises.readdir(path, { withFileTypes: false });

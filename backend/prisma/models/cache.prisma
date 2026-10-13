@@ -1,0 +1,51 @@
+model CacheAppEntry {
+  id        BigInt @id @default(dbgenerated("generate_snowflake('cache_app_entries_id_seq'::text)"))
+  namespace String @db.VarChar(100)
+  version   Int
+  key       String
+
+  fileId      String? @unique @map("file_id") @db.Uuid /// NULL only when is_null = true
+  isNull      Boolean @map("is_null")
+  groupKey    String? @map("group_key")
+  sizeBytes   BigInt  @map("size_bytes")
+  contentType String? @map("content_type") @db.VarChar(255)
+  validator   String? @db.VarChar(255) /// file-content layer: "<size>;<mtimeMs>"
+
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3) /// milliseconds like a JS Date, so deleteExact can compare it for equality
+  freshUntil     DateTime? @map("fresh_until") @db.Timestamptz() /// NULL = never
+  keepUntil      DateTime? @map("keep_until") @db.Timestamptz() /// NULL = never
+  lastAccessedAt DateTime  @default(now()) @map("last_accessed_at") @db.Timestamptz()
+
+  @@unique([namespace, version, key])
+  @@index([keepUntil]) // partial (WHERE keep_until IS NOT NULL) in the migration SQL; Prisma can't express it
+  @@map("cache_app_entries")
+}
+
+model CacheUserEntry {
+  id BigInt @id @default(dbgenerated("generate_snowflake('cache_user_entries_id_seq'::text)"))
+
+  userId    String @map("user_id")
+  namespace String @db.VarChar(100)
+  version   Int
+  key       String
+
+  fileId      String? @unique @map("file_id") @db.Uuid /// NULL only when is_null = true
+  isNull      Boolean @map("is_null")
+  groupKey    String? @map("group_key")
+  sizeBytes   BigInt  @map("size_bytes")
+  contentType String? @map("content_type") @db.VarChar(255)
+  validator   String? @db.VarChar(255) /// e.g. file-content layer: "<size>;<mtimeMs>"
+
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3) /// milliseconds like a JS Date, so deleteExact can compare it for equality
+  freshUntil     DateTime? @map("fresh_until") @db.Timestamptz() /// NULL = expires never
+  keepUntil      DateTime? @map("keep_until") @db.Timestamptz() /// NULL = expires never
+  lastAccessedAt DateTime  @default(now()) @map("last_accessed_at") @db.Timestamptz()
+
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, namespace, version, key])
+  @@index([namespace, version])
+  @@index([keepUntil]) // partial (WHERE keep_until IS NOT NULL) in the migration SQL; Prisma can't express it
+  @@index([userId, groupKey]) // text_pattern_ops is set in the migration SQL; Prisma can't diff btree opclasses
+  @@map("cache_user_entries")
+}

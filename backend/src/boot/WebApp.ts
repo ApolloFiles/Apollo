@@ -1,5 +1,7 @@
 import { type App, resolveEagerSingletons } from '@sprax/node-framework';
 import { container } from 'tsyringe';
+import { CacheNamespaceRegistry } from '../cache/internal/CacheNamespaceRegistry.js';
+import { CacheStartupCheck } from '../cache/maintenance/CacheStartupCheck.js';
 import AppConfiguration from '../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../constants.js';
 import DatabaseClient from '../database/DatabaseClient.js';
@@ -17,6 +19,9 @@ export default class WebApp implements App {
     }
 
     resolveEagerSingletons();
+
+    container.resolve(CacheNamespaceRegistry).close();
+    await container.resolve(CacheStartupCheck).run();
 
     container.resolve(DatabaseClockDriftCheck).check()
       .then(checkResult => {
