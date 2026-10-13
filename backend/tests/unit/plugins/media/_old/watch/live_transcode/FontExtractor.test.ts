@@ -1,11 +1,10 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import type FfmpegJobRunner from '#src/plugins/official/ffmpeg/job/FfmpegJobRunner.js';
 import FontExtractor from '#src/plugins/official/media/_old/watch/live_transcode/extractor/FontExtractor.js';
 import type { ExtendedVideoAnalysis, Stream } from '#src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
-import { createStrictDeepMock } from '#tests/test-helpers.js';
+import { createStrictDeepMock, createTemporaryTestDirectory } from '#tests/test-helpers.js';
 
 function attachment(index: number, codecName: string, filename?: string, extraDataSize = 512): Stream {
   return { index, codecType: 'attachment', codecName, extraDataSize, tags: filename != null ? { filename } : {} } as unknown as Stream;
@@ -81,13 +80,9 @@ describe(FontExtractor, () => {
     let extractor: FontExtractor;
 
     beforeEach(async () => {
-      targetDir = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-font-unit-'));
+      targetDir = await createTemporaryTestDirectory();
       ffmpegJobRunner = createStrictDeepMock<FfmpegJobRunner>();
       extractor = new FontExtractor(ffmpegJobRunner);
-    });
-
-    afterEach(async () => {
-      await Fs.promises.rm(targetDir, { recursive: true, force: true });
     });
 
     function dumpArialWith(byteCount: number): void {

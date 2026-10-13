@@ -1,10 +1,9 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import type ApolloDirectoryProvider from '#src/config/ApolloDirectoryProvider.js';
 import { AniDbBanState } from '#src/plugins/official/media/library/external_metadata/AniDb/transport/AniDbBanState.js';
-import { createStrictDeepMock } from '#tests/test-helpers.js';
+import { createStrictDeepMock, createTemporaryTestDirectory } from '#tests/test-helpers.js';
 
 const BAN_FILE_NAME = 'AniDB-client-ban.json';
 
@@ -17,7 +16,7 @@ describe(AniDbBanState, () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-03-14T12:00:00.000Z'));
-    stateDirectory = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-anidb-test-'));
+    stateDirectory = await createTemporaryTestDirectory();
 
     apolloDirectoryProvider = createStrictDeepMock<ApolloDirectoryProvider>();
     apolloDirectoryProvider.getStateBaseDirectory.mockReturnValue(stateDirectory);
@@ -25,9 +24,8 @@ describe(AniDbBanState, () => {
     subject = new AniDbBanState(apolloDirectoryProvider);
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     vi.useRealTimers();
-    await Fs.promises.rm(stateDirectory, { recursive: true, force: true });
   });
 
   function banFilePath(): string {

@@ -1,5 +1,4 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import { SOFTWARE } from '#src/plugins/official/ffmpeg/accel/Accel.js';
@@ -7,7 +6,7 @@ import type { FfmpegJob } from '#src/plugins/official/ffmpeg/job/FfmpegJob.js';
 import type FfmpegJobRunner from '#src/plugins/official/ffmpeg/job/FfmpegJobRunner.js';
 import TextBasedSubtitleExtractor, { type ExtractedSubtitle } from '#src/plugins/official/media/_old/watch/live_transcode/extractor/TextBasedSubtitleExtractor.js';
 import type { ExtendedVideoAnalysis, Stream } from '#src/plugins/official/media/_old/video/analyser/VideoAnalyser.Types.js';
-import { createStrictDeepMock } from '#tests/test-helpers.js';
+import { createStrictDeepMock, createTemporaryTestDirectory } from '#tests/test-helpers.js';
 
 function stream(index: number, codecType: Stream['codecType'], codecName: string, tags: { [key: string]: string } = {}): Stream {
   return { index, codecType, codecName, tags } as unknown as Stream;
@@ -116,13 +115,9 @@ describe(TextBasedSubtitleExtractor, () => {
     let extractor: TextBasedSubtitleExtractor;
 
     beforeEach(async () => {
-      targetDir = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-subtitle-unit-'));
+      targetDir = await createTemporaryTestDirectory();
       ffmpegJobRunner = createStrictDeepMock<FfmpegJobRunner>();
       extractor = new TextBasedSubtitleExtractor(ffmpegJobRunner);
-    });
-
-    afterEach(async () => {
-      await Fs.promises.rm(targetDir, { recursive: true, force: true });
     });
 
     test('Does not touch FFmpeg for a file without text-based subtitles', async () => {

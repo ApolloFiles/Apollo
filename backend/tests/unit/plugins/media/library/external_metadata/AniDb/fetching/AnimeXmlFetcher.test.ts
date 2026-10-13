@@ -1,5 +1,4 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import Zlib from 'node:zlib';
 import type { DeepMockProxy } from 'vitest-mock-extended';
@@ -7,7 +6,7 @@ import type ApolloDirectoryProvider from '#src/config/ApolloDirectoryProvider.js
 import ExpiringApolloCache from '#src/files/cache/global/ExpiringApolloCache.js';
 import { AnimeXmlFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/AnimeXmlFetcher.js';
 import type { UncachedAnimeXmlFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedAnimeXmlFetcher.js';
-import { createStrictDeepMock } from '#tests/test-helpers.js';
+import { createStrictDeepMock, createTemporaryTestDirectory } from '#tests/test-helpers.js';
 
 const ANIME_XML = '<?xml version="1.0" encoding="UTF-8"?><anime id="1"><type>TV Series</type></anime>';
 const CACHE_ID_PREFIX = 'anidb_http_api';
@@ -23,7 +22,7 @@ describe(AnimeXmlFetcher, () => {
 
   beforeEach(async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    cacheDirectory = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-anidb-cache-test-'));
+    cacheDirectory = await createTemporaryTestDirectory();
 
     apolloDirectoryProvider = createStrictDeepMock<ApolloDirectoryProvider>();
     apolloDirectoryProvider.getCacheBaseDirectory.mockReturnValue(cacheDirectory);
@@ -35,9 +34,8 @@ describe(AnimeXmlFetcher, () => {
     subject = new AnimeXmlFetcher(uncachedAnimeXmlFetcher, cache);
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     vi.useRealTimers();
-    await Fs.promises.rm(cacheDirectory, { recursive: true, force: true });
   });
 
   async function getCachedDataPath(animeId: number): Promise<string> {

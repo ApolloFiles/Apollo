@@ -1,5 +1,4 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import type { DeepMockProxy } from 'vitest-mock-extended';
 import type ApolloDirectoryProvider from '#src/config/ApolloDirectoryProvider.js';
@@ -7,7 +6,7 @@ import ExpiringApolloCache from '#src/files/cache/global/ExpiringApolloCache.js'
 import { AniDbCdnError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbCdnError.js';
 import { ImageFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/ImageFetcher.js';
 import type { UncachedImageFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedImageFetcher.js';
-import { createStrictDeepMock } from '#tests/test-helpers.js';
+import { createStrictDeepMock, createTemporaryTestDirectory } from '#tests/test-helpers.js';
 
 const IMAGE_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
 const CACHE_ID_PREFIX = 'anidb_cdn_image';
@@ -22,7 +21,7 @@ describe(ImageFetcher, () => {
 
   beforeEach(async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    cacheDirectory = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'apollo-anidb-image-cache-test-'));
+    cacheDirectory = await createTemporaryTestDirectory();
 
     apolloDirectoryProvider = createStrictDeepMock<ApolloDirectoryProvider>();
     apolloDirectoryProvider.getCacheBaseDirectory.mockReturnValue(cacheDirectory);
@@ -34,9 +33,8 @@ describe(ImageFetcher, () => {
     subject = new ImageFetcher(uncachedImageFetcher, cache);
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     vi.useRealTimers();
-    await Fs.promises.rm(cacheDirectory, { recursive: true, force: true });
   });
 
   async function getCachedDataPath(fileName: string): Promise<string> {

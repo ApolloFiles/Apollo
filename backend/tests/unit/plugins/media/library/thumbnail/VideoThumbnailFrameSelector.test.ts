@@ -1,21 +1,17 @@
 import Fs from 'node:fs';
-import Os from 'node:os';
 import Path from 'node:path';
 import Sharp, { type SharpOptions } from 'sharp';
 import ThumbnailFrameRater from '#src/plugins/official/media/library/thumbnail/ThumbnailFrameRater.js';
 import VideoThumbnailFrameSelector from '#src/plugins/official/media/library/thumbnail/VideoThumbnailFrameSelector.js';
+import { createTemporaryTestDirectory } from '#tests/test-helpers.js';
 
 describe(VideoThumbnailFrameSelector, () => {
   let frameDirectory: string;
   let selector: VideoThumbnailFrameSelector;
 
   beforeEach(async () => {
-    frameDirectory = await Fs.promises.mkdtemp(Path.join(Os.tmpdir(), 'thumbnail-frame-selector-'));
+    frameDirectory = await createTemporaryTestDirectory();
     selector = new VideoThumbnailFrameSelector(new ThumbnailFrameRater());
-  });
-
-  afterEach(async () => {
-    await Fs.promises.rm(frameDirectory, { recursive: true, force: true });
   });
 
   async function writeFrame(fileName: string, create: SharpOptions['create']): Promise<string> {
