@@ -9,7 +9,11 @@ export default class EventEmitter<T extends AbstractBaseEvent> {
 
   async emit(event: T): Promise<void> {
     for (const eventListener of this.eventListeners) {
-      await eventListener(event);
+      try {
+        await eventListener(event);
+      } catch (err) {
+        console.error(`A listener for ${event.constructor.name} failed:`, err);
+      }
     }
   }
 }
