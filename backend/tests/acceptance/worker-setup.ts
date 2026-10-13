@@ -10,3 +10,7 @@ import { container } from 'tsyringe';
 beforeEach(() => {
   container.clearInstances();
 });
+
+afterAll(async () => {
+  await container.dispose();
+});
