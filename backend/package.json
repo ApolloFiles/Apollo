@@ -60,7 +60,7 @@
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@sentry/node": "^10.76.0",
-    "@sprax/node-framework": "0.1.0-rc.2",
+    "@sprax/node-framework": "0.1.0-rc.3",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#651d93d15a2dbd60908668caaf1682c9f089d51a",
     "@types/mime-types": "^3.0.1",
     "fast-xml-parser": "^5.11.2",

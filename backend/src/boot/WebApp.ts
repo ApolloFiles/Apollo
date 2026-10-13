@@ -1,4 +1,4 @@
-import type { App } from '@sprax/node-framework';
+import { type App, resolveEagerSingletons } from '@sprax/node-framework';
 import { container } from 'tsyringe';
 import AppConfiguration from '../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../constants.js';
@@ -15,6 +15,8 @@ export default class WebApp implements App {
     if (IS_PRODUCTION) {
       await container.resolve(DatabaseClient).runDatabaseMigrations();
     }
+
+    resolveEagerSingletons();
 
     container.resolve(DatabaseClockDriftCheck).check()
       .then(checkResult => {
