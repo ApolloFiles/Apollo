@@ -154,26 +154,6 @@ describe(AniDbClient, () => {
       expect(imageFetcher.fetchImage).not.toHaveBeenCalled();
     });
 
-    test('Shares one fetch between concurrent calls for the same image', async () => {
-      const [first, second] = await Promise.all([subject.fetchImage('294282.jpg'), subject.fetchImage('294282.jpg')]);
-
-      expect(imageFetcher.fetchImage).toHaveBeenCalledOnce();
-      expect(second).toBe(first);
-    });
-
-    test('Fetches different images separately', async () => {
-      await Promise.all([subject.fetchImage('294282.jpg'), subject.fetchImage('67867.png')]);
-
-      expect(imageFetcher.fetchImage).toHaveBeenCalledTimes(2);
-    });
-
-    test('Does not share an in-flight image fetch with an anime fetch', async () => {
-      await Promise.all([subject.fetchAnime(1), subject.fetchImage('1.jpg')]);
-
-      expect(animeXmlFetcher.fetchXml).toHaveBeenCalledOnce();
-      expect(imageFetcher.fetchImage).toHaveBeenCalledOnce();
-    });
-
     test('Passes errors of the image fetcher through unchanged', async () => {
       const cdnError = AniDbCdnError.createForNotFoundResponse('294282.jpg');
       imageFetcher.fetchImage.mockRejectedValue(cdnError);

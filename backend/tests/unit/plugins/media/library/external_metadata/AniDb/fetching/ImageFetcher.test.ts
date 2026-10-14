@@ -1,135 +1,57 @@
-import Fs from 'node:fs';
-import Path from 'node:path';
 import type { DeepMockProxy } from 'vitest-mock-extended';
-import type ApolloDirectoryProvider from '#src/config/ApolloDirectoryProvider.js';
-import ExpiringApolloCache from '#src/files/cache/global/ExpiringApolloCache.js';
+import type { CacheFactory } from '#src/cache/CacheFactory.js';
+import { InMemoryCacheEntry } from '#src/cache/internal/entry/InMemoryCacheEntry.js';
+import type { AniDbImageCache } from '#src/plugins/official/media/library/external_metadata/AniDb/cache/AniDbImageCache.js';
 import { AniDbCdnError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbCdnError.js';
 import { ImageFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/ImageFetcher.js';
 import type { UncachedImageFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedImageFetcher.js';
-import { createStrictDeepMock, createTemporaryTestDirectory } from '#tests/test-helpers.js';
+import { createStrictDeepMock } from '#tests/test-helpers.js';
 
-const IMAGE_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
-const CACHE_ID_PREFIX = 'anidb_cdn_image';
-const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+const JPEG_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+const FACTORY_CONTEXT = { tempPath: '/tmp/apollo-cache/0b1f7a0e', fromTempFile: () => { throw new Error('Not expected to be used'); } };
 
 describe(ImageFetcher, () => {
-  let cacheDirectory: string;
-  let apolloDirectoryProvider: DeepMockProxy<ApolloDirectoryProvider>;
-  let cache: ExpiringApolloCache;
+  let imageCache: DeepMockProxy<AniDbImageCache>;
   let uncachedImageFetcher: DeepMockProxy<UncachedImageFetcher>;
   let subject: ImageFetcher;
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    cacheDirectory = await createTemporaryTestDirectory();
+  beforeEach(() => {
+    imageCache = createStrictDeepMock<AniDbImageCache>();
+    imageCache.getOrCreate.mockImplementation(async (_key, factory) => runFactory(factory));
 
-    apolloDirectoryProvider = createStrictDeepMock<ApolloDirectoryProvider>();
-    apolloDirectoryProvider.getCacheBaseDirectory.mockReturnValue(cacheDirectory);
-    cache = new ExpiringApolloCache(apolloDirectoryProvider);
-
+    const imagesByFileName = new Map([['294282.jpg', JPEG_BYTES], ['67867.png', PNG_BYTES]]);
     uncachedImageFetcher = createStrictDeepMock<UncachedImageFetcher>();
-    uncachedImageFetcher.fetchImage.mockResolvedValue(IMAGE_BYTES);
+    uncachedImageFetcher.fetchImage.mockImplementation(async (fileName) => imagesByFileName.get(fileName)!);
 
-    subject = new ImageFetcher(uncachedImageFetcher, cache);
+    subject = new ImageFetcher(uncachedImageFetcher, imageCache);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  async function getCachedDataPath(fileName: string): Promise<string> {
-    const cachePath = await cache.get(CACHE_ID_PREFIX, fileName);
-    return cachePath!.path;
+  async function runFactory(factory: CacheFactory<Buffer>): Promise<InMemoryCacheEntry<Buffer>> {
+    const image = await factory(FACTORY_CONTEXT) as Buffer;
+    return new InMemoryCacheEntry(image, (data) => data, false, new Date(), null, null);
   }
 
-  test('Fetches the image when nothing is cached yet', async () => {
-    await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
-
-    expect(uncachedImageFetcher.fetchImage).toHaveBeenCalledExactlyOnceWith('294282.jpg');
-  });
-
-  test('Serves a second request for the same image from the cache', async () => {
+  test('Looks the image up in the cache by its file name', async () => {
     await subject.fetchImage('294282.jpg');
 
-    await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
-
-    expect(uncachedImageFetcher.fetchImage).toHaveBeenCalledOnce();
+    expect(imageCache.getOrCreate).toHaveBeenCalledExactlyOnceWith('294282.jpg', expect.any(Function));
   });
 
-  test('Keeps different images apart', async () => {
-    const otherImage = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
-    const imagesByFileName = new Map([['294282.jpg', IMAGE_BYTES], ['67867.png', otherImage]]);
-    uncachedImageFetcher.fetchImage.mockImplementation(async (fileName) => imagesByFileName.get(fileName)!);
-    await subject.fetchImage('294282.jpg');
-    await subject.fetchImage('67867.png');
+  test('Returns the cached image bytes', async () => {
+    imageCache.getOrCreate.mockResolvedValue(new InMemoryCacheEntry(JPEG_BYTES, (data) => data, false, new Date(), null, null));
 
-    await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
-    await expect(subject.fetchImage('67867.png')).resolves.toEqual(otherImage);
-
-    expect(uncachedImageFetcher.fetchImage).toHaveBeenCalledTimes(2);
+    await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(JPEG_BYTES);
   });
 
-  test('Stores the image bytes unchanged', async () => {
-    await subject.fetchImage('294282.jpg');
-
-    await expect(Fs.promises.readFile(await getCachedDataPath('294282.jpg'))).resolves.toEqual(IMAGE_BYTES);
+  test('Fetches the requested image from the CDN on a cache miss', async () => {
+    await expect(subject.fetchImage('67867.png')).resolves.toEqual(PNG_BYTES);
   });
 
-  test('Leaves no partial file behind', async () => {
-    await subject.fetchImage('294282.jpg');
-
-    const entryFiles = await Fs.promises.readdir(Path.dirname(await getCachedDataPath('294282.jpg')));
-    expect(entryFiles.sort()).toEqual(['data', 'metadata']);
-  });
-
-  test('Does not cache a failed fetch', async () => {
+  test('Passes on the error when the CDN does not deliver the image and nothing is cached', async () => {
     const notFoundError = AniDbCdnError.createForNotFoundResponse('294282.jpg');
-    uncachedImageFetcher.fetchImage.mockRejectedValueOnce(notFoundError);
+    uncachedImageFetcher.fetchImage.mockRejectedValue(notFoundError);
 
     await expect(subject.fetchImage('294282.jpg')).rejects.toBe(notFoundError);
-    await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
-
-    expect(uncachedImageFetcher.fetchImage).toHaveBeenCalledTimes(2);
-  });
-
-  test('Fetches again when the cached image cannot be read', async () => {
-    await subject.fetchImage('294282.jpg');
-    await Fs.promises.rm(await getCachedDataPath('294282.jpg'));
-
-    await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
-
-    expect(uncachedImageFetcher.fetchImage).toHaveBeenCalledTimes(2);
-  });
-
-  test('Keeps the image cached for a year', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    await subject.fetchImage('294282.jpg');
-
-    vi.setSystemTime(Date.now() + ONE_YEAR_MS - 60_000);
-    await subject.fetchImage('294282.jpg');
-
-    expect(uncachedImageFetcher.fetchImage).toHaveBeenCalledOnce();
-  });
-
-  test('Fetches again once the cached image has expired', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    await subject.fetchImage('294282.jpg');
-
-    vi.setSystemTime(Date.now() + ONE_YEAR_MS + 60_000);
-    await subject.fetchImage('294282.jpg');
-
-    expect(uncachedImageFetcher.fetchImage).toHaveBeenCalledTimes(2);
-  });
-
-  test('Still returns the fetched data, and logs an error, when it cannot be written to the cache', async () => {
-    const blockingFile = Path.join(cacheDirectory, 'not-a-directory');
-    await Fs.promises.writeFile(blockingFile, '');
-    apolloDirectoryProvider.getCacheBaseDirectory.mockReturnValue(Path.join(blockingFile, 'cache'));
-
-    await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
-    await expect(subject.fetchImage('294282.jpg')).resolves.toEqual(IMAGE_BYTES);
-
-    expect(uncachedImageFetcher.fetchImage).toHaveBeenCalledTimes(2);
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Error writing the AniDB image 294282.jpg to the cache'), expect.any(Error));
   });
 });

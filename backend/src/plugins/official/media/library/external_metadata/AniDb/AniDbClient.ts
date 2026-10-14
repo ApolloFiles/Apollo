@@ -13,7 +13,6 @@ export class AniDbClient {
   private static readonly FILE_NAME_PATTERN = /^[0-9]+\.[a-z]+$/i;
 
   private readonly inFlightAnimeRequests = new InFlightRequestTracker<ReadonlyAniDbAnime | null>();
-  private readonly inFlightImageRequests = new InFlightRequestTracker<Buffer>();
 
   constructor(
     private readonly animeXmlFetcher: AnimeXmlFetcher,
@@ -35,7 +34,7 @@ export class AniDbClient {
       throw new AniDbError(`The fileName ${JSON.stringify(fileName)} looks invalid`);
     }
 
-    return this.inFlightImageRequests.run(fileName, () => this.imageFetcher.fetchImage(fileName));
+    return this.imageFetcher.fetchImage(fileName);
   }
 
   private async fetchAndParseAnime(animeId: number): Promise<ReadonlyAniDbAnime | null> {
