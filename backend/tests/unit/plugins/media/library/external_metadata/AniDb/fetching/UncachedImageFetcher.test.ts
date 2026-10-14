@@ -50,7 +50,7 @@ describe(UncachedImageFetcher, () => {
   test('Reports any other unexpected status code together with the response body', async () => {
     httpClient.get.mockResolvedValue(createResponse(503, { 'content-type': 'text/plain' }, 'Service Unavailable'));
 
-    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow(new AniDbCdnError('The AniDB CDN responded with unexpected status 503: Service Unavailable'));
+    await expect(subject.fetchImage('294282.jpg')).rejects.toThrow(new AniDbCdnError('The AniDB CDN responded with unexpected status 503: Service Unavailable', { isTransient: true }));
   });
 
   test('Rejects a successful response that is not an image', async () => {

@@ -6,6 +6,7 @@ export class AniDbFloodControlError extends AniDbError {
   static createForExceededQueueWaitTime(estimatedWaitMs: number): AniDbFloodControlError {
     return new AniDbFloodControlError(
       `Refusing to contact the AniDB API because the queue is backed up by about ${Math.round(estimatedWaitMs / 1000)}s`,
+      { isTransient: true },
     );
   }
 
@@ -13,11 +14,12 @@ export class AniDbFloodControlError extends AniDbError {
   static createForActiveBan(ban: AniDbBan): AniDbFloodControlError {
     return new AniDbFloodControlError(
       `Refusing to contact the AniDB API until ${ban.bannedUntil.toISOString()}: ${ban.reason}`,
+      { isTransient: true },
     );
   }
 
   /** @internal */
   static createForShutdown(): AniDbFloodControlError {
-    return new AniDbFloodControlError('Cancelled the queued AniDB API request because the app is shutting down');
+    return new AniDbFloodControlError('Cancelled the queued AniDB API request because the app is shutting down', { isTransient: true });
   }
 }

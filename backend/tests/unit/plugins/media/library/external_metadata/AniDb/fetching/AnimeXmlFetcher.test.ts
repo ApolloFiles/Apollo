@@ -3,6 +3,7 @@ import type { CacheFactory } from '#src/cache/CacheFactory.js';
 import { InMemoryCacheEntry } from '#src/cache/internal/entry/InMemoryCacheEntry.js';
 import { NullCacheEntry } from '#src/cache/internal/entry/NullCacheEntry.js';
 import type { AniDbAnimeXmlCache } from '#src/plugins/official/media/library/external_metadata/AniDb/cache/AniDbAnimeXmlCache.js';
+import { AniDbErrorClassifier } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbErrorClassifier.js';
 import { AnimeXmlFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/AnimeXmlFetcher.js';
 import type { UncachedAnimeXmlFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedAnimeXmlFetcher.js';
 import { createStrictDeepMock } from '#tests/test-helpers.js';
@@ -36,7 +37,13 @@ describe(AnimeXmlFetcher, () => {
   test('Looks the anime up in the cache by its id', async () => {
     await subject.fetchXml(17);
 
-    expect(animeXmlCache.getOrCreate).toHaveBeenCalledExactlyOnceWith('17', expect.any(Function));
+    expect(animeXmlCache.getOrCreate).toHaveBeenCalledExactlyOnceWith('17', expect.any(Function), expect.anything());
+  });
+
+  test('Serves a stale cache entry only for failures that might go away', async () => {
+    await subject.fetchXml(17);
+
+    expect(animeXmlCache.getOrCreate).toHaveBeenCalledExactlyOnceWith(expect.anything(), expect.any(Function), { serveStaleOnError: AniDbErrorClassifier.isTransient });
   });
 
   test('Returns the cached xml', async () => {

@@ -99,7 +99,7 @@ describe(AniDbHttpTransport, () => {
   test('Reports an unexpected status code together with the decoded body', async () => {
     httpClient.get.mockResolvedValue(createResponse(503, Zlib.gzipSync(Buffer.from('service unavailable'))));
 
-    await expect(subject.fetchXml({ request: 'anime', aid: 1 })).rejects.toThrow(new AniDbApiError('AniDB API responded with unexpected status 503: service unavailable'));
+    await expect(subject.fetchXml({ request: 'anime', aid: 1 })).rejects.toThrow(new AniDbApiError('AniDB API responded with unexpected status 503: service unavailable', { isTransient: true }));
   });
 
   test('Turns an error response into an AniDbResponseError carrying text and code', async () => {

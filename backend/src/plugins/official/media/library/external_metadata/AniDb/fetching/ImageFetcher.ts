@@ -1,5 +1,6 @@
 import { singleton } from 'tsyringe';
 import { AniDbImageCache } from '../cache/AniDbImageCache.js';
+import { AniDbErrorClassifier } from '../errors/AniDbErrorClassifier.js';
 import { UncachedImageFetcher } from './UncachedImageFetcher.js';
 
 /** @internal */
@@ -15,6 +16,7 @@ export class ImageFetcher {
     const cacheEntry = await this.imageCache.getOrCreate(
       fileName,
       () => this.uncachedImageFetcher.fetchImage(fileName),
+      { serveStaleOnError: AniDbErrorClassifier.isTransient },
     );
     return cacheEntry.value();
   }

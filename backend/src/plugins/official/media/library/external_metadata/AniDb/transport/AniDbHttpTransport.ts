@@ -90,17 +90,11 @@ export class AniDbHttpTransport {
     throw responseError;
   }
 
-  /** no official documentation on how to detect errors :/ */
   private isBanError(error: AniDbResponseError): boolean {
-    if (error.errorText === 'Banned') {
-      return true;
-    }
-
-    if (error.errorText.toLowerCase().includes('banned')) {
+    if (error.isBan && error.errorText !== 'Banned') {
       console.warn(`[AniDB] Treating an error response as a ban, although it is not the documented "Banned": ${JSON.stringify(error.errorText)} (code=${error.errorCode})`);
-      return true;
     }
 
-    return false;
+    return error.isBan;
   }
 }

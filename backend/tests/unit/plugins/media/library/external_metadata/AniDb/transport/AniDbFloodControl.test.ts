@@ -66,7 +66,7 @@ describe(AniDbFloodControl, () => {
     const task = vi.fn(async () => 'done');
     const accepted = Array.from({ length: 16 }, () => subject.run(task));
 
-    await expect(subject.run(task)).rejects.toThrow(new AniDbFloodControlError('Refusing to contact the AniDB API because the queue is backed up by about 30s'));
+    await expect(subject.run(task)).rejects.toThrow(new AniDbFloodControlError('Refusing to contact the AniDB API because the queue is backed up by about 30s', { isTransient: true }));
 
     await vi.advanceTimersByTimeAsync(60_000);
     await Promise.all(accepted);
@@ -90,7 +90,7 @@ describe(AniDbFloodControl, () => {
     banState.getActiveBan.mockResolvedValue(ACTIVE_BAN);
     const task = vi.fn(async () => 'done');
 
-    await expect(subject.run(task)).rejects.toThrow(new AniDbFloodControlError('Refusing to contact the AniDB API until 2099-01-01T00:00:00.000Z: banned for flooding'));
+    await expect(subject.run(task)).rejects.toThrow(new AniDbFloodControlError('Refusing to contact the AniDB API until 2099-01-01T00:00:00.000Z: banned for flooding', { isTransient: true }));
 
     expect(task).not.toHaveBeenCalled();
   });
@@ -99,7 +99,7 @@ describe(AniDbFloodControl, () => {
     const queuedTask = vi.fn(async () => 'second');
     const first = subject.run(async () => 'first');
     const queued = subject.run(queuedTask);
-    const queuedRejection = expect(queued).rejects.toThrow(new AniDbFloodControlError('Refusing to contact the AniDB API until 2099-01-01T00:00:00.000Z: banned for flooding'));
+    const queuedRejection = expect(queued).rejects.toThrow(new AniDbFloodControlError('Refusing to contact the AniDB API until 2099-01-01T00:00:00.000Z: banned for flooding', { isTransient: true }));
     await vi.advanceTimersByTimeAsync(0);
 
     banState.getActiveBan.mockResolvedValue(ACTIVE_BAN);
@@ -133,7 +133,7 @@ describe(AniDbFloodControl, () => {
       const queuedTask = vi.fn(async () => 'second');
       const first = subject.run(async () => 'first');
       const queued = subject.run(queuedTask);
-      const queuedRejection = expect(queued).rejects.toThrow(new AniDbFloodControlError('Cancelled the queued AniDB API request because the app is shutting down'));
+      const queuedRejection = expect(queued).rejects.toThrow(new AniDbFloodControlError('Cancelled the queued AniDB API request because the app is shutting down', { isTransient: true }));
       await vi.advanceTimersByTimeAsync(0);
       expect(vi.getTimerCount()).toBe(1);
 

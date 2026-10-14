@@ -3,6 +3,7 @@ import type { CacheFactory } from '#src/cache/CacheFactory.js';
 import { InMemoryCacheEntry } from '#src/cache/internal/entry/InMemoryCacheEntry.js';
 import type { AniDbImageCache } from '#src/plugins/official/media/library/external_metadata/AniDb/cache/AniDbImageCache.js';
 import { AniDbCdnError } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbCdnError.js';
+import { AniDbErrorClassifier } from '#src/plugins/official/media/library/external_metadata/AniDb/errors/AniDbErrorClassifier.js';
 import { ImageFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/ImageFetcher.js';
 import type { UncachedImageFetcher } from '#src/plugins/official/media/library/external_metadata/AniDb/fetching/UncachedImageFetcher.js';
 import { createStrictDeepMock } from '#tests/test-helpers.js';
@@ -35,7 +36,13 @@ describe(ImageFetcher, () => {
   test('Looks the image up in the cache by its file name', async () => {
     await subject.fetchImage('294282.jpg');
 
-    expect(imageCache.getOrCreate).toHaveBeenCalledExactlyOnceWith('294282.jpg', expect.any(Function));
+    expect(imageCache.getOrCreate).toHaveBeenCalledExactlyOnceWith('294282.jpg', expect.any(Function), expect.anything());
+  });
+
+  test('Serves a stale cache entry only for failures that might go away', async () => {
+    await subject.fetchImage('294282.jpg');
+
+    expect(imageCache.getOrCreate).toHaveBeenCalledExactlyOnceWith(expect.anything(), expect.any(Function), { serveStaleOnError: AniDbErrorClassifier.isTransient });
   });
 
   test('Returns the cached image bytes', async () => {

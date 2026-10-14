@@ -1,5 +1,6 @@
 import { singleton } from 'tsyringe';
 import { AniDbAnimeXmlCache } from '../cache/AniDbAnimeXmlCache.js';
+import { AniDbErrorClassifier } from '../errors/AniDbErrorClassifier.js';
 import { UncachedAnimeXmlFetcher } from './UncachedAnimeXmlFetcher.js';
 
 /** @internal */
@@ -15,6 +16,7 @@ export class AnimeXmlFetcher {
     const cacheEntry = await this.animeXmlCache.getOrCreate(
       animeId.toString(),
       () => this.uncachedAnimeXmlFetcher.fetchXml(animeId),
+      { serveStaleOnError: AniDbErrorClassifier.isTransient },
     );
 
     return cacheEntry.value();

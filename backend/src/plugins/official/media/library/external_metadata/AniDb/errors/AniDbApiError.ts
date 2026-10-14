@@ -1,10 +1,14 @@
 import type { ZodError } from 'zod';
 import { AniDbError } from './AniDbError.js';
+import { AniDbErrorClassifier } from './AniDbErrorClassifier.js';
 
 export class AniDbApiError extends AniDbError {
   /** @internal */
   static createForUnexpectedHttpStatusCode(code: number, responseBody: string): AniDbApiError {
-    return new AniDbApiError(`AniDB API responded with unexpected status ${code}: ${responseBody}`);
+    return new AniDbApiError(
+      `AniDB API responded with unexpected status ${code}: ${responseBody}`,
+      { isTransient: AniDbErrorClassifier.isTransientHttpStatus(code) },
+    );
   }
 
   /** @internal */
