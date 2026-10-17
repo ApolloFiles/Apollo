@@ -1,12 +1,12 @@
+import { ExternalApiErrorClassifier } from '../../ExternalApiErrorClassifier.js';
 import { AniDbError } from './AniDbError.js';
-import { AniDbErrorClassifier } from './AniDbErrorClassifier.js';
 
 export class AniDbCdnError extends AniDbError {
   /** @internal */
   static createForUnexpectedHttpStatusCode(code: number, responseBody: string): AniDbCdnError {
     return new AniDbCdnError(
       `The AniDB CDN responded with unexpected status ${code}: ${responseBody}`,
-      { isTransient: AniDbErrorClassifier.isTransientHttpStatus(code) },
+      { isTransient: ExternalApiErrorClassifier.isTransientHttpStatus(code) },
     );
   }
 
