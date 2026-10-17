@@ -3,18 +3,18 @@ import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaExternalIdSource } from '../../../../../database/prisma-client/enums.js';
 import type { PrismaPromise } from '../../../../../database/prisma-client/internal/prismaNamespace.js';
 import type ReadContentsLibraryMedia from '../database/media/ReadContentsLibraryMedia.js';
-import CachedTheMovieDbApiClient from '../external_metadata/TMDB/CachedTheMovieDbApiClient.js';
-import type { TMDBMovieDetails, TMDBTvSeriesDetails } from '../external_metadata/TMDB/TMDBApiResponseSchemas.js';
+import { TmdbErrorClassifier } from '../external_metadata/tmdb/errors/TmdbErrorClassifier.js';
+import { TmdbClient, type TmdbMovie, type TmdbTvSeries } from '../external_metadata/tmdb/TmdbClient.js';
 
 type TheMovieDbMetadata =
-  { type: 'tv', details: TMDBTvSeriesDetails }
-  | { type: 'movie', details: TMDBMovieDetails };
+  { type: 'tv', details: TmdbTvSeries }
+  | { type: 'movie', details: TmdbMovie };
 
 @singleton()
 export default class MediaMetadataHydrator {
   constructor(
     private readonly databaseClient: DatabaseClient,
-    private readonly theMovieDbApiClient: CachedTheMovieDbApiClient,
+    private readonly tmdbClient: TmdbClient,
   ) {
   }
 
@@ -40,7 +40,7 @@ export default class MediaMetadataHydrator {
       where: { id: media.id },
       data: {
         title: mediaMetadata.type === 'movie' ? mediaMetadata.details.title : mediaMetadata.details.name,
-        synopsis: mediaMetadata.details.overview.trim() || undefined,
+        synopsis: mediaMetadata.details.overview?.trim() || undefined,
         year: firstAirYear,
         externalApiFetchedAt: await this.databaseClient.fetchNow(),
       },
@@ -57,51 +57,54 @@ export default class MediaMetadataHydrator {
     ];
 
     if (mediaMetadata.details.poster_path != null) {
-      const posterImage = await this.theMovieDbApiClient.fetchImage(mediaMetadata.details.poster_path);
-      const posterImageUint8Array = new Uint8Array(posterImage);
+      const posterImage = await this.tmdbClient.fetchImage(mediaMetadata.details.poster_path);
 
-      fallbackImageDatabaseOperations.push(
-        this.databaseClient.mediaLibraryMediaFallbackImages.upsert({
-          where: {
-            mediaId_type: {
+      if (posterImage != null) {
+        const posterImageUint8Array = new Uint8Array(posterImage);
+        fallbackImageDatabaseOperations.push(
+          this.databaseClient.mediaLibraryMediaFallbackImages.upsert({
+            where: {
+              mediaId_type: {
+                mediaId: media.id,
+                type: 'POSTER',
+              },
+            },
+            create: {
               mediaId: media.id,
               type: 'POSTER',
+              image: posterImageUint8Array,
             },
-          },
-          create: {
-            mediaId: media.id,
-            type: 'POSTER',
-            image: posterImageUint8Array,
-          },
-          update: {
-            image: posterImageUint8Array,
-          },
-        }),
-      );
+            update: {
+              image: posterImageUint8Array,
+            },
+          }),
+        );
+      }
     }
 
     if (mediaMetadata.details.backdrop_path != null) {
-      const backdropImage = await this.theMovieDbApiClient.fetchImage(mediaMetadata.details.backdrop_path);
-      const backdropImageUint8Array = new Uint8Array(backdropImage);
-
-      fallbackImageDatabaseOperations.push(
-        this.databaseClient.mediaLibraryMediaFallbackImages.upsert({
-          where: {
-            mediaId_type: {
+      const backdropImage = await this.tmdbClient.fetchImage(mediaMetadata.details.backdrop_path);
+      if (backdropImage != null) {
+        const backdropImageUint8Array = new Uint8Array(backdropImage);
+        fallbackImageDatabaseOperations.push(
+          this.databaseClient.mediaLibraryMediaFallbackImages.upsert({
+            where: {
+              mediaId_type: {
+                mediaId: media.id,
+                type: 'BACKDROP',
+              },
+            },
+            create: {
               mediaId: media.id,
               type: 'BACKDROP',
+              image: backdropImageUint8Array,
             },
-          },
-          create: {
-            mediaId: media.id,
-            type: 'BACKDROP',
-            image: backdropImageUint8Array,
-          },
-          update: {
-            image: backdropImageUint8Array,
-          },
-        }),
-      );
+            update: {
+              image: backdropImageUint8Array,
+            },
+          }),
+        );
+      }
     }
 
     const availableLogos = mediaMetadata.details.images.logos;
@@ -112,8 +115,12 @@ export default class MediaMetadataHydrator {
 
       // Prefer English ('en'), then media's original language, then by vote count
       const getLanguagePriority = (iso_639_1: string | null): number => {
-        if (iso_639_1 === 'en') return 3;
-        if (iso_639_1 === mediaMetadata.details.original_language) return 2;
+        if (iso_639_1 === 'en') {
+          return 3;
+        }
+        if (iso_639_1 === mediaMetadata.details.original_language) {
+          return 2;
+        }
         return 1;
       };
 
@@ -129,27 +136,29 @@ export default class MediaMetadataHydrator {
     }, null);
 
     if (bestLogo != null && bestLogo.file_path != null) {
-      const logoImage = await this.theMovieDbApiClient.fetchImage(bestLogo.file_path);
-      const logoImageUint8Array = new Uint8Array(logoImage);
+      const logoImage = await this.tmdbClient.fetchImage(bestLogo.file_path);
+      if (logoImage != null) {
+        const logoImageUint8Array = new Uint8Array(logoImage);
 
-      fallbackImageDatabaseOperations.push(
-        this.databaseClient.mediaLibraryMediaFallbackImages.upsert({
-          where: {
-            mediaId_type: {
+        fallbackImageDatabaseOperations.push(
+          this.databaseClient.mediaLibraryMediaFallbackImages.upsert({
+            where: {
+              mediaId_type: {
+                mediaId: media.id,
+                type: 'LOGO',
+              },
+            },
+            create: {
               mediaId: media.id,
               type: 'LOGO',
+              image: logoImageUint8Array,
             },
-          },
-          create: {
-            mediaId: media.id,
-            type: 'LOGO',
-            image: logoImageUint8Array,
-          },
-          update: {
-            image: logoImageUint8Array,
-          },
-        }),
-      );
+            update: {
+              image: logoImageUint8Array,
+            },
+          }),
+        );
+      }
     }
 
     await this.databaseClient.$transaction(fallbackImageDatabaseOperations);
@@ -162,23 +171,12 @@ export default class MediaMetadataHydrator {
       const theMovieDbId = externalIds['THE_MOVIE_DB'];
 
       try {
-        if (theMovieDbId.startsWith('tv/')) {
-          return {
-            type: 'tv',
-            details: await this.theMovieDbApiClient.findTvSeriesById(parseInt(theMovieDbId.substring(3), 10)),
-          };
+        const metadata = await this.fetchByTheMovieDbId(theMovieDbId);
+        if (metadata != null) {
+          return metadata;
         }
-
-        if (theMovieDbId.startsWith('movie/')) {
-          return {
-            type: 'movie',
-            details: await this.theMovieDbApiClient.findMovieById(parseInt(theMovieDbId.substring(6), 10)),
-          };
-        }
-
-        console.warn(`Unknown THE_MOVIE_DB external ID format in database: ${theMovieDbId}`);
       } catch (err) {
-        console.error(`Error fetching TMDB metadata for ID ${JSON.stringify(theMovieDbId)}`, err);
+        this.rethrowIfTransientOrLog(`ID ${JSON.stringify(theMovieDbId)}`, err);
       }
     }
 
@@ -186,9 +184,12 @@ export default class MediaMetadataHydrator {
       const imdbId = externalIds['IMDB'];
 
       try {
-        return await this.theMovieDbApiClient.findOneByExternalId(imdbId, 'imdb_id');
+        const metadata = await this.tmdbClient.findOneByExternalId(imdbId, 'imdb_id');
+        if (metadata != null) {
+          return metadata;
+        }
       } catch (err) {
-        console.error(`Error fetching TMDB metadata for IMDB ID ${JSON.stringify(imdbId)}`, err);
+        this.rethrowIfTransientOrLog(`IMDB ID ${JSON.stringify(imdbId)}`, err);
       }
     }
 
@@ -196,12 +197,46 @@ export default class MediaMetadataHydrator {
       const theTvDbId = externalIds['THE_TV_DB'];
 
       try {
-        return await this.theMovieDbApiClient.findOneByExternalId(theTvDbId, 'tvdb_id');
+        const metadata = await this.tmdbClient.findOneByExternalId(theTvDbId, 'tvdb_id');
+        if (metadata != null) {
+          return metadata;
+        }
       } catch (err) {
-        console.error(`Error fetching TMDB metadata for TheTVDB ID ${JSON.stringify(theTvDbId)}`, err);
+        this.rethrowIfTransientOrLog(`TheTVDB ID ${JSON.stringify(theTvDbId)}`, err);
       }
     }
 
+    return null;
+  }
+
+  /** A transient failure must not end the hydration, or the media would be marked as fetched and never retried */
+  private rethrowIfTransientOrLog(externalIdDescription: string, err: unknown): void {
+    if (TmdbErrorClassifier.isTransient(err)) {
+      throw err;
+    }
+    console.error(`Error fetching TMDB metadata for ${externalIdDescription}`, err);
+  }
+
+  private async fetchByTheMovieDbId(theMovieDbId: string): Promise<TheMovieDbMetadata | null> {
+    if (theMovieDbId.startsWith('tv/')) {
+      const details = await this.tmdbClient.fetchTvSeries(parseInt(theMovieDbId.substring(3), 10));
+      if (details == null) {
+        console.warn(`TMDB does not know a TV series with the THE_MOVIE_DB external ID ${JSON.stringify(theMovieDbId)}`);
+        return null;
+      }
+      return { type: 'tv', details };
+    }
+
+    if (theMovieDbId.startsWith('movie/')) {
+      const details = await this.tmdbClient.fetchMovie(parseInt(theMovieDbId.substring(6), 10));
+      if (details == null) {
+        console.warn(`TMDB does not know a movie with the THE_MOVIE_DB external ID ${JSON.stringify(theMovieDbId)}`);
+        return null;
+      }
+      return { type: 'movie', details };
+    }
+
+    console.warn(`Unknown THE_MOVIE_DB external ID format in database: ${theMovieDbId}`);
     return null;
   }
 
