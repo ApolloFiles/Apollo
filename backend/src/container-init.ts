@@ -6,5 +6,9 @@ import './cache/event/FileContentCacheEventListener.js';
 import './files/cache/user/ApolloFileSystemEventListener.js';
 import './plugins/official/media/library/external_metadata/anidb/cache/AniDbAnimeXmlCache.js';
 import './plugins/official/media/library/external_metadata/anidb/cache/AniDbImageCache.js';
+import './plugins/official/media/library/external_metadata/tmdb/cache/TmdbFindByExternalIdCache.js';
+import './plugins/official/media/library/external_metadata/tmdb/cache/TmdbImageCache.js';
+import './plugins/official/media/library/external_metadata/tmdb/cache/TmdbMovieCache.js';
+import './plugins/official/media/library/external_metadata/tmdb/cache/TmdbTvSeriesCache.js';
 
 await autoLoadRouters(new URL('./webserver/routes/', import.meta.url));
