@@ -96,11 +96,17 @@ export default class FullLibraryIndexingHelper {
   private async preGenerateImagesForLibrary(library: ReadContentsLibrary): Promise<void> {
     const allMedia = await this.mediaLibraryMediaFinder.findFullByLibraryId(library.id);
     for (const media of allMedia) {
-      await Promise.allSettled([
-        this.mediaPosterImageProvider.provide(media, 'avif'),
-        this.mediaClearLogoImageProvider.provide(media, 'avif'),
-        this.mediaBackdropImageProvider.provide(media, 'avif'),
-      ]);
+      await Promise.all(
+        [this.mediaPosterImageProvider, this.mediaClearLogoImageProvider, this.mediaBackdropImageProvider]
+          .map(async (imageProvider) => {
+            try {
+              const cacheEntry = await imageProvider.provide(media, 'avif');
+              await cacheEntry?.close();
+            } catch (err) {
+              console.error(err);
+            }
+          }),
+      );
     }
 
     for (const media of allMedia) {

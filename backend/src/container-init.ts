@@ -11,6 +11,9 @@ import './plugins/official/media/library/external_metadata/tmdb/cache/TmdbFindBy
 import './plugins/official/media/library/external_metadata/tmdb/cache/TmdbImageCache.js';
 import './plugins/official/media/library/external_metadata/tmdb/cache/TmdbMovieCache.js';
 import './plugins/official/media/library/external_metadata/tmdb/cache/TmdbTvSeriesCache.js';
+import './plugins/official/media/library/images/GeneratedMediaPosterCache.js';
+import './plugins/official/media/library/images/MediaFallbackImageCache.js';
+import './plugins/official/media/library/images/MediaImageCache.js';
 import './plugins/official/media/library/thumbnail/VideoThumbnailCache.js';
 
 await autoLoadRouters(new URL('./webserver/routes/', import.meta.url));

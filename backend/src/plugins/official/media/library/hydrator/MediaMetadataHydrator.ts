@@ -2,9 +2,11 @@ import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaExternalIdSource } from '../../../../../database/prisma-client/enums.js';
 import type { PrismaPromise } from '../../../../../database/prisma-client/internal/prismaNamespace.js';
+import UserProvider from '../../../../../user/UserProvider.js';
 import type ReadContentsLibraryMedia from '../database/media/ReadContentsLibraryMedia.js';
 import { TmdbErrorClassifier } from '../external_metadata/tmdb/errors/TmdbErrorClassifier.js';
 import { TmdbClient, type TmdbMovie, type TmdbTvSeries } from '../external_metadata/tmdb/TmdbClient.js';
+import { MediaFallbackImageCache } from '../images/MediaFallbackImageCache.js';
 
 type TheMovieDbMetadata =
   { type: 'tv', details: TmdbTvSeries }
@@ -15,6 +17,8 @@ export default class MediaMetadataHydrator {
   constructor(
     private readonly databaseClient: DatabaseClient,
     private readonly tmdbClient: TmdbClient,
+    private readonly userProvider: UserProvider,
+    private readonly mediaFallbackImageCache: MediaFallbackImageCache,
   ) {
   }
 
@@ -162,6 +166,14 @@ export default class MediaMetadataHydrator {
     }
 
     await this.databaseClient.$transaction(fallbackImageDatabaseOperations);
+    await this.deleteCachedFallbackImages(media);
+  }
+
+  private async deleteCachedFallbackImages(media: ReadContentsLibraryMedia): Promise<void> {
+    const mediaOwner = await this.userProvider.findById(media.libraryOwnerId);
+    if (mediaOwner != null) {
+      await this.mediaFallbackImageCache.forUser(mediaOwner).deleteGroup(MediaFallbackImageCache.toGroupKey(media.id));
+    }
   }
 
   private async fetchTheMovieDbMetadata(media: ReadContentsLibraryMedia): Promise<TheMovieDbMetadata | null> {

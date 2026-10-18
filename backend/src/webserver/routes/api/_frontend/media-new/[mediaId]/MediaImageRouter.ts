@@ -1,5 +1,7 @@
 import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import { z } from 'zod';
+import type { CachedValue } from '../../../../../../cache/CacheEntry.js';
+import { CacheEntryResponder } from '../../../../../../cache/http/CacheEntryResponder.js';
 import MediaLibraryMediaFinder
   from '../../../../../../plugins/official/media/library/database/media/MediaLibraryMediaFinder.js';
 import ImageFormatNotSupportedError
@@ -24,6 +26,7 @@ export default class MediaImageRouter implements ApolloRouter {
     private readonly mediaBackdropImageProvider: MediaBackdropImageProvider,
     private readonly mediaClearLogoImageProvider: MediaClearLogoImageProvider,
     private readonly permissionAwareLibraryMediaProvider: PermissionAwareLibraryMediaProvider,
+    private readonly cacheEntryResponder: CacheEntryResponder,
   ) {
   }
 
@@ -40,7 +43,6 @@ export default class MediaImageRouter implements ApolloRouter {
       async (request, reply): Promise<RouteReturn> => {
         const requestedMediaId = request.params.mediaId;
         const [fileName, fileFormat] = request.params.fileName.split('.') as ['poster' | 'backdrop' | 'logo', 'jpeg' | 'png' | 'avif'];
-        const fileFormatMimeType = `image/${fileFormat}`;
 
         const media = await this.permissionAwareLibraryMediaProvider.provideForReadContents(requestedMediaId, request.getAuthenticatedUser());
         if (media == null) {
@@ -51,17 +53,17 @@ export default class MediaImageRouter implements ApolloRouter {
             });
         }
 
-        let responseBody: Buffer | null;
+        let cacheEntry: CachedValue<Buffer> | null;
 
         try {
           const fullMedia = await this.mediaLibraryMediaFinder.findFullById(media.media.id);
 
           if (fileName === 'poster') {
-            responseBody = await this.mediaPosterImageProvider.provide(fullMedia!, fileFormat);
+            cacheEntry = await this.mediaPosterImageProvider.provide(fullMedia!, fileFormat);
           } else if (fileName === 'backdrop') {
-            responseBody = await this.mediaBackdropImageProvider.provide(fullMedia!, fileFormat);
+            cacheEntry = await this.mediaBackdropImageProvider.provide(fullMedia!, fileFormat);
           } else if (fileName === 'logo') {
-            responseBody = await this.mediaClearLogoImageProvider.provide(fullMedia!, fileFormat);
+            cacheEntry = await this.mediaClearLogoImageProvider.provide(fullMedia!, fileFormat);
           } else {
             //noinspection ExceptionCaughtLocallyJS
             throw new Error(`Unsupported fileName: ${JSON.stringify(fileName)}`);
@@ -76,17 +78,13 @@ export default class MediaImageRouter implements ApolloRouter {
           throw err;
         }
 
-        if (responseBody == null) {
+        if (cacheEntry == null) {
           return reply
             .status(404)
             .send(`Media does not have an image of for '${fileName}'`);
         }
 
-        return reply
-          .status(200)
-          .header('Cache-Control', 'private, max-age=300')
-          .type(fileFormatMimeType)
-          .send(responseBody);
+        return this.cacheEntryResponder.send(request, reply, cacheEntry, { cacheControl: 'private, max-age=300' });
       });
   }
 }

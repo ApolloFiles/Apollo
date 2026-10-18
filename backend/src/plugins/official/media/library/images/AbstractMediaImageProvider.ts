@@ -1,14 +1,22 @@
+import { TimeUnit } from '@spraxdev/node-commons/util';
+import type { CachedValue } from '../../../../../cache/CacheEntry.js';
+import type { CacheGetOrCreateOptions } from '../../../../../cache/CacheFactory.js';
 import type DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
 import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
+import type ApolloUser from '../../../../../user/ApolloUser.js';
 import type UserProvider from '../../../../../user/UserProvider.js';
 import FullLibraryMedia from '../database/media/FullLibraryMedia.js';
+import FallbackImageMissingError from './error/FallbackImageMissingError.js';
 import ImageFormatNotSupportedError from './error/ImageFormatNotSupportedError.js';
-import type MediaImageCache from './MediaImageCache.js';
+import { MediaFallbackImageCache } from './MediaFallbackImageCache.js';
+import type { MediaImageCache } from './MediaImageCache.js';
 
-export type ImageType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
+export type ImageType = 'poster' | 'backdrop' | 'logo';
 export type ImageFormat = 'jpeg' | 'png' | 'avif';
+
+type CachedImageLookup = (format: ImageFormat, factory: () => Promise<Buffer>, options: CacheGetOrCreateOptions) => Promise<CachedValue<Buffer>>;
 
 export default abstract class AbstractMediaImageProvider {
   private readonly fileNamePatterns: RegExp[];
@@ -17,6 +25,7 @@ export default abstract class AbstractMediaImageProvider {
     private readonly userProvider: UserProvider,
     private readonly fileProvider: PermissionAwareFileProvider,
     private readonly mediaImageCache: MediaImageCache,
+    private readonly mediaFallbackImageCache: MediaFallbackImageCache,
     private readonly databaseClient: DatabaseClient,
     baseFileNamesInPrioritySort: string[],
   ) {
@@ -31,44 +40,58 @@ export default abstract class AbstractMediaImageProvider {
 
   protected abstract get imageType(): ImageType;
 
-  protected abstract get databaseImageType(): MediaLibraryMediaFallbackImageType | null;
+  protected abstract get databaseImageType(): MediaLibraryMediaFallbackImageType;
 
-  protected abstract get supportedFormats(): ImageFormat[];
+  /** For browsers without AVIF support */
+  protected abstract get fallbackFormat(): Exclude<ImageFormat, 'avif'>;
 
-  protected abstract processImageBytes(imageBytes: Buffer, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer>;
+  /** Otherwise {@link encodeFallbackFormat} gets the original image */
+  protected get derivesFallbackFormatFromAvif(): boolean {
+    return true;
+  }
 
-  protected abstract generatedFallback(media: FullLibraryMedia, format: ImageFormat): Promise<Buffer | null>;
+  protected abstract encodeAvif(imageBytes: Buffer): Promise<Buffer>;
+
+  protected abstract encodeFallbackFormat(imageBytes: Buffer): Promise<Buffer>;
+
+  protected generatedFallback(_media: FullLibraryMedia, _format: ImageFormat): Promise<CachedValue<Buffer> | null> {
+    return Promise.resolve(null);
+  }
 
   /**
    * @throws ImageFormatNotSupported
    */
-  async provide(media: FullLibraryMedia, format: ImageFormat): Promise<Buffer | null> {
-    if (!this.supportedFormats.includes(format)) {
+  async provide(media: FullLibraryMedia, format: ImageFormat): Promise<CachedValue<Buffer> | null> {
+    if (format !== 'avif' && format !== this.fallbackFormat) {
       throw new ImageFormatNotSupportedError(`The format '${format}' is not supported for image type '${this.imageType}'`);
     }
 
     const imageFile = await this.findImageFileInDirectory(media);
-    if (imageFile == null) {
-      const fallbackFromDatabase = await this.provideFallbackFromDatabase(media, format);
-      if (fallbackFromDatabase != null) {
-        return fallbackFromDatabase;
-      }
-
-      return this.generatedFallback(media, format);
+    if (imageFile != null) {
+      return this.provideCached(
+        (entryFormat, factory, options) => this.mediaImageCache.getOrCreate(imageFile, `${this.imageType}.${entryFormat}`, factory, options),
+        format,
+        () => imageFile.read(),
+      );
     }
 
-    let imageData = await this.mediaImageCache.get(imageFile, this.imageType, format);
-
-    if (imageData == null) {
-      imageData = await this.processImageFile(imageFile, format);
-      await this.mediaImageCache.write(imageFile, this.imageType, format, imageData);
-    }
-
-    return imageData;
+    return await this.provideFallbackFromDatabase(media, format) ?? this.generatedFallback(media, format);
   }
 
-  protected async processImageFile(imageFile: VirtualFile, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer> {
-    return this.processImageBytes(await imageFile.read(), format);
+  protected provideCached(lookup: CachedImageLookup, format: ImageFormat, readOriginal: () => Promise<Buffer>): Promise<CachedValue<Buffer>> {
+    const provideAvif = () => lookup('avif', async () => this.encodeAvif(await readOriginal()), { contentType: 'image/avif' });
+    if (format === 'avif') {
+      return provideAvif();
+    }
+
+    return lookup(
+      format,
+      async () => this.encodeFallbackFormat(this.derivesFallbackFormatFromAvif ? await this.readAvif(provideAvif) : await readOriginal()),
+      {
+        contentType: `image/${format}`,
+        expiry: { freshMs: TimeUnit.DAYS.toMillis(30) },
+      },
+    );
   }
 
   protected async findImageFileInDirectory(media: FullLibraryMedia): Promise<VirtualFile | null> {
@@ -89,40 +112,67 @@ export default abstract class AbstractMediaImageProvider {
     return null;
   }
 
-  private async provideFallbackFromDatabase(media: FullLibraryMedia, format: AbstractMediaImageProvider['supportedFormats'][number]): Promise<Buffer | null> {
-    if (this.databaseImageType == null) {
+  private async readAvif(provideAvif: () => Promise<CachedValue<Buffer>>): Promise<Buffer> {
+    const avifImage = await provideAvif();
+    return avifImage.value();
+  }
+
+  private async provideFallbackFromDatabase(media: FullLibraryMedia, format: ImageFormat): Promise<CachedValue<Buffer> | null> {
+    if (!(await this.hasFallbackImageInDatabase(media))) {
       return null;
     }
 
-    let imageData = await this.mediaImageCache.get(await this.findMediaDirectory(media), this.imageType, format);
-
-    if (imageData == null) {
-      const rawFallbackImage = await this.databaseClient.mediaLibraryMediaFallbackImages.findUnique({
-        where: {
-          mediaId_type: {
-            mediaId: media.id,
-            type: this.databaseImageType,
-          },
-        },
-        select: { image: true },
-      });
-      if (rawFallbackImage == null) {
+    const cache = this.mediaFallbackImageCache.forUser(await this.findMediaOwner(media));
+    try {
+      return await this.provideCached(
+        (entryFormat, factory, options) => cache.getOrCreate(
+          MediaFallbackImageCache.toEntryKey(media.id, `${this.imageType}.${entryFormat}`),
+          factory,
+          { ...options, groupKey: MediaFallbackImageCache.toGroupKey(media.id) },
+        ),
+        format,
+        () => this.fetchFallbackImageFromDatabase(media),
+      );
+    } catch (err) {
+      if (err instanceof FallbackImageMissingError) {
         return null;
       }
-
-      imageData = await this.processImageBytes(Buffer.from(rawFallbackImage.image), format);
-      await this.mediaImageCache.write(await this.findMediaDirectory(media), this.imageType, format, imageData);
+      throw err;
     }
+  }
 
-    return imageData;
+  private async hasFallbackImageInDatabase(media: FullLibraryMedia): Promise<boolean> {
+    const imageCount = await this.databaseClient.mediaLibraryMediaFallbackImages.count({
+      where: { mediaId: media.id, type: this.databaseImageType },
+    });
+    return imageCount > 0;
+  }
+
+  private async fetchFallbackImageFromDatabase(media: FullLibraryMedia): Promise<Buffer> {
+    const fallbackImage = await this.databaseClient.mediaLibraryMediaFallbackImages.findUnique({
+      where: {
+        mediaId_type: {
+          mediaId: media.id,
+          type: this.databaseImageType,
+        },
+      },
+      select: { image: true },
+    });
+    if (fallbackImage == null) {
+      throw new FallbackImageMissingError(`The ${this.databaseImageType} fallback image of media ${media.id} was deleted while being processed`);
+    }
+    return Buffer.from(fallbackImage.image);
   }
 
   private async findMediaDirectory(media: FullLibraryMedia): Promise<VirtualFile> {
+    return this.fileProvider.provideForRead(media.directoryUri, await this.findMediaOwner(media));
+  }
+
+  private async findMediaOwner(media: FullLibraryMedia): Promise<ApolloUser> {
     const mediaOwner = await this.userProvider.findById(media.libraryOwnerId);
     if (mediaOwner == null) {
       throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(media.libraryOwnerId)}`);
     }
-
-    return this.fileProvider.provideForRead(media.directoryUri, mediaOwner);
+    return mediaOwner;
   }
 }

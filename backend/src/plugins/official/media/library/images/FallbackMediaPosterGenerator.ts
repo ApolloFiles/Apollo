@@ -1,6 +1,5 @@
 import Sharp from 'sharp';
 import { singleton } from 'tsyringe';
-import ImageFileConstants from './ImageFileConstants.js';
 
 @singleton()
 export default class FallbackMediaPosterGenerator {
@@ -9,10 +8,10 @@ export default class FallbackMediaPosterGenerator {
   private static readonly TEXT_WIDTH = Math.floor(500 * 0.6); // 300
   private static readonly TEXT_HEIGHT = Math.floor(750 * 0.6); // 450
 
-  async generatePoster(mediaTitle: string, format: 'jpeg' | 'avif'): Promise<Buffer> {
+  async generatePoster(mediaTitle: string): Promise<Buffer> {
     const posterText = this.determineStartingLetters(mediaTitle) || 'No Title';
 
-    const poster = Sharp({
+    return Sharp({
       create: {
         width: FallbackMediaPosterGenerator.POSTER_WIDTH,
         height: FallbackMediaPosterGenerator.POSTER_HEIGHT,
@@ -29,19 +28,9 @@ export default class FallbackMediaPosterGenerator {
             height: FallbackMediaPosterGenerator.TEXT_HEIGHT,
           },
         },
-      }]);
-
-    if (format === 'avif') {
-      return poster
-        .avif(ImageFileConstants.POSTER_OPTIONS_AVIF)
-        .toBuffer();
-    } else if (format === 'jpeg') {
-      return poster
-        .jpeg(ImageFileConstants.POSTER_OPTIONS_JPEG)
-        .toBuffer();
-    }
-
-    throw new Error('Cannot generate poster for unsupported format: ' + JSON.stringify(format));
+      }])
+      .png()
+      .toBuffer();
   }
 
   private escapeMarkup(text: string): string {

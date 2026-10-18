@@ -165,7 +165,9 @@ export default class MediaORpcRouterFactory {
           let mediaHasClearLogoPromise: boolean;
           {
             const fullLibraryMedia = await this.mediaLibraryMediaFinder.findFullById(libraryMedia.media.id);
-            mediaHasClearLogoPromise = (await this.mediaClearLogoImageProvider.provide(fullLibraryMedia!, 'avif')) != null;
+            const clearLogo = await this.mediaClearLogoImageProvider.provide(fullLibraryMedia!, 'avif');
+            mediaHasClearLogoPromise = clearLogo != null;
+            await clearLogo?.close();
           }
 
           const seasonsMap: Map<number, SeasonData> = new Map();

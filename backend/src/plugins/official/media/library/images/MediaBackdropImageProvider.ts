@@ -4,10 +4,10 @@ import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import type { MediaLibraryMediaFallbackImageType } from '../../../../../database/prisma-client/enums.js';
 import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import UserProvider from '../../../../../user/UserProvider.js';
-import FullLibraryMedia from '../database/media/FullLibraryMedia.js';
-import AbstractMediaImageProvider, { type ImageFormat, type ImageType } from './AbstractMediaImageProvider.js';
+import AbstractMediaImageProvider, { type ImageType } from './AbstractMediaImageProvider.js';
 import ImageFileConstants from './ImageFileConstants.js';
-import MediaImageCache from './MediaImageCache.js';
+import { MediaFallbackImageCache } from './MediaFallbackImageCache.js';
+import { MediaImageCache } from './MediaImageCache.js';
 
 @singleton()
 export default class MediaBackdropImageProvider extends AbstractMediaImageProvider {
@@ -18,43 +18,40 @@ export default class MediaBackdropImageProvider extends AbstractMediaImageProvid
     userProvider: UserProvider,
     fileProvider: PermissionAwareFileProvider,
     mediaImageCache: MediaImageCache,
+    mediaFallbackImageCache: MediaFallbackImageCache,
     databaseClient: DatabaseClient,
   ) {
-    super(userProvider, fileProvider, mediaImageCache, databaseClient, ['backdrop', 'background', 'fanart', 'art']);
+    super(userProvider, fileProvider, mediaImageCache, mediaFallbackImageCache, databaseClient, ['backdrop', 'background', 'fanart', 'art']);
   }
 
   protected get imageType(): ImageType {
     return 'backdrop';
   }
 
-  protected get databaseImageType(): MediaLibraryMediaFallbackImageType | null {
+  protected get databaseImageType(): MediaLibraryMediaFallbackImageType {
     return 'BACKDROP';
   }
 
-  protected get supportedFormats() {
-    return ['jpeg', 'avif'] as const satisfies ImageFormat[];
+  protected get fallbackFormat() {
+    return 'jpeg' as const;
   }
 
-  protected processImageBytes(imageBytes: Buffer, format: MediaBackdropImageProvider['supportedFormats'][number]): Promise<Buffer> {
-    let backdrop = Sharp(imageBytes)
+  protected encodeAvif(imageBytes: Buffer): Promise<Buffer> {
+    return Sharp(imageBytes)
       .resize({
         width: MediaBackdropImageProvider.MAX_BACKDROP_WIDTH,
         height: MediaBackdropImageProvider.MAX_BACKDROP_HEIGHT,
         fit: 'inside',
         withoutEnlargement: true,
       })
-      .flatten({ background: { r: 0, g: 0, b: 0 } });
-
-    if (format === 'avif') {
-      backdrop = backdrop.avif(ImageFileConstants.BACKDROP_OPTIONS_AVIF);
-    } else {
-      backdrop = backdrop.jpeg(ImageFileConstants.BACKDROP_OPTIONS_JPEG);
-    }
-
-    return backdrop.toBuffer();
+      .flatten({ background: { r: 0, g: 0, b: 0 } })
+      .avif(ImageFileConstants.BACKDROP_OPTIONS_AVIF)
+      .toBuffer();
   }
 
-  protected generatedFallback(_media: FullLibraryMedia, _format: ImageFormat): Promise<Buffer | null> {
-    return Promise.resolve(null);
+  protected encodeFallbackFormat(imageBytes: Buffer): Promise<Buffer> {
+    return Sharp(imageBytes)
+      .jpeg(ImageFileConstants.BACKDROP_OPTIONS_JPEG)
+      .toBuffer();
   }
 }
