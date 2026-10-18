@@ -15,67 +15,7 @@ type RequestInputs = {
 export default class VideoSeekThumbnailControllerHelper {
   private readonly requestLocks = new Map<string, Promise<void>>();
 
-  constructor(
-    //    private readonly seekThumbnailProvider: SeekThumbnailProvider,
-  ) {
-  }
-
   // TODO: Maybe send Status 202 Accepted after a timeout, if generating takes too long (20+ seconds?)
-//  async handleResponse(
-//    req: FastifyRequest,
-//    res: FastifyReply,
-//    inputs: RequestInputs,
-//    useIfModifiedSinceHeader: boolean,
-//  ): Promise<void> {
-//    // TODO: Refactor
-//    if (useIfModifiedSinceHeader && req.headers['if-modified-since'] != null && Date.parse(req.headers['if-modified-since']) >= Date.parse((await inputs.file.stat()).mtime.toISOString())) {
-//      res
-//        .status(304)
-//        .send();
-//      return;
-//    }
-//
-//    let responseBody: string | Buffer;
-//
-//    const releaseGenerationLock = await this.acquireGenerationLock(inputs.file.toUrl()); // acquire lock before any further async operations
-//    try {
-//      if (inputs.thumbnailIndex === -1) {
-//        const parsedOriginalRequestUrl = new URL(req.originalUrl, 'http://localhost');
-//
-//        responseBody = await this.seekThumbnailProvider.provideWebVtt(
-//          inputs.file,
-//          (thumbnailIndex) => {
-//            parsedOriginalRequestUrl.searchParams.set('index', thumbnailIndex.toString());
-//            return parsedOriginalRequestUrl.pathname + parsedOriginalRequestUrl.search;
-//          },
-//        );
-//      } else {
-//        const thumbnailBytes = await this.seekThumbnailProvider.provideThumbnailImage(inputs.file, inputs.thumbnailIndex);
-//        if (thumbnailBytes == null) {
-//          res
-//            .status(404)
-//            .type('application/json')
-//            .send({ error: 'The requested thumbnail file does not exist' });
-//          return;
-//        }
-//
-//        responseBody = thumbnailBytes;
-//      }
-//    } finally {
-//      releaseGenerationLock();
-//    }
-//
-//    res
-//      .status(200)
-//      .type(inputs.thumbnailIndex === -1 ? 'text/vtt' : 'image/jpeg')
-//      .header('Cache-Control', 'private, no-cache');
-//
-//    if (useIfModifiedSinceHeader) {
-//      res.header('Last-Modified', (await inputs.file.stat()).mtime.toUTCString());
-//    }
-//
-//    res.send(responseBody);
-//  }
 
   parseRequestedThumbnailIndex(req: FastifyRequest, res: FastifyReply): number | null {
     const requestedFrameIndex = this.parseUserInputFrameIndex(res, (req.query as any).index);
@@ -166,20 +106,6 @@ export default class VideoSeekThumbnailControllerHelper {
     }
 
     return requestedFile;
-  }
-
-  async acquireGenerationLock(apolloFileUri: ApolloFileURI): Promise<() => void> {
-    await this.requestLocks.get(apolloFileUri.toString());
-
-    // TODO: Use `Promise.withResolvers()` when available in future Node.js versions
-    return new Promise((resolve) => {
-      this.requestLocks.set(apolloFileUri.toString(), new Promise(releaseGenerationLock => {
-        resolve(() => {
-          this.requestLocks.delete(apolloFileUri.toString());
-          releaseGenerationLock();
-        });
-      }));
-    });
   }
 
   private parseApolloFileUri(res: FastifyReply, userInput: string): ApolloFileURI | null {

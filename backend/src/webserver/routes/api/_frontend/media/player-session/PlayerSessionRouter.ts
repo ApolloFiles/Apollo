@@ -5,6 +5,7 @@ import Http2 from 'node:http2';
 import Path from 'node:path';
 import rangeParser from 'range-parser';
 import { z } from 'zod';
+import { CacheEntryResponder } from '../../../../../../cache/http/CacheEntryResponder.js';
 import AppConfiguration from '../../../../../../config/AppConfiguration.js';
 import FileSystemProvider from '../../../../../../files/FileSystemProvider.js';
 import LocalFileSystem from '../../../../../../files/local/LocalFileSystem.js';
@@ -61,6 +62,7 @@ export default class PlayerSessionRouter implements ApolloRouter {
     private readonly fileTypeUtils: FileTypeUtils,
     private readonly seekThumbnailProvider: SeekThumbnailProvider,
     private readonly watchProgressFinder: WatchProgressFinder,
+    private readonly cacheEntryResponder: CacheEntryResponder,
   ) {
   }
 
@@ -341,40 +343,33 @@ export default class PlayerSessionRouter implements ApolloRouter {
         return reply;
       }
 
-      let responseBody: string | Buffer;
+      if (inputs.thumbnailIndex === -1) {
+        const parsedOriginalRequestUrl = new URL(request.originalUrl, 'https://localhost');
 
-      const releaseGenerationLock = await this.videoSeekThumbnailControllerHelper.acquireGenerationLock(ApolloFileURI.create(inputs.file.fileSystem.getOwnerOrThrow().id, inputs.file.fileSystem.id, inputs.file.path)); // acquire lock before any further async operations
-      try {
-        if (inputs.thumbnailIndex === -1) {
-          const parsedOriginalRequestUrl = new URL(request.originalUrl, 'https://localhost');
+        const webVtt = await this.seekThumbnailProvider.provideWebVtt(
+          inputs.file,
+          (thumbnailIndex) => {
+            parsedOriginalRequestUrl.searchParams.set('index', thumbnailIndex.toString());
+            return parsedOriginalRequestUrl.pathname + parsedOriginalRequestUrl.search;
+          },
+        );
 
-          responseBody = await this.seekThumbnailProvider.provideWebVtt(
-            inputs.file,
-            (thumbnailIndex) => {
-              parsedOriginalRequestUrl.searchParams.set('index', thumbnailIndex.toString());
-              return parsedOriginalRequestUrl.pathname + parsedOriginalRequestUrl.search;
-            },
-          );
-        } else {
-          const thumbnailBytes = await this.seekThumbnailProvider.provideThumbnailImage(inputs.file, inputs.thumbnailIndex);
-          if (thumbnailBytes == null) {
-            return reply
-              .status(404)
-              .type('application/json')
-              .send({ error: 'The requested thumbnail file does not exist' });
-          }
-
-          responseBody = thumbnailBytes;
-        }
-      } finally {
-        releaseGenerationLock();
+        return reply
+          .status(200)
+          .type('text/vtt')
+          .header('Cache-Control', 'private, no-cache')
+          .send(webVtt);
       }
 
-      return reply
-        .status(200)
-        .type(inputs.thumbnailIndex === -1 ? 'text/vtt' : 'image/jpeg')
-        .header('Cache-Control', 'private, no-cache')
-        .send(responseBody);
+      const thumbnail = await this.seekThumbnailProvider.provideThumbnailImage(inputs.file, inputs.thumbnailIndex);
+      if (thumbnail == null) {
+        return reply
+          .status(404)
+          .type('application/json')
+          .send({ error: 'The requested thumbnail file does not exist' });
+      }
+
+      return this.cacheEntryResponder.send(request, reply, thumbnail, { cacheControl: 'private, no-cache' });
     });
 
     server.post('/:sessionId/change-media', async (request: FastifyRequest<{ Params: { sessionId: string } }>, reply): Promise<RouteReturn> => {
