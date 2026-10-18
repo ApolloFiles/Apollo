@@ -3,9 +3,9 @@ import { singleton } from 'tsyringe';
 import type { z } from 'zod';
 import AppConfiguration from '../../../../../../../config/AppConfiguration.js';
 import SimpleHttpClient from '../../../../../../../http/SimpleHttpClient.js';
+import { UnknownKeyFinder } from '../../../../../../../utils/UnknownKeyFinder.js';
 import { TmdbApiError } from '../errors/TmdbApiError.js';
 import { TmdbError } from '../errors/TmdbError.js';
-import { UnknownKeyFinder } from './UnknownKeyFinder.js';
 
 /** @internal */
 @singleton()

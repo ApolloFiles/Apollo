@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UnknownKeyFinder } from '#src/plugins/official/media/library/external_metadata/tmdb/transport/UnknownKeyFinder.js';
+import { UnknownKeyFinder } from '#src/utils/UnknownKeyFinder.js';
 
 function findUnknownKeys(schema: z.ZodType, raw: unknown): string[] {
   return UnknownKeyFinder.find(raw, schema.parse(raw));

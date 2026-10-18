@@ -1,4 +1,3 @@
-/** @internal */
 export class UnknownKeyFinder {
   static find(raw: unknown, parsed: unknown): string[] {
     const unknownKeys = new Set<string>();
