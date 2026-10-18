@@ -6,8 +6,8 @@ import type { Accel } from '../../../ffmpeg/accel/Accel.js';
 import type { FfmpegVideoInput } from '../../../ffmpeg/job/FfmpegJob.js';
 import FfmpegJobRunner from '../../../ffmpeg/job/FfmpegJobRunner.js';
 import FfmpegVideoInputs from '../../../ffmpeg/job/FfmpegVideoInputs.js';
-import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
-import PlayableDurationUtil from '../../../ffmpeg/probe/PlayableDurationUtil.js';
+import { CachedFfprobe } from '../../../ffmpeg/probe/CachedFfprobe.js';
+import PlayableDurationUtil from '../../../ffmpeg/probe/util/PlayableDurationUtil.js';
 import ImageFileConstants from '../images/ImageFileConstants.js';
 
 @singleton()
@@ -20,13 +20,13 @@ export default class VideoThumbnailFrameExtractor {
   private static readonly SHORTEST_VIDEO_WORTH_SEEKING_IN = 30;
 
   constructor(
-    private readonly ffprobeExecutor: CachedFfprobeExecutor,
+    private readonly ffprobe: CachedFfprobe,
     private readonly ffmpegJobRunner: FfmpegJobRunner,
   ) {
   }
 
   async extractCandidateFrames(file: LocalFile, targetDirectory: string): Promise<string[]> {
-    const probeResult = await this.ffprobeExecutor.probeFull(file);
+    const probeResult = await this.ffprobe.probeFull(file);
     const input = FfmpegVideoInputs.fromProbeResult(file.getAbsolutePathOnHost(), probeResult);
     if (input == null) {
       throw new Error(`${file.getAbsolutePathOnHost()} has no video stream to extract thumbnail frames from`);

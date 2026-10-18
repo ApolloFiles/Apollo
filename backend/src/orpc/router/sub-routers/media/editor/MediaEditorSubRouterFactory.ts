@@ -7,7 +7,7 @@ import WriteableLocalFile from '../../../../../files/local/WriteableLocalFile.js
 import PermissionAwareFileProvider from '../../../../../files/provider/PermissionAwareFileProvider.js';
 import FileNameCollator from '../../../../../files/util/FileNameCollator.js';
 import type WriteableVirtualFile from '../../../../../files/WriteableVirtualFile.js';
-import FfprobeExecutor from '../../../../../plugins/official/ffmpeg/probe/FfprobeExecutor.js';
+import { Ffprobe } from '../../../../../plugins/official/ffmpeg/probe/Ffprobe.js';
 import FileTypeUtils from '../../../../../plugins/official/media/_old/FileTypeUtils.js';
 import FfmpegVideoFileMetadataEditor
   from '../../../../../plugins/official/media/library/editor/FfmpegVideoFileMetadataEditor.js';
@@ -39,8 +39,8 @@ export default class MediaEditorSubRouterFactory {
   private readonly mostRecentWriteLockInfo = new Map<ApolloUser['id'], WriteLockInfo>();
 
   constructor(
-    // We do not use the cached ffprobe implementation in the editor *just in case*
-    private readonly ffprobeExecutor: FfprobeExecutor,
+    // We do not use the cached ffprobe implementation in the editor to guarantee up-to-date data
+    private readonly ffprobe: Ffprobe,
     private readonly ffmpegVideoFileMetadataEditor: FfmpegVideoFileMetadataEditor,
     private readonly fileSystemProvider: FileSystemProvider,
     private readonly fileProvider: PermissionAwareFileProvider,
@@ -81,7 +81,7 @@ export default class MediaEditorSubRouterFactory {
 
             for (const file of filesToAnalyze) {
               try {
-                const ffprobeResult = await this.ffprobeExecutor.probeFull(file.getAbsolutePathOnHost());
+                const ffprobeResult = await this.ffprobe.probeFull(file.getAbsolutePathOnHost());
 
                 result.push({
                   identifier: file.toURI().toString(),

@@ -1,7 +1,7 @@
-import type { ExtendedProbeResult } from '#src/plugins/official/ffmpeg/probe/FfprobeExecutor.js';
+import type { FullProbeResult } from '#src/plugins/official/ffmpeg/probe/FfprobeSchemas.js';
 import PlayableDurationUtil, {
   type DurationRelevantStream,
-} from '#src/plugins/official/ffmpeg/probe/PlayableDurationUtil.js';
+} from '#src/plugins/official/ffmpeg/probe/util/PlayableDurationUtil.js';
 
 function stream(partial: Partial<DurationRelevantStream> & { type: DurationRelevantStream['type'] }): DurationRelevantStream {
   return {
@@ -10,8 +10,8 @@ function stream(partial: Partial<DurationRelevantStream> & { type: DurationRelev
   };
 }
 
-function probeResult(formatDuration: string | undefined, streams: Record<string, unknown>[]): ExtendedProbeResult {
-  return { format: { duration: formatDuration }, streams } as unknown as ExtendedProbeResult;
+function probeResult(formatDuration: string | undefined, streams: Record<string, unknown>[]): FullProbeResult {
+  return { format: { duration: formatDuration }, streams } as unknown as FullProbeResult;
 }
 
 describe(PlayableDurationUtil, () => {

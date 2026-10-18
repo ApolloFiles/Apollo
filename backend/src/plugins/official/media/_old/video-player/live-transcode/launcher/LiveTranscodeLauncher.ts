@@ -4,7 +4,7 @@ import Path from 'node:path';
 import { singleton } from 'tsyringe';
 import type { Accel } from '../../../../../ffmpeg/accel/Accel.js';
 import FfmpegJobRunner from '../../../../../ffmpeg/job/FfmpegJobRunner.js';
-import PlayableDurationUtil, { type DurationRelevantStream } from '../../../../../ffmpeg/probe/PlayableDurationUtil.js';
+import PlayableDurationUtil, { type DurationRelevantStream } from '../../../../../ffmpeg/probe/util/PlayableDurationUtil.js';
 import type FfmpegHandle from '../../../../../ffmpeg/process/FfmpegHandle.js';
 import type {
   ExtendedVideoAnalysis,

@@ -2,7 +2,7 @@ import { singleton } from 'tsyringe';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import { runWithConcurrency } from '../../../../../utils/concurrency.js';
-import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
+import { CachedFfprobe } from '../../../ffmpeg/probe/CachedFfprobe.js';
 import FileTypeUtils from '../../_old/FileTypeUtils.js';
 import type ReadContentsLibrary from '../database/library/ReadContentsLibrary.js';
 import AbstractScanner, { type CommonVideoMetadata } from './AbstractScanner.js';
@@ -21,10 +21,10 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
   private static EPISODE_PROCESS_CONCURRENCY = 4;
 
   constructor(
-    ffprobeExecutor: CachedFfprobeExecutor,
+    ffprobe: CachedFfprobe,
     private readonly fileTypeUtils: FileTypeUtils,
   ) {
-    super(ffprobeExecutor);
+    super(ffprobe);
   }
 
   async scan(library: ReadContentsLibrary, mediaDirectory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {

@@ -4,15 +4,15 @@ import {
 } from '../../../../../database/prisma-client/enums.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
-import CachedFfprobeExecutor from '../../../ffmpeg/probe/CachedFfprobeExecutor.js';
-import { type ExtendedProbeResult } from '../../../ffmpeg/probe/FfprobeExecutor.js';
-import PlayableDurationUtil, { type StreamSpanSource } from '../../../ffmpeg/probe/PlayableDurationUtil.js';
-import ProbeTagUtil from '../../../ffmpeg/probe/ProbeTagUtil.js';
+import type { CachedFfprobe } from '../../../ffmpeg/probe/CachedFfprobe.js';
+import type { FullProbeResult } from '../../../ffmpeg/probe/FfprobeSchemas.js';
+import PlayableDurationUtil, { type StreamSpanSource } from '../../../ffmpeg/probe/util/PlayableDurationUtil.js';
+import ProbeTagUtil from '../../../ffmpeg/probe/util/ProbeTagUtil.js';
 import ForcedSubtitleDetector, { type SubtitleStreamCandidate } from './ForcedSubtitleDetector.js';
 import LanguageTagUtil from './LanguageTagUtil.js';
 
 type ExternalIds = Partial<Record<MediaLibraryMediaExternalIdSource, string>>;
-type ProbeStream = ExtendedProbeResult['streams'][number];
+type ProbeStream = FullProbeResult['streams'][number];
 
 export type MediaDirectoryInfo = {
   title: string,
@@ -50,7 +50,7 @@ export default abstract class AbstractScanner {
   };
 
   protected constructor(
-    private readonly ffprobeExecutor: CachedFfprobeExecutor,
+    private readonly ffprobe: CachedFfprobe,
   ) {
   }
 
@@ -92,7 +92,7 @@ export default abstract class AbstractScanner {
     const streams: CommonVideoMetadata['streams'] = [];
 
     if (file instanceof LocalFile) {
-      const fileProbe = await this.ffprobeExecutor.probeFull(file);
+      const fileProbe = await this.ffprobe.probeFull(file);
       durationInSec = Math.ceil(PlayableDurationUtil.determineProbedPlayableDurationInSec(fileProbe) ?? 0);
 
       const extractedTitle = this.extractMetadataFromProbe(fileProbe, 'title') ?? this.extractMetadataFromProbe(fileProbe, 'name');
@@ -187,7 +187,7 @@ export default abstract class AbstractScanner {
     };
   }
 
-  protected extractMetadataFromProbe(probeResult: ExtendedProbeResult, tag: string): string | null {
+  protected extractMetadataFromProbe(probeResult: FullProbeResult, tag: string): string | null {
     return ProbeTagUtil.getValueIncludingLanguageSuffixed(probeResult.format.tags, tag);
   }
 

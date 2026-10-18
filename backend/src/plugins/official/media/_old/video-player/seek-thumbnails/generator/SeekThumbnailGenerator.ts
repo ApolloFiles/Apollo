@@ -7,7 +7,7 @@ import type { Accel } from '../../../../../ffmpeg/accel/Accel.js';
 import type { FfmpegVideoInput } from '../../../../../ffmpeg/job/FfmpegJob.js';
 import FfmpegJobRunner from '../../../../../ffmpeg/job/FfmpegJobRunner.js';
 import FfmpegVideoInputs from '../../../../../ffmpeg/job/FfmpegVideoInputs.js';
-import CachedFfprobeExecutor from '../../../../../ffmpeg/probe/CachedFfprobeExecutor.js';
+import { CachedFfprobe } from '../../../../../ffmpeg/probe/CachedFfprobe.js';
 import type { FfmpegLogLine } from '../../../../../ffmpeg/process/FfmpegLogLineParser.js';
 
 export type GeneratedSeekThumbnails = {
@@ -21,13 +21,13 @@ export default class SeekThumbnailGenerator {
   private static readonly THUMBNAIL_WIDTH = 240;
 
   constructor(
-    private readonly ffprobeExecutor: CachedFfprobeExecutor,
+    private readonly ffprobe: CachedFfprobe,
     private readonly ffmpegJobRunner: FfmpegJobRunner,
   ) {
   }
 
   async generate(inputFile: LocalFile, targetDir: string): Promise<GeneratedSeekThumbnails> {
-    const input = FfmpegVideoInputs.fromProbeResult(inputFile.getAbsolutePathOnHost(), await this.ffprobeExecutor.probeFull(inputFile));
+    const input = FfmpegVideoInputs.fromProbeResult(inputFile.getAbsolutePathOnHost(), await this.ffprobe.probeFull(inputFile));
     if (input == null) {
       throw new Error(`${inputFile.getAbsolutePathOnHost()} has no video stream to generate seek thumbnails from`);
     }

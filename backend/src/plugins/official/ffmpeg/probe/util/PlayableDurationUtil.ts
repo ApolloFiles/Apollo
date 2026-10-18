@@ -1,4 +1,4 @@
-import type { ExtendedProbeResult } from './FfprobeExecutor.js';
+import type { FullProbeResult } from '../FfprobeSchemas.js';
 import ProbeTagUtil from './ProbeTagUtil.js';
 
 /** Everything needed to tell how far a single stream reaches, regardless of its type. */
@@ -24,6 +24,8 @@ export type DurationRelevantStream = StreamSpanSource & {
  * A container may claim a longer runtime than it plays: Matroska reports the end of its longest
  * track as `format.duration`, so a subtitle track that outlives video and audio by a minute makes
  * the whole file look a minute longer than it is.
+ *
+ * @internal If anything "outside" needs this, we should reconsider which methods to make public and how they should look like
  */
 export default class PlayableDurationUtil {
   /**
@@ -84,7 +86,7 @@ export default class PlayableDurationUtil {
   }
 
   /** {@link determinePlayableDurationInSec} for a probed file, picking the streams that decide it out of the probe. */
-  static determineProbedPlayableDurationInSec(probeResult: ExtendedProbeResult): number | null {
+  static determineProbedPlayableDurationInSec(probeResult: FullProbeResult): number | null {
     const relevantStreams: DurationRelevantStream[] = [];
     for (const stream of probeResult.streams) {
       if (stream.codec_type === 'video' || stream.codec_type === 'audio') {

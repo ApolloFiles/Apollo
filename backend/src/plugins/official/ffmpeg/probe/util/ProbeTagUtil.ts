@@ -9,6 +9,8 @@ const LANGUAGE_SUFFIX_PREFERENCES = ['eng', 'und'];
  *
  * Tag keys are case-insensitive and may carry a three-letter language suffix: mkvmerge writes
  * `NUMBER_OF_FRAMES`, while MakeMKV writes the same tag as `NUMBER_OF_FRAMES-eng`.
+ *
+ * @internal If anything "outside" needs this, we should reconsider which methods to make public and how they should look like
  */
 export default class ProbeTagUtil {
   static getValue(tags: Record<string, string>, key: string): string | null {

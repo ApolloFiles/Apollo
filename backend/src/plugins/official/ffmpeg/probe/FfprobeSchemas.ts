@@ -163,11 +163,21 @@ const RESULT_CHAPTERS_ARRAY = z.array(z.object({
 
 // Exports
 
-export const PROBE_RESULT_SCHEMA = z.object({
+/** @internal */
+export const RAW_PROBE_RESULT_SCHEMA = z.record(z.string(), z.json());
+
+/** @internal */
+export const FORMAT_PROBE_RESULT_SCHEMA = z.object({
   format: RESULT_FORMAT,
 });
 
-export const PROBE_RESULT_FULL_SCHEMA = PROBE_RESULT_SCHEMA.extend({
+/** @internal */
+export const FULL_PROBE_RESULT_SCHEMA = FORMAT_PROBE_RESULT_SCHEMA.extend({
   streams: RESULT_STREAMS_ARRAY,
   chapters: RESULT_CHAPTERS_ARRAY,
 });
+
+/** @internal */
+export type RawProbeResult = z.infer<typeof RAW_PROBE_RESULT_SCHEMA>;
+export type FormatProbeResult = z.infer<typeof FORMAT_PROBE_RESULT_SCHEMA>;
+export type FullProbeResult = z.infer<typeof FULL_PROBE_RESULT_SCHEMA>;

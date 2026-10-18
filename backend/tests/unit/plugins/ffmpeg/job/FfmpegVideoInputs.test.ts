@@ -1,8 +1,8 @@
 import FfmpegVideoInputs from '#src/plugins/official/ffmpeg/job/FfmpegVideoInputs.js';
-import type { ExtendedProbeResult } from '#src/plugins/official/ffmpeg/probe/FfprobeExecutor.js';
+import type { FullProbeResult } from '#src/plugins/official/ffmpeg/probe/FfprobeSchemas.js';
 
-function probeResult(streams: Record<string, unknown>[]): ExtendedProbeResult {
-  return { streams } as unknown as ExtendedProbeResult;
+function probeResult(streams: Record<string, unknown>[]): FullProbeResult {
+  return { streams } as unknown as FullProbeResult;
 }
 
 const COVER_ART = { codec_type: 'video', codec_name: 'mjpeg', pix_fmt: 'yuvj420p', disposition: { attached_pic: true } };

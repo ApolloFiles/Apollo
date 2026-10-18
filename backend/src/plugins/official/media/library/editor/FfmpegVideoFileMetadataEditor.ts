@@ -3,7 +3,8 @@ import Path from 'node:path';
 import { injectable } from 'tsyringe';
 import FsUtils from '../../../../../utils/FsUtils.js';
 import FfmpegJobRunner from '../../../ffmpeg/job/FfmpegJobRunner.js';
-import FfprobeExecutor, { type ExtendedProbeResult } from '../../../ffmpeg/probe/FfprobeExecutor.js';
+import { Ffprobe } from '../../../ffmpeg/probe/Ffprobe.js';
+import type { FullProbeResult } from '../../../ffmpeg/probe/FfprobeSchemas.js';
 import FfmpegProcessError from './FfmpegProcessError.js';
 import UnexpectedDesiredMetadataError from './UnexpectedDesiredMetadataError.js';
 
@@ -33,8 +34,8 @@ export default class FfmpegVideoFileMetadataEditor {
   // TODO: Add support for chapters (remember to update #isDesiredStateIsAlreadyPresent)
 
   constructor(
-    // We do not use the cached ffprobe implementation in the editor *just in case*
-    private readonly ffprobeExecutor: FfprobeExecutor,
+    // We do not use the cached ffprobe implementation in the editor to guarantee up-to-date data
+    private readonly ffprobe: Ffprobe,
     private readonly ffmpegJobRunner: FfmpegJobRunner,
   ) {
   }
@@ -47,7 +48,7 @@ export default class FfmpegVideoFileMetadataEditor {
     tmpDirPath: string,
     desiredMetadata: DesiredMetadata,
   ): Promise<void> {
-    const inputFileProbe = await this.ffprobeExecutor.probeFull(inputFilePath);
+    const inputFileProbe = await this.ffprobe.probeFull(inputFilePath);
 
     this.ensureDesiredMetadataLooksPlausible(desiredMetadata, inputFileProbe);
 
@@ -108,7 +109,7 @@ export default class FfmpegVideoFileMetadataEditor {
     return tempOutputFilePath;
   }
 
-  private ensureDesiredMetadataLooksPlausible(desiredMetadata: DesiredMetadata, ffprobeResult: ExtendedProbeResult): void {
+  private ensureDesiredMetadataLooksPlausible(desiredMetadata: DesiredMetadata, ffprobeResult: FullProbeResult): void {
     const streamIndices = desiredMetadata.streams.map(stream => stream.index);
     if (new Set(streamIndices).size !== streamIndices.length) {
       throw new UnexpectedDesiredMetadataError('There are duplicate stream indices in DesiredMetadata.streams');
@@ -159,7 +160,7 @@ export default class FfmpegVideoFileMetadataEditor {
     }
   }
 
-  private isDesiredStateIsAlreadyPresent(desiredMetadata: DesiredMetadata, ffprobeResult: ExtendedProbeResult): boolean {
+  private isDesiredStateIsAlreadyPresent(desiredMetadata: DesiredMetadata, ffprobeResult: FullProbeResult): boolean {
     // we have a stream to delete?
     if (desiredMetadata.streamsToDelete.length > 0) {
       return false;
