@@ -118,6 +118,42 @@ describe(FileContentCache, () => {
     expect(row).toMatchObject({ userId: alice.id, key: 'default:/movies/Arrival.mkv|avif', groupKey: 'default:/movies/Arrival.mkv' });
   });
 
+  test('Returns an entry it stored for an unchanged file', async () => {
+    await cache.set(video, 'avif', AVIF_BYTES);
+
+    await using entry = await cache.get(video, 'avif');
+
+    await expect(entry!.value()).resolves.toEqual(AVIF_BYTES);
+  });
+
+  test('Overwrites an existing entry when storing', async () => {
+    await using _created = await cache.getOrCreate(video, 'avif', async () => AVIF_BYTES);
+
+    await cache.set(video, 'avif', Buffer.from('re-encoded avif bytes'));
+
+    await using entry = await cache.get(video, 'avif');
+    await expect(entry!.value()).resolves.toEqual(Buffer.from('re-encoded avif bytes'));
+  });
+
+  test('Misses a stored entry once the file\'s content changed', async () => {
+    await cache.set(video, 'avif', AVIF_BYTES);
+    await Fs.promises.writeFile(Path.join(tmpDir, 'default', 'movies', 'Arrival.mkv'), 'a different, re-encoded video');
+
+    await expect(cache.get(video, 'avif')).resolves.toBeUndefined();
+  });
+
+  test('Groups a stored entry by the file', async () => {
+    await cache.set(video, 'avif', AVIF_BYTES);
+
+    const row = await databaseClient.cacheUserEntry.findFirstOrThrow({ where: { namespace } });
+    expect(row).toMatchObject({ userId: alice.id, key: 'default:/movies/Arrival.mkv|avif', groupKey: 'default:/movies/Arrival.mkv' });
+  });
+
+  test('Rejects storing an entry for a file that does not exist', async () => {
+    await expect(cache.set(fileSystem.getFile('/movies/Missing.mkv'), 'avif', AVIF_BYTES))
+      .rejects.toThrow(expect.objectContaining({ code: 'ENOENT' }));
+  });
+
   test('Misses after deleting the entry', async () => {
     await using _created = await cache.getOrCreate(video, 'avif', async () => AVIF_BYTES);
 

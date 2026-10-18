@@ -2,7 +2,7 @@ import type VirtualFile from '../files/VirtualFile.js';
 import { NodeFsUtils } from '../utils/NodeFsUtils.js';
 import type { CacheDefinition } from './CacheDefinition.js';
 import type { CacheEntry } from './CacheEntry.js';
-import type { CacheFactory, CacheGetOrCreateOptions } from './CacheFactory.js';
+import type { CacheFactory, CacheGetOrCreateOptions, CacheWriteOptions } from './CacheFactory.js';
 import { CacheScopeError } from './error/CacheScopeError.js';
 import { CacheEngine, type CacheScope } from './internal/CacheEngine.js';
 import type { CacheServices } from './internal/CacheServices.js';
@@ -41,6 +41,17 @@ export abstract class FileContentCache<T extends {} | null> {
     const scope = this.toScope(file);
     const key = FileContentCacheKeyHelper.toEntryKey(file, entryName);
     return this.engine.getOrCreate(scope, key, factory, {
+      ...options,
+      groupKey: FileContentCacheKeyHelper.toGroupKey(file),
+      validator: await this.determineValidator(file),
+    });
+  }
+
+  /** Rejects with `ENOENT` when the file does not exist */
+  async set(file: VirtualFile, entryName: string, value: T, options?: CacheWriteOptions): Promise<void> {
+    const scope = this.toScope(file);
+    const key = FileContentCacheKeyHelper.toEntryKey(file, entryName);
+    await this.engine.set(scope, key, value, {
       ...options,
       groupKey: FileContentCacheKeyHelper.toGroupKey(file),
       validator: await this.determineValidator(file),
