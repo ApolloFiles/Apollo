@@ -397,7 +397,10 @@ describe(CacheEngine, () => {
       });
 
       test('Returns the new entry even when closing the stale one fails', async () => {
-        vi.spyOn(FileCacheEntry.prototype, Symbol.asyncDispose).mockRejectedValueOnce(new Error('EIO: i/o error, close'));
+        vi.spyOn(FileCacheEntry.prototype, Symbol.asyncDispose).mockImplementationOnce(async function (this: FileCacheEntry<string>) {
+          await this.close();
+          throw new Error('EIO: i/o error, close');
+        });
 
         await using entry = await engine.getOrCreate(scope, '17', async () => '<anime id="17"><title>Cowboy Bebop (2026)</title></anime>', { serveStaleOnError: true });
 
