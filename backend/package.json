@@ -74,7 +74,6 @@
     "sharp": "^0.35.5",
     "tsyringe": "^4.10.0",
     "ws": "^8.22.0",
-    "xxhash-addon": "^2.1.0",
     "zod": "^4.6.5"
   },
   "optionalDependencies": {
@@ -97,7 +96,6 @@
     "@prisma/engines@7.10.0": true,
     "@swc/core@1.16.13": true,
     "prisma@7.10.0": true,
-    "xxhash-addon@2.1.0": true,
     "bufferutil@4.1.0": true
   }
 }
