@@ -4,8 +4,8 @@ import UserProvider from '../../../../user/UserProvider.js';
 import { runWithConcurrency } from '../../../../utils/concurrency.js';
 import MediaLibraryByUserFinder from './database/library/MediaLibraryByUserFinder.js';
 import ReadContentsLibrary from './database/library/ReadContentsLibrary.js';
-import MediaLibraryMediaFinder from './database/media/MediaLibraryMediaFinder.js';
 import MediaLibraryMediaItemFinder from './database/media-item/MediaLibraryMediaItemFinder.js';
+import MediaLibraryMediaFinder from './database/media/MediaLibraryMediaFinder.js';
 import LibraryMetadataHydrator from './hydrator/LibraryMetadataHydrator.js';
 import MediaBackdropImageProvider from './images/MediaBackdropImageProvider.js';
 import MediaClearLogoImageProvider from './images/MediaClearLogoImageProvider.js';
@@ -107,7 +107,8 @@ export default class FullLibraryIndexingHelper {
       const mediaItems = await this.mediaLibraryMediaItemFinder.findFullByMediaId(media.id);
       await runWithConcurrency(mediaItems, THUMBNAIL_GENERATION_CONCURRENCY, async (mediaItem) => {
         try {
-          await this.videoThumbnailProvider.provide(mediaItem, 'avif');
+          const cacheEntry = await this.videoThumbnailProvider.provide(mediaItem, 'avif');
+          await cacheEntry.close();
         } catch (err) {
           console.error(err);
         }

@@ -1,62 +1,73 @@
+import { TimeUnit } from '@spraxdev/node-commons/util';
 import Path from 'node:path';
+import Sharp from 'sharp';
 import { singleton } from 'tsyringe';
+import type { CachedValue } from '../../../../../cache/CacheEntry.js';
 import FileSystemProvider from '../../../../../files/FileSystemProvider.js';
 import LocalFile from '../../../../../files/local/LocalFile.js';
 import type VirtualFile from '../../../../../files/VirtualFile.js';
 import UserProvider from '../../../../../user/UserProvider.js';
 import type FullLibraryMediaItem from '../database/media-item/FullLibraryMediaItem.js';
 import ImageFileConstants from '../images/ImageFileConstants.js';
-import MediaImageCache from '../images/MediaImageCache.js';
+import { VideoThumbnailCache } from './VideoThumbnailCache.js';
 import VideoThumbnailGenerator from './VideoThumbnailGenerator.js';
 
 @singleton()
 export default class VideoThumbnailProvider {
   constructor(
+    private readonly thumbnailCache: VideoThumbnailCache,
     private readonly videoThumbnailGenerator: VideoThumbnailGenerator,
-    private readonly mediaImageCache: MediaImageCache,
     private readonly userProvider: UserProvider,
     private readonly fileSystemProvider: FileSystemProvider,
   ) {
   }
 
-  async provide(mediaItem: FullLibraryMediaItem, format: 'jpeg' | 'avif'): Promise<Buffer> {
+  async provide(mediaItem: FullLibraryMediaItem, format: 'jpeg' | 'avif'): Promise<CachedValue<Buffer>> {
     const file = await this.findMediaItemFile(mediaItem);
-
     if (!(file instanceof LocalFile)) {
       throw new Error('video thumbnail provider only supports LocalFile');
     }
 
-    let imageData = await this.mediaImageCache.get(file, 'thumbnail', format);
-    if (imageData != null) {
-      return imageData;
+    if (format === 'avif') {
+      return this.provideAvifThumbnail(file);
     }
 
-    const thumbnails = await this.generateAndCacheThumbnailFrames(file);
     if (format === 'jpeg') {
-      return thumbnails.jpeg;
-    } else if (format === 'avif') {
-      return thumbnails.avif;
+      return this.thumbnailCache.getOrCreate(
+        file,
+        'jpeg',
+        () => this.deriveJpegThumbnail(file),
+        {
+          contentType: 'image/jpeg',
+          expiry: { freshMs: TimeUnit.DAYS.toMillis(30) },
+        },
+      );
     }
 
     throw new Error(`unsupported format: ${format}`);
   }
 
-  private async generateAndCacheThumbnailFrames(file: LocalFile): Promise<{ jpeg: Buffer, avif: Buffer }> {
+  private async generateAvifThumbnail(file: LocalFile): Promise<Buffer> {
     const thumbnail = await this.videoThumbnailGenerator.generate(file);
-    const [jpegBuffer, avifBuffer] = await Promise.all([
-      thumbnail.clone().jpeg(ImageFileConstants.THUMBNAIL_OPTIONS_JPEG).toBuffer(),
-      thumbnail.avif(ImageFileConstants.THUMBNAIL_OPTIONS_AVIF).toBuffer(),
-    ]);
+    return thumbnail
+      .avif(ImageFileConstants.THUMBNAIL_OPTIONS_AVIF)
+      .toBuffer();
+  }
 
-    await Promise.all([
-      this.mediaImageCache.write(file, 'thumbnail', 'jpeg', jpegBuffer),
-      this.mediaImageCache.write(file, 'thumbnail', 'avif', avifBuffer),
-    ]);
+  private async deriveJpegThumbnail(file: LocalFile): Promise<Buffer> {
+    const avifThumbnail = await this.provideAvifThumbnail(file);
+    return Sharp(await avifThumbnail.value())
+      .jpeg(ImageFileConstants.THUMBNAIL_OPTIONS_JPEG)
+      .toBuffer();
+  }
 
-    return {
-      jpeg: jpegBuffer,
-      avif: avifBuffer,
-    };
+  private provideAvifThumbnail(file: LocalFile): Promise<CachedValue<Buffer>> {
+    return this.thumbnailCache.getOrCreate(
+      file,
+      'avif',
+      () => this.generateAvifThumbnail(file),
+      { contentType: 'image/avif' },
+    );
   }
 
   private async findMediaItemFile(mediaItem: FullLibraryMediaItem): Promise<VirtualFile> {
@@ -69,7 +80,6 @@ export default class VideoThumbnailProvider {
     if (mediaOwner == null) {
       throw new Error(`Unable to resolve ApolloUser with ID ${JSON.stringify(mediaItem.libraryOwnerId)}`);
     }
-
     return await this.fileSystemProvider.provideForUser(mediaOwner);
   }
 }

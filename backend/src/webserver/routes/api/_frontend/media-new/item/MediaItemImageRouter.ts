@@ -1,5 +1,6 @@
 import { type FastifyInstanceWithZod, HttpRouter, type RouteReturn } from '@sprax/node-framework/web';
 import { z } from 'zod';
+import { CacheEntryResponder } from '../../../../../../cache/http/CacheEntryResponder.js';
 import MediaLibraryMediaItemFinder
   from '../../../../../../plugins/official/media/library/database/media-item/MediaLibraryMediaItemFinder.js';
 import PermissionAwareLibraryMediaItemProvider
@@ -16,6 +17,7 @@ export default class MediaImageRouter implements ApolloRouter {
     private readonly permissionAwareLibraryMediaItemProvider: PermissionAwareLibraryMediaItemProvider,
     private readonly mediaLibraryMediaItemFinder: MediaLibraryMediaItemFinder,
     private readonly videoThumbnailProvider: VideoThumbnailProvider,
+    private readonly cacheEntryResponder: CacheEntryResponder,
   ) {
   }
 
@@ -32,30 +34,15 @@ export default class MediaImageRouter implements ApolloRouter {
       async (request, reply): Promise<RouteReturn> => {
         const requestedMediaItemId = request.params.mediaItemId;
         const [fileName, fileFormat] = request.params.fileName.split('.') as ['thumbnail', 'jpeg' | 'avif'];
-        const fileFormatMimeType = `image/${fileFormat}`;
-
-        const mediaItem = await this.permissionAwareLibraryMediaItemProvider.provideForReadContents(requestedMediaItemId, request.getAuthenticatedUser());
-
-        let responseBody: Buffer | null;
-
-        if (fileName === 'thumbnail') {
-          const fullMediaItem = await this.mediaLibraryMediaItemFinder.findFullById(mediaItem.mediaItem.id);
-          responseBody = await this.videoThumbnailProvider.provide(fullMediaItem!, fileFormat);
-        } else {
+        if (fileName !== 'thumbnail') {
           throw new Error(`Unsupported fileName: ${JSON.stringify(fileName)}`);
         }
 
-        if (responseBody == null) {
-          return reply
-            .status(404)
-            .send(`Media does not have an image of for '${fileName}'`);
-        }
+        const mediaItem = await this.permissionAwareLibraryMediaItemProvider.provideForReadContents(requestedMediaItemId, request.getAuthenticatedUser());
+        const fullMediaItem = await this.mediaLibraryMediaItemFinder.findFullById(mediaItem.mediaItem.id);
+        const cacheEntry = await this.videoThumbnailProvider.provide(fullMediaItem!, fileFormat);
 
-        return reply
-          .status(200)
-          .header('Cache-Control', 'private, max-age=300')
-          .type(fileFormatMimeType)
-          .send(responseBody);
+        return this.cacheEntryResponder.send(request, reply, cacheEntry, { cacheControl: 'private, max-age=300' });
       });
   }
 }
