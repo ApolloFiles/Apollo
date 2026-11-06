@@ -10,12 +10,13 @@ export default class DatabaseClient extends PrismaClient implements Disposable {
     super({
       adapter: new PrismaPg({
         connectionString: process.env.DATABASE_URL,
+        options: '-c TimeZone=UTC', // Workaround for https://github.com/prisma/orm/issues/26786 (Timestamptz broken when the DB isn't in UTC)
       }),
     });
   }
 
   /**
-   * (Workaround for https://github.com/prisma/prisma/issues/5598)
+   * (Workaround for https://github.com/prisma/orm/issues/5598)
    *
    * TODO: Can we *somehow* get rid of the #fetchNow call across the codebase?
    *       It's just an extra DB call, for the eventuality of highly-out-of-sync server clocks...
