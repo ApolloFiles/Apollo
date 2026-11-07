@@ -2,6 +2,7 @@ import FastifyCookiePlugin from '@fastify/cookie';
 import FastifyFormBodyPlugin from '@fastify/formbody';
 import FastifyWebSocketPlugin from '@fastify/websocket';
 import { BadRequestError, UnauthorizedError } from '@sprax/node-framework';
+import { openApiPlugin } from '@sprax/node-framework/openapi';
 import {
   BaseWebServer,
   defaultHeadersPlugin,
@@ -17,8 +18,10 @@ import type { AccessTokenUser } from '../../auth/access_token/UserByAccessTokenP
 import CsrfTokenValidator from '../../auth/CsrfTokenValidator.js';
 import SessionCookieHelper from '../../auth/session/SessionCookieHelper.js';
 import UserBySessionTokenProvider, { type SessionUser } from '../../auth/UserBySessionTokenProvider.js';
+import AppConfiguration from '../../config/AppConfiguration.js';
 import { IS_PRODUCTION } from '../../constants.js';
 import type ApolloUser from '../../user/ApolloUser.js';
+import { OpenApiDocument } from '../public-api/OpenApiDocument.js';
 import { isApolloRouter } from './ApolloRouter.js';
 import FrontendRequestHandlerFactory from './FrontendRequestHandlerFactory.js';
 import InitialRequestRouter from './InitialRequestRouter.js';
@@ -65,6 +68,7 @@ export default class ApolloWebServer extends BaseWebServer {
     private readonly userBySessionTokenProvider: UserBySessionTokenProvider,
     private readonly csrfTokenValidator: CsrfTokenValidator,
     private readonly accessTokenBearerHelper: AccessTokenBearerHelper,
+    private readonly appConfig: AppConfiguration,
   ) {
     super();
   }
@@ -93,6 +97,9 @@ export default class ApolloWebServer extends BaseWebServer {
     server.register(serverTimingPlugin, {
       shouldSendHeader: (request) => !IS_PRODUCTION || request.getAuthenticatedUserOptional()?.hasSuperUserPrivileges === true,
     });
+
+    server.register(openApiPlugin, OpenApiDocument.createPluginOptions(this.appConfig));
+    server.addHook('onRoute', OpenApiDocument.createUniqueOperationIdHook());
 
     server.register(FastifyCookiePlugin);
     this.decorateRequestForAuthentication(server);

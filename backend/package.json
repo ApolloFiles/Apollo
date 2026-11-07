@@ -54,6 +54,7 @@
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
     "@fastify/formbody": "^9.0.0",
+    "@fastify/swagger": "^9.9.3",
     "@fastify/websocket": "^11.3.3",
     "@orpc/contract": "^1.15.4",
     "@orpc/server": "^1.15.4",

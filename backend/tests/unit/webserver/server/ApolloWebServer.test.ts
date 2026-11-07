@@ -4,6 +4,7 @@ import type { AccessTokenUser } from '#src/auth/access_token/UserByAccessTokenPr
 import type CsrfTokenValidator from '#src/auth/CsrfTokenValidator.js';
 import type SessionCookieHelper from '#src/auth/session/SessionCookieHelper.js';
 import type { default as UserBySessionTokenProvider, SessionUser } from '#src/auth/UserBySessionTokenProvider.js';
+import type AppConfiguration from '#src/config/AppConfiguration.js';
 import type ApolloRouter from '#src/webserver/server/ApolloRouter.js';
 import ApolloWebServer from '#src/webserver/server/ApolloWebServer.js';
 import type ORPCRequestHandler from '#src/webserver/server/ORPCRequestHandler.js';
@@ -31,6 +32,7 @@ class TestApolloWebServer extends ApolloWebServer {
       userBySessionTokenProvider,
       createStrictDeepMock<CsrfTokenValidator>(),
       accessTokenBearerHelper,
+      createStrictDeepMock<AppConfiguration>({ config: { baseUrl: 'https://apollo.example.com' } }),
     );
   }
 
