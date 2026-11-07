@@ -1,6 +1,7 @@
 import type { Prisma } from '../../../../../../database/prisma-client/client.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import { LibraryQueryFragments } from '../library/LibraryQueryFragments.js';
+import { ItemQueryFragments } from '../media-item/ItemQueryFragments.js';
 
 export type BaseMediaRow = Prisma.MediaLibraryMediaGetPayload<{ select: typeof MediaQueryFragments.BASE_SELECT }>;
 
@@ -22,6 +23,6 @@ export class MediaQueryFragments {
 
   /** Media with at least one numbered item, i.e. a show rather than a movie */
   static withEpisodes(): Prisma.MediaLibraryMediaWhereInput {
-    return { items: { some: { seasonNumber: { not: null } } } };
+    return { items: { some: ItemQueryFragments.numbered() } };
   }
 }

@@ -11,6 +11,7 @@ import {
   MediaQueryFragments,
 } from '../../../../../../../plugins/official/media/library/database/media/MediaQueryFragments.js';
 import type ApolloUser from '../../../../../../../user/ApolloUser.js';
+import { BaseItemMapper, type BaseItemRow } from '../../items/BaseItemMapper.js';
 import type { BaseItemDto } from '../../items/ItemSchemas.js';
 import type { MediaDetailDto } from './MediaDetailSchemas.js';
 
@@ -18,12 +19,9 @@ const EXTERNAL_IDS_SELECT = {
   mediaLibraryMediaExternalIds: { select: { source: true, externalId: true } },
 } satisfies Prisma.MediaLibraryMediaSelect;
 
-type ItemRow = Prisma.MediaLibraryMediaItemGetPayload<{
-  select: typeof ItemQueryFragments.BASE_SELECT & ReturnType<typeof ItemQueryFragments.selectWatchProgressOf>,
-}>;
 type MediaDetailRow = Prisma.MediaLibraryMediaGetPayload<{
   select: typeof MediaQueryFragments.BASE_SELECT & { synopsis: true } & typeof EXTERNAL_IDS_SELECT,
-}> & { items: ItemRow[] };
+}> & { items: BaseItemRow[] };
 
 type MediaType = MediaDetailDto['type'];
 type SeasonDto = NonNullable<MediaDetailDto['seasons']>[number];
@@ -68,7 +66,7 @@ export class MediaDetailQuery {
 
   private toDto(row: MediaDetailRow, nextItemId: bigint | null): MediaDetailDto {
     const type: MediaType = row.items.some((item) => item.seasonNumber != null) ? 'show' : 'movie';
-    const items = row.items.map((item) => this.toItemDto(item, type));
+    const items = row.items.map((item) => BaseItemMapper.toDto(item, type));
 
     return {
       id: row.id.toString(),
@@ -81,26 +79,6 @@ export class MediaDetailQuery {
       me: { nextItemToWatch: items.find((item) => item.id === nextItemId?.toString()) ?? null },
       items: items.filter((item) => item.seasonNumber == null),
       ...(type === 'show' && { seasons: this.groupIntoSeasons(items.filter((item) => item.seasonNumber != null)) }),
-    };
-  }
-
-  private toItemDto(row: ItemRow, mediaType: MediaType): BaseItemDto {
-    const watchProgress = row.userWatchProgress[0];
-
-    return {
-      id: row.id.toString(),
-      mediaId: row.mediaId.toString(),
-      kind: mediaType === 'show' ? 'episode' : 'movie',
-      title: row.title,
-      synopsis: row.synopsis,
-      ...(row.seasonNumber != null && { seasonNumber: row.seasonNumber }),
-      ...(row.episodeNumber != null && { episodeNumber: row.episodeNumber }),
-      durationSeconds: row.durationInSec,
-      me: {
-        watchProgress: watchProgress != null
-          ? { positionSeconds: watchProgress.durationInSec, updatedAt: watchProgress.updatedAt.toISOString() }
-          : null,
-      },
     };
   }
 

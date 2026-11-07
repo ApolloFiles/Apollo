@@ -24,6 +24,11 @@ export class ItemQueryFragments {
     { id: 'asc' },
   ] satisfies Prisma.MediaLibraryMediaItemOrderByWithRelationInput[];
 
+  /** Items with a season number, i.e. episodes of a show */
+  static numbered(): Prisma.MediaLibraryMediaItemWhereInput {
+    return { seasonNumber: { not: null } };
+  }
+
   static selectWatchProgressOf(userId: ApolloUser['id']) {
     return {
       userWatchProgress: {
