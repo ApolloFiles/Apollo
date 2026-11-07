@@ -1,45 +1,17 @@
 import type { FastifyInstanceWithZod, Router } from '@sprax/node-framework/web';
-import type AccessTokenBearerHelper from '#src/auth/access_token/AccessTokenBearerHelper.js';
-import type { AccessTokenUser } from '#src/auth/access_token/UserByAccessTokenProvider.js';
-import type CsrfTokenValidator from '#src/auth/CsrfTokenValidator.js';
-import type SessionCookieHelper from '#src/auth/session/SessionCookieHelper.js';
-import type { default as UserBySessionTokenProvider, SessionUser } from '#src/auth/UserBySessionTokenProvider.js';
-import type AppConfiguration from '#src/config/AppConfiguration.js';
+import ApolloUser from '#src/user/ApolloUser.js';
 import type ApolloRouter from '#src/webserver/server/ApolloRouter.js';
 import ApolloWebServer from '#src/webserver/server/ApolloWebServer.js';
-import type ORPCRequestHandler from '#src/webserver/server/ORPCRequestHandler.js';
-import { createStrictDeepMock } from '#tests/test-helpers.js';
+import {
+  createTestWebServer,
+  TEST_ACCESS_TOKEN,
+  TEST_SESSION_COOKIE,
+  TEST_SESSION_TOKEN,
+} from '#tests/unit/webserver/createTestWebServer.js';
 
-const SESSION_USER = { user: { id: 'session-user' }, session: {} } as unknown as SessionUser;
-const TOKEN_USER = { user: { id: 'token-user' }, accessToken: {} } as unknown as AccessTokenUser;
-
-class TestApolloWebServer extends ApolloWebServer {
-  constructor(private readonly testRouters: Router[]) {
-    const sessionCookieHelper = createStrictDeepMock<SessionCookieHelper>();
-    sessionCookieHelper.extractSessionCookieValue.mockImplementation((cookies) => cookies['test_session']);
-    sessionCookieHelper.unsetCookie.mockReturnValue(undefined);
-
-    const userBySessionTokenProvider = createStrictDeepMock<UserBySessionTokenProvider>();
-    userBySessionTokenProvider.findBySessionTokenAndUpdateLastActivity.mockImplementation(async (token) => token === 'valid' ? SESSION_USER : null);
-
-    const accessTokenBearerHelper = createStrictDeepMock<AccessTokenBearerHelper>();
-    accessTokenBearerHelper.extractBearerToken.mockImplementation((header) => header.startsWith('Bearer ') ? header.substring('Bearer '.length) : null);
-    accessTokenBearerHelper.findUserByBearerToken.mockImplementation(async (token) => token === 'valid-token' ? TOKEN_USER : null);
-
-    super(
-      createStrictDeepMock<ORPCRequestHandler>(),
-      sessionCookieHelper,
-      userBySessionTokenProvider,
-      createStrictDeepMock<CsrfTokenValidator>(),
-      accessTokenBearerHelper,
-      createStrictDeepMock<AppConfiguration>({ config: { baseUrl: 'https://apollo.example.com' } }),
-    );
-  }
-
-  protected override resolveRouters(): Router[] {
-    return this.testRouters;
-  }
-}
+const SESSION_USER = new ApolloUser('session-user', 'Session User', false, false, null);
+const TOKEN_USER = new ApolloUser('token-user', 'Token User', false, false, null);
+const VALID_SESSION = { [TEST_SESSION_COOKIE]: TEST_SESSION_TOKEN };
 
 function createRouter(url: string, flags: Omit<ApolloRouter, 'register'> = {}): ApolloRouter {
   return {
@@ -51,10 +23,10 @@ function createRouter(url: string, flags: Omit<ApolloRouter, 'register'> = {}): 
 }
 
 describe(ApolloWebServer, () => {
-  let server: TestApolloWebServer | undefined;
+  let server: ApolloWebServer | undefined;
 
-  function createServer(...routers: Router[]): TestApolloWebServer {
-    server = new TestApolloWebServer(routers);
+  function createServer(...routers: Router[]): ApolloWebServer {
+    server = createTestWebServer(routers, { sessionUser: SESSION_USER, tokenUser: TOKEN_USER });
     return server;
   }
 
@@ -72,20 +44,20 @@ describe(ApolloWebServer, () => {
     });
 
     test('Rejects a request with an unknown session', async () => {
-      const response = await createServer(createRouter('/private')).inject({ url: '/private', cookies: { test_session: 'invalid' } });
+      const response = await createServer(createRouter('/private')).inject({ url: '/private', cookies: { [TEST_SESSION_COOKIE]: 'invalid' } });
 
       expect(response.statusCode).toBe(401);
     });
 
     test('Accepts a request with a valid session', async () => {
-      const response = await createServer(createRouter('/private')).inject({ url: '/private', cookies: { test_session: 'valid' } });
+      const response = await createServer(createRouter('/private')).inject({ url: '/private', cookies: VALID_SESSION });
 
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual({ userId: 'session-user' });
     });
 
     test('Rejects a request with only a valid bearer token', async () => {
-      const response = await createServer(createRouter('/private')).inject({ url: '/private', headers: { authorization: 'Bearer valid-token' } });
+      const response = await createServer(createRouter('/private')).inject({ url: '/private', headers: { authorization: `Bearer ${TEST_ACCESS_TOKEN}` } });
 
       expect(response.statusCode).toBe(401);
     });
@@ -102,7 +74,7 @@ describe(ApolloWebServer, () => {
     const tokenRouter = (): ApolloRouter => createRouter('/token', { allowAccessTokenAccess: () => true });
 
     test('Accepts a valid bearer token', async () => {
-      const response = await createServer(tokenRouter()).inject({ url: '/token', headers: { authorization: 'Bearer valid-token' } });
+      const response = await createServer(tokenRouter()).inject({ url: '/token', headers: { authorization: `Bearer ${TEST_ACCESS_TOKEN}` } });
 
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual({ userId: 'token-user' });
@@ -112,7 +84,7 @@ describe(ApolloWebServer, () => {
       const response = await createServer(tokenRouter()).inject({
         url: '/token',
         headers: { authorization: 'Bearer invalid-token' },
-        cookies: { test_session: 'valid' },
+        cookies: VALID_SESSION,
       });
 
       expect(response.statusCode).toBe(401);
@@ -127,7 +99,7 @@ describe(ApolloWebServer, () => {
     });
 
     test('Accepts a valid session', async () => {
-      const response = await createServer(tokenRouter()).inject({ url: '/token', cookies: { test_session: 'valid' } });
+      const response = await createServer(tokenRouter()).inject({ url: '/token', cookies: VALID_SESSION });
 
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual({ userId: 'session-user' });
