@@ -1,6 +1,7 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
 import FullLibrary from './FullLibrary.js';
+import { LibraryQueryFragments } from './LibraryQueryFragments.js';
 import ReadContentsLibrary from './ReadContentsLibrary.js';
 
 @singleton()
@@ -14,11 +15,7 @@ export default class MediaLibraryFinder {
     const libraryData = await this.databaseClient.mediaLibrary.findUnique({
       where: { id },
 
-      select: {
-        id: true,
-        ownerId: true,
-        name: true,
-      },
+      select: LibraryQueryFragments.SELECT,
     });
 
     if (libraryData == null) {

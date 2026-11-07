@@ -2,6 +2,7 @@ import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import FullLibrary from './FullLibrary.js';
+import { LibraryQueryFragments } from './LibraryQueryFragments.js';
 import ReadContentsLibrary from './ReadContentsLibrary.js';
 
 // TODO: move class to consumer
@@ -16,11 +17,7 @@ export default class MediaLibraryByUserFinder {
     const fetchedLibraries = await this.databaseClient.mediaLibrary.findMany({
       where: { ownerId: userId },
 
-      select: {
-        id: true,
-        ownerId: true,
-        name: true,
-      },
+      select: LibraryQueryFragments.SELECT,
 
       orderBy: { name: 'asc' },
     });
@@ -36,11 +33,7 @@ export default class MediaLibraryByUserFinder {
         },
       },
 
-      select: {
-        id: true,
-        ownerId: true,
-        name: true,
-      },
+      select: LibraryQueryFragments.SELECT,
 
       orderBy: { name: 'asc' },
     });
@@ -50,16 +43,7 @@ export default class MediaLibraryByUserFinder {
 
   async findAccessibleLibraryIds(userId: ApolloUser['id']): Promise<bigint[]> {
     const fetchedLibraries = await this.databaseClient.mediaLibrary.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          {
-            MediaLibrarySharedWith: {
-              some: { userId: userId },
-            },
-          },
-        ],
-      },
+      where: LibraryQueryFragments.accessibleBy(userId),
       select: { id: true },
     });
 
