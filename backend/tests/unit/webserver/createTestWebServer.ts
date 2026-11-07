@@ -1,4 +1,4 @@
-import type { Router } from '@sprax/node-framework/web';
+import type { FastifyInstanceWithZod, Router } from '@sprax/node-framework/web';
 import type AccessTokenBearerHelper from '#src/auth/access_token/AccessTokenBearerHelper.js';
 import type { AccessTokenUser } from '#src/auth/access_token/UserByAccessTokenProvider.js';
 import type CsrfTokenValidator from '#src/auth/CsrfTokenValidator.js';
@@ -6,6 +6,7 @@ import type SessionCookieHelper from '#src/auth/session/SessionCookieHelper.js';
 import type { default as UserBySessionTokenProvider, SessionUser } from '#src/auth/UserBySessionTokenProvider.js';
 import type AppConfiguration from '#src/config/AppConfiguration.js';
 import ApolloUser from '#src/user/ApolloUser.js';
+import type ApolloRouter from '#src/webserver/server/ApolloRouter.js';
 import ApolloWebServer from '#src/webserver/server/ApolloWebServer.js';
 import type ORPCRequestHandler from '#src/webserver/server/ORPCRequestHandler.js';
 import { createStrictDeepMock } from '#tests/test-helpers.js';
@@ -22,8 +23,11 @@ export type TestCredentials = {
   sessionUser?: ApolloUser;
 };
 
-/** An {@link ApolloWebServer} with mocked authentication that mounts `routers` without a prefix */
-export function createTestWebServer(routers: Router[], credentials: TestCredentials = { tokenUser: TEST_USER }): ApolloWebServer {
+/** A router mounted under the prefix its directory would derive in production, e.g. `/media/:mediaId` */
+export type PrefixedRouter = { router: ApolloRouter, prefix: string };
+
+/** An {@link ApolloWebServer} with mocked authentication that mounts `routers` without a prefix unless one is given */
+export function createTestWebServer(routers: (Router | PrefixedRouter)[], credentials: TestCredentials = { tokenUser: TEST_USER }): ApolloWebServer {
   return new TestApolloWebServer(routers, credentials);
 }
 
@@ -33,7 +37,7 @@ export async function getWithAccessToken(server: ApolloWebServer, url: string): 
 }
 
 class TestApolloWebServer extends ApolloWebServer {
-  constructor(private readonly testRouters: Router[], credentials: TestCredentials) {
+  constructor(private readonly testRouters: (Router | PrefixedRouter)[], credentials: TestCredentials) {
     const sessionCookieHelper = createStrictDeepMock<SessionCookieHelper>();
     sessionCookieHelper.extractSessionCookieValue.mockImplementation((cookies) => cookies[TEST_SESSION_COOKIE]);
     sessionCookieHelper.unsetCookie.mockReturnValue(undefined);
@@ -62,6 +66,27 @@ class TestApolloWebServer extends ApolloWebServer {
   }
 
   protected override resolveRouters(): Router[] {
-    return this.testRouters;
+    return this.testRouters.map((entry) => 'prefix' in entry ? new PrefixedRouterAdapter(entry.router, entry.prefix) : entry);
+  }
+}
+
+/** Mounts a router in a prefixed scope, keeping its access flags on the outer scope where the server reads them */
+class PrefixedRouterAdapter implements ApolloRouter {
+  constructor(
+    private readonly router: ApolloRouter,
+    private readonly prefix: string,
+  ) {
+  }
+
+  allowUnauthenticatedAccess(): boolean {
+    return this.router.allowUnauthenticatedAccess?.() === true;
+  }
+
+  allowAccessTokenAccess(): boolean {
+    return this.router.allowAccessTokenAccess?.() === true;
+  }
+
+  async register(server: FastifyInstanceWithZod): Promise<void> {
+    await server.register(async (scope) => this.router.register(scope), { prefix: this.prefix });
   }
 }

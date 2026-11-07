@@ -1,6 +1,7 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
 import FullLibraryMediaItem from './FullLibraryMediaItem.js';
+import { ItemQueryFragments } from './ItemQueryFragments.js';
 import ReadContentsLibraryMediaItem from './ReadContentsLibraryMediaItem.js';
 
 @singleton()
@@ -101,10 +102,7 @@ export default class MediaLibraryMediaItemFinder {
           },
         },
       },
-      orderBy: [
-        { seasonNumber: 'asc' },
-        { episodeNumber: 'asc' },
-      ],
+      orderBy: ItemQueryFragments.DISPLAY_ORDER,
     });
 
     return allMediaData.map(data => ReadContentsLibraryMediaItem.fromData(data));
