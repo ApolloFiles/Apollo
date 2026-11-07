@@ -666,9 +666,24 @@ export default class PlayerSessionRouter implements ApolloRouter {
       throw new Error('File path is not absolute');
     }
 
-    let fileStat: Fs.Stats = await Fs.promises.stat(file);
+    const fileHandle = await Fs.promises.open(file, 'r');
+    try {
+      await this.sendOpenFileRespectingRequestedRange(request, reply, fileHandle, Path.basename(file), mimeType, sendAsAttachment);
+    } catch (err) {
+      await fileHandle.close();
+      throw err;
+    }
+  }
 
-    const fileSize = fileStat.size;
+  private async sendOpenFileRespectingRequestedRange(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    fileHandle: Fs.promises.FileHandle,
+    fileName: string,
+    mimeType: string,
+    sendAsAttachment: boolean,
+  ): Promise<void> {
+    const fileSize = (await fileHandle.stat()).size;
     const parsedRange = this.determineRange(request, fileSize, { combine: true });
 
     let bytesStart = undefined;
@@ -678,6 +693,7 @@ export default class PlayerSessionRouter implements ApolloRouter {
       bytesEnd = parsedRange[0].end;
 
       if (bytesEnd > fileSize) {
+        await fileHandle.close();
         return reply
           .status(416)
           .send(`Requested range not satisfiable (file has ${fileSize} bytes)`);
@@ -690,7 +706,7 @@ export default class PlayerSessionRouter implements ApolloRouter {
       .header('Content-Length', fileSize);
 
     if (sendAsAttachment) {
-      reply.header('Content-Disposition', `attachment; filename="${Path.basename(file)}"`);
+      reply.header('Content-Disposition', `attachment; filename="${fileName}"`);
     }
 
     if (bytesStart != undefined && bytesEnd != undefined) {
@@ -700,7 +716,7 @@ export default class PlayerSessionRouter implements ApolloRouter {
         .header('Content-Range', `bytes ${bytesStart}-${bytesEnd}/${fileSize}`);
     }
 
-    reply.send(Fs.createReadStream(file, { start: bytesStart, end: bytesEnd }));
+    reply.send(fileHandle.createReadStream({ start: bytesStart, end: bytesEnd }));
   }
 
   private determineRange(request: FastifyRequest, fileSize: number, rangeParserOptions?: { combine: boolean }) {
