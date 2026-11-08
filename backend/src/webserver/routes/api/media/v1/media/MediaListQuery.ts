@@ -3,11 +3,11 @@ import { z } from 'zod';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
 import {
   MediaQueryFragments,
-  type BaseMediaRow,
 } from '../../../../../../plugins/official/media/library/database/media/MediaQueryFragments.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
 import { KeysetPage, type KeysetSort, type Page, type SortOrder } from '../../../../../public-api/pagination/KeysetPage.js';
 import type { PageRequest } from '../../../../../public-api/pagination/PageRequest.js';
+import { BaseMediaMapper } from './BaseMediaMapper.js';
 import type { BaseMediaDto } from './MediaSchemas.js';
 
 export type MediaListParams = {
@@ -41,7 +41,7 @@ export class MediaListQuery {
     });
 
     const showIds = await this.findShowIds(rows.map((row) => row.id));
-    return page.toPage(rows, (row) => this.toDto(row, showIds.has(row.id)));
+    return page.toPage(rows, (row) => BaseMediaMapper.toDto(row, showIds.has(row.id) ? 'show' : 'movie'));
   }
 
   /** A filtered `_count` in the select would aggregate every item of every media; this stops at the first episode per media */
@@ -63,15 +63,5 @@ export class MediaListQuery {
       return { column: 'title', order: params.order, keySchema: z.string() };
     }
     return { column: 'id', order: params.order, keySchema: z.coerce.bigint() };
-  }
-
-  private toDto(row: BaseMediaRow, isShow: boolean): BaseMediaDto {
-    return {
-      id: row.id.toString(),
-      libraryId: row.libraryId.toString(),
-      type: isShow ? 'show' : 'movie',
-      title: row.title,
-      year: row.year,
-    };
   }
 }

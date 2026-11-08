@@ -13,6 +13,7 @@ import {
 import type ApolloUser from '../../../../../../../user/ApolloUser.js';
 import { BaseItemMapper, type BaseItemRow } from '../../items/BaseItemMapper.js';
 import type { BaseItemDto } from '../../items/ItemSchemas.js';
+import { BaseMediaMapper } from '../BaseMediaMapper.js';
 import type { MediaDetailDto } from './MediaDetailSchemas.js';
 
 const EXTERNAL_IDS_SELECT = {
@@ -69,11 +70,7 @@ export class MediaDetailQuery {
     const items = row.items.map((item) => BaseItemMapper.toDto(item, type));
 
     return {
-      id: row.id.toString(),
-      libraryId: row.libraryId.toString(),
-      type,
-      title: row.title,
-      year: row.year,
+      ...BaseMediaMapper.toDto(row, type),
       synopsis: row.synopsis,
       externalIds: this.toExternalIds(row.mediaLibraryMediaExternalIds),
       me: { nextItemToWatch: items.find((item) => item.id === nextItemId?.toString()) ?? null },
