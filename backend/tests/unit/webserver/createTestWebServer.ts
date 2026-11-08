@@ -1,7 +1,7 @@
 import type { FastifyInstanceWithZod, Router } from '@sprax/node-framework/web';
 import type AccessTokenBearerHelper from '#src/auth/access_token/AccessTokenBearerHelper.js';
 import type { AccessTokenUser } from '#src/auth/access_token/UserByAccessTokenProvider.js';
-import type CsrfTokenValidator from '#src/auth/CsrfTokenValidator.js';
+import CsrfTokenValidator from '#src/auth/CsrfTokenValidator.js';
 import type SessionCookieHelper from '#src/auth/session/SessionCookieHelper.js';
 import type { default as UserBySessionTokenProvider, SessionUser } from '#src/auth/UserBySessionTokenProvider.js';
 import type AppConfiguration from '#src/config/AppConfiguration.js';
@@ -15,11 +15,12 @@ export const TEST_USER = new ApolloUser('u_alice_3fK9xQ2mL8pR7wZ', 'Alice', fals
 export const TEST_ACCESS_TOKEN = 'apollo_pat_valid';
 export const TEST_SESSION_COOKIE = 'test_session';
 export const TEST_SESSION_TOKEN = 'valid';
+export const TEST_CSRF_TOKEN = 'csrf_8Hq2vN5kT1xR4mW7';
 
 export type TestCredentials = {
   /** Authenticated by `Bearer ${TEST_ACCESS_TOKEN}` */
   tokenUser?: ApolloUser;
-  /** Authenticated by the cookie `${TEST_SESSION_COOKIE}=${TEST_SESSION_TOKEN}` */
+  /** Authenticated by the cookie `${TEST_SESSION_COOKIE}=${TEST_SESSION_TOKEN}`, with the CSRF token {@link TEST_CSRF_TOKEN} */
   sessionUser?: ApolloUser;
 };
 
@@ -45,7 +46,7 @@ class TestApolloWebServer extends ApolloWebServer {
     const userBySessionTokenProvider = createStrictDeepMock<UserBySessionTokenProvider>();
     userBySessionTokenProvider.findBySessionTokenAndUpdateLastActivity.mockImplementation(async (token) => {
       const user = token === TEST_SESSION_TOKEN ? credentials.sessionUser : undefined;
-      return user != null ? { user, session: {} } as unknown as SessionUser : null;
+      return user != null ? { user, session: { csrfToken: TEST_CSRF_TOKEN } } as unknown as SessionUser : null;
     });
 
     const accessTokenBearerHelper = createStrictDeepMock<AccessTokenBearerHelper>();
@@ -59,7 +60,7 @@ class TestApolloWebServer extends ApolloWebServer {
       createStrictDeepMock<ORPCRequestHandler>(),
       sessionCookieHelper,
       userBySessionTokenProvider,
-      createStrictDeepMock<CsrfTokenValidator>(),
+      new CsrfTokenValidator(),
       accessTokenBearerHelper,
       createStrictDeepMock<AppConfiguration>({ config: { baseUrl: 'https://apollo.example.com' } }),
     );
