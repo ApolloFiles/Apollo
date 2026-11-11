@@ -21,8 +21,13 @@ export class MediaQueryFragments {
     return { library: LibraryQueryFragments.accessibleBy(userId) };
   }
 
-  /** Media with at least one numbered item, i.e. a show rather than a movie */
+  /** Media with at least one present item; the others are hidden like their items */
+  static present(): Prisma.MediaLibraryMediaWhereInput {
+    return { items: { some: ItemQueryFragments.present() } };
+  }
+
+  /** Media with at least one present numbered item, i.e. a show rather than a movie */
   static withEpisodes(): Prisma.MediaLibraryMediaWhereInput {
-    return { items: { some: ItemQueryFragments.numbered() } };
+    return { items: { some: { ...ItemQueryFragments.numbered(), ...ItemQueryFragments.present() } } };
   }
 }

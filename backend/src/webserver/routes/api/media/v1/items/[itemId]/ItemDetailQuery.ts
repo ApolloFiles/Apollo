@@ -17,7 +17,7 @@ import type { ItemDetailDto } from './ItemDetailSchemas.js';
 const MEDIA_TYPE_SELECT = {
   media: {
     select: {
-      items: { where: ItemQueryFragments.numbered(), select: { id: true }, take: 1 },
+      items: { where: { ...ItemQueryFragments.numbered(), ...ItemQueryFragments.present() }, select: { id: true }, take: 1 },
     },
   },
 } satisfies Prisma.MediaLibraryMediaItemSelect;
@@ -38,7 +38,7 @@ export class ItemDetailQuery {
    */
   async run(user: ApolloUser, itemId: bigint): Promise<ItemDetailDto> {
     const row = await this.databaseClient.mediaLibraryMediaItem.findFirst({
-      where: { AND: [{ id: itemId }, { media: MediaQueryFragments.accessibleBy(user.id) }] },
+      where: { AND: [{ id: itemId }, ItemQueryFragments.present(), { media: MediaQueryFragments.accessibleBy(user.id) }] },
       select: {
         ...ItemQueryFragments.BASE_SELECT,
         ...ItemQueryFragments.selectWatchProgressOf(user.id),

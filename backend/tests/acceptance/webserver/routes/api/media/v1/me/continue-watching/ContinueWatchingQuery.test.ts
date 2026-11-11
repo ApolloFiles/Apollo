@@ -90,6 +90,10 @@ describe(ContinueWatchingQuery, () => {
     });
   }
 
+  async function markMissing(itemId: bigint): Promise<void> {
+    await databaseClient.mediaLibraryMediaItem.update({ where: { id: itemId }, data: { missingSince: new Date('2026-11-05T03:00:00.000Z') } });
+  }
+
   function list(limit = 20, libraryIds: bigint[] = []) {
     return query.run(alice, { libraryIds, limit });
   }
@@ -155,6 +159,22 @@ describe(ContinueWatchingQuery, () => {
     const codeGeass = await createCodeGeass();
     await recordProgress(alice.id, noGameNoLifeZero.itemIds['No Game No Life: Zero.mkv']!, DURATION, '2026-11-01T20:15:00.000Z');
     await recordProgress(alice.id, codeGeass.itemIds['S01E02.mkv']!, DURATION, '2026-11-02T20:15:00.000Z');
+
+    await expect(list()).resolves.toStrictEqual({ items: [] });
+  });
+
+  test('Leaves out media whose watched item is missing', async () => {
+    const noGameNoLifeZero = await createMovie(moviesLibraryId, 'No Game No Life: Zero');
+    await recordProgress(alice.id, noGameNoLifeZero.itemIds['No Game No Life: Zero.mkv']!, 754, '2026-11-01T20:15:00.000Z');
+    await markMissing(noGameNoLifeZero.itemIds['No Game No Life: Zero.mkv']!);
+
+    await expect(list()).resolves.toStrictEqual({ items: [] });
+  });
+
+  test('Does not continue a show with a missing episode', async () => {
+    const codeGeass = await createCodeGeass();
+    await recordProgress(alice.id, codeGeass.itemIds['S01E01.mkv']!, DURATION, '2026-11-01T20:15:00.000Z');
+    await markMissing(codeGeass.itemIds['S01E02.mkv']!);
 
     await expect(list()).resolves.toStrictEqual({ items: [] });
   });

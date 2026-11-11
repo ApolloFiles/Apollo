@@ -54,7 +54,13 @@ describe(MediaImageQuery, () => {
 
   async function createMedia(libraryId: bigint, title: string): Promise<bigint> {
     const media = await databaseClient.mediaLibraryMedia.create({
-      data: { libraryId, title, year: 2017, directoryUri: ApolloFileURI.create(alice.id, 'local', `/${title}`).toString() },
+      data: {
+        libraryId,
+        title,
+        year: 2017,
+        directoryUri: ApolloFileURI.create(alice.id, 'local', `/${title}`).toString(),
+        items: { create: [{ relativeFilePath: `${title}.mkv`, durationInSec: 6420, title }] },
+      },
     });
     return media.id;
   }
@@ -83,6 +89,14 @@ describe(MediaImageQuery, () => {
     await expect(query.run(alice, homeVideosId, 'poster', 'jpeg'))
       .rejects.toThrow(new NotFoundError(`Media '${homeVideosId}' does not exist or you do not have access to it`));
 
+    expect(posterImageProvider.provide).not.toHaveBeenCalled();
+  });
+
+  test('Reports a media whose files are all missing as not found without asking a provider', async () => {
+    await databaseClient.mediaLibraryMediaItem.updateMany({ where: { mediaId: noGameNoLifeZeroId }, data: { missingSince: new Date('2026-11-05T03:00:00.000Z') } });
+
+    await expect(query.run(alice, noGameNoLifeZeroId, 'poster', 'jpeg'))
+      .rejects.toThrow(new NotFoundError(`Media '${noGameNoLifeZeroId}' does not exist or you do not have access to it`));
     expect(posterImageProvider.provide).not.toHaveBeenCalled();
   });
 

@@ -89,6 +89,10 @@ describe(MediaDetailQuery, () => {
     return progress.updatedAt;
   }
 
+  async function markMissing(itemId: string): Promise<void> {
+    await databaseClient.mediaLibraryMediaItem.update({ where: { id: BigInt(itemId) }, data: { missingSince: new Date('2026-11-05T03:00:00.000Z') } });
+  }
+
   test('Describes a movie with its single unnumbered item, which is also the next item to watch', async () => {
     const noGameNoLifeZero = await createMedia(animeLibraryId, 'No Game No Life: Zero', [{ file: 'No Game No Life: Zero.mkv', title: 'No Game No Life: Zero' }]);
 
@@ -134,6 +138,28 @@ describe(MediaDetailQuery, () => {
     ]);
     expect(detail.items).toEqual([expect.objectContaining({ id: codeGeass.itemIds['Extras.mkv'], kind: 'episode', title: 'Extras' })]);
     expect(detail.items[0]).not.toHaveProperty('seasonNumber');
+  });
+
+  test('Leaves out items whose file is missing', async () => {
+    const codeGeass = await createCodeGeass();
+    await markMissing(codeGeass.itemIds['S01E02.mkv']!);
+    await markMissing(codeGeass.itemIds['Extras.mkv']!);
+
+    const detail = await query.run(alice, codeGeass.id);
+
+    expect(detail.seasons!.map((season) => season.items.map((item) => item.id))).toEqual([
+      [codeGeass.itemIds['S01E01.mkv']],
+      [codeGeass.itemIds['S02E01.mkv']],
+    ]);
+    expect(detail.items).toEqual([]);
+  });
+
+  test('Reports a media whose files are all missing as not found', async () => {
+    const noGameNoLifeZero = await createMedia(animeLibraryId, 'No Game No Life: Zero', [{ file: 'No Game No Life: Zero.mkv', title: 'No Game No Life: Zero' }]);
+    await markMissing(noGameNoLifeZero.itemIds['No Game No Life: Zero.mkv']!);
+
+    await expect(query.run(alice, noGameNoLifeZero.id))
+      .rejects.toThrow(new NotFoundError(`Media '${noGameNoLifeZero.id}' does not exist or you do not have access to it`));
   });
 
   test('Reports only the requesting user\'s watch progress, with the time it was updated', async () => {

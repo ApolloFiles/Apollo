@@ -127,6 +127,14 @@ describe(ItemDetailQuery, () => {
     await expect(query.run(alice, itemId)).rejects.toThrow(new NotFoundError(`Item '${itemId}' does not exist or you do not have access to it`));
   });
 
+  test('Reports an item whose file is missing as not found', async () => {
+    const noGameNoLifeZero = await createMedia(animeLibraryId, 'No Game No Life: Zero', [{ file: 'No Game No Life: Zero.mkv', title: 'No Game No Life: Zero' }]);
+    const itemId = noGameNoLifeZero.itemIds['No Game No Life: Zero.mkv']!;
+    await databaseClient.mediaLibraryMediaItem.update({ where: { id: itemId }, data: { missingSince: new Date('2026-11-05T03:00:00.000Z') } });
+
+    await expect(query.run(alice, itemId)).rejects.toThrow(new NotFoundError(`Item '${itemId}' does not exist or you do not have access to it`));
+  });
+
   test('Reports an unknown item as not found', async () => {
     await expect(query.run(alice, 7303000000000000009n)).rejects.toThrow(NotFoundError);
   });

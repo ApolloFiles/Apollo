@@ -64,10 +64,22 @@ describe(MediaListQuery, () => {
     return media.id;
   }
 
+  async function markAllItemsMissing(mediaTitle: string): Promise<void> {
+    await databaseClient.mediaLibraryMediaItem.updateMany({ where: { media: { title: mediaTitle } }, data: { missingSince: new Date('2026-11-05T03:00:00.000Z') } });
+  }
+
   test('Lists the newest media of every accessible library first, leaving out other users\' libraries', async () => {
     const page = await query.run(alice, { listing: LISTING, limit: 10 }, RECENTLY_ADDED);
 
     expect(page.items.map((item) => item.title)).toEqual(['Youjo Senki Movie', 'Ghost in the Shell', 'No Game No Life: Zero', 'No Game No Life']);
+  });
+
+  test('Leaves out media whose files are all missing', async () => {
+    await markAllItemsMissing('Ghost in the Shell');
+
+    const page = await query.run(alice, { listing: LISTING, limit: 10 }, { ...RECENTLY_ADDED, libraryIds: [moviesLibraryId] });
+
+    expect(page.items.map((item) => item.title)).toEqual(['Youjo Senki Movie']);
   });
 
   test('Summarises each media with its library and a type derived from having episodes', async () => {

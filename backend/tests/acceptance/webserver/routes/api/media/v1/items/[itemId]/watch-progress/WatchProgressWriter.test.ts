@@ -98,6 +98,13 @@ describe(WatchProgressWriter, () => {
       await expect(progressOf(alice.id, vacationId)).resolves.toBe(754);
     });
 
+    test('Reports an item whose file is missing as not found and stores nothing', async () => {
+      await databaseClient.mediaLibraryMediaItem.update({ where: { id: dayANewDemonWasBornId }, data: { missingSince: new Date('2026-11-05T03:00:00.000Z') } });
+
+      await expect(writer.save(alice, dayANewDemonWasBornId, 754, undefined)).rejects.toThrow(NotFoundError);
+      await expect(progressOf(alice.id, dayANewDemonWasBornId)).resolves.toBeNull();
+    });
+
     test('Reports an item of another user\'s library as not found and stores nothing', async () => {
       await expect(writer.save(alice, vacationId, 754, undefined))
         .rejects.toThrow(new NotFoundError(`Item '${vacationId}' does not exist or you do not have access to it`));

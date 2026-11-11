@@ -24,6 +24,11 @@ export class ItemQueryFragments {
     { id: 'asc' },
   ] satisfies Prisma.MediaLibraryMediaItemOrderByWithRelationInput[];
 
+  /** Items whose file the last scan found; missing ones stay hidden until they come back or get deleted */
+  static present(): Prisma.MediaLibraryMediaItemWhereInput {
+    return { missingSince: null };
+  }
+
   /** Items with a season number, i.e. episodes of a show */
   static numbered(): Prisma.MediaLibraryMediaItemWhereInput {
     return { seasonNumber: { not: null } };

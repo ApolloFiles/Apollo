@@ -1,6 +1,7 @@
 import DatabaseClient from '../../../../../database/DatabaseClient.js';
 import ResourceNotFoundError from '../../../../../permission/error/ResourceNotFoundError.js';
 import type ReadContentsLibrary from '../database/library/ReadContentsLibrary.js';
+import { MediaQueryFragments } from '../database/media/MediaQueryFragments.js';
 import ReadContentsLibraryMedia from '../database/media/ReadContentsLibraryMedia.js';
 import ReadContentsAwareLibraryMedia from './ReadContentsAwareLibraryMedia.js';
 
@@ -16,7 +17,7 @@ export default class ReadContentsAwareLibrary {
    */
   async findMedia(mediaId: bigint): Promise<ReadContentsAwareLibraryMedia> {
     const mediaData = await this.databaseClient.mediaLibraryMedia.findUnique({
-      where: { id: mediaId, libraryId: this.library.id },
+      where: { id: mediaId, libraryId: this.library.id, AND: [MediaQueryFragments.present()] },
       select: {
         id: true,
         title: true,
@@ -43,7 +44,7 @@ export default class ReadContentsAwareLibrary {
   // FIXME: remove if not needed yet
   async findAllMedia(): Promise<ReadContentsAwareLibraryMedia[]> {
     const allMediaData = await this.databaseClient.mediaLibraryMedia.findMany({
-      where: { libraryId: this.library.id },
+      where: { libraryId: this.library.id, ...MediaQueryFragments.present() },
       select: {
         id: true,
         title: true,

@@ -68,7 +68,7 @@ export class MediaImageQuery {
 
   private async findAccessible(user: ApolloUser, mediaId: bigint): Promise<FullLibraryMedia | null> {
     const row = await this.databaseClient.mediaLibraryMedia.findFirst({
-      where: { AND: [{ id: mediaId }, MediaQueryFragments.accessibleBy(user.id)] },
+      where: { AND: [{ id: mediaId }, MediaQueryFragments.accessibleBy(user.id), MediaQueryFragments.present()] },
       select: {
         id: true,
         title: true,

@@ -31,6 +31,7 @@ export class MediaListQuery {
       where: {
         AND: [
           MediaQueryFragments.accessibleBy(user.id),
+          MediaQueryFragments.present(),
           params.libraryIds.length > 0 ? { libraryId: { in: params.libraryIds } } : {},
           page.where(),
         ],

@@ -29,6 +29,7 @@ export default class Library {
     return this.databaseClient.mediaLibraryMedia.findMany({
       where: {
         libraryId: BigInt(this.id),
+        items: { some: { missingSince: null } },
       },
       orderBy: {
         addedAt: 'desc',
@@ -37,11 +38,11 @@ export default class Library {
   }
 
   fetchMedia(mediaId: bigint): Promise<PrismaClient.MediaLibraryMedia | null> {
-    return this.databaseClient.mediaLibraryMedia.findUnique({ where: { id: mediaId } });
+    return this.databaseClient.mediaLibraryMedia.findUnique({ where: { id: mediaId, items: { some: { missingSince: null } } } });
   }
 
   fetchMediaItem(mediaItemId: bigint): Promise<PrismaClient.MediaLibraryMediaItem | null> {
-    return this.databaseClient.mediaLibraryMediaItem.findUnique({ where: { id: mediaItemId } });
+    return this.databaseClient.mediaLibraryMediaItem.findUnique({ where: { id: mediaItemId, missingSince: null } });
   }
 
   async fetchMediaWatchProgressInSeconds(mediaItemId: bigint): Promise<number | null> {
@@ -63,11 +64,12 @@ export default class Library {
   fetchMediaFull(mediaId: bigint): Promise<
     (
       Omit<PrismaClient.MediaLibraryMedia, 'directoryUri' | 'addedAt' | 'externalApiFetchedAt'>
-      & { items: Omit<PrismaClient.MediaLibraryMediaItem, 'mediaId' | 'relativeFilePath' | 'lastScannedAt' | 'addedAt' | 'externalApiFetchedAt'>[] }
+      & { items: Omit<PrismaClient.MediaLibraryMediaItem, 'mediaId' | 'relativeFilePath' | 'lastScannedAt' | 'missingSince' | 'addedAt' | 'externalApiFetchedAt'>[] }
       ) | null> {
     return this.databaseClient.mediaLibraryMedia.findUnique({
       where: {
         id: mediaId,
+        items: { some: { missingSince: null } },
       },
       select: {
         id: true,
@@ -76,6 +78,7 @@ export default class Library {
         synopsis: true,
         year: true,
         items: {
+          where: { missingSince: null },
           select: {
             id: true,
             relativeFilePath: true,
@@ -97,6 +100,7 @@ export default class Library {
           mediaId: BigInt(mediaId),
           relativeFilePath: relativeFilePath,
         },
+        missingSince: null,
       },
     });
   }

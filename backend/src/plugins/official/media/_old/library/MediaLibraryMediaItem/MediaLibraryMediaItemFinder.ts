@@ -44,7 +44,7 @@ export default class MediaLibraryMediaItemFinder {
 
   async find(libraryMediaId: bigint): Promise<MediaLibraryMediaItem | null> {
     const mediaLibraryMediaItemData = await this.databaseClient.mediaLibraryMediaItem.findUnique({
-      where: { id: libraryMediaId },
+      where: { id: libraryMediaId, missingSince: null },
       select: MediaLibraryMediaItemFinder.DEFAULT_SELECT_OPTIONS.select,
     });
 
@@ -59,7 +59,7 @@ export default class MediaLibraryMediaItemFinder {
     next: MediaLibraryMediaItem | null
   }> {
     // TODO: Can we do something smart to only return up to 3 items instead of all?
-    const allMediaItems = await this.executeFindMany({ mediaId });
+    const allMediaItems = await this.executeFindMany({ mediaId, missingSince: null });
 
     const mediaItemIndex = allMediaItems.findIndex(item => item.id === mediaItemId);
     if (mediaItemIndex === -1) {

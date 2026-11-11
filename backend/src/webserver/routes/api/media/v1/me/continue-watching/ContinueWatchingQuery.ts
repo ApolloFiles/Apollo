@@ -24,7 +24,7 @@ const ENTRY_SELECT = {
   media: {
     select: {
       ...MediaQueryFragments.BASE_SELECT,
-      items: { where: ItemQueryFragments.numbered(), select: { id: true }, take: 1 },
+      items: { where: { ...ItemQueryFragments.numbered(), ...ItemQueryFragments.present() }, select: { id: true }, take: 1 },
     },
   },
 } satisfies Prisma.MediaLibraryMediaItemSelect;
@@ -55,6 +55,7 @@ export class ContinueWatchingQuery {
       where: {
         userId: user.id,
         mediaItem: {
+          ...ItemQueryFragments.present(),
           media: {
             AND: [
               MediaQueryFragments.accessibleBy(user.id),
@@ -88,7 +89,7 @@ export class ContinueWatchingQuery {
 
   private async toDtos(user: ApolloUser, itemIds: bigint[]): Promise<ContinueWatchingEntryDto[]> {
     const rows = await this.databaseClient.mediaLibraryMediaItem.findMany({
-      where: { id: { in: itemIds } },
+      where: { id: { in: itemIds }, ...ItemQueryFragments.present() },
       select: { ...ItemQueryFragments.BASE_SELECT, ...ItemQueryFragments.selectWatchProgressOf(user.id), ...ENTRY_SELECT },
     });
 

@@ -46,12 +46,13 @@ export class MediaDetailQuery {
    */
   async run(user: ApolloUser, mediaId: bigint): Promise<MediaDetailDto> {
     const row = await this.databaseClient.mediaLibraryMedia.findFirst({
-      where: { AND: [{ id: mediaId }, MediaQueryFragments.accessibleBy(user.id)] },
+      where: { AND: [{ id: mediaId }, MediaQueryFragments.accessibleBy(user.id), MediaQueryFragments.present()] },
       select: {
         ...MediaQueryFragments.BASE_SELECT,
         synopsis: true,
         ...EXTERNAL_IDS_SELECT,
         items: {
+          where: ItemQueryFragments.present(),
           select: { ...ItemQueryFragments.BASE_SELECT, ...ItemQueryFragments.selectWatchProgressOf(user.id) },
           orderBy: ItemQueryFragments.DISPLAY_ORDER,
         },

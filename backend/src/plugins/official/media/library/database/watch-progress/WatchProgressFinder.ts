@@ -1,6 +1,7 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
 import type ApolloUser from '../../../../../../user/ApolloUser.js';
+import { ItemQueryFragments } from '../media-item/ItemQueryFragments.js';
 import ReadContentsLibraryMediaItem from '../media-item/ReadContentsLibraryMediaItem.js';
 
 export type RecentWatchProgress = {
@@ -67,6 +68,7 @@ export default class WatchProgressFinder {
       where: {
         userId,
         mediaItem: {
+          ...ItemQueryFragments.present(),
           media: {
             libraryId: { in: libraryIds },
           },
@@ -87,6 +89,7 @@ export default class WatchProgressFinder {
         userId,
         mediaItem: {
           mediaId,
+          ...ItemQueryFragments.present(),
         },
       },
       orderBy: { updatedAt: 'desc' },

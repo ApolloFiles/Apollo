@@ -42,7 +42,7 @@ export default class MediaLibraryScanner {
     }
 
     await mediaWriter.flushPendingMediaItems();
-    await mediaWriter.deleteOldMediaItems(library.id);
+    await mediaWriter.markMissingAndDeleteExpiredMediaItems(library.id);
   }
 
   private async scanDirectory(library: FullLibrary, directory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {

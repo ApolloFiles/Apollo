@@ -1,6 +1,7 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../../../../database/DatabaseClient.js';
 import FullLibraryMedia from './FullLibraryMedia.js';
+import { MediaQueryFragments } from './MediaQueryFragments.js';
 import ReadContentsLibraryMedia from './ReadContentsLibraryMedia.js';
 
 export interface MediaLibraryMediaTitleSearchResult {
@@ -20,7 +21,7 @@ export default class MediaLibraryMediaFinder {
 
   async findById(mediaId: bigint): Promise<ReadContentsLibraryMedia | null> {
     const mediaData = await this.databaseClient.mediaLibraryMedia.findUnique({
-      where: { id: mediaId },
+      where: { id: mediaId, AND: [MediaQueryFragments.present()] },
       select: {
         id: true,
         title: true,
@@ -45,7 +46,7 @@ export default class MediaLibraryMediaFinder {
 
   async findFullById(mediaId: bigint): Promise<FullLibraryMedia | null> {
     const mediaData = await this.databaseClient.mediaLibraryMedia.findUnique({
-      where: { id: mediaId },
+      where: { id: mediaId, AND: [MediaQueryFragments.present()] },
       select: {
         id: true,
         title: true,
@@ -80,6 +81,7 @@ export default class MediaLibraryMediaFinder {
       where: {
         libraryId: { in: libraryIds },
         title: { contains: query, mode: 'insensitive' },
+        ...MediaQueryFragments.present(),
       },
       select: {
         id: true,
@@ -107,7 +109,7 @@ export default class MediaLibraryMediaFinder {
 
   async findFullByLibraryId(libraryId: bigint): Promise<FullLibraryMedia[]> {
     const allMediaData = await this.databaseClient.mediaLibraryMedia.findMany({
-      where: { libraryId },
+      where: { libraryId, ...MediaQueryFragments.present() },
       select: {
         id: true,
         title: true,

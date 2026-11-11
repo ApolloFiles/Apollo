@@ -19,6 +19,7 @@ import { createStrictDeepMock, createTemporaryTestDirectory } from '#tests/test-
 
 const CODE_GEASS = 'Anime/Code Geass (2006)';
 const ARRIVAL = 'Movies/Arrival (2016)';
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 describe(MediaLibraryScanner, () => {
   let databaseClient: DatabaseClient;
@@ -112,20 +113,30 @@ describe(MediaLibraryScanner, () => {
     return new FullLibrary(row.id, alice.id, row.name, directoryUris, []);
   }
 
+  /** Only items users can see, i.e. not missing ones */
   async function itemIdOf(mediaDirectory: string, relativeFilePath: string): Promise<bigint | null> {
     const item = await databaseClient.mediaLibraryMediaItem.findFirst({
-      where: { relativeFilePath, media: { libraryId: library.id, directoryUri: fileSystem.getFile(`/${mediaDirectory}`).toURI().toString() } },
+      where: { relativeFilePath, missingSince: null, media: { libraryId: library.id, directoryUri: fileSystem.getFile(`/${mediaDirectory}`).toURI().toString() } },
       select: { id: true },
     });
     return item?.id ?? null;
   }
 
+  /** Only items users can see, i.e. not missing ones */
   async function itemPathsOf(mediaDirectory: string): Promise<string[]> {
     const items = await databaseClient.mediaLibraryMediaItem.findMany({
-      where: { media: { libraryId: library.id, directoryUri: fileSystem.getFile(`/${mediaDirectory}`).toURI().toString() } },
+      where: { missingSince: null, media: { libraryId: library.id, directoryUri: fileSystem.getFile(`/${mediaDirectory}`).toURI().toString() } },
       select: { relativeFilePath: true },
     });
     return items.map((item) => item.relativeFilePath).sort();
+  }
+
+  async function markMissingDaysAgo(itemId: bigint | null, days: number): Promise<void> {
+    await databaseClient.mediaLibraryMediaItem.update({ where: { id: itemId! }, data: { missingSince: new Date(Date.now() - days * DAY_IN_MS) } });
+  }
+
+  async function itemExists(itemId: bigint | null): Promise<boolean> {
+    return (await databaseClient.mediaLibraryMediaItem.count({ where: { id: itemId! } })) > 0;
   }
 
   async function saveProgress(itemId: bigint | null, durationInSec: number): Promise<void> {
@@ -137,15 +148,67 @@ describe(MediaLibraryScanner, () => {
     return row?.durationInSec ?? null;
   }
 
-  test('Removes the item of an episode file that was deleted', async () => {
-    await Fs.promises.rm(Path.join(hostRoot, CODE_GEASS, 'Season 01/S01E03.mkv'));
+  describe('when an episode file was deleted', () => {
+    let episodeThreeId: bigint | null;
 
-    await scanner.scan(library);
+    beforeEach(async () => {
+      episodeThreeId = await itemIdOf(CODE_GEASS, 'Season 01/S01E03.mkv');
+      await saveProgress(episodeThreeId, 754);
+      await Fs.promises.rm(Path.join(hostRoot, CODE_GEASS, 'Season 01/S01E03.mkv'));
+    });
 
-    await expect(itemPathsOf(CODE_GEASS)).resolves.toEqual(['Season 01/S01E01.mkv', 'Season 01/S01E02.mkv']);
+    test('Hides its item', async () => {
+      await scanner.scan(library);
+
+      await expect(itemPathsOf(CODE_GEASS)).resolves.toEqual(['Season 01/S01E01.mkv', 'Season 01/S01E02.mkv']);
+    });
+
+    test('Keeps the hidden item and the watch progress on it', async () => {
+      await scanner.scan(library);
+
+      await expect(itemExists(episodeThreeId)).resolves.toBe(true);
+      await expect(progressOf(episodeThreeId)).resolves.toBe(754);
+    });
+
+    test('Shows the same item with its watch progress again once the file is back', async () => {
+      await scanner.scan(library);
+      await createFiles(`${CODE_GEASS}/Season 01/S01E03.mkv`);
+
+      await scanner.scan(library);
+
+      await expect(itemIdOf(CODE_GEASS, 'Season 01/S01E03.mkv')).resolves.toBe(episodeThreeId);
+      await expect(progressOf(episodeThreeId)).resolves.toBe(754);
+    });
+
+    test('Does not restart the grace period on later scans', async () => {
+      await markMissingDaysAgo(episodeThreeId, 10);
+      const missingSince = (await databaseClient.mediaLibraryMediaItem.findUniqueOrThrow({ where: { id: episodeThreeId! } })).missingSince;
+
+      await scanner.scan(library);
+
+      await expect(databaseClient.mediaLibraryMediaItem.findUniqueOrThrow({ where: { id: episodeThreeId! } }))
+        .resolves.toMatchObject({ missingSince });
+    });
+
+    test('Keeps the item while it has been missing for less than 14 days', async () => {
+      await markMissingDaysAgo(episodeThreeId, 13);
+
+      await scanner.scan(library);
+
+      await expect(itemExists(episodeThreeId)).resolves.toBe(true);
+    });
+
+    test('Deletes the item once it has been missing for more than 14 days', async () => {
+      await markMissingDaysAgo(episodeThreeId, 15);
+
+      await scanner.scan(library);
+
+      await expect(itemExists(episodeThreeId)).resolves.toBe(false);
+    });
   });
 
-  test('Removes a movie whose directory was deleted', async () => {
+  test('Deletes a movie whose directory has been gone for more than 14 days', async () => {
+    await markMissingDaysAgo(await itemIdOf(ARRIVAL, 'Arrival (2016).mkv'), 15);
     await Fs.promises.rm(Path.join(hostRoot, ARRIVAL), { recursive: true });
 
     await scanner.scan(library);
@@ -228,12 +291,21 @@ describe(MediaLibraryScanner, () => {
       await expect(progressOf(episodeOneId)).resolves.toBe(1200);
     });
 
-    test('Still removes deleted media from the library\'s other directories', async () => {
+    test('Still hides deleted items in the library\'s other directories', async () => {
       await Fs.promises.rm(Path.join(hostRoot, ARRIVAL), { recursive: true });
 
       await scanner.scan(library);
 
-      await expect(databaseClient.mediaLibraryMedia.count({ where: { libraryId: library.id, title: 'Arrival' } })).resolves.toBe(0);
+      await expect(itemPathsOf(ARRIVAL)).resolves.toEqual([]);
+    });
+
+    test('Does not delete its media however long it has been gone', async () => {
+      const episodeOneId = await itemIdOf(CODE_GEASS, 'Season 01/S01E01.mkv');
+      await markMissingDaysAgo(episodeOneId, 15);
+
+      await scanner.scan(library);
+
+      await expect(itemExists(episodeOneId)).resolves.toBe(true);
     });
 
     test('Logs the directory as unavailable', async () => {

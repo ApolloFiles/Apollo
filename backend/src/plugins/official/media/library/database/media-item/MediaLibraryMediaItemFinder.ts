@@ -13,7 +13,7 @@ export default class MediaLibraryMediaItemFinder {
 
   async findById(itemId: bigint): Promise<ReadContentsLibraryMediaItem | null> {
     const mediaData = await this.databaseClient.mediaLibraryMediaItem.findUnique({
-      where: { id: itemId },
+      where: { id: itemId, AND: [ItemQueryFragments.present()] },
       select: {
         id: true,
         title: true,
@@ -46,7 +46,7 @@ export default class MediaLibraryMediaItemFinder {
   // FIXME: delete method if not needed?
   async findFullById(itemId: bigint): Promise<FullLibraryMediaItem | null> {
     const mediaData = await this.databaseClient.mediaLibraryMediaItem.findUnique({
-      where: { id: itemId },
+      where: { id: itemId, AND: [ItemQueryFragments.present()] },
       select: {
         id: true,
         title: true,
@@ -80,7 +80,7 @@ export default class MediaLibraryMediaItemFinder {
 
   async findByMediaIdOrderedByEpisodeNumber(mediaId: bigint): Promise<ReadContentsLibraryMediaItem[]> {
     const allMediaData = await this.databaseClient.mediaLibraryMediaItem.findMany({
-      where: { mediaId },
+      where: { mediaId, ...ItemQueryFragments.present() },
       select: {
         id: true,
         title: true,
@@ -121,7 +121,7 @@ export default class MediaLibraryMediaItemFinder {
 
   async findFullByMediaId(mediaId: bigint): Promise<FullLibraryMediaItem[]> {
     const allMediaData = await this.databaseClient.mediaLibraryMediaItem.findMany({
-      where: { mediaId },
+      where: { mediaId, ...ItemQueryFragments.present() },
       select: {
         id: true,
         title: true,

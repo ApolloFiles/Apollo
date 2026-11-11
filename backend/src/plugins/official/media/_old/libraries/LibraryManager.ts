@@ -86,7 +86,7 @@ export default class LibraryManager {
     }
 
     return this.databaseClient.mediaLibraryMedia.findMany({
-      where: { libraryId },
+      where: { libraryId, items: { some: { missingSince: null } } },
       orderBy: { addedAt: 'desc' },
     });
   }
@@ -99,7 +99,7 @@ export default class LibraryManager {
     }
 
     return this.databaseClient.mediaLibraryMedia.findMany({
-      where: { libraryId },
+      where: { libraryId, items: { some: { missingSince: null } } },
       orderBy: { title: 'asc' },
     });
   }
@@ -113,6 +113,7 @@ export default class LibraryManager {
           in: libraryIdsUserHasAccessTo,
           notIn: librariesToExclude,
         },
+        items: { some: { missingSince: null } },
       },
       orderBy: {
         addedAt: 'desc',

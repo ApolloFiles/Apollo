@@ -26,6 +26,8 @@ type PendingMediaItem = {
 }
 
 export default class MediaLibraryMediaWriter {
+  private static readonly MISSING_ITEM_GRACE_PERIOD_IN_MS = 14 * 24 * 60 * 60 * 1000;
+
   private readonly scanStartPromise: Promise<Date>;
   private readonly pendingMediaItems: PendingMediaItem[] = [];
   private readonly itemsKeptDespiteFailure: { mediaId: bigint, relativeFilePath: string }[] = [];
@@ -131,7 +133,7 @@ export default class MediaLibraryMediaWriter {
       for (const [mediaId, paths] of pathsByMediaId) {
         await transaction.mediaLibraryMediaItem.updateMany({
           where: { mediaId, relativeFilePath: { in: paths } },
-          data: { lastScannedAt: scanStart },
+          data: { lastScannedAt: scanStart, missingSince: null },
         });
       }
 
@@ -248,44 +250,49 @@ export default class MediaLibraryMediaWriter {
     await this.databaseClient.$transaction(queriesToExecute);
   }
 
-  /** For a file that exists but could not be scanned: its existing item survives {@link deleteOldMediaItems} unchanged */
+  /** For a file that exists but could not be scanned: its existing item is left as it is by {@link markMissingAndDeleteExpiredMediaItems} */
   keepExistingMediaItem(mediaId: bigint, relativeFilePath: string): void {
     this.itemsKeptDespiteFailure.push({ mediaId, relativeFilePath });
   }
 
-  /** For a directory that could not be scanned: the media in or below it survive {@link deleteOldMediaItems} unchanged */
+  /** For a directory that could not be scanned: the media in or below it are left as they are by {@link markMissingAndDeleteExpiredMediaItems} */
   excludeFromCleanup(directoryUri: string): void {
     this.directoryUrisExcludedFromCleanup.push(directoryUri);
   }
 
-  async deleteOldMediaItems(libraryId: bigint): Promise<void> {
-    const mediaToKeep = this.directoryUrisExcludedFromCleanup.flatMap((directoryUri): Prisma.MediaLibraryMediaWhereInput[] => [
-      { directoryUri },
-      { directoryUri: { startsWith: `${directoryUri}/` } },
-    ]);
+  /**
+   * Items not found by this scan are hidden instead of deleted, so a file that comes back keeps its item and watch progress.
+   * Only those still missing after the grace period are deleted, followed by media left without any items.
+   */
+  async markMissingAndDeleteExpiredMediaItems(libraryId: bigint): Promise<void> {
+    const scanStart = await this.scanStartPromise;
+    const expiredBefore = new Date(scanStart.getTime() - MediaLibraryMediaWriter.MISSING_ITEM_GRACE_PERIOD_IN_MS);
+
+    const mediaToKeep: Prisma.MediaLibraryMediaWhereInput = {
+      NOT: {
+        OR: this.directoryUrisExcludedFromCleanup.flatMap((directoryUri) => [
+          { directoryUri },
+          { directoryUri: { startsWith: `${directoryUri}/` } },
+        ]),
+      },
+    };
+    const itemsInCleanup: Prisma.MediaLibraryMediaItemWhereInput = {
+      media: { libraryId, ...mediaToKeep },
+      NOT: { OR: this.itemsKeptDespiteFailure },
+    };
 
     await this.databaseClient.$transaction([
+      this.databaseClient.mediaLibraryMediaItem.updateMany({
+        where: { ...itemsInCleanup, lastScannedAt: { lt: scanStart }, missingSince: null },
+        data: { missingSince: scanStart },
+      }),
+
       this.databaseClient.mediaLibraryMediaItem.deleteMany({
-        where: {
-          media: {
-            libraryId,
-            NOT: { OR: mediaToKeep },
-          },
-          lastScannedAt: {
-            lt: await this.scanStartPromise,
-          },
-          NOT: { OR: this.itemsKeptDespiteFailure },
-        },
+        where: { ...itemsInCleanup, missingSince: { lt: expiredBefore } },
       }),
 
       this.databaseClient.mediaLibraryMedia.deleteMany({
-        where: {
-          libraryId,
-          items: {
-            none: {},
-          },
-          NOT: { OR: mediaToKeep },
-        },
+        where: { libraryId, items: { none: {} }, ...mediaToKeep },
       }),
     ]);
   }
