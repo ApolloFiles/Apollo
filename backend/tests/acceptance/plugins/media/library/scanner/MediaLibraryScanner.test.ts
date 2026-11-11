@@ -282,6 +282,76 @@ describe(MediaLibraryScanner, () => {
     });
   });
 
+  describe('when a file was copied and the original deleted by a later scan', () => {
+    const COPY = 'Season 01/S01E02 [1080p].mkv';
+    let episodeTwoId: bigint | null;
+
+    beforeEach(async () => {
+      episodeTwoId = await itemIdOf(CODE_GEASS, 'Season 01/S01E02.mkv');
+      await saveProgress(episodeTwoId, 754);
+      await copyOnHost(`${CODE_GEASS}/Season 01/S01E02.mkv`, `${CODE_GEASS}/${COPY}`);
+    });
+
+    test('Moves the original item with its watch progress onto the copy', async () => {
+      await scanner.scan(library);
+      await Fs.promises.rm(Path.join(hostRoot, CODE_GEASS, 'Season 01/S01E02.mkv'));
+
+      await scanner.scan(library);
+
+      await expect(itemIdOf(CODE_GEASS, COPY)).resolves.toBe(episodeTwoId);
+      await expect(progressOf(episodeTwoId)).resolves.toBe(754);
+      await expect(itemPathsOf(CODE_GEASS)).resolves.toEqual(['Season 01/S01E01.mkv', COPY, 'Season 01/S01E03.mkv']);
+    });
+
+    test('Leaves a copy alone that someone has started watching', async () => {
+      await scanner.scan(library);
+      const copyId = await itemIdOf(CODE_GEASS, COPY);
+      await saveProgress(copyId, 120);
+      await Fs.promises.rm(Path.join(hostRoot, CODE_GEASS, 'Season 01/S01E02.mkv'));
+
+      await scanner.scan(library);
+
+      await expect(itemIdOf(CODE_GEASS, COPY)).resolves.toBe(copyId);
+    });
+
+    test('Moves the original item onto the copy however many scans saw both', async () => {
+      await scanner.scan(library);
+      await scanner.scan(library);
+      await Fs.promises.rm(Path.join(hostRoot, CODE_GEASS, 'Season 01/S01E02.mkv'));
+
+      await scanner.scan(library);
+
+      await expect(itemIdOf(CODE_GEASS, COPY)).resolves.toBe(episodeTwoId);
+    });
+
+    test('Prefers a new file over the copy when the original is replaced', async () => {
+      await scanner.scan(library);
+      await Fs.promises.rm(Path.join(hostRoot, CODE_GEASS, 'Season 01/S01E02.mkv'));
+      await createFiles(`${CODE_GEASS}/Season 01/S01E02 [2160p].mkv`);
+
+      await scanner.scan(library);
+
+      await expect(itemIdOf(CODE_GEASS, 'Season 01/S01E02 [2160p].mkv')).resolves.toBe(episodeTwoId);
+    });
+  });
+
+  test('Keeps a show and the watch progress on it when its directory was copied and the original deleted by a later scan', async () => {
+    const COPIED = 'Anime/Code Geass: Lelouch of the Rebellion (2006)';
+    const showId = (await mediaOf(CODE_GEASS))!.id;
+    const episodeTwoId = await itemIdOf(CODE_GEASS, 'Season 01/S01E02.mkv');
+    await saveProgress(episodeTwoId, 754);
+    await copyOnHost(CODE_GEASS, COPIED);
+    await scanner.scan(library);
+    await Fs.promises.rm(Path.join(hostRoot, CODE_GEASS), { recursive: true });
+
+    await scanner.scan(library);
+
+    await expect(mediaOf(COPIED)).resolves.toMatchObject({ id: showId, title: 'Code Geass: Lelouch of the Rebellion' });
+    await expect(itemIdOf(COPIED, 'Season 01/S01E02.mkv')).resolves.toBe(episodeTwoId);
+    await expect(progressOf(episodeTwoId)).resolves.toBe(754);
+    await expect(itemPathsOf(COPIED)).resolves.toEqual(['Season 01/S01E01.mkv', 'Season 01/S01E02.mkv', 'Season 01/S01E03.mkv']);
+  });
+
   describe('when a show directory was renamed', () => {
     const RENAMED = 'Anime/Code Geass: Lelouch of the Rebellion (2006) [tmdbid-31724]';
     let showId: bigint;

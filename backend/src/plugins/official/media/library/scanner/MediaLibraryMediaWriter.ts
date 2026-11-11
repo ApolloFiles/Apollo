@@ -28,8 +28,18 @@ type PendingMediaItem = {
 }
 
 type ItemKey = { mediaId: bigint, relativeFilePath: string };
-type MissingItemRow = ItemKey & { id: bigint, seasonNumber: number | null, episodeNumber: number | null, fileSizeInBytes: bigint | null };
-
+type MissingItemRow = ItemKey & {
+  id: bigint,
+  seasonNumber: number | null,
+  episodeNumber: number | null,
+  fileSizeInBytes: bigint | null,
+};
+type CopyRow = { id: bigint, mediaId: bigint };
+type RenameMatches = {
+  matches: Map<PendingMediaItem, MissingItemRow>,
+  copyRows: Map<PendingMediaItem, CopyRow>,
+  mediaIdsWithOnlyCopies: Set<bigint>,
+};
 type AdoptionCandidate = { oldMediaIds: Set<bigint>, matchedCount: number };
 
 const METADATA_FIELDS = ['title', 'synopsis', 'seasonNumber', 'episodeNumber', 'durationInSec', 'fileSizeInBytes'] as const;
@@ -158,15 +168,7 @@ export default class MediaLibraryMediaWriter {
   }
 
   /** @returns whether any media was adopted */
-  private async adoptRenamedMedia(
-    transaction: Prisma.TransactionClient,
-    items: PendingMediaItem[],
-    renameMatches: Map<PendingMediaItem, MissingItemRow>,
-  ): Promise<boolean> {
-    if (this.mediaIdsCreatedByThisScan.size === 0) {
-      return false;
-    }
-
+  private async adoptRenamedMedia(transaction: Prisma.TransactionClient, items: PendingMediaItem[], renameMatches: RenameMatches): Promise<boolean> {
     const adoptions = this.findAdoptions(renameMatches, items);
     for (const [newMediaId, oldMediaId] of adoptions) {
       await this.adoptMedia(transaction, newMediaId, oldMediaId);
@@ -180,7 +182,7 @@ export default class MediaLibraryMediaWriter {
   }
 
   /** A new media, at least half of whose files match items of one media this scan found nothing of, is that media renamed */
-  private findAdoptions(matches: Map<PendingMediaItem, MissingItemRow>, items: PendingMediaItem[]): Map<bigint, bigint> {
+  private findAdoptions(renameMatches: RenameMatches, items: PendingMediaItem[]): Map<bigint, bigint> {
     const seenMediaIds = new Set([...items, ...this.itemsKeptDespiteFailure].map(item => item.mediaId));
     const itemCountByMediaId = new Map<bigint, number>();
     for (const item of items) {
@@ -188,7 +190,7 @@ export default class MediaLibraryMediaWriter {
     }
 
     const adoptions = new Map<bigint, bigint>();
-    for (const [newMediaId, candidate] of this.collectAdoptionCandidates(matches)) {
+    for (const [newMediaId, candidate] of this.collectAdoptionCandidates(renameMatches)) {
       const [oldMediaId] = candidate.oldMediaIds;
       if (candidate.oldMediaIds.size === 1 && !seenMediaIds.has(oldMediaId) && candidate.matchedCount * 2 >= itemCountByMediaId.get(newMediaId)!) {
         adoptions.set(newMediaId, oldMediaId);
@@ -202,10 +204,10 @@ export default class MediaLibraryMediaWriter {
     return new Map([...adoptions].filter(([, oldMediaId]) => timesAdopted.get(oldMediaId) === 1));
   }
 
-  private collectAdoptionCandidates(matches: Map<PendingMediaItem, MissingItemRow>): Map<bigint, AdoptionCandidate> {
+  private collectAdoptionCandidates({ matches, mediaIdsWithOnlyCopies }: RenameMatches): Map<bigint, AdoptionCandidate> {
     const candidates = new Map<bigint, AdoptionCandidate>();
     for (const [item, missingItem] of matches) {
-      if (!this.mediaIdsCreatedByThisScan.has(item.mediaId)) {
+      if (!this.mediaIdsCreatedByThisScan.has(item.mediaId) && !mediaIdsWithOnlyCopies.has(item.mediaId)) {
         continue;
       }
 
@@ -227,8 +229,13 @@ export default class MediaLibraryMediaWriter {
     });
   }
 
-  private async moveRenamedItems(transaction: Prisma.TransactionClient, matches: Map<PendingMediaItem, MissingItemRow>): Promise<void> {
+  private async moveRenamedItems(transaction: Prisma.TransactionClient, { matches, copyRows }: RenameMatches): Promise<void> {
     for (const [item, missingItem] of matches) {
+      const copyRow = copyRows.get(item);
+      if (copyRow != null) {
+        await transaction.mediaLibraryMediaItem.delete({ where: { id: copyRow.id } });
+      }
+
       await transaction.mediaLibraryMediaItem.update({
         where: { id: missingItem.id },
         data: { mediaId: item.mediaId, relativeFilePath: item.relativeFilePath },
@@ -236,24 +243,63 @@ export default class MediaLibraryMediaWriter {
     }
   }
 
-  /** Pairs files without an item with items in this library whose file this scan did not find – see {@link RenamedItemMatcher} */
-  private async findRenameMatches(transaction: Prisma.TransactionClient, items: PendingMediaItem[]): Promise<Map<PendingMediaItem, MissingItemRow>> {
-    const existingKeys = new Set((await transaction.mediaLibraryMediaItem.findMany({
-      where: this.whereAnyOf(items),
-      select: { mediaId: true, relativeFilePath: true },
-    })).map(row => this.determineKey(row)));
-    const newItems = items.filter(item => !existingKeys.has(this.determineKey(item)));
-    if (newItems.length === 0) {
-      return new Map();
+  /** Copies are files whose item nobody has watched; they are matched only after files without an item */
+  private async findRenameMatches(transaction: Prisma.TransactionClient, items: PendingMediaItem[]): Promise<RenameMatches> {
+    const missingItems = await this.findItemsNotSeenByThisScan(transaction, items);
+    if (missingItems.length === 0) {
+      return { matches: new Map(), copyRows: new Map(), mediaIdsWithOnlyCopies: new Set() };
     }
 
+    const existingRows = await transaction.mediaLibraryMediaItem.findMany({
+      where: this.whereAnyOf(items),
+      select: { id: true, mediaId: true, relativeFilePath: true, _count: { select: { userWatchProgress: true } } },
+    });
+    const existingByKey = new Map(existingRows.map(row => [this.determineKey(row), row]));
+
+    const itemsWithoutRow: PendingMediaItem[] = [];
+    const copyRows = new Map<PendingMediaItem, CopyRow>();
+    for (const item of items) {
+      const row = existingByKey.get(this.determineKey(item));
+      if (row == null) {
+        itemsWithoutRow.push(item);
+      } else if (row._count.userWatchProgress === 0) {
+        copyRows.set(item, row);
+      }
+    }
+
+    const matches = RenamedItemMatcher.match(itemsWithoutRow, missingItems);
+    const matchedMissingItems = new Set(matches.values());
+    const stillMissingItems = missingItems.filter(missingItem => !matchedMissingItems.has(missingItem));
+    const copyMatches = RenamedItemMatcher.match([...copyRows.keys()], stillMissingItems);
+
+    return {
+      matches: new Map([...matches, ...copyMatches]),
+      copyRows: new Map([...copyRows].filter(([item]) => copyMatches.has(item))),
+      mediaIdsWithOnlyCopies: await this.findMediaIdsWithOnlyCopies(transaction, [...copyRows.values()]),
+    };
+  }
+
+  private async findItemsNotSeenByThisScan(transaction: Prisma.TransactionClient, items: PendingMediaItem[]): Promise<MissingItemRow[]> {
     const seenKeys = new Set([...items, ...this.itemsKeptDespiteFailure].map(item => this.determineKey(item)));
-    const missingItems = (await transaction.mediaLibraryMediaItem.findMany({
+    const rows = await transaction.mediaLibraryMediaItem.findMany({
       where: { media: { libraryId: this.libraryId, ...this.mediaNotExcludedFromCleanup() } },
       select: { id: true, mediaId: true, relativeFilePath: true, seasonNumber: true, episodeNumber: true, fileSizeInBytes: true },
-    })).filter(row => !seenKeys.has(this.determineKey(row)));
+    });
+    return rows.filter(row => !seenKeys.has(this.determineKey(row)));
+  }
 
-    return RenamedItemMatcher.match(newItems, missingItems);
+  private async findMediaIdsWithOnlyCopies(transaction: Prisma.TransactionClient, copyRows: CopyRow[]): Promise<Set<bigint>> {
+    const copyCountByMediaId = new Map<bigint, number>();
+    for (const row of copyRows) {
+      copyCountByMediaId.set(row.mediaId, (copyCountByMediaId.get(row.mediaId) ?? 0) + 1);
+    }
+
+    const itemCounts = await transaction.mediaLibraryMediaItem.groupBy({
+      by: ['mediaId'],
+      where: { mediaId: { in: [...copyCountByMediaId.keys()] } },
+      _count: { _all: true },
+    });
+    return new Set(itemCounts.filter(row => row._count._all === copyCountByMediaId.get(row.mediaId)).map(row => row.mediaId));
   }
 
   private async updateChangedMetadata(items: PendingMediaItem[], persistedByKey: Map<string, PersistedItemRow>): Promise<void> {
