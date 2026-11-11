@@ -28,7 +28,7 @@ export default class MediaLibraryScanner {
       throw new Error(`Library owner with id '${library.ownerId}' not found`);
     }
 
-    const mediaWriter = new MediaLibraryMediaWriter(this.databaseClient);
+    const mediaWriter = new MediaLibraryMediaWriter(this.databaseClient, library.id);
 
     for (const directoryUri of library.directoryUris) {
       const directory = await this.fileProvider.provideForRead(ApolloFileURI.parse(directoryUri), libraryOwner);
@@ -42,7 +42,7 @@ export default class MediaLibraryScanner {
     }
 
     await mediaWriter.flushPendingMediaItems();
-    await mediaWriter.markMissingAndDeleteExpiredMediaItems(library.id);
+    await mediaWriter.markMissingAndDeleteExpiredMediaItems();
   }
 
   private async scanDirectory(library: FullLibrary, directory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {

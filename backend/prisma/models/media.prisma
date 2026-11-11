@@ -60,12 +60,13 @@ model MediaLibraryMediaItem {
   mediaId              BigInt    @map("media_id")
   relativeFilePath     String    @map("relative_file_path")
   durationInSec        Int       @map("duration_in_sec")
+  fileSizeInBytes      BigInt?   @map("file_size_in_bytes")
   title                String
   synopsis             String?
   seasonNumber         Int?      @map("season_number")
   episodeNumber        Int?      @map("episode_number")
   lastScannedAt        DateTime  @default(now()) @map("last_scanned_at") @db.Timestamptz()
-  missingSince         DateTime? @map("missing_since") @db.Timestamptz() /// set by the first scan that did not find the file; such items are hidden and deleted after a grace period
+  missingSince         DateTime? @map("missing_since") @db.Timestamptz() /// hidden while set, deleted after a grace period
   addedAt              DateTime  @default(now()) @map("added_at") @db.Timestamptz()
   externalApiFetchedAt DateTime? @map("external_api_fetched_at") @db.Timestamptz()
 

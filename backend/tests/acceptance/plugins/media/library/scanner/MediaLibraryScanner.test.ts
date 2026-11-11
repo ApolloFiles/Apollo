@@ -26,7 +26,9 @@ describe(MediaLibraryScanner, () => {
   let alice: ApolloUser;
   let hostRoot: string;
   let fileSystem: LocalFileSystem;
+  let createdFileCount: number;
   let unprobeablePaths: Set<string>;
+  let titleTagsByPath: Map<string, string>;
   let consoleError: ReturnType<typeof vi.spyOn>;
   let library: FullLibrary;
   let scanner: MediaLibraryScanner;
@@ -44,6 +46,7 @@ describe(MediaLibraryScanner, () => {
     alice = new ApolloUser(aliceId, 'Alice', false, false, null);
 
     hostRoot = await createTemporaryTestDirectory();
+    createdFileCount = 0;
     fileSystem = new LocalFileSystem('default', alice, { fs_local: { pathOnHost: hostRoot } });
     await createFiles(
       `${CODE_GEASS}/Season 01/S01E01.mkv`,
@@ -53,6 +56,7 @@ describe(MediaLibraryScanner, () => {
     );
 
     unprobeablePaths = new Set();
+    titleTagsByPath = new Map();
     const ffprobe = createStrictDeepMock<CachedFfprobe>();
     ffprobe.probeFull.mockImplementation(async (file: LocalFile) => probeOrFail(file.getAbsolutePathOnHost()));
     consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -83,7 +87,7 @@ describe(MediaLibraryScanner, () => {
   async function createFiles(...relativePaths: string[]): Promise<void> {
     for (const relativePath of relativePaths) {
       await Fs.promises.mkdir(Path.dirname(Path.join(hostRoot, relativePath)), { recursive: true });
-      await Fs.promises.writeFile(Path.join(hostRoot, relativePath), 'matroska video data');
+      await Fs.promises.writeFile(Path.join(hostRoot, relativePath), 'matroska video data'.padEnd(1000 + createdFileCount++, '.'));
     }
   }
 
@@ -100,11 +104,27 @@ describe(MediaLibraryScanner, () => {
         format_long_name: 'Matroska / WebM',
         duration: '1440.000000',
         probe_score: 100,
-        tags: {},
+        tags: titleTagsByPath.has(pathOnHost) ? { title: titleTagsByPath.get(pathOnHost)! } : {},
       },
       streams: [],
       chapters: [],
     };
+  }
+
+  async function renameOnHost(from: string, to: string): Promise<void> {
+    await Fs.promises.mkdir(Path.dirname(Path.join(hostRoot, to)), { recursive: true });
+    await Fs.promises.rename(Path.join(hostRoot, from), Path.join(hostRoot, to));
+  }
+
+  async function copyOnHost(from: string, to: string): Promise<void> {
+    await Fs.promises.cp(Path.join(hostRoot, from), Path.join(hostRoot, to), { recursive: true });
+  }
+
+  async function mediaOf(mediaDirectory: string) {
+    return databaseClient.mediaLibraryMedia.findFirst({
+      where: { libraryId: library.id, directoryUri: fileSystem.getFile(`/${mediaDirectory}`).toURI().toString() },
+      include: { mediaLibraryMediaExternalIds: { select: { source: true, externalId: true } } },
+    });
   }
 
   async function createLibrary(...directoryPaths: string[]): Promise<FullLibrary> {
@@ -214,6 +234,137 @@ describe(MediaLibraryScanner, () => {
     await scanner.scan(library);
 
     await expect(databaseClient.mediaLibraryMedia.count({ where: { libraryId: library.id, title: 'Arrival' } })).resolves.toBe(0);
+  });
+
+  describe('when a file was renamed or moved', () => {
+    test('Keeps the item of a renamed episode and the watch progress on it', async () => {
+      const episodeTwoId = await itemIdOf(CODE_GEASS, 'Season 01/S01E02.mkv');
+      await saveProgress(episodeTwoId, 754);
+      await renameOnHost(`${CODE_GEASS}/Season 01/S01E02.mkv`, `${CODE_GEASS}/Season 01/Code Geass - S01E02 - The White Knight Awakens.mkv`);
+
+      await scanner.scan(library);
+
+      await expect(itemIdOf(CODE_GEASS, 'Season 01/Code Geass - S01E02 - The White Knight Awakens.mkv')).resolves.toBe(episodeTwoId);
+      await expect(progressOf(episodeTwoId)).resolves.toBe(754);
+    });
+
+    test('Keeps the item of an episode replaced by another release under another name', async () => {
+      const episodeTwoId = await itemIdOf(CODE_GEASS, 'Season 01/S01E02.mkv');
+      await Fs.promises.rm(Path.join(hostRoot, CODE_GEASS, 'Season 01/S01E02.mkv'));
+      await createFiles(`${CODE_GEASS}/Season 01/S01E02 [1080p].mkv`);
+
+      await scanner.scan(library);
+
+      await expect(itemIdOf(CODE_GEASS, 'Season 01/S01E02 [1080p].mkv')).resolves.toBe(episodeTwoId);
+    });
+
+    test('Keeps the item of a renamed movie file', async () => {
+      const arrivalId = await itemIdOf(ARRIVAL, 'Arrival (2016).mkv');
+      await renameOnHost(`${ARRIVAL}/Arrival (2016).mkv`, `${ARRIVAL}/Movie.mkv`);
+
+      await scanner.scan(library);
+
+      await expect(itemIdOf(ARRIVAL, 'Movie.mkv')).resolves.toBe(arrivalId);
+    });
+
+    test('Moves an episode moved into another show directory, with its watch progress, and leaves the old show in place', async () => {
+      const showId = (await mediaOf(CODE_GEASS))!.id;
+      const episodeThreeId = await itemIdOf(CODE_GEASS, 'Season 01/S01E03.mkv');
+      await saveProgress(episodeThreeId, 300);
+      await renameOnHost(`${CODE_GEASS}/Season 01/S01E03.mkv`, 'Anime/Code Geass Specials/S01E03.mkv');
+
+      await scanner.scan(library);
+
+      await expect(itemIdOf('Anime/Code Geass Specials', 'S01E03.mkv')).resolves.toBe(episodeThreeId);
+      await expect(progressOf(episodeThreeId)).resolves.toBe(300);
+      await expect(mediaOf(CODE_GEASS)).resolves.toMatchObject({ id: showId });
+      await expect(itemPathsOf(CODE_GEASS)).resolves.toEqual(['Season 01/S01E01.mkv', 'Season 01/S01E02.mkv']);
+    });
+  });
+
+  describe('when a show directory was renamed', () => {
+    const RENAMED = 'Anime/Code Geass: Lelouch of the Rebellion (2006) [tmdbid-31724]';
+    let showId: bigint;
+    let episodeIds: (bigint | null)[];
+
+    beforeEach(async () => {
+      showId = (await mediaOf(CODE_GEASS))!.id;
+      await databaseClient.mediaLibraryMedia.update({ where: { id: showId }, data: { externalApiFetchedAt: new Date('2026-11-01T20:15:00.000Z') } });
+      episodeIds = [
+        await itemIdOf(CODE_GEASS, 'Season 01/S01E01.mkv'),
+        await itemIdOf(CODE_GEASS, 'Season 01/S01E02.mkv'),
+        await itemIdOf(CODE_GEASS, 'Season 01/S01E03.mkv'),
+      ];
+      await saveProgress(episodeIds[1], 754);
+      await renameOnHost(CODE_GEASS, RENAMED);
+    });
+
+    test('Keeps the media under the new directory', async () => {
+      await scanner.scan(library);
+
+      await expect(mediaOf(RENAMED)).resolves.toMatchObject({ id: showId });
+      await expect(mediaOf(CODE_GEASS)).resolves.toBeNull();
+    });
+
+    test('Keeps its items and the watch progress on them', async () => {
+      await scanner.scan(library);
+
+      await expect(Promise.all([
+        itemIdOf(RENAMED, 'Season 01/S01E01.mkv'),
+        itemIdOf(RENAMED, 'Season 01/S01E02.mkv'),
+        itemIdOf(RENAMED, 'Season 01/S01E03.mkv'),
+      ])).resolves.toEqual(episodeIds);
+      await expect(progressOf(episodeIds[1])).resolves.toBe(754);
+    });
+
+    test('Takes the title and external ids of the new directory name and has the media hydrated again', async () => {
+      await scanner.scan(library);
+
+      await expect(mediaOf(RENAMED)).resolves.toMatchObject({
+        id: showId,
+        title: 'Code Geass: Lelouch of the Rebellion',
+        externalApiFetchedAt: null,
+        mediaLibraryMediaExternalIds: [{ source: 'THE_MOVIE_DB', externalId: '31724' }],
+      });
+    });
+  });
+
+  test('Keeps a movie when its directory was renamed', async () => {
+    const movieId = (await mediaOf(ARRIVAL))!.id;
+    const arrivalId = await itemIdOf(ARRIVAL, 'Arrival (2016).mkv');
+    await renameOnHost(ARRIVAL, 'Movies/Arrival (2016) {imdb-tt2543164}');
+
+    await scanner.scan(library);
+
+    await expect(mediaOf('Movies/Arrival (2016) {imdb-tt2543164}')).resolves.toMatchObject({ id: movieId });
+    await expect(itemIdOf('Movies/Arrival (2016) {imdb-tt2543164}', 'Arrival (2016).mkv')).resolves.toBe(arrivalId);
+  });
+
+  test('Updates the title of an episode whose file was retagged', async () => {
+    const episodeOneId = await itemIdOf(CODE_GEASS, 'Season 01/S01E01.mkv');
+    titleTagsByPath.set(Path.join(hostRoot, CODE_GEASS, 'Season 01/S01E01.mkv'), 'The Day a New Demon Was Born');
+
+    await scanner.scan(library);
+
+    await expect(databaseClient.mediaLibraryMediaItem.findUniqueOrThrow({ where: { id: episodeOneId! } }))
+      .resolves.toMatchObject({ title: 'The Day a New Demon Was Born' });
+  });
+
+  test('Does not let a new show take over a deleted one when only a few of its files match', async () => {
+    const DEATH_NOTE = 'Anime/Death Note (2006)';
+    const codeGeassId = (await mediaOf(CODE_GEASS))!.id;
+    const codeGeassEpisodeOneId = await itemIdOf(CODE_GEASS, 'Season 01/S01E01.mkv');
+    await copyOnHost(`${CODE_GEASS}/Season 01/S01E02.mkv`, 'Unsorted/same-size.mkv');
+    await Fs.promises.rm(Path.join(hostRoot, CODE_GEASS), { recursive: true });
+    await scanner.scan(library);
+    await createFiles(`${DEATH_NOTE}/Season 01/S01E01.mkv`, `${DEATH_NOTE}/Season 01/S01E03.mkv`);
+    await renameOnHost('Unsorted/same-size.mkv', `${DEATH_NOTE}/Season 01/S01E02.mkv`);
+
+    await scanner.scan(library);
+
+    await expect(mediaOf(DEATH_NOTE)).resolves.not.toMatchObject({ id: codeGeassId });
+    await expect(itemIdOf(DEATH_NOTE, 'Season 01/S01E01.mkv')).resolves.not.toBe(codeGeassEpisodeOneId);
+    await expect(itemExists(codeGeassEpisodeOneId)).resolves.toBe(true);
   });
 
   describe('when an episode file cannot be probed', () => {

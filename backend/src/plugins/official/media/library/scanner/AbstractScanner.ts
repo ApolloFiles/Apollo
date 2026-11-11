@@ -24,6 +24,7 @@ export type CommonVideoMetadata = {
   title: string,
   synopsis: string | null,
   durationInSec: number,
+  fileSizeInBytes: bigint,
   externalIds: ExternalIds,
   streams: {
     index: number,
@@ -88,6 +89,7 @@ export default abstract class AbstractScanner {
     let title = fallbackTitle;
     let synopsis: string | null = null;
     let durationInSec = 0;
+    const fileSizeInBytes = BigInt((await file.stat()).size);
     const externalIds: CommonVideoMetadata['externalIds'] = {};
     const streams: CommonVideoMetadata['streams'] = [];
 
@@ -182,6 +184,7 @@ export default abstract class AbstractScanner {
       title,
       synopsis,
       durationInSec,
+      fileSizeInBytes,
       externalIds,
       streams,
     };

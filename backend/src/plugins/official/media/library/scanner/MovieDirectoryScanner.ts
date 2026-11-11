@@ -20,7 +20,6 @@ export default class MovieDirectoryScanner extends AbstractScanner {
   async scan(library: ReadContentsLibrary, mediaDirectory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {
     const mediaInfo = this.extractInfoFromMediaDirectoryName(mediaDirectory);
 
-    // TODO: It might make sense to 'overtake' other existing media here, in case the directory got renamed or so (and the other media directory no longer exists)
     const mediaId = await writer.createIfNotExists(library.id, mediaDirectory.toURI().toString(), mediaInfo.title);
 
     for (const file of (await mediaDirectory.getFiles())) {
@@ -78,6 +77,7 @@ export default class MovieDirectoryScanner extends AbstractScanner {
       title,
       synopsis,
       durationInSec,
+      fileSizeInBytes,
       externalIds,
       streams,
     } = await this.extractCommonVideoMetadata(file, mediaInfo.title);
@@ -92,6 +92,7 @@ export default class MovieDirectoryScanner extends AbstractScanner {
       this.getRelativeFilePath(mediaDirectory, file),
       title,
       durationInSec,
+      fileSizeInBytes,
       synopsis,
       null,
       null,

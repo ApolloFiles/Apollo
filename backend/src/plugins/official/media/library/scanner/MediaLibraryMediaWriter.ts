@@ -5,12 +5,14 @@ import type {
   MediaLibraryMediaStreamType,
 } from '../../../../../database/prisma-client/enums.js';
 import type { PrismaPromise } from '../../../../../database/prisma-client/internal/prismaNamespace.js';
+import RenamedItemMatcher from './RenamedItemMatcher.js';
 
 type PendingMediaItem = {
   mediaId: bigint,
   relativeFilePath: string,
   title: string,
   durationInSec: number,
+  fileSizeInBytes: bigint,
   synopsis: string | null,
   seasonNumber: number | null,
   episodeNumber: number | null,
@@ -25,50 +27,66 @@ type PendingMediaItem = {
   }[],
 }
 
+type ItemKey = { mediaId: bigint, relativeFilePath: string };
+type MissingItemRow = ItemKey & { id: bigint, seasonNumber: number | null, episodeNumber: number | null, fileSizeInBytes: bigint | null };
+
+type AdoptionCandidate = { oldMediaIds: Set<bigint>, matchedCount: number };
+
+const METADATA_FIELDS = ['title', 'synopsis', 'seasonNumber', 'episodeNumber', 'durationInSec', 'fileSizeInBytes'] as const;
+const PERSISTED_ITEM_SELECT = {
+  id: true,
+  mediaId: true,
+  relativeFilePath: true,
+  title: true,
+  synopsis: true,
+  seasonNumber: true,
+  episodeNumber: true,
+  durationInSec: true,
+  fileSizeInBytes: true,
+} satisfies Prisma.MediaLibraryMediaItemSelect;
+type PersistedItemRow = Prisma.MediaLibraryMediaItemGetPayload<{ select: typeof PERSISTED_ITEM_SELECT }>;
+
 export default class MediaLibraryMediaWriter {
   private static readonly MISSING_ITEM_GRACE_PERIOD_IN_MS = 14 * 24 * 60 * 60 * 1000;
+  private static readonly FLUSH_TRANSACTION_TIMEOUT_IN_MS = 60 * 1000;
 
   private readonly scanStartPromise: Promise<Date>;
   private readonly pendingMediaItems: PendingMediaItem[] = [];
-  private readonly itemsKeptDespiteFailure: { mediaId: bigint, relativeFilePath: string }[] = [];
+  private readonly mediaIdsCreatedByThisScan = new Set<bigint>();
+  private readonly itemsKeptDespiteFailure: ItemKey[] = [];
   private readonly directoryUrisExcludedFromCleanup: string[] = [];
 
   constructor(
     private readonly databaseClient: DatabaseClient,
+    private readonly libraryId: bigint,
   ) {
     this.scanStartPromise = this.databaseClient.fetchNow();
   }
 
   async createIfNotExists(libraryId: bigint, directoryUri: string, title: string): Promise<bigint> {
-    const upsertResult = await this.databaseClient.mediaLibraryMedia.upsert({
-      where: {
-        libraryId_directoryUri: {
-          libraryId,
-          directoryUri,
-        },
-      },
-      create: {
-        libraryId,
-        directoryUri,
-        title,
-      },
-      update: {},
-      select: {
-        id: true,
-      },
+    const existing = await this.databaseClient.mediaLibraryMedia.findUnique({
+      where: { libraryId_directoryUri: { libraryId, directoryUri } },
+      select: { id: true },
     });
-    return upsertResult.id;
+    if (existing != null) {
+      return existing.id;
+    }
+
+    const created = await this.databaseClient.mediaLibraryMedia.create({
+      data: { libraryId, directoryUri, title },
+      select: { id: true },
+    });
+    this.mediaIdsCreatedByThisScan.add(created.id);
+    return created.id;
   }
 
-  /**
-   * Queues a media item for the upcoming bulk flush. The row is not written until {@link flushPendingMediaItems}.
-   * Existing rows keep their title/synopsis/etc. and only get `lastScannedAt` refreshed (matches the previous upsert behavior).
-   */
+  /** Queues a media item for {@link flushPendingMediaItems}, which creates it, updates its metadata or moves a renamed item onto it */
   async createMediaItemIfNotExist(
     mediaId: bigint,
     relativeFilePath: string,
     title: string,
     durationInSec: number,
+    fileSizeInBytes: bigint,
     synopsis: string | null,
     seasonNumber: number | null,
     episodeNumber: number | null,
@@ -79,6 +97,7 @@ export default class MediaLibraryMediaWriter {
       relativeFilePath,
       title,
       durationInSec,
+      fileSizeInBytes,
       synopsis,
       seasonNumber,
       episodeNumber,
@@ -92,126 +111,207 @@ export default class MediaLibraryMediaWriter {
     }
 
     const scanStart = await this.scanStartPromise;
-    const buffered = this.pendingMediaItems.splice(0);
+    const items = this.deduplicate(this.pendingMediaItems.splice(0));
 
-    const seen = new Set<string>();
-    const items: PendingMediaItem[] = [];
-    for (const item of buffered) {
-      const key = this.determineKey(item.mediaId, item.relativeFilePath);
-      if (seen.has(key)) {
-        continue;
+    const persistedItems = await this.databaseClient.$transaction(async (transaction) => {
+      let renameMatches = await this.findRenameMatches(transaction, items);
+      if (await this.adoptRenamedMedia(transaction, items, renameMatches)) {
+        renameMatches = await this.findRenameMatches(transaction, items);
       }
-      seen.add(key);
-      items.push(item);
-    }
+      await this.moveRenamedItems(transaction, renameMatches);
 
-    const pathsByMediaId = new Map<bigint, string[]>();
-    for (const item of items) {
-      let arr = pathsByMediaId.get(item.mediaId);
-      if (arr == null) {
-        arr = [];
-        pathsByMediaId.set(item.mediaId, arr);
-      }
-      arr.push(item.relativeFilePath);
-    }
-
-    await this.databaseClient.$transaction(async (transaction) => {
       await transaction.mediaLibraryMediaItem.createMany({
         data: items.map(i => ({
           mediaId: i.mediaId,
           relativeFilePath: i.relativeFilePath,
           lastScannedAt: scanStart,
-          title: i.title,
-          synopsis: i.synopsis,
-          durationInSec: i.durationInSec,
-          seasonNumber: i.seasonNumber,
-          episodeNumber: i.episodeNumber,
+          ...this.metadataOf(i),
         })),
         skipDuplicates: true,
       });
 
-      for (const [mediaId, paths] of pathsByMediaId) {
-        await transaction.mediaLibraryMediaItem.updateMany({
-          where: { mediaId, relativeFilePath: { in: paths } },
-          data: { lastScannedAt: scanStart, missingSince: null },
-        });
-      }
-
-      const persistedItems = await transaction.mediaLibraryMediaItem.findMany({
-        where: {
-          OR: Array.from(pathsByMediaId, ([mediaId, paths]) => ({ mediaId, relativeFilePath: { in: paths } })),
-        },
-        select: { id: true, mediaId: true, relativeFilePath: true, durationInSec: true },
-      });
-      const idByKey = new Map(persistedItems.map(i => [this.determineKey(i.mediaId, i.relativeFilePath), i.id]));
-      const durationByKey = new Map(persistedItems.map(i => [this.determineKey(i.mediaId, i.relativeFilePath), i.durationInSec]));
-
-      await this.updateChangedDurations(transaction, items, idByKey, durationByKey);
-
-      const streamRows = items.flatMap(item => {
-        const mediaItemId = idByKey.get(this.determineKey(item.mediaId, item.relativeFilePath));
-        if (mediaItemId == null) {
-          return [];
-        }
-        return item.streams.map(stream => ({
-          mediaItemId,
-          index: stream.index,
-          type: stream.type,
-          language: stream.normalizedLanguage,
-          flagDefault: stream.flagDefault,
-          flagCommentary: stream.flagCommentary,
-          forHearingImpaired: stream.forHearingImpaired,
-          treatAsForced: stream.treatAsForced,
-        }));
+      await transaction.mediaLibraryMediaItem.updateMany({
+        where: this.whereAnyOf(items),
+        data: { lastScannedAt: scanStart, missingSince: null },
       });
 
-      await transaction.mediaLibraryMediaItemStreams.deleteMany({
-        where: { mediaItemId: { in: Array.from(idByKey.values()) } },
+      const persisted = await transaction.mediaLibraryMediaItem.findMany({
+        where: this.whereAnyOf(items),
+        select: PERSISTED_ITEM_SELECT,
       });
-      if (streamRows.length > 0) {
-        await transaction.mediaLibraryMediaItemStreams.createMany({ data: streamRows });
-      }
-    });
+      await this.replaceStreams(transaction, items, new Map(persisted.map(i => [this.determineKey(i), i.id])));
+      return persisted;
+    }, { timeout: MediaLibraryMediaWriter.FLUSH_TRANSACTION_TIMEOUT_IN_MS });
+
+    await this.updateChangedMetadata(items, new Map(persistedItems.map(i => [this.determineKey(i), i])));
   }
 
-  /**
-   * The createMany above skips rows that already exist, so their duration would stay whatever the very
-   * first scan wrote – stale after the file was remuxed, or simply wrong for everything scanned before
-   * the duration was derived from the streams instead of the container.
-   *
-   * A single `updateMany` cannot do this: every item needs its *own* duration. Rescans barely change
-   * anything though, so only the items whose duration actually differs are written, grouped by their
-   * new value.
-   */
-  private async updateChangedDurations(
+  private deduplicate(items: PendingMediaItem[]): PendingMediaItem[] {
+    const itemsByKey = new Map<string, PendingMediaItem>();
+    for (const item of items) {
+      const key = this.determineKey(item);
+      if (!itemsByKey.has(key)) {
+        itemsByKey.set(key, item);
+      }
+    }
+    return [...itemsByKey.values()];
+  }
+
+  /** @returns whether any media was adopted */
+  private async adoptRenamedMedia(
     transaction: Prisma.TransactionClient,
     items: PendingMediaItem[],
-    idByKey: Map<string, bigint>,
-    durationByKey: Map<string, number>,
-  ): Promise<void> {
-    const itemIdsByDuration = new Map<number, bigint[]>();
+    renameMatches: Map<PendingMediaItem, MissingItemRow>,
+  ): Promise<boolean> {
+    if (this.mediaIdsCreatedByThisScan.size === 0) {
+      return false;
+    }
 
+    const adoptions = this.findAdoptions(renameMatches, items);
+    for (const [newMediaId, oldMediaId] of adoptions) {
+      await this.adoptMedia(transaction, newMediaId, oldMediaId);
+      this.mediaIdsCreatedByThisScan.delete(newMediaId);
+    }
+
+    for (const item of [...items, ...this.itemsKeptDespiteFailure]) {
+      item.mediaId = adoptions.get(item.mediaId) ?? item.mediaId;
+    }
+    return adoptions.size > 0;
+  }
+
+  /** A new media, at least half of whose files match items of one media this scan found nothing of, is that media renamed */
+  private findAdoptions(matches: Map<PendingMediaItem, MissingItemRow>, items: PendingMediaItem[]): Map<bigint, bigint> {
+    const seenMediaIds = new Set([...items, ...this.itemsKeptDespiteFailure].map(item => item.mediaId));
+    const itemCountByMediaId = new Map<bigint, number>();
     for (const item of items) {
-      const key = this.determineKey(item.mediaId, item.relativeFilePath);
-      const itemId = idByKey.get(key);
-      if (itemId == null || durationByKey.get(key) === item.durationInSec) {
+      itemCountByMediaId.set(item.mediaId, (itemCountByMediaId.get(item.mediaId) ?? 0) + 1);
+    }
+
+    const adoptions = new Map<bigint, bigint>();
+    for (const [newMediaId, candidate] of this.collectAdoptionCandidates(matches)) {
+      const [oldMediaId] = candidate.oldMediaIds;
+      if (candidate.oldMediaIds.size === 1 && !seenMediaIds.has(oldMediaId) && candidate.matchedCount * 2 >= itemCountByMediaId.get(newMediaId)!) {
+        adoptions.set(newMediaId, oldMediaId);
+      }
+    }
+
+    const timesAdopted = new Map<bigint, number>();
+    for (const oldMediaId of adoptions.values()) {
+      timesAdopted.set(oldMediaId, (timesAdopted.get(oldMediaId) ?? 0) + 1);
+    }
+    return new Map([...adoptions].filter(([, oldMediaId]) => timesAdopted.get(oldMediaId) === 1));
+  }
+
+  private collectAdoptionCandidates(matches: Map<PendingMediaItem, MissingItemRow>): Map<bigint, AdoptionCandidate> {
+    const candidates = new Map<bigint, AdoptionCandidate>();
+    for (const [item, missingItem] of matches) {
+      if (!this.mediaIdsCreatedByThisScan.has(item.mediaId)) {
         continue;
       }
 
-      let itemIds = itemIdsByDuration.get(item.durationInSec);
-      if (itemIds == null) {
-        itemIds = [];
-        itemIdsByDuration.set(item.durationInSec, itemIds);
-      }
-      itemIds.push(itemId);
+      const candidate = candidates.get(item.mediaId) ?? { oldMediaIds: new Set(), matchedCount: 0 };
+      candidate.oldMediaIds.add(missingItem.mediaId);
+      candidate.matchedCount++;
+      candidates.set(item.mediaId, candidate);
     }
+    return candidates;
+  }
 
-    for (const [durationInSec, itemIds] of itemIdsByDuration) {
-      await transaction.mediaLibraryMediaItem.updateMany({
-        where: { id: { in: itemIds } },
-        data: { durationInSec },
+  private async adoptMedia(transaction: Prisma.TransactionClient, newMediaId: bigint, oldMediaId: bigint): Promise<void> {
+    await transaction.mediaLibraryMediaExternalIds.deleteMany({ where: { mediaId: oldMediaId } });
+    await transaction.mediaLibraryMediaExternalIds.updateMany({ where: { mediaId: newMediaId }, data: { mediaId: oldMediaId } });
+    const renamed = await transaction.mediaLibraryMedia.delete({ where: { id: newMediaId }, select: { directoryUri: true, title: true } });
+    await transaction.mediaLibraryMedia.update({
+      where: { id: oldMediaId },
+      data: { directoryUri: renamed.directoryUri, title: renamed.title, externalApiFetchedAt: null },
+    });
+  }
+
+  private async moveRenamedItems(transaction: Prisma.TransactionClient, matches: Map<PendingMediaItem, MissingItemRow>): Promise<void> {
+    for (const [item, missingItem] of matches) {
+      await transaction.mediaLibraryMediaItem.update({
+        where: { id: missingItem.id },
+        data: { mediaId: item.mediaId, relativeFilePath: item.relativeFilePath },
       });
     }
+  }
+
+  /** Pairs files without an item with items in this library whose file this scan did not find – see {@link RenamedItemMatcher} */
+  private async findRenameMatches(transaction: Prisma.TransactionClient, items: PendingMediaItem[]): Promise<Map<PendingMediaItem, MissingItemRow>> {
+    const existingKeys = new Set((await transaction.mediaLibraryMediaItem.findMany({
+      where: this.whereAnyOf(items),
+      select: { mediaId: true, relativeFilePath: true },
+    })).map(row => this.determineKey(row)));
+    const newItems = items.filter(item => !existingKeys.has(this.determineKey(item)));
+    if (newItems.length === 0) {
+      return new Map();
+    }
+
+    const seenKeys = new Set([...items, ...this.itemsKeptDespiteFailure].map(item => this.determineKey(item)));
+    const missingItems = (await transaction.mediaLibraryMediaItem.findMany({
+      where: { media: { libraryId: this.libraryId, ...this.mediaNotExcludedFromCleanup() } },
+      select: { id: true, mediaId: true, relativeFilePath: true, seasonNumber: true, episodeNumber: true, fileSizeInBytes: true },
+    })).filter(row => !seenKeys.has(this.determineKey(row)));
+
+    return RenamedItemMatcher.match(newItems, missingItems);
+  }
+
+  private async updateChangedMetadata(items: PendingMediaItem[], persistedByKey: Map<string, PersistedItemRow>): Promise<void> {
+    for (const item of items) {
+      const persisted = persistedByKey.get(this.determineKey(item));
+      if (persisted == null || METADATA_FIELDS.every(field => persisted[field] === item[field])) {
+        continue;
+      }
+
+      await this.databaseClient.mediaLibraryMediaItem.update({ where: { id: persisted.id }, data: this.metadataOf(item) });
+    }
+  }
+
+  private async replaceStreams(transaction: Prisma.TransactionClient, items: PendingMediaItem[], idByKey: Map<string, bigint>): Promise<void> {
+    const streamRows = items.flatMap(item => {
+      const mediaItemId = idByKey.get(this.determineKey(item));
+      if (mediaItemId == null) {
+        return [];
+      }
+      return item.streams.map(stream => ({
+        mediaItemId,
+        index: stream.index,
+        type: stream.type,
+        language: stream.normalizedLanguage,
+        flagDefault: stream.flagDefault,
+        flagCommentary: stream.flagCommentary,
+        forHearingImpaired: stream.forHearingImpaired,
+        treatAsForced: stream.treatAsForced,
+      }));
+    });
+
+    await transaction.mediaLibraryMediaItemStreams.deleteMany({
+      where: { mediaItemId: { in: Array.from(idByKey.values()) } },
+    });
+    if (streamRows.length > 0) {
+      await transaction.mediaLibraryMediaItemStreams.createMany({ data: streamRows });
+    }
+  }
+
+  private metadataOf(item: PendingMediaItem): Pick<PendingMediaItem, typeof METADATA_FIELDS[number]> {
+    return {
+      title: item.title,
+      synopsis: item.synopsis,
+      seasonNumber: item.seasonNumber,
+      episodeNumber: item.episodeNumber,
+      durationInSec: item.durationInSec,
+      fileSizeInBytes: item.fileSizeInBytes,
+    };
+  }
+
+  private whereAnyOf(items: ItemKey[]): Prisma.MediaLibraryMediaItemWhereInput {
+    const pathsByMediaId = new Map<bigint, string[]>();
+    for (const item of items) {
+      const paths = pathsByMediaId.get(item.mediaId) ?? [];
+      paths.push(item.relativeFilePath);
+      pathsByMediaId.set(item.mediaId, paths);
+    }
+    return { OR: Array.from(pathsByMediaId, ([mediaId, paths]) => ({ mediaId, relativeFilePath: { in: paths } })) };
   }
 
   async updateExternalIds(mediaId: bigint, externalIds: Partial<Record<MediaLibraryMediaExternalIdSource, string>>): Promise<void> {
@@ -250,34 +350,20 @@ export default class MediaLibraryMediaWriter {
     await this.databaseClient.$transaction(queriesToExecute);
   }
 
-  /** For a file that exists but could not be scanned: its existing item is left as it is by {@link markMissingAndDeleteExpiredMediaItems} */
   keepExistingMediaItem(mediaId: bigint, relativeFilePath: string): void {
     this.itemsKeptDespiteFailure.push({ mediaId, relativeFilePath });
   }
 
-  /** For a directory that could not be scanned: the media in or below it are left as they are by {@link markMissingAndDeleteExpiredMediaItems} */
   excludeFromCleanup(directoryUri: string): void {
     this.directoryUrisExcludedFromCleanup.push(directoryUri);
   }
 
-  /**
-   * Items not found by this scan are hidden instead of deleted, so a file that comes back keeps its item and watch progress.
-   * Only those still missing after the grace period are deleted, followed by media left without any items.
-   */
-  async markMissingAndDeleteExpiredMediaItems(libraryId: bigint): Promise<void> {
+  async markMissingAndDeleteExpiredMediaItems(): Promise<void> {
     const scanStart = await this.scanStartPromise;
     const expiredBefore = new Date(scanStart.getTime() - MediaLibraryMediaWriter.MISSING_ITEM_GRACE_PERIOD_IN_MS);
 
-    const mediaToKeep: Prisma.MediaLibraryMediaWhereInput = {
-      NOT: {
-        OR: this.directoryUrisExcludedFromCleanup.flatMap((directoryUri) => [
-          { directoryUri },
-          { directoryUri: { startsWith: `${directoryUri}/` } },
-        ]),
-      },
-    };
     const itemsInCleanup: Prisma.MediaLibraryMediaItemWhereInput = {
-      media: { libraryId, ...mediaToKeep },
+      media: { libraryId: this.libraryId, ...this.mediaNotExcludedFromCleanup() },
       NOT: { OR: this.itemsKeptDespiteFailure },
     };
 
@@ -292,12 +378,23 @@ export default class MediaLibraryMediaWriter {
       }),
 
       this.databaseClient.mediaLibraryMedia.deleteMany({
-        where: { libraryId, items: { none: {} }, ...mediaToKeep },
+        where: { libraryId: this.libraryId, items: { none: {} }, ...this.mediaNotExcludedFromCleanup() },
       }),
     ]);
   }
 
-  private determineKey(mediaId: bigint, relativeFilePath: string): string {
-    return `${mediaId}|${relativeFilePath}`;
+  private mediaNotExcludedFromCleanup(): Prisma.MediaLibraryMediaWhereInput {
+    return {
+      NOT: {
+        OR: this.directoryUrisExcludedFromCleanup.flatMap((directoryUri) => [
+          { directoryUri },
+          { directoryUri: { startsWith: `${directoryUri}/` } },
+        ]),
+      },
+    };
+  }
+
+  private determineKey(item: ItemKey): string {
+    return `${item.mediaId}|${item.relativeFilePath}`;
   }
 }

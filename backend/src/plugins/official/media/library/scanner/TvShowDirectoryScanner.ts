@@ -30,7 +30,6 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
   async scan(library: ReadContentsLibrary, mediaDirectory: VirtualFile, writer: MediaLibraryMediaWriter): Promise<void> {
     const mediaInfo = this.extractInfoFromMediaDirectoryName(mediaDirectory);
 
-    // TODO: It might make sense to 'overtake' other existing media here, in case the directory got renamed or so (and the other media directory no longer exists)
     const mediaId = await writer.createIfNotExists(library.id, mediaDirectory.toURI().toString(), mediaInfo.title);
 
     const candidateEpisodeFiles: VirtualFile[] = [];
@@ -126,13 +125,14 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
     }
 
     let fallbackTitle = `Episode ${episodeInfo.episodeNumber.toString().padStart(2, '0')}`;
-    const { title, synopsis, durationInSec, streams } = await this.extractCommonVideoMetadata(file, fallbackTitle);
+    const { title, synopsis, durationInSec, fileSizeInBytes, streams } = await this.extractCommonVideoMetadata(file, fallbackTitle);
 
     await writer.createMediaItemIfNotExist(
       mediaId,
       this.getRelativeFilePath(mediaDirectory, file),
       title,
       durationInSec,
+      fileSizeInBytes,
       synopsis,
       episodeInfo.seasonNumber ?? null,
       episodeInfo.episodeNumber ?? null,
