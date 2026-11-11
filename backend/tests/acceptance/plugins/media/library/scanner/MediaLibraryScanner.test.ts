@@ -437,6 +437,15 @@ describe(MediaLibraryScanner, () => {
     await expect(itemExists(codeGeassEpisodeOneId)).resolves.toBe(true);
   });
 
+  test('Takes the season of an episode named without one from its season directory', async () => {
+    await createFiles(`${CODE_GEASS}/Season 2/Episode 05.mkv`);
+
+    await scanner.scan(library);
+
+    await expect(databaseClient.mediaLibraryMediaItem.findFirst({ where: { relativeFilePath: 'Season 2/Episode 05.mkv', media: { libraryId: library.id } } }))
+      .resolves.toMatchObject({ seasonNumber: 2, episodeNumber: 5 });
+  });
+
   describe('when an episode file cannot be probed', () => {
     let episodeTwoId: bigint | null;
 

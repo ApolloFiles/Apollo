@@ -32,10 +32,10 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
 
     const mediaId = await writer.createIfNotExists(library.id, mediaDirectory.toURI().toString(), mediaInfo.title);
 
-    const candidateEpisodeFiles: VirtualFile[] = [];
+    const candidateEpisodeFiles: { file: VirtualFile, seasonNumberFromDirectory: number | null }[] = [];
     for (const file of (await mediaDirectory.getFiles())) {
       if (await file.isFile()) {
-        candidateEpisodeFiles.push(file);
+        candidateEpisodeFiles.push({ file, seasonNumberFromDirectory: null });
         continue;
       }
 
@@ -45,20 +45,20 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
       }
 
       for (const potentialEpisodeFile of (await file.getFiles())) {
-        candidateEpisodeFiles.push(potentialEpisodeFile);
+        candidateEpisodeFiles.push({ file: potentialEpisodeFile, seasonNumberFromDirectory: seasonNumber });
       }
     }
 
     const episodeResults = await runWithConcurrency(
       candidateEpisodeFiles,
       TvShowDirectoryScanner.EPISODE_PROCESS_CONCURRENCY,
-      (file) => this.processPotentialEpisodeFileOrKeepExisting(writer, mediaId, mediaDirectory, file),
+      ({ file, seasonNumberFromDirectory }) => this.processPotentialEpisodeFileOrKeepExisting(writer, mediaId, mediaDirectory, file, seasonNumberFromDirectory),
     );
 
     let firstEpisodeFile: VirtualFile | null = null;
     for (let i = 0; i < candidateEpisodeFiles.length; i++) {
       if (episodeResults[i]) {
-        firstEpisodeFile = candidateEpisodeFiles[i];
+        firstEpisodeFile = candidateEpisodeFiles[i].file;
         break;
       }
     }
@@ -89,9 +89,10 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
     mediaId: bigint,
     mediaDirectory: VirtualFile,
     file: VirtualFile,
+    seasonNumberFromDirectory: number | null,
   ): Promise<boolean> {
     try {
-      return await this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, file, null);
+      return await this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, file, seasonNumberFromDirectory);
     } catch (err) {
       console.error(`[TvShowDirectoryScanner] Could not scan '${file.toURI().toString()}', keeping its existing item:`, err);
       writer.keepExistingMediaItem(mediaId, this.getRelativeFilePath(mediaDirectory, file));
@@ -104,7 +105,7 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
     mediaId: bigint,
     mediaDirectory: VirtualFile,
     file: VirtualFile,
-    seasonNumber: number | null,
+    seasonNumberFromDirectory: number | null,
   ): Promise<boolean> {
     // FIXME: this should also work for non-local files
     if (file instanceof LocalFile) {
@@ -119,7 +120,7 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
       return false;
     }
 
-    seasonNumber = seasonNumber ?? episodeInfo.seasonNumber ?? null;
+    const seasonNumber = episodeInfo.seasonNumber ?? seasonNumberFromDirectory;
     if (seasonNumber == null) {
       return false;
     }
@@ -134,8 +135,8 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
       durationInSec,
       fileSizeInBytes,
       synopsis,
-      episodeInfo.seasonNumber ?? null,
-      episodeInfo.episodeNumber ?? null,
+      seasonNumber,
+      episodeInfo.episodeNumber,
       streams,
     );
     return true;
