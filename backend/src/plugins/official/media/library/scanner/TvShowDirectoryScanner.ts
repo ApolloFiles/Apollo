@@ -53,7 +53,7 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
     const episodeResults = await runWithConcurrency(
       candidateEpisodeFiles,
       TvShowDirectoryScanner.EPISODE_PROCESS_CONCURRENCY,
-      (file) => this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, file, null),
+      (file) => this.processPotentialEpisodeFileOrKeepExisting(writer, mediaId, mediaDirectory, file),
     );
 
     let firstEpisodeFile: VirtualFile | null = null;
@@ -83,6 +83,21 @@ export default class TvShowDirectoryScanner extends AbstractScanner {
 
   looksLikeEpisodeFile(file: VirtualFile): boolean {
     return this.extractEpisodeInfoFromFileName(file).episodeNumber != null;
+  }
+
+  private async processPotentialEpisodeFileOrKeepExisting(
+    writer: MediaLibraryMediaWriter,
+    mediaId: bigint,
+    mediaDirectory: VirtualFile,
+    file: VirtualFile,
+  ): Promise<boolean> {
+    try {
+      return await this.processPotentialEpisodeFile(writer, mediaId, mediaDirectory, file, null);
+    } catch (err) {
+      console.error(`[TvShowDirectoryScanner] Could not scan '${file.toURI().toString()}', keeping its existing item:`, err);
+      writer.keepExistingMediaItem(mediaId, this.getRelativeFilePath(mediaDirectory, file));
+      return false;
+    }
   }
 
   private async processPotentialEpisodeFile(

@@ -33,6 +33,8 @@ export default class MediaLibraryScanner {
     for (const directoryUri of library.directoryUris) {
       const directory = await this.fileProvider.provideForRead(ApolloFileURI.parse(directoryUri), libraryOwner);
       if (!(await directory.isDirectory())) {
+        console.error(`[MediaLibraryScanner] Library directory '${directoryUri}' is not available, keeping its media until it is back`);
+        mediaWriter.excludeFromCleanup(directory.toURI().toString());
         continue;
       }
 
@@ -52,22 +54,21 @@ export default class MediaLibraryScanner {
 
         if (detectedType == null) {
           await this.scanDirectory(library, file, writer);
-        } else if (detectedType === 'tv') {
-          try {
-            await this.tvShowDirectoryScanner.scan(library, file, writer);
-          } catch (err) {
-            console.error(err);
-          }
-        } else if (detectedType === 'movie') {
-          try {
-            await this.movieDirectoryScanner.scan(library, file, writer);
-          } catch (err) {
-            console.error(err);
-          }
         } else {
-          throw new Error(`Unhandled detected media directory type: '${detectedType}'`);
+          await this.scanMediaDirectory(library, file, detectedType, writer);
         }
       }
+    }
+  }
+
+  private async scanMediaDirectory(library: FullLibrary, mediaDirectory: VirtualFile, type: 'tv' | 'movie', writer: MediaLibraryMediaWriter): Promise<void> {
+    const scanner = type === 'tv' ? this.tvShowDirectoryScanner : this.movieDirectoryScanner;
+
+    try {
+      await scanner.scan(library, mediaDirectory, writer);
+    } catch (err) {
+      console.error(err);
+      writer.excludeFromCleanup(mediaDirectory.toURI().toString());
     }
   }
 }

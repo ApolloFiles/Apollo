@@ -28,6 +28,8 @@ type PendingMediaItem = {
 export default class MediaLibraryMediaWriter {
   private readonly scanStartPromise: Promise<Date>;
   private readonly pendingMediaItems: PendingMediaItem[] = [];
+  private readonly itemsKeptDespiteFailure: { mediaId: bigint, relativeFilePath: string }[] = [];
+  private readonly directoryUrisExcludedFromCleanup: string[] = [];
 
   constructor(
     private readonly databaseClient: DatabaseClient,
@@ -246,16 +248,33 @@ export default class MediaLibraryMediaWriter {
     await this.databaseClient.$transaction(queriesToExecute);
   }
 
+  /** For a file that exists but could not be scanned: its existing item survives {@link deleteOldMediaItems} unchanged */
+  keepExistingMediaItem(mediaId: bigint, relativeFilePath: string): void {
+    this.itemsKeptDespiteFailure.push({ mediaId, relativeFilePath });
+  }
+
+  /** For a directory that could not be scanned: the media in or below it survive {@link deleteOldMediaItems} unchanged */
+  excludeFromCleanup(directoryUri: string): void {
+    this.directoryUrisExcludedFromCleanup.push(directoryUri);
+  }
+
   async deleteOldMediaItems(libraryId: bigint): Promise<void> {
+    const mediaToKeep = this.directoryUrisExcludedFromCleanup.flatMap((directoryUri): Prisma.MediaLibraryMediaWhereInput[] => [
+      { directoryUri },
+      { directoryUri: { startsWith: `${directoryUri}/` } },
+    ]);
+
     await this.databaseClient.$transaction([
       this.databaseClient.mediaLibraryMediaItem.deleteMany({
         where: {
           media: {
             libraryId,
+            NOT: { OR: mediaToKeep },
           },
           lastScannedAt: {
             lt: await this.scanStartPromise,
           },
+          NOT: { OR: this.itemsKeptDespiteFailure },
         },
       }),
 
@@ -265,6 +284,7 @@ export default class MediaLibraryMediaWriter {
           items: {
             none: {},
           },
+          NOT: { OR: mediaToKeep },
         },
       }),
     ]);

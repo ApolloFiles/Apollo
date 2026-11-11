@@ -29,7 +29,7 @@ export default class MovieDirectoryScanner extends AbstractScanner {
       }
 
       if (this.looksLikeMovieFile(mediaDirectory, file)) {
-        await this.processMovieFile(writer, mediaId, mediaDirectory, file, mediaInfo);
+        await this.processMovieFileOrKeepExisting(writer, mediaId, mediaDirectory, file, mediaInfo);
         break;
       }
     }
@@ -42,6 +42,21 @@ export default class MovieDirectoryScanner extends AbstractScanner {
     const fileNameWithoutExtension = Path.basename(fileName, Path.extname(fileName)).trim();
 
     return directoryName.includes(fileNameWithoutExtension) || /^Movie\..*$/i.test(fileName);
+  }
+
+  private async processMovieFileOrKeepExisting(
+    writer: MediaLibraryMediaWriter,
+    mediaId: bigint,
+    mediaDirectory: VirtualFile,
+    file: VirtualFile,
+    mediaInfo: MediaDirectoryInfo,
+  ): Promise<void> {
+    try {
+      await this.processMovieFile(writer, mediaId, mediaDirectory, file, mediaInfo);
+    } catch (err) {
+      console.error(`[MovieDirectoryScanner] Could not scan '${file.toURI().toString()}', keeping its existing item:`, err);
+      writer.keepExistingMediaItem(mediaId, this.getRelativeFilePath(mediaDirectory, file));
+    }
   }
 
   private async processMovieFile(
